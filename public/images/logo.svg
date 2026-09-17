@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Trunk -->
+  <path d="M32 58 V28" stroke="#5C4033" stroke-width="4" stroke-linecap="round"/>
+  <!-- Root flares -->
+  <path d="M32 58 Q26 56 22 58" stroke="#5C4033" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <path d="M32 58 Q38 56 42 58" stroke="#5C4033" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <!-- Main branches -->
+  <path d="M32 28 Q28 20 18 12" stroke="#5C4033" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <path d="M32 28 Q36 20 46 12" stroke="#5C4033" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <path d="M32 32 Q24 26 14 22" stroke="#5C4033" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <path d="M32 32 Q40 26 50 22" stroke="#5C4033" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <!-- Drooping willow fronds — left side -->
+  <path d="M18 12 Q14 18 8 30" stroke="#2D6A4F" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.9"/>
+  <path d="M18 12 Q16 20 12 34" stroke="#40916C" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.85"/>
+  <path d="M18 12 Q18 22 16 36" stroke="#52B788" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.8"/>
+  <path d="M14 22 Q10 30 6 38" stroke="#2D6A4F" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.85"/>
+  <path d="M14 22 Q12 32 10 42" stroke="#40916C" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.8"/>
+  <path d="M14 22 Q16 32 14 40" stroke="#52B788" stroke-width="1.4" stroke-linecap="round" fill="none" opacity="0.75"/>
+  <!-- Drooping willow fronds — right side -->
+  <path d="M46 12 Q50 18 56 30" stroke="#2D6A4F" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.9"/>
+  <path d="M46 12 Q48 20 52 34" stroke="#40916C" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.85"/>
+  <path d="M46 12 Q46 22 48 36" stroke="#52B788" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.8"/>
+  <path d="M50 22 Q54 30 58 38" stroke="#2D6A4F" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.85"/>
+  <path d="M50 22 Q52 32 54 42" stroke="#40916C" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.8"/>
+  <path d="M50 22 Q48 32 50 40" stroke="#52B788" stroke-width="1.4" stroke-linecap="round" fill="none" opacity="0.75"/>
+  <!-- Center drooping fronds -->
+  <path d="M32 28 Q30 36 24 44" stroke="#40916C" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.8"/>
+  <path d="M32 28 Q34 36 40 44" stroke="#40916C" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.8"/>
+  <path d="M32 28 Q28 38 22 48" stroke="#52B788" stroke-width="1.3" stroke-linecap="round" fill="none" opacity="0.7"/>
+  <path d="M32 28 Q36 38 42 48" stroke="#52B788" stroke-width="1.3" stroke-linecap="round" fill="none" opacity="0.7"/>
+</svg>

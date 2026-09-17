@@ -1,0 +1,96 @@
+<%- include('partials/header') %>
+
+    <body>
+        <div class="app-layout">
+            <%- include('partials/sidebar') %>
+                <main class="main-content">
+                    <div class="page-header">
+                        <h1>Account Statements</h1>
+                        <p>View and download your account statements</p>
+                    </div>
+                    <div class="card" style="max-width:800px;">
+                        <div class="card-header">
+                            <h3>Generate Statement</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-row" style="margin-bottom:var(--space-4);">
+                                <div class="form-group">
+                                    <label>Account</label>
+                                    <select id="stmtAccount" class="form-control">
+                                        <% accounts.forEach((a, i)=> { %>
+                                            <option value="<%= a.id %>" <%=i===0 ? 'selected' : '' %>><%= a.account_type
+                                                    %> (<%= a.maskedNumber %>)</option>
+                                            <% }) %>
+                                    </select>
+                                </div>
+                                <div class="form-group"></div>
+                            </div>
+                            <div class="form-row" style="margin-bottom:var(--space-4);">
+                                <div class="form-group"><label>From Date</label><input type="date" id="stmtFrom"
+                                        class="form-control"></div>
+                                <div class="form-group"><label>To Date</label><input type="date" id="stmtTo"
+                                        class="form-control"></div>
+                            </div>
+                            <div class="flex gap-3">
+                                <button class="btn btn-primary" onclick="loadStatement()">View Statement</button>
+                                <button class="btn btn-secondary" onclick="downloadPDF()">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                        <polyline points="7 10 12 15 17 10" />
+                                        <line x1="12" x2="12" y1="15" y2="3" />
+                                    </svg>
+                                    Download PDF
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="stmtResult" class="mt-6"></div>
+                </main>
+        </div>
+        <script>
+            const csrfToken = '<%= csrfToken %>';
+            function getParams() {
+                return { accountId: document.getElementById('stmtAccount').value, dateFrom: document.getElementById('stmtFrom').value, dateTo: document.getElementById('stmtTo').value };
+            }
+            async function loadStatement() {
+                const p = getParams();
+                if (!p.dateFrom || !p.dateTo) { alert('Please select a date range.'); return; }
+                const c = document.getElementById('stmtResult');
+                c.innerHTML = '<div class="loading-overlay"><div class="spinner"></div></div>';
+                try {
+                    const res = await fetch('/api/statements?' + new URLSearchParams(p), { headers: { 'Accept': 'application/json' } });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error);
+                    if (!data.statement) { c.innerHTML = '<div class="alert alert-info">No data for the selected period.</div>'; return; }
+                    const s = data.statement;
+                    let html = '<div class="card"><div class="card-header"><h3>Statement: ' + s.period.from + ' to ' + s.period.to + '</h3></div>';
+                    html += '<div class="card-body"><div class="flex-between mb-4"><div><strong>Opening Balance:</strong> ' + s.openingBalanceFormatted + '</div><div><strong>Closing Balance:</strong> ' + s.closingBalanceFormatted + '</div></div>';
+                    if (s.transactions.length === 0) {
+                        html += '<p class="text-muted text-center">No transactions in this period.</p>';
+                    } else {
+                        html += '<div class="table-container"><table><thead><tr><th>Date</th><th>Reference</th><th>Description</th><th style="text-align:right">Amount</th><th style="text-align:right">Balance</th></tr></thead><tbody>';
+                        s.transactions.forEach(t => {
+                            const sign = t.direction === 'credit' ? '+' : '-';
+                            html += '<tr><td class="text-sm">' + (t.created_at || '').slice(0, 10) + '</td><td class="font-mono text-xs">' + t.reference + '</td><td class="text-sm">' + (t.description || t.type) + '</td><td style="text-align:right" class="' + (t.direction === 'credit' ? 'amount-credit' : 'amount-debit') + '">' + sign + t.amountFormatted + '</td><td style="text-align:right" class="font-semibold">' + t.runningBalanceFormatted + '</td></tr>';
+                        });
+                        html += '</tbody></table></div>';
+                    }
+                    html += '</div></div>';
+                    c.innerHTML = html;
+                } catch (e) { c.innerHTML = '<div class="alert alert-danger">' + (e.message || 'Failed to load statement.') + '</div>'; }
+            }
+            function downloadPDF() {
+                const p = getParams();
+                if (!p.dateFrom || !p.dateTo) { alert('Please select a date range.'); return; }
+                window.open('/api/statements/download?' + new URLSearchParams(p), '_blank');
+            }
+            document.addEventListener('DOMContentLoaded', () => {
+                const today = new Date();
+                const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+                document.getElementById('stmtFrom').value = firstDay.toISOString().slice(0, 10);
+                document.getElementById('stmtTo').value = today.toISOString().slice(0, 10);
+            });
+        </script>
+        <%- include('partials/footer') %>

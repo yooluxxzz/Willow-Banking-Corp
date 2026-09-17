@@ -1,0 +1,39 @@
+<%- include('partials/header') %>
+
+    <body>
+        <div class="app-layout">
+            <%- include('partials/sidebar') %>
+                <main class="main-content">
+                    <div class="page-header">
+                        <h1>Settings</h1>
+                        <p>Manage your profile and preferences</p>
+                    </div>
+                    <div class="card" style="max-width:560px;">
+                        <div class="card-header">
+                            <h3>Profile Information</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label>Full Name</label>
+                                <input type="text" class="form-control" value="<%= user ? user.full_name : '' %>"
+                                    disabled>
+                            </div>
+                            <div class="form-group">
+                                <label>Email Address</label>
+                                <input type="email" class="form-control" value="<%= user ? user.email : '' %>" disabled>
+                            </div>
+                            <div class="form-group">
+                                <label>Customer ID</label>
+                                <input type="text" class="form-control font-mono"
+                                    value="<%= user ? user.customer_id : '' %>" disabled>
+                            </div>
+                            <div class="form-group">
+                                <label>Account Role</label>
+                                <input type="text" class="form-control" value="<%= user ? user.role : '' %>" disabled>
+                            </div>
+                            <p class="text-sm text-muted">Contact support to update your profile information.</p>
+                        </div>
+                    </div>
+                </main>
+        </div>
+        <%- include('partials/footer') %>

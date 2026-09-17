@@ -1,0 +1,102 @@
+<%- include('partials/header') %>
+
+    <body>
+        <div class="app-layout">
+            <%- include('partials/sidebar') %>
+                <main class="main-content">
+                    <div class="page-header">
+                        <h1>Transactions</h1>
+                        <p>View your complete transaction history</p>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Transaction History</h3>
+                            <div class="flex gap-2">
+                                <select id="accountSelect" class="form-control" style="width:auto;font-size:0.8125rem;"
+                                    onchange="loadTransactions()">
+                                    <% accounts.forEach((a, i)=> { %>
+                                        <option value="<%= a.id %>" <%=i===0 ? 'selected' : '' %>><%= a.account_type %>
+                                                (<%= a.maskedNumber %>)</option>
+                                        <% }) %>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="card-body" style="padding:var(--space-3) var(--space-5);">
+                            <div class="filters-bar">
+                                <div class="form-group"><label class="text-xs">Type</label><select id="filterType"
+                                        class="form-control" onchange="loadTransactions()">
+                                        <option value="">All Types</option>
+                                        <option value="transfer">Transfer</option>
+                                        <option value="deposit">Deposit</option>
+                                        <option value="withdrawal">Withdrawal</option>
+                                        <option value="payment">Payment</option>
+                                        <option value="adjustment">Adjustment</option>
+                                    </select></div>
+                                <div class="form-group"><label class="text-xs">Status</label><select id="filterStatus"
+                                        class="form-control" onchange="loadTransactions()">
+                                        <option value="">All</option>
+                                        <option value="completed">Completed</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="failed">Failed</option>
+                                    </select></div>
+                                <div class="form-group"><label class="text-xs">From</label><input type="date"
+                                        id="filterFrom" class="form-control" onchange="loadTransactions()"></div>
+                                <div class="form-group"><label class="text-xs">To</label><input type="date"
+                                        id="filterTo" class="form-control" onchange="loadTransactions()"></div>
+                                <div class="form-group"><label class="text-xs">Search</label><input type="text"
+                                        id="filterSearch" class="form-control" placeholder="Reference or description"
+                                        onkeydown="if(event.key==='Enter')loadTransactions()"></div>
+                            </div>
+                        </div>
+                        <div id="txnTableContainer" class="loading-overlay" style="min-height:200px;">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                </main>
+        </div>
+        <script>
+            const csrfToken = '<%= csrfToken %>';
+            let currentPage = 1;
+            async function loadTransactions(page) {
+                currentPage = page || 1;
+                const c = document.getElementById('txnTableContainer');
+                c.innerHTML = '<div class="loading-overlay"><div class="spinner"></div></div>';
+                const params = new URLSearchParams({
+                    accountId: document.getElementById('accountSelect').value,
+                    page: currentPage, limit: 15,
+                    type: document.getElementById('filterType').value,
+                    status: document.getElementById('filterStatus').value,
+                    dateFrom: document.getElementById('filterFrom').value,
+                    dateTo: document.getElementById('filterTo').value,
+                    search: document.getElementById('filterSearch').value,
+                });
+                try {
+                    const res = await fetch('/api/transactions?' + params, { headers: { 'Accept': 'application/json' } });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error);
+                    if (!data.transactions.length) {
+                        c.innerHTML = '<div class="empty-state" style="padding:var(--space-6);"><h3>No transactions found</h3><p>Try adjusting your filters or date range.</p></div>';
+                        return;
+                    }
+                    let html = '<div class="table-container"><table><thead><tr><th>Date</th><th>Reference</th><th>Description</th><th>Type</th><th>Status</th><th style="text-align:right">Amount</th></tr></thead><tbody>';
+                    data.transactions.forEach(t => {
+                        const sign = t.direction === 'credit' ? '+' : '-';
+                        html += '<tr><td class="text-sm">' + (t.created_at || '').slice(0, 10) + '</td><td class="font-mono text-xs">' + t.reference + '</td><td class="text-sm">' + (t.description || t.type) + '</td><td><span class="badge badge-neutral">' + t.type + '</span></td><td><span class="badge badge-' + (t.status === 'completed' ? 'success' : t.status === 'failed' ? 'danger' : 'warning') + '">' + t.status + '</span></td><td style="text-align:right" class="' + (t.direction === 'credit' ? 'amount-credit' : 'amount-debit') + '">' + sign + t.amountFormatted + '</td></tr>';
+                    });
+                    html += '</tbody></table></div>';
+                    if (data.totalPages > 1) {
+                        html += '<div class="pagination">';
+                        html += '<button onclick="loadTransactions(' + (currentPage - 1) + ')" ' + (currentPage <= 1 ? 'disabled' : '') + '>&laquo; Prev</button>';
+                        for (let i = 1; i <= data.totalPages; i++) {
+                            if (Math.abs(i - currentPage) < 3) html += '<button onclick="loadTransactions(' + i + ')" class="' + (i === currentPage ? 'active' : '') + '">' + i + '</button>';
+                        }
+                        html += '<button onclick="loadTransactions(' + (currentPage + 1) + ')" ' + (currentPage >= data.totalPages ? 'disabled' : '') + '>Next &raquo;</button>';
+                        html += '</div>';
+                    }
+                    c.innerHTML = html;
+                } catch (e) { c.innerHTML = '<div class="alert alert-danger" style="margin:var(--space-4);">' + (e.message || 'Failed to load.') + '</div>'; }
+            }
+            document.addEventListener('DOMContentLoaded', () => loadTransactions());
+        </script>
+        <%- include('partials/footer') %>

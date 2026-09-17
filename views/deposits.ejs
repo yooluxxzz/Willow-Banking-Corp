@@ -1,0 +1,68 @@
+<%- include('partials/header') %>
+
+    <body>
+        <div class="app-layout">
+            <%- include('partials/sidebar') %>
+                <main class="main-content">
+                    <div class="page-header">
+                        <h1>Deposit Funds</h1>
+                        <p>Add funds to your account (demo/fictional deposit)</p>
+                    </div>
+                    <div class="card" style="max-width:480px;">
+                        <div class="card-body">
+                            <div id="depositAlert" class="hidden"></div>
+                            <form id="depositForm" onsubmit="handleDeposit(event)">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                <div class="form-group">
+                                    <label for="accountId">Account</label>
+                                    <select id="accountId" name="accountId" class="form-control" required>
+                                        <% accounts.forEach(a=> { %>
+                                            <option value="<%= a.id %>">
+                                                <%= a.account_type %> (<%= a.maskedNumber %>) — <%= a.balanceFormatted
+                                                            %>
+                                            </option>
+                                            <% }) %>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="amount">Amount (USD)</label>
+                                    <input type="number" id="amount" name="amount" class="form-control"
+                                        placeholder="0.00" min="0.01" step="0.01" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="description">Description <span
+                                            class="text-muted">(optional)</span></label>
+                                    <input type="text" id="description" name="description" class="form-control"
+                                        placeholder="e.g. Salary deposit" maxlength="200">
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-lg w-full" id="depositBtn">Deposit
+                                    Funds</button>
+                            </form>
+                        </div>
+                    </div>
+                </main>
+        </div>
+        <script>
+            const csrfToken = '<%= csrfToken %>';
+            async function handleDeposit(e) {
+                e.preventDefault();
+                const btn = document.getElementById('depositBtn');
+                const alert = document.getElementById('depositAlert');
+                btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Processing...'; alert.className = 'hidden';
+                try {
+                    const res = await fetch('/api/deposits', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+                        body: JSON.stringify({ accountId: document.getElementById('accountId').value, amount: document.getElementById('amount').value, description: document.getElementById('description').value }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error);
+                    alert.className = 'alert alert-success';
+                    alert.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span>Deposit successful! Reference: <strong>' + data.reference + '</strong></span>';
+                    document.getElementById('depositForm').reset();
+                } catch (err) {
+                    alert.className = 'alert alert-danger';
+                    alert.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg><span>' + (err.message || 'Deposit failed.') + '</span>';
+                } finally { btn.disabled = false; btn.textContent = 'Deposit Funds'; }
+            }
+        </script>
+        <%- include('partials/footer') %>

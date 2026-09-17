@@ -1,0 +1,32 @@
+{
+    "name": "willow-banking-corp",
+    "version": "1.0.0",
+    "description": "Willow Banking Corp — Full-stack fictional banking system",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js",
+        "dev": "node --watch server.js",
+        "test": "node --test tests/*.test.js",
+        "seed": "node src/seed.js"
+    },
+    "keywords": [
+        "banking",
+        "finance",
+        "demo"
+    ],
+    "license": "MIT",
+    "dependencies": {
+        "bcryptjs": "^2.4.3",
+        "dotenv": "^16.4.7",
+        "ejs": "^3.1.10",
+        "express": "^4.21.2",
+        "express-rate-limit": "^7.5.0",
+        "express-session": "^1.18.1",
+        "pdfkit": "^0.16.0",
+        "sql.js": "^1.12.0",
+        "uuid": "^11.1.0"
+    },
+    "devDependencies": {
+        "supertest": "^7.0.0"
+    }
+}

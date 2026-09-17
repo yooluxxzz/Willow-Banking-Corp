@@ -1,0 +1,64 @@
+<%- include('partials/header') %>
+
+    <body>
+        <div class="app-layout">
+            <%- include('partials/sidebar') %>
+                <main class="main-content">
+                    <div class="page-header flex-between">
+                        <div>
+                            <h1>Notifications</h1>
+                            <p>Stay informed about your account activity</p>
+                        </div>
+                        <button class="btn btn-secondary btn-sm" onclick="markAllRead()">Mark all as read</button>
+                    </div>
+                    <div id="notifContainer" class="loading-overlay">
+                        <div class="spinner"></div>
+                    </div>
+                </main>
+        </div>
+        <script>
+            const csrfToken = '<%= csrfToken %>';
+            let notifPage = 1;
+            async function loadNotifications(page) {
+                notifPage = page || 1;
+                const c = document.getElementById('notifContainer');
+                c.innerHTML = '<div class="loading-overlay"><div class="spinner"></div></div>';
+                try {
+                    const res = await fetch('/api/notifications?page=' + notifPage + '&limit=15', { headers: { 'Accept': 'application/json' } });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error);
+                    if (!data.notifications.length) { c.innerHTML = '<div class="empty-state"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><h3>No notifications</h3><p>You\'re all caught up!</p></div>'; return; }
+                    let html = '<div class="card"><div style="padding:0;">';
+                    data.notifications.forEach(n => {
+                        const time = new Date(n.created_at + 'Z').toLocaleString();
+                        html += '<div class="notification-item ' + (n.is_read ? '' : 'unread') + '" onclick="markRead(' + n.id + ', this)">';
+                        html += '<div class="notif-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/></svg></div>';
+                        html += '<div class="notif-body"><div class="notif-title">' + escHtml(n.title) + '</div><div class="notif-message">' + escHtml(n.message) + '</div></div>';
+                        html += '<div class="notif-time">' + time + '</div></div>';
+                    });
+                    html += '</div></div>';
+                    if (data.totalPages > 1) {
+                        html += '<div class="pagination">';
+                        html += '<button onclick="loadNotifications(' + (notifPage - 1) + ')" ' + (notifPage <= 1 ? 'disabled' : '') + '>&laquo;</button>';
+                        for (let i = 1; i <= data.totalPages; i++) html += '<button onclick="loadNotifications(' + i + ')" class="' + (i === notifPage ? 'active' : '') + '">' + i + '</button>';
+                        html += '<button onclick="loadNotifications(' + (notifPage + 1) + ')" ' + (notifPage >= data.totalPages ? 'disabled' : '') + '>&raquo;</button></div>';
+                    }
+                    c.innerHTML = html;
+                } catch (e) { c.innerHTML = '<div class="alert alert-danger">' + (e.message || 'Failed.') + '</div>'; }
+            }
+            async function markRead(id, el) {
+                try {
+                    await fetch('/api/notifications/' + id + '/read', { method: 'POST', headers: { 'X-CSRF-Token': csrfToken } });
+                    if (el) el.classList.remove('unread');
+                } catch (e) { }
+            }
+            async function markAllRead() {
+                try {
+                    await fetch('/api/notifications/read-all', { method: 'POST', headers: { 'X-CSRF-Token': csrfToken } });
+                    loadNotifications(notifPage);
+                } catch (e) { alert('Failed to mark notifications.'); }
+            }
+            function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+            document.addEventListener('DOMContentLoaded', () => loadNotifications());
+        </script>
+        <%- include('partials/footer') %>

@@ -1,0 +1,191 @@
+<%- include('../partials/header') %>
+
+    <body>
+        <div class="app-layout">
+            <%- include('../partials/sidebar') %>
+                <main class="main-content">
+                    <div class="page-header">
+                        <h1>Admin Dashboard</h1>
+                        <p>System overview and management</p>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card primary">
+                            <div class="stat-label">Total Users</div>
+                            <div class="stat-value" id="statUsers">-</div>
+                            <div class="stat-sub">Registered accounts</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Total Accounts</div>
+                            <div class="stat-value" id="statAccounts">-</div>
+                            <div class="stat-sub">Bank accounts</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Total Deposits</div>
+                            <div class="stat-value" id="statDeposits">-</div>
+                            <div class="stat-sub">System-wide</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Total Transactions</div>
+                            <div class="stat-value" id="statTxns">-</div>
+                            <div class="stat-sub">All time</div>
+                        </div>
+                    </div>
+
+                    <!-- User Management -->
+                    <div class="card mb-6">
+                        <div class="card-header">
+                            <h3>User Management</h3>
+                            <div class="flex gap-2"><input type="text" id="userSearch" class="form-control"
+                                    style="width:200px;font-size:0.8125rem;" placeholder="Search users..."
+                                    onkeydown="if(event.key==='Enter')loadUsers()"><button
+                                    class="btn btn-secondary btn-sm" onclick="loadUsers()">Search</button></div>
+                        </div>
+                        <div id="usersTable" style="min-height:100px;">
+                            <div class="loading-overlay">
+                                <div class="spinner"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Audit Logs -->
+                    <div class="card mb-6">
+                        <div class="card-header">
+                            <h3>Audit Log</h3>
+                            <div class="flex gap-2"><select id="auditAction" class="form-control"
+                                    style="width:auto;font-size:0.8125rem;" onchange="loadAuditLog()">
+                                    <option value="">All Actions</option>
+                                    <option value="admin_balance_adjustment">Balance Adjustment</option>
+                                    <option value="login">Login</option>
+                                    <option value="logout">Logout</option>
+                                    <option value="register">Register</option>
+                                </select></div>
+                        </div>
+                        <div id="auditTable" style="min-height:100px;">
+                            <div class="loading-overlay">
+                                <div class="spinner"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Balance Adjustment -->
+                    <div class="card" style="max-width:560px;">
+                        <div class="card-header">
+                            <h3>Adjust User Balance</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="adjustAlert" class="hidden"></div>
+                            <form id="adjustForm" onsubmit="handleAdjust(event)">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                <div class="form-group">
+                                    <label>User Email</label>
+                                    <input type="email" id="adjEmail" class="form-control"
+                                        placeholder="user@example.com" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Account ID</label>
+                                    <input type="number" id="adjAccountId" class="form-control" placeholder="Account ID"
+                                        required>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Amount (USD)</label>
+                                        <input type="number" id="adjAmount" class="form-control" step="0.01"
+                                            placeholder="0.00" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Action</label>
+                                        <select id="adjAction" class="form-control">
+                                            <option value="credit">Credit (add)</option>
+                                            <option value="debit">Debit (subtract)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Reason</label>
+                                    <input type="text" id="adjReason" class="form-control"
+                                        placeholder="Reason for adjustment" required maxlength="200">
+                                </div>
+                                <button type="submit" class="btn btn-primary" id="adjBtn">Submit Adjustment</button>
+                            </form>
+                        </div>
+                    </div>
+                </main>
+        </div>
+        <script>
+            const csrfToken = '<%= csrfToken %>';
+            async function loadStats() {
+                try {
+                    const res = await fetch('/api/admin/stats', { headers: { 'Accept': 'application/json' } });
+                    const d = await res.json();
+                    if (!res.ok) throw new Error(d.error);
+                    document.getElementById('statUsers').textContent = d.stats.totalUsers || 0;
+                    document.getElementById('statAccounts').textContent = d.stats.totalAccounts || 0;
+                    document.getElementById('statDeposits').textContent = d.stats.totalDepositsFormatted || '$0.00';
+                    document.getElementById('statTxns').textContent = d.stats.totalTransactions || 0;
+                } catch (e) { console.error(e); }
+            }
+            async function loadUsers() {
+                const c = document.getElementById('usersTable');
+                c.innerHTML = '<div class="loading-overlay"><div class="spinner"></div></div>';
+                const search = document.getElementById('userSearch').value;
+                try {
+                    const res = await fetch('/api/admin/users?search=' + encodeURIComponent(search), { headers: { 'Accept': 'application/json' } });
+                    const d = await res.json();
+                    if (!res.ok) throw new Error(d.error);
+                    if (!d.users.length) { c.innerHTML = '<p class="text-center text-muted" style="padding:var(--space-5);">No users found.</p>'; return; }
+                    let html = '<div class="table-container"><table><thead><tr><th>Name</th><th>Email</th><th>Customer ID</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+                    d.users.forEach(u => {
+                        html += '<tr><td class="text-sm">' + escHtml(u.full_name) + '</td><td class="text-sm">' + escHtml(u.email) + '</td><td class="font-mono text-xs">' + u.customer_id + '</td><td><span class="badge badge-' + (u.role === 'admin' ? 'info' : 'neutral') + '">' + u.role + '</span></td><td><span class="badge badge-' + (u.status === 'active' ? 'success' : 'danger') + '">' + u.status + '</span></td>';
+                        html += '<td><button class="btn btn-ghost btn-sm" onclick="viewUserAccounts(\'' + u.email + '\')" title="View accounts">Accounts</button></td></tr>';
+                    });
+                    html += '</tbody></table></div>';
+                    c.innerHTML = html;
+                } catch (e) { c.innerHTML = '<div class="alert alert-danger" style="margin:var(--space-3);">' + (e.message || 'Failed.') + '</div>'; }
+            }
+            async function viewUserAccounts(email) {
+                alert('View accounts for ' + email + ' — use the balance adjustment tool below to manage.');
+            }
+            async function loadAuditLog() {
+                const c = document.getElementById('auditTable');
+                c.innerHTML = '<div class="loading-overlay"><div class="spinner"></div></div>';
+                const action = document.getElementById('auditAction').value;
+                try {
+                    const res = await fetch('/api/admin/audit-log?action=' + encodeURIComponent(action) + '&limit=20', { headers: { 'Accept': 'application/json' } });
+                    const d = await res.json();
+                    if (!res.ok) throw new Error(d.error);
+                    if (!d.logs.length) { c.innerHTML = '<p class="text-center text-muted" style="padding:var(--space-5);">No audit logs found.</p>'; return; }
+                    let html = '<div class="table-container"><table><thead><tr><th>Date</th><th>User</th><th>Action</th><th>Details</th></tr></thead><tbody>';
+                    d.logs.forEach(l => {
+                        const time = new Date(l.created_at + 'Z').toLocaleString();
+                        html += '<tr><td class="text-sm">' + time + '</td><td class="text-sm">' + (l.user_email || 'system') + '</td><td><span class="badge badge-neutral">' + l.action + '</span></td><td class="text-sm" style="max-width:300px;overflow:hidden;text-overflow:ellipsis;">' + escHtml(l.details || '') + '</td></tr>';
+                    });
+                    html += '</tbody></table></div>';
+                    c.innerHTML = html;
+                } catch (e) { c.innerHTML = '<div class="alert alert-danger" style="margin:var(--space-3);">' + (e.message || 'Failed.') + '</div>'; }
+            }
+            async function handleAdjust(e) {
+                e.preventDefault();
+                const btn = document.getElementById('adjBtn');
+                const al = document.getElementById('adjustAlert');
+                btn.disabled = true; al.className = 'hidden';
+                try {
+                    const res = await fetch('/api/admin/balance-adjustment', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+                        body: JSON.stringify({ email: document.getElementById('adjEmail').value, accountId: document.getElementById('adjAccountId').value, amount: document.getElementById('adjAmount').value, action: document.getElementById('adjAction').value, reason: document.getElementById('adjReason').value }),
+                    });
+                    const d = await res.json();
+                    if (!res.ok) throw new Error(d.error);
+                    al.className = 'alert alert-success';
+                    al.innerHTML = '<span>Balance adjustment applied successfully. New balance: ' + d.newBalanceFormatted + '</span>';
+                    document.getElementById('adjustForm').reset();
+                    loadStats();
+                } catch (err) {
+                    al.className = 'alert alert-danger';
+                    al.innerHTML = '<span>' + (err.message || 'Failed.') + '</span>';
+                } finally { btn.disabled = false; }
+            }
+            function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+            document.addEventListener('DOMContentLoaded', () => { loadStats(); loadUsers(); loadAuditLog(); });
+        </script>
+        <%- include('../partials/footer') %>

@@ -1,0 +1,220 @@
+<%- include('partials/header') %>
+
+    <body class="public-page">
+        <!-- Navigation -->
+        <nav class="public-nav">
+            <div class="nav-inner">
+                <a href="/" class="nav-brand">
+                    <img src="/images/logo.svg" alt="Willow" class="nav-logo-img">
+                    Willow Banking Corp.
+                </a>
+                <div class="nav-links">
+                    <a href="#features" class="hide-mobile">Features</a>
+                    <a href="#security" class="hide-mobile">Security</a>
+                    <button class="nav-theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">
+                        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="5" />
+                            <line x1="12" x2="12" y1="1" y2="3" />
+                            <line x1="12" x2="12" y1="21" y2="23" />
+                            <line x1="4.22" x2="5.64" y1="4.22" y2="5.64" />
+                            <line x1="18.36" x2="19.78" y1="18.36" y2="19.78" />
+                            <line x1="1" x2="3" y1="12" y2="12" />
+                            <line x1="21" x2="23" y1="12" y2="12" />
+                            <line x1="4.22" x2="5.64" y1="19.78" y2="18.36" />
+                            <line x1="18.36" x2="19.78" y1="5.64" y2="4.22" />
+                        </svg>
+                        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                        </svg>
+                    </button>
+                    <a href="/login" class="btn btn-secondary btn-sm">Sign In</a>
+                    <a href="/register" class="btn btn-primary btn-sm">Open Account</a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Hero -->
+        <section class="hero">
+            <div class="hero-inner">
+                <div>
+                    <h1>Banking built around your&nbsp;life.</h1>
+                    <p>Willow Banking Corp. offers secure, modern financial services with transparent accounts, instant
+                        transfers, and tools that put you in control of your money.</p>
+                    <div class="hero-actions">
+                        <a href="/register" class="btn btn-primary btn-lg">Get Started</a>
+                        <a href="/login" class="btn btn-secondary btn-lg">Sign In</a>
+                    </div>
+                </div>
+                <div>
+                    <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80"
+                        alt="Modern financial district skyline" class="hero-image">
+                </div>
+            </div>
+        </section>
+
+        <!-- Features -->
+        <section class="features-section" id="features">
+            <div class="section-inner">
+                <h2>Everything you need in one place</h2>
+                <p class="section-sub">Manage your finances with confidence using our comprehensive suite of banking
+                    tools.</p>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+                            </svg>
+                        </div>
+                        <h3>Bank-Grade Security</h3>
+                        <p>Your data is protected with industry-standard encryption, secure authentication, and
+                            continuous monitoring.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="m5 12 7-7 7 7" />
+                                <path d="M12 19V5" />
+                            </svg>
+                        </div>
+                        <h3>Instant Transfers</h3>
+                        <p>Send money to other Willow Banking customers instantly with zero fees and full transaction
+                            tracking.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                                <path d="M14 2v6h6" />
+                            </svg>
+                        </div>
+                        <h3>Detailed Statements</h3>
+                        <p>Access your full transaction history, download statements, and keep track of every dollar.
+                        </p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <rect width="20" height="14" x="2" y="5" rx="2" />
+                                <line x1="2" x2="22" y1="10" y2="10" />
+                            </svg>
+                        </div>
+                        <h3>Card Management</h3>
+                        <p>Full control over your debit card — freeze, unfreeze, report lost cards, and manage spending
+                            limits.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                            </svg>
+                        </div>
+                        <h3>Real-Time Alerts</h3>
+                        <p>Stay informed with instant notifications for transfers, logins, security events, and account
+                            changes.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <rect x="3" y="3" width="7" height="7" />
+                                <rect x="14" y="3" width="7" height="7" />
+                                <rect x="14" y="14" width="7" height="7" />
+                                <rect x="3" y="14" width="7" height="7" />
+                            </svg>
+                        </div>
+                        <h3>Intuitive Dashboard</h3>
+                        <p>View all your accounts, balances, and recent activity at a glance with our clean,
+                            professional interface.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Trust -->
+        <section class="trust-section" id="security">
+            <div class="section-inner">
+                <div>
+                    <h2>Your trust is our foundation</h2>
+                    <p>At Willow Banking Corp., security is not an afterthought — it is built into every layer of our
+                        platform.</p>
+                    <ul class="trust-list">
+                        <li>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            Passwords hashed with bcrypt (never stored in plaintext)
+                        </li>
+                        <li>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            Server-side validation on every transaction
+                        </li>
+                        <li>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            CSRF protection on all state-changing operations
+                        </li>
+                        <li>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            Rate limiting to prevent brute-force attacks
+                        </li>
+                        <li>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            Complete audit trail of administrative actions
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=80"
+                        alt="Professional customer service interaction" class="trust-image">
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section style="padding:4rem 0;text-align:center;background:var(--off-white);">
+            <div style="max-width:600px;margin:0 auto;padding:0 1.5rem;">
+                <h2 style="margin-bottom:0.75rem;">Ready to take control of your finances?</h2>
+                <p style="color:var(--gray-600);margin-bottom:1.5rem;">Open your Willow Banking account today — it only
+                    takes a minute.</p>
+                <a href="/register" class="btn btn-primary btn-lg">Create Your Account</a>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <%- include('partials/public-footer') %>
+    </body>
+
+    </html>

@@ -1,0 +1,190 @@
+<%- include('partials/header') %>
+
+    <body>
+        <div class="app-layout">
+            <%- include('partials/sidebar') %>
+                <main class="main-content">
+                    <div class="page-header">
+                        <h1>Dashboard</h1>
+                        <p>Welcome back, <%= user ? user.full_name : 'User' %>
+                        </p>
+                    </div>
+
+                    <!-- Balance cards -->
+                    <div class="stats-grid">
+                        <div class="stat-card primary">
+                            <div class="stat-label">Total Balance</div>
+                            <div class="stat-value">
+                                <%= totals.totalFormatted %>
+                            </div>
+                            <div class="stat-sub">Across all accounts</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Available Balance</div>
+                            <div class="stat-value">
+                                <%= totals.availableFormatted %>
+                            </div>
+                            <div class="stat-sub">Ready to use</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Accounts</div>
+                            <div class="stat-value">
+                                <%= accounts.length %>
+                            </div>
+                            <div class="stat-sub">
+                                <%= accounts.filter(a=> a.status === 'active').length %> active
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <h3 style="margin-bottom:var(--space-3);font-size:0.9375rem;">Quick Actions</h3>
+                    <div class="quick-actions">
+                        <a href="/transfers" class="quick-action">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="m5 12 7-7 7 7" />
+                                <path d="M12 19V5" />
+                            </svg>
+                            Transfer
+                        </a>
+                        <a href="/deposits" class="quick-action">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M12 2v20" />
+                                <path d="m17 7-5-5-5 5" />
+                            </svg>
+                            Deposit
+                        </a>
+                        <a href="/withdrawals" class="quick-action">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M12 22V2" />
+                                <path d="m7 17 5 5 5-5" />
+                            </svg>
+                            Withdraw
+                        </a>
+                        <a href="/transactions" class="quick-action">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                                <path d="M14 2v6h6" />
+                            </svg>
+                            Transactions
+                        </a>
+                        <a href="/statements" class="quick-action">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" />
+                            </svg>
+                            Statements
+                        </a>
+                        <a href="/cards" class="quick-action">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <rect width="20" height="14" x="2" y="5" rx="2" />
+                                <line x1="2" x2="22" y1="10" y2="10" />
+                            </svg>
+                            Cards
+                        </a>
+                    </div>
+
+                    <!-- Accounts -->
+                    <div class="card mb-6">
+                        <div class="card-header">
+                            <h3>Your Accounts</h3>
+                            <a href="/accounts" class="btn btn-ghost btn-sm">View All</a>
+                        </div>
+                        <div class="card-body" style="padding:0;">
+                            <% accounts.forEach(account=> { %>
+                                <div
+                                    style="display:flex;justify-content:space-between;align-items:center;padding:var(--space-4) var(--space-5);border-bottom:1px solid var(--gray-200);">
+                                    <div>
+                                        <div class="text-xs font-semibold"
+                                            style="text-transform:uppercase;color:var(--gray-600);">
+                                            <%= account.account_type %>
+                                        </div>
+                                        <div class="font-mono text-sm" style="color:var(--gray-700);">
+                                            <%= account.maskedNumber %>
+                                        </div>
+                                    </div>
+                                    <div style="text-align:right;">
+                                        <div class="font-semibold" style="font-size:1.125rem;">
+                                            <%= account.balanceFormatted %>
+                                        </div>
+                                        <div class="text-xs text-muted">Available: <%= account.availableBalanceFormatted
+                                                %>
+                                        </div>
+                                    </div>
+                                </div>
+                                <% }) %>
+                                    <% if (accounts.length===0) { %>
+                                        <div class="empty-state" style="padding:var(--space-6);">
+                                            <p>No accounts found.</p>
+                                        </div>
+                                        <% } %>
+                        </div>
+                    </div>
+
+                    <!-- Recent Transactions -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Recent Transactions</h3>
+                            <a href="/transactions" class="btn btn-ghost btn-sm">View All</a>
+                        </div>
+                        <div class="card-body" style="padding:0;">
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Description</th>
+                                            <th>Type</th>
+                                            <th>Status</th>
+                                            <th style="text-align:right;">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <% recentTxns.forEach(txn=> { %>
+                                            <tr>
+                                                <td class="text-sm">
+                                                    <%= txn.created_at ? txn.created_at.slice(0, 10) : '' %>
+                                                </td>
+                                                <td class="text-sm">
+                                                    <%= txn.description || txn.type %>
+                                                </td>
+                                                <td><span class="badge badge-neutral">
+                                                        <%= txn.type %>
+                                                    </span></td>
+                                                <td><span
+                                                        class="badge badge-<%= txn.status === 'completed' ? 'success' : (txn.status === 'failed' ? 'danger' : 'warning') %>">
+                                                        <%= txn.status %>
+                                                    </span></td>
+                                                <td style="text-align:right;"
+                                                    class="<%= txn.direction === 'credit' ? 'amount-credit' : 'amount-debit' %>">
+                                                    <%= txn.direction==='credit' ? '+' : '-' %>
+                                                        <%= txn.amountFormatted %>
+                                                </td>
+                                            </tr>
+                                            <% }) %>
+                                                <% if (recentTxns.length===0) { %>
+                                                    <tr>
+                                                        <td colspan="5" class="text-center text-muted"
+                                                            style="padding:var(--space-6);">No transactions yet. Make a
+                                                            deposit to get started.</td>
+                                                    </tr>
+                                                    <% } %>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+        </div>
+        <%- include('partials/footer') %>
