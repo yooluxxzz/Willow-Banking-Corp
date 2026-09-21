@@ -39,7 +39,10 @@ function loadUser(req, res, next) {
         const user = db.prepare('SELECT id, email, full_name, role, status, customer_id FROM users WHERE id = ?').get(req.session.userId);
         if (user) {
             if (user.status !== 'active' && user.role !== 'admin') {
-                req.session.destroy();
+                req.session.destroy(() => { });
+                if (req.xhr || req.headers.accept?.includes('application/json')) {
+                    return res.status(401).json({ error: 'Account suspended. Please log in again.' });
+                }
                 return res.redirect('/login?error=account_suspended');
             }
             res.locals.user = user;

@@ -59,8 +59,9 @@ router.get('/users', requireAdmin, (req, res) => {
         const params = [];
 
         if (search) {
+            const safeSearch = search.replace(/[%_]/g, '\\$&');
             conditions.push('(full_name LIKE ? OR email LIKE ? OR customer_id LIKE ?)');
-            params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+            params.push(`%${safeSearch}%`, `%${safeSearch}%`, `%${safeSearch}%`);
         }
         if (status) {
             conditions.push('status = ?');
@@ -86,7 +87,7 @@ router.get('/users/:id', requireAdmin, (req, res) => {
     try {
         const db = getDb();
         const user = db.prepare(`
-      SELECT id, email, full_name, phone, role, status, customer_id, created_at, updated_at
+      SELECT id, email, full_name, phone, role, status, customer_id, status_reason, scheduled_deletion_at, created_at, updated_at
       FROM users WHERE id = ? AND role = 'customer'
     `).get(parseInt(req.params.id));
 
@@ -111,36 +112,71 @@ router.get('/users/:id', requireAdmin, (req, res) => {
     }
 });
 
-// Suspend/enable user
+// Suspend/enable/delete user
 router.post('/users/:id/status', requireAdmin, (req, res) => {
     try {
         const db = getDb();
-        const { status } = req.body;
-        if (!['active', 'suspended'].includes(status)) {
-            return res.status(400).json({ error: 'Invalid status. Must be active or suspended.' });
+        const { status, reason, deletionType } = req.body;
+        if (!['active', 'suspended', 'deleted'].includes(status)) {
+            return res.status(400).json({ error: 'Invalid status. Must be active, suspended, or deleted.' });
+        }
+        if ((status === 'suspended' || status === 'deleted') && !reason) {
+            return res.status(400).json({ error: 'A reason is required for suspension or deletion.' });
         }
 
         const user = db.prepare("SELECT * FROM users WHERE id = ? AND role = 'customer'").get(parseInt(req.params.id));
         if (!user) return res.status(404).json({ error: 'User not found.' });
 
-        db.prepare('UPDATE users SET status = ?, updated_at = datetime(?) WHERE id = ?')
-            .run(status, new Date().toISOString(), user.id);
+        // Prevent admin from modifying their own account
+        if (user.id === req.session.userId) {
+            return res.status(400).json({ error: 'You cannot modify your own account.' });
+        }
+
+        let scheduledDeletion = null;
+        let effectiveStatus = status;
+        let message = '';
+
+        if (status === 'deleted' && deletionType === 'scheduled') {
+            // Schedule deletion for 3 days from now instead of instant
+            const deletionDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+            scheduledDeletion = deletionDate.toISOString();
+            effectiveStatus = 'suspended'; // Suspend immediately, delete after 3 days
+            message = `Account scheduled for deletion on ${deletionDate.toLocaleDateString()}. User is suspended in the meantime.`;
+        } else if (status === 'deleted') {
+            message = 'User account has been deleted immediately.';
+        } else if (status === 'suspended') {
+            message = 'User account has been suspended.';
+        } else {
+            message = 'User account has been reactivated.';
+        }
+
+        db.prepare('UPDATE users SET status = ?, status_reason = ?, scheduled_deletion_at = ?, updated_at = datetime(?) WHERE id = ?')
+            .run(effectiveStatus, reason || null, scheduledDeletion, new Date().toISOString(), user.id);
+
+        let auditAction = 'user_activated';
+        if (status === 'suspended') auditAction = 'user_suspended';
+        if (status === 'deleted' && deletionType === 'scheduled') auditAction = 'user_deletion_scheduled';
+        if (status === 'deleted' && deletionType !== 'scheduled') auditAction = 'user_deleted';
 
         logAudit({
             actorId: req.session.userId,
             actorEmail: res.locals.user?.email || 'admin',
-            action: status === 'suspended' ? 'user_suspended' : 'user_activated',
+            action: auditAction,
             targetType: 'user',
             targetId: String(user.id),
-            metadata: { previousStatus: user.status, newStatus: status },
+            metadata: { previousStatus: user.status, newStatus: effectiveStatus, reason, deletionType: deletionType || 'instant', scheduledDeletion },
         });
 
-        createNotification(user.id, 'security', 'Account Status Changed',
-            status === 'suspended'
-                ? 'Your account has been suspended. Contact support for assistance.'
-                : 'Your account has been reactivated.');
+        if (effectiveStatus === 'suspended') {
+            const notifMsg = scheduledDeletion
+                ? `Your account has been scheduled for deletion. Reason: ${reason}. It will be permanently removed in 3 days.`
+                : `Your account has been suspended. Reason: ${reason}. Contact support for assistance.`;
+            createNotification(user.id, 'security', 'Account Status Changed', notifMsg);
+        } else if (status === 'active') {
+            createNotification(user.id, 'security', 'Account Status Changed', 'Your account has been reactivated.');
+        }
 
-        res.json({ success: true, message: `User ${status === 'suspended' ? 'suspended' : 'activated'} successfully.` });
+        res.json({ success: true, message });
     } catch (err) {
         console.error('[Admin] Status change error:', err.message);
         res.status(500).json({ error: 'Failed to update user status.' });
@@ -148,7 +184,7 @@ router.post('/users/:id/status', requireAdmin, (req, res) => {
 });
 
 // Balance adjustment
-router.post('/adjustments', requireAdmin, (req, res) => {
+router.post('/balance-adjustment', requireAdmin, (req, res) => {
     try {
         const { accountId, amount, reason, type } = req.body;
 
@@ -168,8 +204,8 @@ router.post('/adjustments', requireAdmin, (req, res) => {
         const account = db.prepare(`
       SELECT a.*, u.id as owner_id, u.full_name as owner_name
       FROM accounts a JOIN users u ON a.user_id = u.id
-      WHERE a.id = ?
-    `).get(parseInt(accountId));
+      WHERE a.id = ? OR a.account_number = ?
+    `).get(accountId, String(accountId));
 
         if (!account) return res.status(404).json({ error: 'Account not found.' });
 
@@ -236,7 +272,7 @@ router.get('/transactions', requireAdmin, (req, res) => {
 });
 
 // Audit logs
-router.get('/audit-logs', requireAdmin, (req, res) => {
+router.get('/audit-log', requireAdmin, (req, res) => {
     try {
         const result = getAuditLogs({
             page: parseInt(req.query.page) || 1,

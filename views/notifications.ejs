@@ -56,7 +56,7 @@
                 try {
                     await fetch('/api/notifications/read-all', { method: 'POST', headers: { 'X-CSRF-Token': csrfToken } });
                     loadNotifications(notifPage);
-                } catch (e) { alert('Failed to mark notifications.'); }
+                } catch (e) { showToast('Failed to mark notifications.', 'error'); }
             }
             function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
             document.addEventListener('DOMContentLoaded', () => loadNotifications());

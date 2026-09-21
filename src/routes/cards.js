@@ -5,6 +5,7 @@ const express = require('express');
 const { requireAuth } = require('../middleware/auth');
 const { getUserCards, getCardById, updateCardStatus, requestReplacement } = require('../services/card');
 const { createNotification } = require('../services/notification');
+const { logAudit } = require('../services/audit');
 
 const router = express.Router();
 
@@ -42,6 +43,15 @@ router.post('/:id/status', requireAuth, (req, res) => {
         } catch (e) { /* non-critical */ }
 
         res.json({ success: true, message: statusMessages[status] });
+
+        logAudit({
+            actorId: req.session.userId,
+            actorEmail: res.locals.user?.email || 'unknown',
+            action: 'card_status_change',
+            targetType: 'card',
+            targetId: String(req.params.id),
+            metadata: { newStatus: status },
+        });
     } catch (err) {
         console.error('[Cards] Error:', err.message);
         res.status(500).json({ error: 'Failed to update card.' });
@@ -60,6 +70,14 @@ router.post('/:id/replace', requireAuth, (req, res) => {
         } catch (e) { /* non-critical */ }
 
         res.json({ success: true, message: result.message });
+
+        logAudit({
+            actorId: req.session.userId,
+            actorEmail: res.locals.user?.email || 'unknown',
+            action: 'card_replacement',
+            targetType: 'card',
+            targetId: String(req.params.id),
+        });
     } catch (err) {
         console.error('[Cards] Error:', err.message);
         res.status(500).json({ error: 'Failed to request replacement.' });

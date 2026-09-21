@@ -26,10 +26,10 @@
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label for="toAccountNumber">Recipient Account Number</label>
-                                    <input type="text" id="toAccountNumber" name="toAccountNumber"
-                                        class="form-control font-mono" placeholder="e.g. 4200100010021002" required>
-                                    <p class="form-help">Enter the recipient's full 14-digit account number</p>
+                                    <label for="recipientEmail">Recipient Email Address</label>
+                                    <input type="email" id="recipientEmail" name="recipientEmail" class="form-control"
+                                        placeholder="e.g. user@example.com" required>
+                                    <p class="form-help">Enter the email of the person you want to send money to.</p>
                                 </div>
                                 <div class="form-group">
                                     <label for="amount">Amount (USD)</label>
@@ -53,6 +53,14 @@
             const csrfToken = '<%= csrfToken %>';
             async function handleTransfer(e) {
                 e.preventDefault();
+
+                const amount = document.getElementById('amount').value;
+                const recipientEmail = document.getElementById('recipientEmail').value;
+                const confirmed = await showConfirm('Are you sure you want to transfer $' + amount + ' to ' + recipientEmail + '?', 'Confirm Transfer');
+                if (!confirmed) {
+                    return;
+                }
+
                 const btn = document.getElementById('transferBtn');
                 const alert = document.getElementById('transferAlert');
                 btn.disabled = true;
@@ -64,8 +72,8 @@
                         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
                         body: JSON.stringify({
                             fromAccountId: document.getElementById('fromAccountId').value,
-                            toAccountNumber: document.getElementById('toAccountNumber').value,
-                            amount: document.getElementById('amount').value,
+                            recipientEmail: recipientEmail,
+                            amount: amount,
                             description: document.getElementById('description').value,
                         }),
                     });

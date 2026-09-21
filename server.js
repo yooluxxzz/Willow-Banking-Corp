@@ -10,6 +10,7 @@ const { initializeAdmin } = require('./src/services/auth');
 const { loadUser } = require('./src/middleware/auth');
 const { securityHeaders, csrfProtection, injectCsrfToken } = require('./src/middleware/security');
 const { formatCurrency, fromCents } = require('./src/middleware/validation');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 
@@ -65,6 +66,16 @@ app.use((req, res, next) => {
 app.use('/api', csrfProtection);
 app.use('/auth', csrfProtection);
 
+// General API rate limiting (60 requests/minute)
+const apiLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 60,
+    message: { error: 'Too many requests. Please slow down.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+app.use('/api', apiLimiter);
+
 // Routes — API
 app.use('/auth', require('./src/routes/auth'));
 app.use('/api/accounts', require('./src/routes/accounts'));
@@ -115,9 +126,43 @@ async function start() {
         console.log('[Server] Checking admin account...');
         await initializeAdmin();
 
+        // Background task: process scheduled deletions every hour
+        setInterval(() => {
+            try {
+                const { getDb } = require('./src/database');
+                const { logAudit } = require('./src/services/audit');
+                const db = getDb();
+                const now = new Date().toISOString();
+                const pendingUsers = db.prepare(
+                    "SELECT id, email FROM users WHERE scheduled_deletion_at IS NOT NULL AND scheduled_deletion_at <= ? AND status != 'deleted'"
+                ).all(now);
+
+                for (const user of pendingUsers) {
+                    db.prepare("UPDATE users SET status = 'deleted', updated_at = datetime('now') WHERE id = ?").run(user.id);
+                    logAudit({
+                        actorId: null,
+                        actorEmail: 'system',
+                        action: 'user_auto_deleted',
+                        targetType: 'user',
+                        targetId: String(user.id),
+                        metadata: { reason: 'Scheduled deletion period expired' },
+                    });
+                    console.log(`[Server] Auto-deleted user ${user.email} (scheduled deletion expired).`);
+                }
+            } catch (e) {
+                console.error('[Server] Scheduled deletion check error:', e.message);
+            }
+        }, 60 * 60 * 1000); // Every hour
+
         const server = app.listen(config.port, () => {
             console.log(`[Server] Willow Banking Corp. running at http://localhost:${config.port}`);
             console.log(`[Server] Environment: ${config.nodeEnv}`);
+
+            const { exec } = require('child_process');
+            const os = require('os');
+            const url = `http://localhost:${config.port}`;
+            const cmd = os.platform() === 'win32' ? `start "" "${url}"` : (os.platform() === 'darwin' ? `open ${url}` : `xdg-open ${url}`);
+            exec(cmd).on('error', e => console.log('[Server] Failed to auto-open browser:', e.message));
         });
 
         // Graceful shutdown

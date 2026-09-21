@@ -56,7 +56,9 @@
             }
             async function loadStatement() {
                 const p = getParams();
-                if (!p.dateFrom || !p.dateTo) { alert('Please select a date range.'); return; }
+                if (!p.dateFrom || !p.dateTo) { showToast('Please select a date range.', 'warning'); return; }
+                const confirmed = await showConfirm('Generate statement from ' + p.dateFrom + ' to ' + p.dateTo + '?', 'Generate Statement');
+                if (!confirmed) { return; }
                 const c = document.getElementById('stmtResult');
                 c.innerHTML = '<div class="loading-overlay"><div class="spinner"></div></div>';
                 try {
@@ -81,9 +83,11 @@
                     c.innerHTML = html;
                 } catch (e) { c.innerHTML = '<div class="alert alert-danger">' + (e.message || 'Failed to load statement.') + '</div>'; }
             }
-            function downloadPDF() {
+            async function downloadPDF() {
                 const p = getParams();
-                if (!p.dateFrom || !p.dateTo) { alert('Please select a date range.'); return; }
+                if (!p.dateFrom || !p.dateTo) { showToast('Please select a date range.', 'warning'); return; }
+                const confirmed = await showConfirm('Download PDF statement from ' + p.dateFrom + ' to ' + p.dateTo + '?', 'Download Statement');
+                if (!confirmed) { return; }
                 window.open('/api/statements/download?' + new URLSearchParams(p), '_blank');
             }
             document.addEventListener('DOMContentLoaded', () => {

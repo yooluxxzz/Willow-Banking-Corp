@@ -42,8 +42,10 @@ async function initializeDatabase() {
       phone TEXT DEFAULT '',
       password_hash TEXT NOT NULL,
       role TEXT NOT NULL DEFAULT 'customer' CHECK(role IN ('customer', 'admin')),
-      status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'suspended', 'closed')),
+      status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'suspended', 'closed', 'deleted')),
       customer_id TEXT NOT NULL UNIQUE,
+      status_reason TEXT DEFAULT NULL,
+      scheduled_deletion_at TEXT DEFAULT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
@@ -108,6 +110,15 @@ async function initializeDatabase() {
     );
     `);
 
+    // Auto-update updated_at on user changes
+    db.run(`
+      CREATE TRIGGER IF NOT EXISTS trg_users_updated_at
+      AFTER UPDATE ON users
+      BEGIN
+        UPDATE users SET updated_at = datetime('now') WHERE id = NEW.id;
+      END
+    `);
+
     // Create indexes
     const indexes = [
         'CREATE INDEX IF NOT EXISTS idx_accounts_user_id ON accounts(user_id)',
@@ -124,6 +135,13 @@ async function initializeDatabase() {
         'CREATE INDEX IF NOT EXISTS idx_users_customer_id ON users(customer_id)',
     ];
     indexes.forEach(idx => db.run(idx));
+
+    // Migrations for existing databases
+    const migrations = [
+        "ALTER TABLE users ADD COLUMN status_reason TEXT DEFAULT NULL",
+        "ALTER TABLE users ADD COLUMN scheduled_deletion_at TEXT DEFAULT NULL",
+    ];
+    migrations.forEach(m => { try { db.run(m); } catch (e) { /* column already exists */ } });
 
     // Auto-save to disk every 5 seconds
     saveTimer = setInterval(() => saveToDisk(), 5000);
@@ -232,7 +250,9 @@ function saveToDisk() {
     try {
         const data = db.export();
         const buffer = Buffer.from(data);
-        fs.writeFileSync(dbPath, buffer);
+        const tmpPath = dbPath + '.tmp';
+        fs.writeFileSync(tmpPath, buffer);
+        fs.renameSync(tmpPath, dbPath);
     } catch (err) {
         console.error('[Database] Save error:', err.message);
     }

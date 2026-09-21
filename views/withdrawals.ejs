@@ -46,6 +46,11 @@
             const csrfToken = '<%= csrfToken %>';
             async function handleWithdraw(e) {
                 e.preventDefault();
+                const amount = document.getElementById('amount').value;
+                const confirmed = await showConfirm('Are you sure you want to withdraw $' + amount + '?', 'Confirm Withdrawal');
+                if (!confirmed) {
+                    return;
+                }
                 const btn = document.getElementById('withdrawBtn');
                 const alert = document.getElementById('withdrawAlert');
                 btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Processing...'; alert.className = 'hidden';

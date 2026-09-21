@@ -34,7 +34,7 @@ async function registerUser({ email, password, fullName, phone }) {
         return { error: 'Please enter your full name (2-100 characters).' };
     }
     if (!validatePassword(password)) {
-        return { error: 'Password must be at least 8 characters long.' };
+        return { error: 'Password must be at least 8 characters with one uppercase letter, one lowercase letter, and one number.' };
     }
 
     const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
@@ -87,6 +87,34 @@ async function registerUser({ email, password, fullName, phone }) {
     return { success: true, userId: result.userId, customerId: result.customerId };
 }
 
+// Simple in-memory login attempt tracking
+const loginAttempts = new Map();
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+function checkLockout(email) {
+    const record = loginAttempts.get(email);
+    if (!record) return false;
+    if (Date.now() - record.firstAttempt > LOCKOUT_WINDOW_MS) {
+        loginAttempts.delete(email);
+        return false;
+    }
+    return record.count >= MAX_ATTEMPTS;
+}
+
+function recordFailedAttempt(email) {
+    const record = loginAttempts.get(email);
+    if (!record || Date.now() - record.firstAttempt > LOCKOUT_WINDOW_MS) {
+        loginAttempts.set(email, { count: 1, firstAttempt: Date.now() });
+    } else {
+        record.count++;
+    }
+}
+
+function clearAttempts(email) {
+    loginAttempts.delete(email);
+}
+
 async function loginUser({ email, password }) {
     const db = getDb();
 
@@ -95,22 +123,35 @@ async function loginUser({ email, password }) {
         return { error: 'Email and password are required.' };
     }
 
+    // Check lockout before any DB work
+    if (checkLockout(email)) {
+        return { error: 'Account temporarily locked due to too many failed attempts. Please try again in 15 minutes.' };
+    }
+
     const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
     if (!user) {
+        recordFailedAttempt(email);
         return { error: 'Invalid email or password.' };
     }
 
     if (user.status === 'suspended') {
-        return { error: 'This account has been suspended. Please contact support.' };
+        const reason = user.status_reason ? ` Reason: ${user.status_reason}` : '';
+        const scheduled = user.scheduled_deletion_at ? ` Your account is scheduled for permanent deletion on ${new Date(user.scheduled_deletion_at).toLocaleDateString()}.` : '';
+        return { error: `This account has been suspended.${reason}${scheduled} Please contact support.` };
     }
-    if (user.status === 'closed') {
-        return { error: 'This account has been closed.' };
+    if (user.status === 'deleted' || user.status === 'closed') {
+        const reason = user.status_reason ? ` Reason: ${user.status_reason}` : '';
+        return { error: `This account no longer exists or has been closed.${reason}` };
     }
 
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
+        recordFailedAttempt(email);
         return { error: 'Invalid email or password.' };
     }
+
+    // Successful login — clear lockout tracking
+    clearAttempts(email);
 
     return {
         success: true,

@@ -67,8 +67,8 @@
 
                     <section class="info-section">
                         <h2>Send Us a Message</h2>
-                        <form class="contact-form"
-                            onsubmit="event.preventDefault(); this.querySelector('.btn').textContent='Message Sent!'; this.querySelector('.btn').disabled=true;">
+                        <form class="contact-form" id="contactForm"
+                            onsubmit="event.preventDefault(); handleContactSubmit(this);">
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="contactName">Full Name</label>
@@ -103,6 +103,24 @@
             </main>
 
             <%- include('partials/public-footer') %>
+                <script>
+                    function handleContactSubmit(form) {
+                        const btn = form.querySelector('.btn');
+                        btn.disabled = true;
+                        btn.textContent = 'Sending...';
+                        setTimeout(function () {
+                            btn.textContent = 'Message Sent!';
+                            if (typeof showToast === 'function') {
+                                showToast('Thank you! Your message has been received. We will get back to you shortly.', 'success');
+                            }
+                            setTimeout(function () {
+                                form.reset();
+                                btn.disabled = false;
+                                btn.textContent = 'Send Message';
+                            }, 3000);
+                        }, 800);
+                    }
+                </script>
     </body>
 
     </html>

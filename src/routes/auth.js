@@ -80,5 +80,44 @@ router.post('/logout', (req, res) => {
         res.json({ success: true, redirect: '/' });
     });
 });
+router.post('/change-password', async (req, res) => {
+    if (!req.session?.userId) {
+        return res.status(401).json({ error: 'Authentication required.' });
+    }
+    try {
+        const { currentPassword, newPassword } = req.body;
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ error: 'Current and new password are required.' });
+        }
+        const { validatePassword } = require('../middleware/validation');
+        if (!validatePassword(newPassword)) {
+            return res.status(400).json({ error: 'New password must be at least 8 characters with one uppercase letter, one lowercase letter, and one number.' });
+        }
+        const { getDb } = require('../database');
+        const bcrypt = require('bcryptjs');
+        const db = getDb();
+        const user = db.prepare('SELECT password_hash, email FROM users WHERE id = ?').get(req.session.userId);
+        if (!user) return res.status(404).json({ error: 'User not found.' });
+
+        const valid = await bcrypt.compare(currentPassword, user.password_hash);
+        if (!valid) return res.status(400).json({ error: 'Current password is incorrect.' });
+
+        const newHash = await bcrypt.hash(newPassword, config.bcryptRounds);
+        db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(newHash, req.session.userId);
+
+        logAudit({
+            actorId: req.session.userId,
+            actorEmail: user.email,
+            action: 'password_changed',
+            targetType: 'user',
+            targetId: String(req.session.userId),
+        });
+
+        res.json({ success: true, message: 'Password changed successfully.' });
+    } catch (err) {
+        console.error('[Auth] Password change error:', err.message);
+        res.status(500).json({ error: 'Failed to change password.' });
+    }
+});
 
 module.exports = router;

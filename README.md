@@ -25,19 +25,21 @@ A full-stack demonstration banking platform built with **Node.js**, **Express**,
 - **Dashboard** — Overview of all accounts, balances, and recent transactions
 - **Accounts** — View checking and savings account details
 - **Transfers** — Send money between accounts or to other customers
-- **Deposits & Withdrawals** — Manage account funds
+- **Deposits & Withdrawals** — Manage account funds with daily limits and optional descriptions
 - **Transaction History** — Filterable list of all transactions with export
 - **Statements** — Generate and download PDF account statements
 - **Card Management** — View, freeze/unfreeze, and report debit cards
 - **Notifications** — Real-time alerts for account activity
-- **Security Settings** — Password management and security overview
-- **Profile Settings** — Update personal information
+- **Settings** — View profile information and change password
+- **Dark / Light Mode** — Fully themed UI with persistent theme preference
 
 ### Admin Dashboard
-- User management (view, suspend, activate accounts)
-- System-wide statistics
-- Audit log of all administrative actions
-- Manual balance adjustments with logging
+- User management (view, suspend, reactivate, delete with 3-day grace period)
+- System-wide statistics (total users, accounts, balances, transactions)
+- Paginated user list with search filtering
+- Audit log of all administrative and financial actions
+- Manual balance adjustments with logging (search by Account ID or Account Number)
+- Auto-executing scheduled account deletions
 
 ### Public Pages
 - Landing page with feature highlights
@@ -133,6 +135,11 @@ This populates the database with **5 demo customer accounts**, sample transactio
 npm start
 ```
 
+Or in development mode (auto-restart on file changes):
+```bash
+npm run dev
+```
+
 You should see:
 ```
 [Server] Willow Banking Corp. running at http://localhost:3000
@@ -172,8 +179,8 @@ Willow Banking Corp/
 ├── .env                       # Environment variables
 ├── data/                      # SQLite database files
 ├── public/                    # Static assets
-│   ├── css/style.css          # Complete design system
-│   ├── js/app.js              # Client-side JavaScript
+│   ├── css/style.css          # Complete design system (dark/light mode)
+│   ├── js/app.js              # Client-side JS (theme toggle, toasts, confirm dialogs)
 │   └── images/logo.svg        # Willow tree logo
 ├── views/                     # EJS templates
 │   ├── partials/              # Reusable template components
@@ -194,7 +201,7 @@ Willow Banking Corp/
 │   ├── cards.ejs              # Card management
 │   ├── notifications.ejs      # Alerts
 │   ├── security.ejs           # Security settings
-│   ├── settings.ejs           # Profile settings
+│   ├── settings.ejs           # Profile & password change
 │   ├── about.ejs              # About Us
 │   ├── careers.ejs            # Careers
 │   ├── press.ejs              # Press & Media
@@ -208,20 +215,30 @@ Willow Banking Corp/
 │       └── dashboard.ejs      # Admin dashboard
 └── src/
     ├── config.js              # App configuration
-    ├── database.js            # SQLite database (sql.js)
+    ├── database.js            # SQLite database (sql.js) with atomic writes
     ├── seed.js                # Demo data seeder
-    ├── session-store.js       # Session storage
+    ├── session-store.js       # Session storage (SQLite-backed)
     ├── middleware/
-    │   ├── auth.js            # Authentication guards
-    │   └── security.js        # CSRF, headers, XSS
+    │   ├── auth.js            # Authentication & authorization guards
+    │   ├── security.js        # CSRF, CSP, security headers
+    │   └── validation.js      # Input validation & password complexity
     ├── routes/
-    │   ├── auth.js            # Login/register/logout API
-    │   ├── api.js             # Banking operations API
+    │   ├── auth.js            # Login/register/logout/password change API
+    │   ├── accounts.js        # Account data API
+    │   ├── deposits.js        # Deposit API (with daily limit)
+    │   ├── withdrawals.js     # Withdrawal API
+    │   ├── transfers.js       # Transfer API (with recipient validation)
+    │   ├── transactions.js    # Transaction history API
+    │   ├── cards.js           # Card management API
+    │   ├── statements.js      # PDF statement generation
+    │   ├── notifications.js   # Notification API
+    │   ├── admin.js           # Admin dashboard API
     │   └── pages.js           # Page rendering routes
     └── services/
-        ├── auth.js            # User authentication logic
+        ├── auth.js            # Authentication logic (with account lockout)
         ├── account.js         # Account management
         ├── transaction.js     # Transaction processing
+        ├── transfer.js        # Transfer execution
         ├── card.js            # Card management
         ├── notification.js    # Notification system
         └── audit.js           # Audit logging
@@ -239,6 +256,7 @@ Willow Banking Corp/
 | Templating   | EJS (Embedded JavaScript)                      |
 | Auth         | bcryptjs (pure JS password hashing)            |
 | Sessions     | express-session with custom SQLite store        |
+| Rate Limiting| express-rate-limit                              |
 | PDF          | PDFKit                                         |
 | Styling      | Vanilla CSS with custom design system          |
 | Fonts        | Inter, JetBrains Mono (Google Fonts)           |
@@ -249,13 +267,19 @@ Willow Banking Corp/
 
 This application implements the following security measures:
 
-- **Password Hashing** — bcrypt with salt rounds (never stored in plaintext)
+- **Password Hashing** — bcrypt with configurable salt rounds (never stored in plaintext)
+- **Password Complexity** — Requires minimum 8 characters with uppercase, lowercase, and digit
+- **Account Lockout** — Locks accounts after 5 failed login attempts for 15 minutes
 - **CSRF Protection** — Anti-forgery tokens on all state-changing requests
-- **Rate Limiting** — Prevents brute-force attacks on auth endpoints
-- **Secure Headers** — X-Content-Type-Options, X-Frame-Options, X-XSS-Protection
-- **HTTP-Only Sessions** — Server-side session management
-- **Input Validation** — Server-side validation on all API endpoints
-- **Audit Logging** — Complete trail of administrative actions
+- **Content Security Policy** — CSP header restricting scripts, styles, fonts, and images to trusted sources
+- **Rate Limiting** — Prevents brute-force attacks on auth endpoints and API abuse (60 req/min)
+- **Secure Headers** — X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy, HSTS
+- **HTTP-Only Sessions** — Server-side session management with secure cookie settings
+- **Input Validation** — Server-side validation on all API endpoints with parameterized SQL queries
+- **Deposit Limits** — $10,000 daily deposit cap to prevent abuse
+- **Audit Logging** — Complete trail of all financial and administrative actions
+- **Atomic Database Writes** — Prevents data corruption on crash via temp file + rename strategy
+- **Admin Safeguards** — Admins cannot modify their own account; self-deletion is prevented
 
 ---
 

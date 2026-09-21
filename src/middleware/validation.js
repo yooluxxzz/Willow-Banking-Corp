@@ -10,7 +10,12 @@ function validateEmail(email) {
 
 function validatePassword(password) {
     if (!password || typeof password !== 'string') return false;
-    return password.length >= 8 && password.length <= 128;
+    if (password.length < 8 || password.length > 128) return false;
+    // Require at least one uppercase, one lowercase, and one digit
+    if (!/[A-Z]/.test(password)) return false;
+    if (!/[a-z]/.test(password)) return false;
+    if (!/[0-9]/.test(password)) return false;
+    return true;
 }
 
 function validateAmount(amount) {

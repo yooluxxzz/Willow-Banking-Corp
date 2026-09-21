@@ -7,6 +7,7 @@ const { requireAuth } = require('../middleware/auth');
 const { getDb } = require('../database');
 const { validateAmount, toCents } = require('../middleware/validation');
 const { createNotification } = require('../services/notification');
+const { logAudit } = require('../services/audit');
 
 const router = express.Router();
 
@@ -77,6 +78,15 @@ router.post('/', requireAuth, (req, res) => {
         } catch (e) { /* non-critical */ }
 
         res.json({ success: true, reference });
+
+        logAudit({
+            actorId: req.session.userId,
+            actorEmail: res.locals.user?.email || 'unknown',
+            action: 'withdrawal',
+            targetType: 'account',
+            targetId: String(account.id),
+            metadata: { amount: amountCents, reference },
+        });
     } catch (err) {
         console.error('[Withdrawal] Error:', err.message);
         res.status(500).json({ error: 'Withdrawal failed. Please try again.' });

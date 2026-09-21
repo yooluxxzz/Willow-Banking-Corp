@@ -7,8 +7,11 @@ const { requireAuth } = require('../middleware/auth');
 const { getDb } = require('../database');
 const { validateAmount, toCents } = require('../middleware/validation');
 const { createNotification } = require('../services/notification');
+const { logAudit } = require('../services/audit');
 
 const router = express.Router();
+
+const DAILY_DEPOSIT_LIMIT_CENTS = 1000000; // $10,000 per day
 
 router.post('/', requireAuth, (req, res) => {
     try {
@@ -39,6 +42,19 @@ router.post('/', requireAuth, (req, res) => {
             return res.status(400).json({ error: 'Account is not active.' });
         }
 
+        // Daily deposit limit check
+        const todayDeposits = db.prepare(`
+      SELECT COALESCE(SUM(amount), 0) as total FROM transactions
+      WHERE account_id = ? AND type = 'deposit' AND date(created_at) = date('now')
+    `).get(account.id);
+
+        if (todayDeposits.total + amountCents > DAILY_DEPOSIT_LIMIT_CENTS) {
+            const remaining = ((DAILY_DEPOSIT_LIMIT_CENTS - todayDeposits.total) / 100).toFixed(2);
+            return res.status(400).json({
+                error: `Daily deposit limit is $10,000. You can deposit up to $${Math.max(0, remaining)} more today.`
+            });
+        }
+
         const reference = `DEP-${uuidv4().slice(0, 8).toUpperCase()}`;
         const desc = description?.trim() || 'Deposit';
 
@@ -55,6 +71,15 @@ router.post('/', requireAuth, (req, res) => {
         });
 
         deposit();
+
+        logAudit({
+            actorId: req.session.userId,
+            actorEmail: res.locals.user?.email || 'unknown',
+            action: 'deposit',
+            targetType: 'account',
+            targetId: String(account.id),
+            metadata: { amount: amountCents, reference, description: desc },
+        });
 
         try {
             createNotification(req.session.userId, 'deposit', 'Deposit Received',
