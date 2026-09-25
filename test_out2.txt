@@ -1,0 +1,139 @@
+[Database] Save error: ENOENT: no such file or directory, open 'C:\Users\User\Downloads\Willow Banking Corp\:memory:.tmp'
+[Admin] Admin account created: admin@willow.test
+[Database] Save error: ENOENT: no such file or directory, open 'C:\Users\User\Downloads\Willow Banking Corp\:memory:.tmp'
+[Database] Save error: ENOENT: no such file or directory, open 'C:\Users\User\Downloads\Willow Banking Corp\:memory:.tmp'
+[Database] Save error: ENOENT: no such file or directory, open 'C:\Users\User\Downloads\Willow Banking Corp\:memory:.tmp'
+[Database] Save error: ENOENT: no such file or directory, open 'C:\Users\User\Downloads\Willow Banking Corp\:memory:.tmp'
+▶ Admin & Authorization
+  ▶ Admin Access Control
+    ✔ should allow admin to access stats (28.049ms)
+    ✔ should deny customer access to admin stats (7.4484ms)
+    ✔ should allow admin to list users (4.4342ms)
+    ✔ should deny customer access to user list (5.9987ms)
+  ✔ Admin Access Control (46.7345ms)
+  ▶ Admin User Management
+    ✔ should view user details (5.8879ms)
+    ✖ should prevent admin from modifying own account (7.4567ms)
+[Database] Save error: ENOENT: no such file or directory, open 'C:\Users\User\Downloads\Willow Banking Corp\:memory:.tmp'
+    ✔ should suspend a customer account (7.7207ms)
+  ✖ Admin User Management (21.4835ms)
+  ▶ Unauthenticated Access
+    ✔ should deny unauthenticated access to accounts (5.6838ms)
+    ✔ should deny unauthenticated access to deposits (5.5056ms)
+  ✔ Unauthenticated Access (11.4859ms)
+[Database] Save error: ENOENT: no such file or directory, open 'C:\Users\User\Downloads\Willow Banking Corp\:memory:.tmp'
+  ▶ Health Endpoint
+    ✔ should return health status (4.9877ms)
+  ✔ Health Endpoint (5.4221ms)
+✖ Admin & Authorization (1895.8004ms)
+[Database] Save error: ENOENT: no such file or directory, open 'C:\Users\User\Downloads\Willow Banking Corp\:memory:.tmp'
+[Admin] Admin account created: admin@willow.test
+[Database] Save error: ENOENT: no such file or directory, open 'C:\Users\User\Downloads\Willow Banking Corp\:memory:.tmp'
+[Database] Save error: ENOENT: no such file or directory, open 'C:\Users\User\Downloads\Willow Banking Corp\:memory:.tmp'
+▶ Auth
+  ▶ Registration
+    ✔ should register a new user with valid data (405.6619ms)
+    ✔ should reject duplicate email (17.993ms)
+    ✔ should reject weak password (no uppercase) (14.877ms)
+    ✔ should reject weak password (no digit) (14.2883ms)
+    ✔ should reject short password (18.8001ms)
+  ✔ Registration (472.7768ms)
+[Database] Save error: ENOENT: no such file or directory, open 'C:\Users\User\Downloads\Willow Banking Corp\:memory:.tmp'
+  ▶ Login
+    ✔ should login with valid credentials (343.526ms)
+    ✔ should reject wrong password (308.0281ms)
+[Database] Save error: ENOENT: no such file or directory, open 'C:\Users\User\Downloads\Willow Banking Corp\:memory:.tmp'
+    ✔ should login as admin (297.3605ms)
+  ✔ Login (949.3041ms)
+[Database] Save error: ENOENT: no such file or directory, open 'C:\Users\User\Downloads\Willow Banking Corp\:memory:.tmp'
+  ▶ Logout
+    ✔ should logout successfully (308.4262ms)
+  ✔ Logout (308.5994ms)
+[Database] Save error: ENOENT: no such file or directory, open 'C:\Users\User\Downloads\Willow Banking Corp\:memory:.tmp'
+[Database] Save error: ENOENT: no such file or directory, open 'C:\Users\User\Downloads\Willow Banking Corp\:memory:.tmp'
+  ▶ Password Change
+    ✔ should change password with correct current password (878.6208ms)
+    ✖ should reject password change with wrong current password (14.9865ms)
+  ✖ Password Change (894.6313ms)
+[Database] Save error: ENOENT: no such file or directory, open 'C:\Users\User\Downloads\Willow Banking Corp\:memory:.tmp'
+  ▶ CSRF Protection
+    ✔ should reject POST without CSRF token (5.375ms)
+  ✔ CSRF Protection (5.4814ms)
+✖ Auth (3351.2367ms)
+[Database] Save error: ENOENT: no such file or directory, open 'C:\Users\User\Downloads\Willow Banking Corp\:memory:.tmp'
+[Admin] Admin account created: admin@willow.test
+[Database] Save error: ENOENT: no such file or directory, open 'C:\Users\User\Downloads\Willow Banking Corp\:memory:.tmp'
+[Database] Save error: ENOENT: no such file or directory, open 'C:\Users\User\Downloads\Willow Banking Corp\:memory:.tmp'
+[Database] Save error: ENOENT: no such file or directory, open 'C:\Users\User\Downloads\Willow Banking Corp\:memory:.tmp'
+[Database] Save error: ENOENT: no such file or directory, open 'C:\Users\User\Downloads\Willow Banking Corp\:memory:.tmp'
+▶ Financial Operations
+  ▶ Deposits
+    ✔ should deposit money successfully (11.9046ms)
+    ✔ should reject negative deposit (10.0598ms)
+    ✔ should reject zero deposit (9.0064ms)
+[Database] Save error: ENOENT: no such file or directory, open 'C:\Users\User\Downloads\Willow Banking Corp\:memory:.tmp'
+    ✔ should enforce daily deposit limit (15.2296ms)
+  ✔ Deposits (47.169ms)
+[Database] Save error: ENOENT: no such file or directory, open 'C:\Users\User\Downloads\Willow Banking Corp\:memory:.tmp'
+  ▶ Withdrawals
+    ✔ should withdraw money successfully (7.0569ms)
+    ✔ should reject withdrawal exceeding balance (5.8985ms)
+    ✔ should reject invalid amount (4.6991ms)
+  ✔ Withdrawals (18.1263ms)
+[Database] Save error: ENOENT: no such file or directory, open 'C:\Users\User\Downloads\Willow Banking Corp\:memory:.tmp'
+  ▶ Transfers
+    ✔ should transfer money to another user (10.3867ms)
+    ✔ should reject transfer to non-existent user (5.6996ms)
+    ✔ should reject transfer with insufficient funds (5.3432ms)
+  ✔ Transfers (21.8133ms)
+[Database] Save error: ENOENT: no such file or directory, open 'C:\Users\User\Downloads\Willow Banking Corp\:memory:.tmp'
+  ▶ Account Balance
+    ✔ should reflect correct balance after operations (8.3431ms)
+  ✔ Account Balance (8.5176ms)
+✔ Financial Operations (1609.1359ms)
+ℹ tests 33
+ℹ suites 16
+ℹ pass 31
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3616.0767
+
+✖ failing tests:
+
+test at tests\admin.test.js:77:9
+✖ should prevent admin from modifying own account (7.4567ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  404 !== 403
+  
+      at TestContext.<anonymous> (C:\Users\User\Downloads\Willow Banking Corp\tests\admin.test.js:86:20)
+      at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Suite.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 404,
+    expected: 403,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\auth.test.js:135:9
+✖ should reject password change with wrong current password (14.9865ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  401 !== 400
+  
+      at TestContext.<anonymous> (C:\Users\User\Downloads\Willow Banking Corp\tests\auth.test.js:143:20)
+      at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Suite.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 401,
+    expected: 400,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

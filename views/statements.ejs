@@ -8,12 +8,12 @@
                         <h1>Account Statements</h1>
                         <p>View and download your account statements</p>
                     </div>
-                    <div class="card" style="max-width:800px;">
+                    <div class="card max-w-800">
                         <div class="card-header">
                             <h3>Generate Statement</h3>
                         </div>
                         <div class="card-body">
-                            <div class="form-row" style="margin-bottom:var(--space-4);">
+                            <div class="form-row mb-4">
                                 <div class="form-group">
                                     <label>Account</label>
                                     <select id="stmtAccount" class="form-control">
@@ -25,7 +25,7 @@
                                 </div>
                                 <div class="form-group"></div>
                             </div>
-                            <div class="form-row" style="margin-bottom:var(--space-4);">
+                            <div class="form-row mb-4">
                                 <div class="form-group"><label>From Date</label><input type="date" id="stmtFrom"
                                         class="form-control"></div>
                                 <div class="form-group"><label>To Date</label><input type="date" id="stmtTo"
@@ -72,12 +72,12 @@
                     if (s.transactions.length === 0) {
                         html += '<p class="text-muted text-center">No transactions in this period.</p>';
                     } else {
-                        html += '<div class="table-container"><table><thead><tr><th>Date</th><th>Reference</th><th>Description</th><th style="text-align:right">Amount</th><th style="text-align:right">Balance</th></tr></thead><tbody>';
+                        html += '<div class="table-responsive"><div class="table-container"><table aria-label="Account statement"><thead><tr><th scope="col">Date</th><th scope="col">Reference</th><th scope="col">Description</th><th scope="col" class="text-right">Amount</th><th scope="col" class="text-right">Balance</th></tr></thead><tbody>';
                         s.transactions.forEach(t => {
                             const sign = t.direction === 'credit' ? '+' : '-';
-                            html += '<tr><td class="text-sm">' + (t.created_at || '').slice(0, 10) + '</td><td class="font-mono text-xs">' + t.reference + '</td><td class="text-sm">' + (t.description || t.type) + '</td><td style="text-align:right" class="' + (t.direction === 'credit' ? 'amount-credit' : 'amount-debit') + '">' + sign + t.amountFormatted + '</td><td style="text-align:right" class="font-semibold">' + t.runningBalanceFormatted + '</td></tr>';
+                            html += '<tr><td class="text-sm">' + (t.created_at || '').slice(0, 10) + '</td><td class="font-mono text-xs">' + t.reference + '</td><td class="text-sm">' + (t.description || t.type) + '</td><td class="text-right ' + (t.direction === 'credit' ? 'amount-credit' : 'amount-debit') + '">' + sign + t.amountFormatted + '</td><td class="text-right font-semibold">' + t.runningBalanceFormatted + '</td></tr>';
                         });
-                        html += '</tbody></table></div>';
+                        html += '</tbody></table></div></div>';
                     }
                     html += '</div></div>';
                     c.innerHTML = html;

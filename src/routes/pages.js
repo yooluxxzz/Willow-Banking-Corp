@@ -5,6 +5,7 @@ const express = require('express');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { getUserAccounts, getTotalBalance } = require('../services/account');
 const { getRecentTransactions } = require('../services/transaction');
+const { getDb } = require('../database');
 
 const router = express.Router();
 
@@ -39,6 +40,13 @@ router.get('/privacy', (req, res) => res.render('privacy', { title: 'Privacy Pol
 router.get('/terms', (req, res) => res.render('terms', { title: 'Terms of Service — Willow Banking Corp.' }));
 router.get('/security-info', (req, res) => res.render('security-info', { title: 'Security — Willow Banking Corp.' }));
 router.get('/compliance', (req, res) => res.render('compliance', { title: 'Compliance — Willow Banking Corp.' }));
+
+// Product pages
+router.get('/products/checking', (req, res) => res.render('product-checking', { title: 'Checking Account — Willow Banking Corp.' }));
+router.get('/products/savings', (req, res) => res.render('product-savings', { title: 'Savings Account — Willow Banking Corp.' }));
+router.get('/products/debit-cards', (req, res) => res.render('product-debit-cards', { title: 'Debit Cards — Willow Banking Corp.' }));
+router.get('/products/transfers', (req, res) => res.render('product-transfers', { title: 'Transfers — Willow Banking Corp.' }));
+
 
 // Protected customer pages
 router.get('/dashboard', requireAuth, (req, res) => {
@@ -86,8 +94,38 @@ router.get('/notifications', requireAuth, (req, res) => {
     res.render('notifications', { title: 'Notifications — Willow Banking Corp.' });
 });
 
-router.get('/security', requireAuth, (req, res) => {
-    res.render('security', { title: 'Security — Willow Banking Corp.' });
+router.get('/security', requireAuth, async (req, res) => {
+    const db = getDb();
+
+    let loginHistory = [];
+    try {
+        loginHistory = db.prepare(`
+            SELECT created_at, metadata 
+            FROM audit_logs 
+            WHERE actor_id = ? AND action = 'login' 
+            ORDER BY created_at DESC 
+            LIMIT 5
+        `).all(req.session.userId);
+    } catch (e) {
+        console.error('[Security] Error fetching login history:', e);
+    }
+
+    let activeSessions = [];
+    if (req.sessionStore && req.sessionStore.all) {
+        try {
+            activeSessions = await new Promise((resolve) => {
+                req.sessionStore.all((err, sessions) => {
+                    if (err || !sessions) return resolve([]);
+                    const sessionArray = Array.isArray(sessions) ? sessions : Object.values(sessions);
+                    resolve(sessionArray.filter(s => s.userId === req.session.userId));
+                });
+            });
+        } catch (e) {
+            console.error('[Security] Error fetching active sessions:', e);
+        }
+    }
+
+    res.render('security', { title: 'Security — Willow Banking Corp.', loginHistory, activeSessions });
 });
 
 router.get('/settings', requireAuth, (req, res) => {

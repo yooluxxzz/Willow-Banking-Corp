@@ -1,0 +1,113 @@
+X...X.XXX.....X.....
+.....XXXXX..X.......
+.........
+
+Failed tests:
+
+✖ should allow admin to access stats (31.3502ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(res.body.totalUsers !== undefined)
+  
+      at TestContext.<anonymous> (C:\Users\User\Downloads\Willow Banking Corp\tests\admin.test.js:46:20)
+      at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Promise.all (index 0)
+      at async Suite.run (node:internal/test_runner/test:1518:7)
+      at async Promise.all (index 0)
+      at async Suite.run (node:internal/test_runner/test:1518:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+✖ Admin Access Control (61.7007ms)
+  '1 subtest failed'
+✖ should prevent admin from modifying own account (10.8244ms)
+  TypeError: Cannot read properties of undefined (reading 'includes')
+      at TestContext.<anonymous> (C:\Users\User\Downloads\Willow Banking Corp\tests\admin.test.js:87:38)
+      at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Suite.processPendingSubtests (node:internal/test_runner/test:788:7)
+✖ should suspend a customer account (9.3515ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  403 !== 200
+  
+      at TestContext.<anonymous> (C:\Users\User\Downloads\Willow Banking Corp\tests\admin.test.js:99:20)
+      at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Suite.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 403,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+✖ Admin User Management (29.1557ms)
+  '2 subtests failed'
+✖ Admin & Authorization (2371.6864ms)
+  '2 subtests failed'
+✖ should logout successfully (334.8217ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  403 !== 200
+  
+      at TestContext.<anonymous> (C:\Users\User\Downloads\Willow Banking Corp\tests\auth.test.js:114:20)
+      at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Promise.all (index 0)
+      at async Suite.run (node:internal/test_runner/test:1518:7)
+      at async Suite.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 403,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+✖ Logout (335.7378ms)
+  '1 subtest failed'
+✖ should change password with correct current password (329.8229ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  403 !== 200
+  
+      at TestContext.<anonymous> (C:\Users\User\Downloads\Willow Banking Corp\tests\auth.test.js:131:20)
+      at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Promise.all (index 0)
+      at async Suite.run (node:internal/test_runner/test:1518:7)
+      at async Suite.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 403,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+✖ should reject password change with wrong current password (16.6991ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  401 !== 400
+  
+      at TestContext.<anonymous> (C:\Users\User\Downloads\Willow Banking Corp\tests\auth.test.js:143:20)
+      at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Suite.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 401,
+    expected: 400,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+✖ Password Change (346.8696ms)
+  '2 subtests failed'
+✖ Auth (3262.8327ms)
+  '2 subtests failed'
+\n

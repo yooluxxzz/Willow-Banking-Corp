@@ -8,8 +8,11 @@ const { getDb } = require('../database');
 const { validateAmount, toCents } = require('../middleware/validation');
 const { createNotification } = require('../services/notification');
 const { logAudit } = require('../services/audit');
+const config = require('../config');
 
 const router = express.Router();
+
+const DAILY_WITHDRAWAL_LIMIT_CENTS = config.limits.dailyWithdrawalCents;
 
 router.post('/', requireAuth, (req, res) => {
     try {
@@ -41,6 +44,19 @@ router.post('/', requireAuth, (req, res) => {
         }
         if (account.available_balance < amountCents) {
             return res.status(400).json({ error: 'Insufficient funds for this withdrawal.' });
+        }
+
+        // Daily withdrawal limit check
+        const todayWithdrawals = db.prepare(`
+      SELECT COALESCE(SUM(amount), 0) as total FROM transactions
+      WHERE account_id = ? AND type = 'withdrawal' AND date(created_at) = date('now')
+    `).get(account.id);
+
+        if (todayWithdrawals.total + amountCents > DAILY_WITHDRAWAL_LIMIT_CENTS) {
+            const remaining = ((DAILY_WITHDRAWAL_LIMIT_CENTS - todayWithdrawals.total) / 100).toFixed(2);
+            return res.status(400).json({
+                error: `Daily withdrawal limit is $10,000. You can withdraw up to $${Math.max(0, remaining)} more today.`
+            });
         }
 
         const reference = `WDR-${uuidv4().slice(0, 8).toUpperCase()}`;
@@ -77,8 +93,6 @@ router.post('/', requireAuth, (req, res) => {
                 `$${Number(amount).toFixed(2)} has been withdrawn from your account (Ref: ${reference})`);
         } catch (e) { /* non-critical */ }
 
-        res.json({ success: true, reference });
-
         logAudit({
             actorId: req.session.userId,
             actorEmail: res.locals.user?.email || 'unknown',
@@ -87,6 +101,8 @@ router.post('/', requireAuth, (req, res) => {
             targetId: String(account.id),
             metadata: { amount: amountCents, reference },
         });
+
+        res.json({ success: true, reference });
     } catch (err) {
         console.error('[Withdrawal] Error:', err.message);
         res.status(500).json({ error: 'Withdrawal failed. Please try again.' });

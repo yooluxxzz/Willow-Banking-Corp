@@ -30,6 +30,12 @@ const config = {
 
   currency: 'USD',
 
+  limits: {
+    dailyWithdrawalCents: parseInt(process.env.DAILY_WITHDRAWAL_LIMIT_CENTS, 10) || 1000000, // $10,000
+    dailyTransferCents: parseInt(process.env.DAILY_TRANSFER_LIMIT_CENTS, 10) || 2500000,    // $25,000
+    dailyDepositCents: parseInt(process.env.DAILY_DEPOSIT_LIMIT_CENTS, 10) || 5000000,      // $50,000
+  },
+
   paths: {
     root: path.resolve(__dirname, '..'),
     data: path.resolve(__dirname, '..', 'data'),
@@ -37,5 +43,13 @@ const config = {
     public: path.resolve(__dirname, '..', 'public'),
   },
 };
+
+// Startup validation warnings
+if (config.session.secret === 'dev-secret-change-in-production' && !config.isDev) {
+  console.warn('[Config] WARNING: Using default SESSION_SECRET in production. Set SESSION_SECRET in .env');
+}
+if (!config.admin.email || !config.admin.password) {
+  console.warn('[Config] WARNING: ADMIN_EMAIL or ADMIN_PASSWORD not set. Admin account will not be initialized.');
+}
 
 module.exports = config;

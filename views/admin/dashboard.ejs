@@ -69,7 +69,7 @@
                     </div>
 
                     <!-- Balance Adjustment -->
-                    <div class="card" style="max-width:560px;">
+                    <div class="card max-w-560">
                         <div class="card-header">
                             <h3>Adjust User Balance</h3>
                         </div>
@@ -152,16 +152,16 @@
                     const d = await res.json();
                     if (!res.ok) throw new Error(d.error);
                     if (!d.users.length) { c.innerHTML = '<p class="text-center text-muted" style="padding:var(--space-5);">No users found.</p>'; return; }
-                    let html = '<div class="table-container"><table><thead><tr><th>Name</th><th>Email</th><th>Customer ID</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+                    let html = '<div class="table-responsive"><div class="table-container"><table aria-label="User list"><thead><tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Customer ID</th><th scope="col">Role</th><th scope="col">Status</th><th scope="col">Actions</th></tr></thead><tbody>';
                     d.users.forEach(u => {
                         html += '<tr><td class="text-sm">' + escHtml(u.full_name) + '</td><td class="text-sm">' + escHtml(u.email) + '</td><td class="font-mono text-xs">' + u.customer_id + '</td><td><span class="badge badge-' + (u.role === 'admin' ? 'info' : 'neutral') + '">' + u.role + '</span></td>';
                         html += '<td><span class="badge badge-' + (u.status === 'active' ? 'success' : (u.status === 'suspended' ? 'warning' : 'danger')) + '">' + u.status + '</span></td>';
                         html += '<td><button class="btn btn-ghost btn-sm" onclick="viewUserDetails(' + u.id + ')" title="Manage user">Manage</button></td></tr>';
                     });
-                    html += '</tbody></table></div>';
+                    html += '</tbody></table></div></div>';;
                     // Pagination controls
                     if (d.totalPages > 1) {
-                        html += '<div style="display:flex;justify-content:center;align-items:center;gap:var(--space-3);padding:var(--space-3);">';
+                        html += '<div class="pagination-bar">';;
                         html += '<button class="btn btn-ghost btn-sm" onclick="loadUsers(' + (currentUserPage - 1) + ')"' + (currentUserPage <= 1 ? ' disabled' : '') + '>← Prev</button>';
                         html += '<span class="text-sm text-muted">Page ' + d.page + ' of ' + d.totalPages + ' (' + d.total + ' users)</span>';
                         html += '<button class="btn btn-ghost btn-sm" onclick="loadUsers(' + (currentUserPage + 1) + ')"' + (currentUserPage >= d.totalPages ? ' disabled' : '') + '>Next →</button>';
@@ -196,16 +196,16 @@
                         d.accounts.forEach(a => {
                             html += '<div class="card" style="padding:var(--space-4); display:flex; justify-content:space-between; align-items:center;">';
                             html += '<div><div class="text-xs text-muted" style="text-transform:uppercase; margin-bottom: 2px;">' + a.account_type + ' ACCOUNT</div><div class="font-mono text-sm">' + a.account_number + '</div><div class="text-xs text-muted" style="margin-top:4px;">Account ID: <strong>' + a.id + '</strong></div></div>';
-                            html += '<div style="text-align:right;"><div class="text-xs text-muted" style="margin-bottom: 2px;">BALANCE</div><div class="font-bold text-lg" style="color:var(--charcoal);">' + a.balanceFormatted + '</div></div>';
+                            html += '<div class="text-right"><div class="text-xs text-muted" style="margin-bottom: 2px;">BALANCE</div><div class="font-bold text-lg" style="color:var(--charcoal);">' + a.balanceFormatted + '</div></div>';
                             html += '</div>';
                         });
                         html += '</div>';
                     } else {
-                        html += '<p class="text-muted text-sm" style="margin-bottom:var(--space-5);">No linked accounts found.</p>';
+                        html += '<p class="text-muted text-sm mb-5">No linked accounts found.</p>';
                     }
 
                     html += '<h3 style="font-size:1.1rem; margin-bottom:var(--space-3);">Actions</h3>';
-                    html += '<div style="margin-bottom:var(--space-4);">';
+                    html += '<div class="mb-4">';
                     html += '<label style="display:block; font-size:0.85rem; font-weight:500; margin-bottom:6px;">Reason <span style="color:var(--red-500);">*</span></label>';
                     html += '<textarea id="statusReason" rows="2" style="width:100%;padding:8px 12px;border:1px solid var(--border-color);border-radius:var(--radius-md);font-family:inherit;font-size:0.875rem;resize:vertical;background:var(--white);color:var(--charcoal);" placeholder="Provide a reason for this action..."></textarea>';
                     html += '</div>';
@@ -295,14 +295,14 @@
                     const d = await res.json();
                     if (!res.ok) throw new Error(d.error);
                     if (!d.logs.length) { c.innerHTML = '<p class="text-center text-muted" style="padding:var(--space-5);">No audit logs found.</p>'; return; }
-                    let html = '<div class="table-container"><table><thead><tr><th>Date</th><th>User</th><th>Action</th><th>Details</th></tr></thead><tbody>';
+                    let html = '<div class="table-responsive"><div class="table-container"><table aria-label="Audit log"><thead><tr><th scope="col">Date</th><th scope="col">User</th><th scope="col">Action</th><th scope="col">Details</th></tr></thead><tbody>';
                     d.logs.forEach(l => {
                         const time = new Date(l.created_at + 'Z').toLocaleString();
                         let details = '';
                         if (l.metadata && typeof l.metadata === 'object') { details = Object.entries(l.metadata).map(([k, v]) => k + ': ' + v).join(', '); }
                         html += '<tr><td class="text-sm">' + time + '</td><td class="text-sm">' + (l.actor_email || 'system') + '</td><td><span class="badge badge-neutral">' + l.action + '</span></td><td class="text-sm" style="max-width:300px;overflow:hidden;text-overflow:ellipsis;">' + escHtml(details) + '</td></tr>';
                     });
-                    html += '</tbody></table></div>';
+                    html += '</tbody></table></div></div>';
                     c.innerHTML = html;
                 } catch (e) { c.innerHTML = '<div class="alert alert-danger" style="margin:var(--space-3);">' + (e.message || 'Failed.') + '</div>'; }
             }

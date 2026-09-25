@@ -114,7 +114,7 @@
                                             <%= account.maskedNumber %>
                                         </div>
                                     </div>
-                                    <div style="text-align:right;">
+                                    <div class="text-right">
                                         <div class="font-semibold" style="font-size:1.125rem;">
                                             <%= account.balanceFormatted %>
                                         </div>
@@ -147,7 +147,7 @@
                                             <th>Description</th>
                                             <th>Type</th>
                                             <th>Status</th>
-                                            <th style="text-align:right;">Amount</th>
+                                            <th class="text-right">Amount</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -166,8 +166,7 @@
                                                         class="badge badge-<%= txn.status === 'completed' ? 'success' : (txn.status === 'failed' ? 'danger' : 'warning') %>">
                                                         <%= txn.status %>
                                                     </span></td>
-                                                <td style="text-align:right;"
-                                                    class="<%= txn.direction === 'credit' ? 'amount-credit' : 'amount-debit' %>">
+                                                <td class="text-right <%= txn.direction === 'credit' ? 'amount-credit' : 'amount-debit' %>">
                                                     <%= txn.direction==='credit' ? '+' : '-' %>
                                                         <%= txn.amountFormatted %>
                                                 </td>

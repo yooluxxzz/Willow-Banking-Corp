@@ -8,36 +8,33 @@
                         <h1>Security</h1>
                         <p>Manage your account security settings</p>
                     </div>
-                    <div class="card mb-6" style="max-width:600px;">
+                    <div class="card mb-6 max-w-600">
                         <div class="card-header">
                             <h3>Account Security</h3>
                         </div>
                         <div class="card-body">
-                            <div
-                                style="margin-bottom:var(--space-5);padding-bottom:var(--space-5);border-bottom:1px solid var(--gray-200);">
+                            <div class="mb-5 pb-5 border-b">
                                 <div class="flex-between">
                                     <div>
-                                        <h4 style="margin-bottom:var(--space-1);">Password</h4>
+                                        <h4 class="mb-1">Password</h4>
                                         <p class="text-sm text-muted">Your password is securely hashed and stored</p>
                                     </div>
                                     <span class="badge badge-success">Protected</span>
                                 </div>
                             </div>
-                            <div
-                                style="margin-bottom:var(--space-5);padding-bottom:var(--space-5);border-bottom:1px solid var(--gray-200);">
+                            <div class="mb-5 pb-5 border-b">
                                 <div class="flex-between">
                                     <div>
-                                        <h4 style="margin-bottom:var(--space-1);">Session Management</h4>
+                                        <h4 class="mb-1">Session Management</h4>
                                         <p class="text-sm text-muted">Sessions expire after 24 hours of inactivity</p>
                                     </div>
                                     <span class="badge badge-success">Active</span>
                                 </div>
                             </div>
-                            <div
-                                style="margin-bottom:var(--space-5);padding-bottom:var(--space-5);border-bottom:1px solid var(--gray-200);">
+                            <div class="mb-5 pb-5 border-b">
                                 <div class="flex-between">
                                     <div>
-                                        <h4 style="margin-bottom:var(--space-1);">CSRF Protection</h4>
+                                        <h4 class="mb-1">CSRF Protection</h4>
                                         <p class="text-sm text-muted">All state-changing requests are CSRF-protected</p>
                                     </div>
                                     <span class="badge badge-success">Enabled</span>
@@ -46,7 +43,7 @@
                             <div>
                                 <div class="flex-between">
                                     <div>
-                                        <h4 style="margin-bottom:var(--space-1);">Rate Limiting</h4>
+                                        <h4 class="mb-1">Rate Limiting</h4>
                                         <p class="text-sm text-muted">Authentication endpoints are rate-limited</p>
                                     </div>
                                     <span class="badge badge-success">Active</span>
@@ -54,36 +51,32 @@
                             </div>
                         </div>
                     </div>
-                    <div class="card" style="max-width:600px;">
+                    <div class="card max-w-600">
                         <div class="card-header">
                             <h3>Security Practices</h3>
                         </div>
                         <div class="card-body">
-                            <ul style="list-style:none;padding:0;">
-                                <li class="flex gap-3" style="margin-bottom:var(--space-3);"><svg
-                                        xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                                        fill="none" stroke="var(--green-700)" stroke-width="2" stroke-linecap="round"
-                                        stroke-linejoin="round">
+                            <ul class="list-none">
+                                <li class="flex gap-3 mb-3"><svg xmlns="http://www.w3.org/2000/svg" width="18"
+                                        height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green-700)"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <polyline points="20 6 9 17 4 12" />
                                     </svg> <span class="text-sm">Passwords are hashed with bcrypt (12 rounds)</span>
                                 </li>
-                                <li class="flex gap-3" style="margin-bottom:var(--space-3);"><svg
-                                        xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                                        fill="none" stroke="var(--green-700)" stroke-width="2" stroke-linecap="round"
-                                        stroke-linejoin="round">
+                                <li class="flex gap-3 mb-3"><svg xmlns="http://www.w3.org/2000/svg" width="18"
+                                        height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green-700)"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <polyline points="20 6 9 17 4 12" />
                                     </svg> <span class="text-sm">All transactions are validated server-side</span></li>
-                                <li class="flex gap-3" style="margin-bottom:var(--space-3);"><svg
-                                        xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                                        fill="none" stroke="var(--green-700)" stroke-width="2" stroke-linecap="round"
-                                        stroke-linejoin="round">
+                                <li class="flex gap-3 mb-3"><svg xmlns="http://www.w3.org/2000/svg" width="18"
+                                        height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green-700)"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <polyline points="20 6 9 17 4 12" />
                                     </svg> <span class="text-sm">Security headers protect against XSS and
                                         clickjacking</span></li>
-                                <li class="flex gap-3" style="margin-bottom:var(--space-3);"><svg
-                                        xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                                        fill="none" stroke="var(--green-700)" stroke-width="2" stroke-linecap="round"
-                                        stroke-linejoin="round">
+                                <li class="flex gap-3 mb-3"><svg xmlns="http://www.w3.org/2000/svg" width="18"
+                                        height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green-700)"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <polyline points="20 6 9 17 4 12" />
                                     </svg> <span class="text-sm">Session cookies use httpOnly and sameSite
                                         attributes</span></li>
@@ -93,6 +86,60 @@
                                         <polyline points="20 6 9 17 4 12" />
                                     </svg> <span class="text-sm">Administrative actions are fully audited</span></li>
                             </ul>
+                        </div>
+                    </div>
+
+                    <div class="card max-w-600 mt-5">
+                        <div class="card-header">
+                            <h3>Recent Logins</h3>
+                        </div>
+                        <div class="card-body">
+                            <% if (typeof loginHistory !=='undefined' && loginHistory.length> 0) { %>
+                                <ul class="list-none">
+                                    <% loginHistory.forEach(log=> {
+                                        const dt = new Date(log.created_at);
+                                        let md = {};
+                                        try { md = JSON.parse(log.metadata) || {}; } catch(e){}
+                                        %>
+                                        <li class="flex-between mb-3 pb-3 border-b">
+                                            <div>
+                                                <div class="font-medium">Successful Login</div>
+                                                <div class="text-sm text-muted">
+                                                    <%= dt.toLocaleString() %>
+                                                </div>
+                                            </div>
+                                        </li>
+                                        <% }) %>
+                                </ul>
+                                <% } else { %>
+                                    <p class="text-muted">No recent login history available.</p>
+                                    <% } %>
+                        </div>
+                    </div>
+
+                    <div class="card max-w-600 mt-5">
+                        <div class="card-header">
+                            <h3>Active Sessions</h3>
+                        </div>
+                        <div class="card-body">
+                            <% if (typeof activeSessions !=='undefined' && activeSessions.length> 0) { %>
+                                <ul class="list-none">
+                                    <% activeSessions.forEach(sess=> { %>
+                                        <li class="flex-between mb-3 pb-3 border-b">
+                                            <div>
+                                                <div class="font-medium">Active Session</div>
+                                                <div class="text-sm text-muted">Role: <%= sess.userRole || 'customer' %>
+                                                </div>
+                                            </div>
+                                            <div class="text-right text-sm text-muted">
+                                                <span class="badge badge-success">Online</span>
+                                            </div>
+                                        </li>
+                                        <% }) %>
+                                </ul>
+                                <% } else { %>
+                                    <p class="text-muted">No active sessions found.</p>
+                                    <% } %>
                         </div>
                     </div>
                 </main>

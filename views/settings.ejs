@@ -8,30 +8,65 @@
                         <h1>Settings</h1>
                         <p>Manage your profile and preferences</p>
                     </div>
-                    <div class="card" style="max-width:560px;">
+                    <div class="card max-w-560">
                         <div class="card-header">
                             <h3>Profile Information</h3>
                         </div>
                         <div class="card-body">
-                            <div class="form-group">
-                                <label>Full Name</label>
-                                <input type="text" class="form-control" value="<%= user ? user.full_name : '' %>"
-                                    disabled>
-                            </div>
-                            <div class="form-group">
-                                <label>Email Address</label>
-                                <input type="email" class="form-control" value="<%= user ? user.email : '' %>" disabled>
-                            </div>
-                            <div class="form-group">
-                                <label>Customer ID</label>
-                                <input type="text" class="form-control font-mono"
-                                    value="<%= user ? user.customer_id : '' %>" disabled>
-                            </div>
-                            <p class="text-sm text-muted">Contact support to update your profile information.</p>
+                            <form id="updateProfileForm" onsubmit="handleProfileUpdate(event)">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                <div class="form-group">
+                                    <label for="fullName">Full Name</label>
+                                    <input type="text" id="fullName" name="fullName" class="form-control"
+                                        value="<%= user ? user.full_name : '' %>" required minlength="2">
+                                </div>
+                                <div class="form-group">
+                                    <label for="phone">Phone Number</label>
+                                    <input type="tel" id="phone" name="phone" class="form-control"
+                                        value="<%= user && user.phone ? user.phone : '' %>" placeholder="Optional">
+                                </div>
+                                <div class="form-group">
+                                    <label>Email Address</label>
+                                    <input type="email" class="form-control" value="<%= user ? user.email : '' %>"
+                                        disabled>
+                                </div>
+                                <div class="form-group">
+                                    <label>Customer ID</label>
+                                    <input type="text" class="form-control font-mono"
+                                        value="<%= user ? user.customer_id : '' %>" disabled>
+                                </div>
+                                <button type="submit" class="btn btn-primary" id="profileBtn">Save Changes</button>
+                            </form>
                         </div>
+                        <script>
+                            async function handleProfileUpdate(e) {
+                                e.preventDefault();
+                                const btn = document.getElementById('profileBtn');
+                                btn.disabled = true;
+                                btn.textContent = 'Saving...';
+                                try {
+                                    const res = await fetch('/auth/update-profile', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': '<%= csrfToken %>' },
+                                        body: JSON.stringify({
+                                            fullName: document.getElementById('fullName').value,
+                                            phone: document.getElementById('phone').value
+                                        })
+                                    });
+                                    const d = await res.json();
+                                    if (!res.ok) throw new Error(d.error);
+                                    showToast(d.message, 'success');
+                                } catch (err) {
+                                    showToast(err.message || 'Failed to update profile.', 'error');
+                                } finally {
+                                    btn.disabled = false;
+                                    btn.textContent = 'Save Changes';
+                                }
+                            }
+                        </script>
                     </div>
 
-                    <div class="card" style="max-width:560px; margin-top:var(--space-5);">
+                    <div class="card max-w-560 mt-5">
                         <div class="card-header">
                             <h3>Change Password</h3>
                         </div>

@@ -12,6 +12,7 @@ A full-stack demonstration banking platform built with **Node.js**, **Express**,
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Running the Application](#running-the-application)
+- [Testing](#testing)
 - [Demo Accounts](#demo-accounts)
 - [Project Structure](#project-structure)
 - [Technology Stack](#technology-stack)
@@ -24,13 +25,14 @@ A full-stack demonstration banking platform built with **Node.js**, **Express**,
 ### Customer Portal
 - **Dashboard** — Overview of all accounts, balances, and recent transactions
 - **Accounts** — View checking and savings account details
-- **Transfers** — Send money between accounts or to other customers
+- **Transfers** — Send money between accounts or to other customers (daily limit: $25,000)
 - **Deposits & Withdrawals** — Manage account funds with daily limits and optional descriptions
-- **Transaction History** — Filterable list of all transactions with export
-- **Statements** — Generate and download PDF account statements
+- **Transaction History** — Filterable, paginated list of all transactions
+- **Statements** — Generate and download PDF account statements by date range
 - **Card Management** — View, freeze/unfreeze, and report debit cards
 - **Notifications** — Real-time alerts for account activity
-- **Settings** — View profile information and change password
+- **Profile Editing** — Update your full name and phone number from Settings
+- **Security Center** — View recent login history and active sessions; change password
 - **Dark / Light Mode** — Fully themed UI with persistent theme preference
 
 ### Admin Dashboard
@@ -39,7 +41,7 @@ A full-stack demonstration banking platform built with **Node.js**, **Express**,
 - Paginated user list with search filtering
 - Audit log of all administrative and financial actions
 - Manual balance adjustments with logging (search by Account ID or Account Number)
-- Auto-executing scheduled account deletions
+- Scheduled account deletion with auto-execution on server restart
 
 ### Public Pages
 - Landing page with feature highlights
@@ -110,12 +112,20 @@ ADMIN_EMAIL=admin@willowbank.com
 ADMIN_PASSWORD=Admin123!
 DATABASE_PATH=./data/willow.db
 PORT=3000
+
+# Optional: override daily transaction limits (values in cents)
+# DAILY_WITHDRAWAL_LIMIT_CENTS=1000000   # $10,000 (default)
+# DAILY_TRANSFER_LIMIT_CENTS=2500000     # $25,000 (default)
+# DAILY_DEPOSIT_LIMIT_CENTS=5000000      # $50,000 (default)
 ```
 
-- `SESSION_SECRET` — A random string used to secure session cookies (use any long random string)
-- `ADMIN_EMAIL` / `ADMIN_PASSWORD` — Credentials for the admin account (created automatically on first boot)
-- `DATABASE_PATH` — Where the SQLite database file is stored
-- `PORT` — The port the server runs on (defaults to 3000)
+| Variable | Description | Default |
+|---|---|---|
+| `SESSION_SECRET` | Secret used to sign session cookies | `dev-secret-...` (insecure) |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Admin account credentials (created on first boot) | — |
+| `DATABASE_PATH` | Path to the SQLite database file | `./data/willow.db` |
+| `PORT` | Port the server listens on | `3000` |
+| `DAILY_*_LIMIT_CENTS` | Per-day transaction caps (in cents) | see above |
 
 ### Step 4: Seed the Demo Data (Optional but Recommended)
 
@@ -155,6 +165,30 @@ Press `Ctrl + C` in the terminal to stop the server.
 
 ---
 
+## 🧪 Testing
+
+The project includes an automated test suite using Node.js's built-in test runner (requires Node 18+).
+
+### Run All Tests
+
+```bash
+npm test
+```
+
+Tests run against an **in-memory database** — no test data touches your real database file.
+
+### What's Covered
+
+| Test File | Coverage |
+|---|---|
+| `tests/auth.test.js` | Registration, login, logout, account lockout, password change |
+| `tests/financial.test.js` | Deposits, withdrawals, transfers, daily limit enforcement |
+| `tests/admin.test.js` | Admin-only route protection, user management, stats endpoint |
+
+Each test creates a fresh isolated database and handles CSRF tokens automatically.
+
+---
+
 ## 🔑 Demo Accounts
 
 After running `npm run seed`, the following accounts are available:
@@ -179,66 +213,45 @@ Willow Banking Corp/
 ├── .env                       # Environment variables
 ├── data/                      # SQLite database files
 ├── public/                    # Static assets
-│   ├── css/style.css          # Complete design system (dark/light mode)
+│   ├── css/style.css          # Complete design system (dark/light mode, utilities)
 │   ├── js/app.js              # Client-side JS (theme toggle, toasts, confirm dialogs)
 │   └── images/logo.svg        # Willow tree logo
+├── tests/                     # Automated test suite (Node --test)
+│   ├── setup.js               # Shared in-memory DB + authenticated agent helpers
+│   ├── auth.test.js           # Auth flow tests
+│   ├── financial.test.js      # Financial operation tests
+│   └── admin.test.js          # Admin authorization tests
 ├── views/                     # EJS templates
-│   ├── partials/              # Reusable template components
-│   │   ├── header.ejs         # HTML head
-│   │   ├── sidebar.ejs        # App sidebar navigation
-│   │   ├── public-nav.ejs     # Public pages navigation
-│   │   └── public-footer.ejs  # Public pages footer
+│   ├── partials/              # Reusable template components (header, sidebar, footer)
 │   ├── landing.ejs            # Home page
-│   ├── login.ejs              # Sign in
-│   ├── register.ejs           # Create account
 │   ├── dashboard.ejs          # Customer dashboard
-│   ├── accounts.ejs           # Account details
-│   ├── transfers.ejs          # Money transfers
-│   ├── deposits.ejs           # Deposit funds
-│   ├── withdrawals.ejs        # Withdraw funds
-│   ├── transactions.ejs       # Transaction history
+│   ├── transactions.ejs       # Transaction history (paginated, filterable)
 │   ├── statements.ejs         # PDF statements
-│   ├── cards.ejs              # Card management
-│   ├── notifications.ejs      # Alerts
-│   ├── security.ejs           # Security settings
-│   ├── settings.ejs           # Profile & password change
-│   ├── about.ejs              # About Us
-│   ├── careers.ejs            # Careers
-│   ├── press.ejs              # Press & Media
-│   ├── contact.ejs            # Contact Us
-│   ├── privacy.ejs            # Privacy Policy
-│   ├── terms.ejs              # Terms of Service
-│   ├── security-info.ejs      # Public security info
-│   ├── compliance.ejs         # Regulatory compliance
-│   ├── error.ejs              # Error page
-│   └── admin/
-│       └── dashboard.ejs      # Admin dashboard
+│   ├── security.ejs           # Login history & active sessions
+│   ├── settings.ejs           # Editable profile & password change
+│   └── admin/dashboard.ejs   # Admin dashboard
 └── src/
-    ├── config.js              # App configuration
-    ├── database.js            # SQLite database (sql.js) with atomic writes
-    ├── seed.js                # Demo data seeder
-    ├── session-store.js       # Session storage (SQLite-backed)
+    ├── config.js              # Centralised config with env var overrides
+    ├── database.js            # SQLite database (sql.js, atomic writes)
+    ├── session-store.js       # Custom SQLite-backed session store
     ├── middleware/
-    │   ├── auth.js            # Authentication & authorization guards
+    │   ├── auth.js            # Auth & authorization guards
     │   ├── security.js        # CSRF, CSP, security headers
-    │   └── validation.js      # Input validation & password complexity
+    │   └── validation.js      # Input validation & password rules
     ├── routes/
-    │   ├── auth.js            # Login/register/logout/password change API
-    │   ├── accounts.js        # Account data API
-    │   ├── deposits.js        # Deposit API (with daily limit)
-    │   ├── withdrawals.js     # Withdrawal API
-    │   ├── transfers.js       # Transfer API (with recipient validation)
+    │   ├── auth.js            # Login / register / logout / profile update API
+    │   ├── deposits.js        # Deposit API (daily limit enforced)
+    │   ├── withdrawals.js     # Withdrawal API (daily limit enforced)
+    │   ├── transfers.js       # Transfer API (daily limit enforced)
     │   ├── transactions.js    # Transaction history API
     │   ├── cards.js           # Card management API
     │   ├── statements.js      # PDF statement generation
-    │   ├── notifications.js   # Notification API
     │   ├── admin.js           # Admin dashboard API
     │   └── pages.js           # Page rendering routes
     └── services/
-        ├── auth.js            # Authentication logic (with account lockout)
+        ├── auth.js            # Auth logic (bcrypt, account lockout)
         ├── account.js         # Account management
-        ├── transaction.js     # Transaction processing
-        ├── transfer.js        # Transfer execution
+        ├── transfer.js        # Transfer execution (atomic)
         ├── card.js            # Card management
         ├── notification.js    # Notification system
         └── audit.js           # Audit logging
@@ -248,18 +261,19 @@ Willow Banking Corp/
 
 ## 🛠 Technology Stack
 
-| Layer        | Technology                                      |
-|--------------|------------------------------------------------|
-| Runtime      | Node.js                                        |
-| Framework    | Express.js                                     |
+| Layer        | Technology |
+|--------------|------------|
+| Runtime      | Node.js 18+ |
+| Framework    | Express.js |
 | Database     | SQLite via sql.js (pure WebAssembly, no native builds) |
-| Templating   | EJS (Embedded JavaScript)                      |
-| Auth         | bcryptjs (pure JS password hashing)            |
-| Sessions     | express-session with custom SQLite store        |
-| Rate Limiting| express-rate-limit                              |
-| PDF          | PDFKit                                         |
-| Styling      | Vanilla CSS with custom design system          |
-| Fonts        | Inter, JetBrains Mono (Google Fonts)           |
+| Templating   | EJS (Embedded JavaScript) |
+| Auth         | bcryptjs (pure JS password hashing) |
+| Sessions     | express-session with custom SQLite-backed store |
+| Rate Limiting| express-rate-limit |
+| PDF          | PDFKit |
+| Styling      | Vanilla CSS with custom design system |
+| Fonts        | Inter, JetBrains Mono (Google Fonts) |
+| Testing      | Node.js built-in `node:test` + `supertest` |
 
 ---
 
@@ -267,19 +281,22 @@ Willow Banking Corp/
 
 This application implements the following security measures:
 
-- **Password Hashing** — bcrypt with configurable salt rounds (never stored in plaintext)
-- **Password Complexity** — Requires minimum 8 characters with uppercase, lowercase, and digit
-- **Account Lockout** — Locks accounts after 5 failed login attempts for 15 minutes
+- **Password Hashing** — bcrypt with 12 salt rounds (never stored in plaintext)
+- **Password Complexity** — Requires min. 8 characters with uppercase, lowercase, and digit
+- **Account Lockout** — Locks after 5 failed login attempts for 15 minutes
+- **Session Fixation Protection** — Session ID regenerated on every login
 - **CSRF Protection** — Anti-forgery tokens on all state-changing requests
-- **Content Security Policy** — CSP header restricting scripts, styles, fonts, and images to trusted sources
-- **Rate Limiting** — Prevents brute-force attacks on auth endpoints and API abuse (60 req/min)
-- **Secure Headers** — X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy, HSTS
-- **HTTP-Only Sessions** — Server-side session management with secure cookie settings
-- **Input Validation** — Server-side validation on all API endpoints with parameterized SQL queries
-- **Deposit Limits** — $10,000 daily deposit cap to prevent abuse
+- **Content Security Policy** — CSP header restricting scripts, styles, fonts, and images
+- **Rate Limiting** — Brute-force protection on auth endpoints; 100 req/min globally
+- **Secure Headers** — X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy, Permissions-Policy, HSTS
+- **HTTP-Only Sessions** — Server-side sessions with secure, HTTP-only cookie settings
+- **Input Validation** — Server-side validation on all endpoints with parameterized SQL
+- **Daily Transaction Limits** — $10,000 withdrawals / $25,000 transfers / $50,000 deposits (configurable via env)
+- **Database Constraints** — `CHECK(balance >= 0)` prevents negative balances at the DB level
+- **Atomic Database Writes** — Temp file + rename prevents DB corruption on crash
 - **Audit Logging** — Complete trail of all financial and administrative actions
-- **Atomic Database Writes** — Prevents data corruption on crash via temp file + rename strategy
-- **Admin Safeguards** — Admins cannot modify their own account; self-deletion is prevented
+- **Startup Config Validation** — Warning on boot if default session secret or missing admin credentials are detected
+- **Admin Safeguards** — Admins cannot modify or delete their own account
 
 ---
 

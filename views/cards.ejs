@@ -24,7 +24,7 @@
                     if (!data.cards.length) { c.innerHTML = '<div class="empty-state"><h3>No cards</h3><p>You don\'t have any cards yet.</p></div>'; return; }
                     let html = '';
                     data.cards.forEach(card => {
-                        html += '<div class="card mb-4" style="max-width:600px;">';
+                        html += '<div class="card mb-4 max-w-600">';
                         html += '<div class="card-body" style="display:flex;gap:var(--space-6);flex-wrap:wrap;align-items:flex-start;">';
                         html += '<div class="bank-card ' + (card.status === 'frozen' || card.status === 'cancelled' ? 'frozen' : '') + '">';
                         html += '<div class="card-brand">WILLOW BANKING</div>';
@@ -32,7 +32,7 @@
                         html += '<div class="card-bottom"><div><div class="card-label">Expires</div><div class="card-value">' + card.expiration_date + '</div></div><div><div class="card-label">Type</div><div class="card-value" style="text-transform:uppercase;">' + card.card_type + '</div></div></div>';
                         html += '</div>';
                         html += '<div style="flex:1;min-width:180px;">';
-                        html += '<h4 style="margin-bottom:var(--space-3);">Card Details</h4>';
+                        html += '<h4 class="mb-3">Card Details</h4>';
                         html += '<p class="text-sm text-muted mb-4">Status: <span class="badge badge-' + (card.status === 'active' ? 'success' : card.status === 'frozen' ? 'info' : 'danger') + '">' + card.statusLabel + '</span></p>';
                         html += '<p class="text-sm text-muted mb-4">Daily Limit: ' + card.dailyLimitFormatted + '</p>';
                         html += '<p class="text-sm text-muted mb-4">Account: ' + card.account_type + '</p>';

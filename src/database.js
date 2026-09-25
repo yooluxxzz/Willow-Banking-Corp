@@ -55,8 +55,8 @@ async function initializeDatabase() {
       user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       account_number TEXT NOT NULL UNIQUE,
       account_type TEXT NOT NULL DEFAULT 'checking' CHECK(account_type IN ('checking', 'savings')),
-      balance INTEGER NOT NULL DEFAULT 0,
-      available_balance INTEGER NOT NULL DEFAULT 0,
+      balance INTEGER NOT NULL DEFAULT 0 CHECK(balance >= 0),
+      available_balance INTEGER NOT NULL DEFAULT 0 CHECK(available_balance >= 0),
       currency TEXT NOT NULL DEFAULT 'USD',
       status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'frozen', 'closed')),
       created_at TEXT NOT NULL DEFAULT (datetime('now'))

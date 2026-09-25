@@ -49,7 +49,10 @@ class SQLiteSessionStore extends session.Store {
         if (!this._db || this._dbPath === ':memory:') return;
         try {
             const data = this._db.export();
-            fs.writeFileSync(this._dbPath, Buffer.from(data));
+            const buffer = Buffer.from(data);
+            const tmpPath = this._dbPath + '.tmp';
+            fs.writeFileSync(tmpPath, buffer);
+            fs.renameSync(tmpPath, this._dbPath);
         } catch (e) {
             console.error('[SessionStore] Save error:', e.message);
         }
@@ -111,6 +114,25 @@ class SQLiteSessionStore extends session.Store {
             this._db.run('UPDATE sessions SET expired = ? WHERE sid = ?', [expired, sid]);
             this._save();
             callback?.(null);
+        } catch (err) { callback?.(err); }
+    }
+
+    all(callback) {
+        if (!this._db) return callback?.(null, []);
+        try {
+            const result = [];
+            const stmt = this._db.prepare('SELECT sid, sess FROM sessions WHERE expired > ?');
+            stmt.bind([Date.now()]);
+            while (stmt.step()) {
+                const row = stmt.getAsObject();
+                try {
+                    const sess = JSON.parse(row.sess);
+                    sess.id = row.sid;
+                    result.push(sess);
+                } catch (e) { /* skip malformed sessions */ }
+            }
+            stmt.free();
+            callback?.(null, result);
         } catch (err) { callback?.(err); }
     }
 

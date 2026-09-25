@@ -13,8 +13,8 @@
                         <div class="card-header">
                             <h3>Transaction History</h3>
                             <div class="flex gap-2">
-                                <select id="accountSelect" class="form-control" style="width:auto;font-size:0.8125rem;"
-                                    onchange="loadTransactions()">
+                                <select id="accountSelect" class="form-control select-compact"
+                                    aria-label="Select account" onchange="loadTransactions()">
                                     <% accounts.forEach((a, i)=> { %>
                                         <option value="<%= a.id %>" <%=i===0 ? 'selected' : '' %>><%= a.account_type %>
                                                 (<%= a.maskedNumber %>)</option>
@@ -22,7 +22,7 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="card-body" style="padding:var(--space-3) var(--space-5);">
+                        <div class="card-body card-body-compact">
                             <div class="filters-bar">
                                 <div class="form-group"><label class="text-xs">Type</label><select id="filterType"
                                         class="form-control" onchange="loadTransactions()">
@@ -49,8 +49,9 @@
                                         onkeydown="if(event.key==='Enter')loadTransactions()"></div>
                             </div>
                         </div>
-                        <div id="txnTableContainer" class="loading-overlay" style="min-height:200px;">
-                            <div class="spinner"></div>
+                        <div id="txnTableContainer" class="loading-overlay" style="min-height:200px;" role="status"
+                            aria-live="polite" aria-label="Transaction results">
+                            <div class="spinner" aria-label="Loading transactions"></div>
                         </div>
                     </div>
                 </main>
@@ -79,12 +80,12 @@
                         c.innerHTML = '<div class="empty-state" style="padding:var(--space-6);"><h3>No transactions found</h3><p>Try adjusting your filters or date range.</p></div>';
                         return;
                     }
-                    let html = '<div class="table-container"><table><thead><tr><th>Date</th><th>Reference</th><th>Description</th><th>Type</th><th>Status</th><th style="text-align:right">Amount</th></tr></thead><tbody>';
+                    let html = '<div class="table-responsive"><div class="table-container"><table aria-label="Transaction history"><thead><tr><th scope="col">Date</th><th scope="col">Reference</th><th scope="col">Description</th><th scope="col">Type</th><th scope="col">Status</th><th scope="col" class="text-right">Amount</th></tr></thead><tbody>';
                     data.transactions.forEach(t => {
                         const sign = t.direction === 'credit' ? '+' : '-';
-                        html += '<tr><td class="text-sm">' + (t.created_at || '').slice(0, 10) + '</td><td class="font-mono text-xs">' + t.reference + '</td><td class="text-sm">' + (t.description || t.type) + '</td><td><span class="badge badge-neutral">' + t.type + '</span></td><td><span class="badge badge-' + (t.status === 'completed' ? 'success' : t.status === 'failed' ? 'danger' : 'warning') + '">' + t.status + '</span></td><td style="text-align:right" class="' + (t.direction === 'credit' ? 'amount-credit' : 'amount-debit') + '">' + sign + t.amountFormatted + '</td></tr>';
+                        html += '<tr><td class="text-sm">' + (t.created_at || '').slice(0, 10) + '</td><td class="font-mono text-xs">' + t.reference + '</td><td class="text-sm">' + (t.description || t.type) + '</td><td><span class="badge badge-neutral">' + t.type + '</span></td><td><span class="badge badge-' + (t.status === 'completed' ? 'success' : t.status === 'failed' ? 'danger' : 'warning') + '">' + t.status + '</span></td><td class="text-right ' + (t.direction === 'credit' ? 'amount-credit' : 'amount-debit') + '">' + sign + t.amountFormatted + '</td></tr>';
                     });
-                    html += '</tbody></table></div>';
+                    html += '</tbody></table></div></div>';
                     if (data.totalPages > 1) {
                         html += '<div class="pagination">';
                         html += '<button onclick="loadTransactions(' + (currentPage - 1) + ')" ' + (currentPage <= 1 ? 'disabled' : '') + '>&laquo; Prev</button>';
