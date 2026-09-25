@@ -45,6 +45,7 @@ A full-stack demonstration banking platform built with **Node.js**, **Express**,
 
 ### Public Pages
 - Landing page with feature highlights
+- Product detail pages (Checking, Savings, Debit Cards, Transfers)
 - About Us, Careers, Press, Contact pages
 - Privacy Policy, Terms of Service, Security, Compliance pages
 
