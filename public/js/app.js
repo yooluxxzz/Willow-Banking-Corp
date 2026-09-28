@@ -22,7 +22,60 @@ document.addEventListener('DOMContentLoaded', () => {
             overlay.classList.remove('active');
         });
     }
+
+    setupLandingCalculator();
 });
+
+function setupLandingCalculator() {
+    const amountInput = document.getElementById('loanAmount');
+    const downInput = document.getElementById('downPayment');
+    const aprInput = document.getElementById('aprRate');
+    const termInput = document.getElementById('loanTerm');
+    const paymentNode = document.getElementById('monthlyPayment');
+    const totalNode = document.getElementById('loanTotal');
+    const principalNode = document.getElementById('loanPrincipal');
+
+    if (!amountInput || !downInput || !aprInput || !termInput || !paymentNode || !totalNode || !principalNode) {
+        return;
+    }
+
+    const formatCurrency = (value) => new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0,
+    }).format(value || 0);
+
+    const updateCalculator = () => {
+        const amount = Number(amountInput.value) || 0;
+        const down = Number(downInput.value) || 0;
+        const apr = Number(aprInput.value) || 0;
+        const years = Number(termInput.value) || 30;
+        const principal = Math.max(amount - down, 0);
+        const payments = years * 12;
+        const monthlyRate = apr / 100 / 12;
+
+        let monthlyPayment = 0;
+        if (principal > 0 && monthlyRate > 0) {
+            monthlyPayment = principal * (monthlyRate * Math.pow(1 + monthlyRate, payments)) /
+                (Math.pow(1 + monthlyRate, payments) - 1);
+        } else if (principal > 0) {
+            monthlyPayment = principal / payments;
+        }
+
+        const totalPaid = monthlyPayment * payments;
+
+        paymentNode.textContent = formatCurrency(monthlyPayment);
+        principalNode.textContent = formatCurrency(principal);
+        totalNode.textContent = formatCurrency(totalPaid);
+    };
+
+    [amountInput, downInput, aprInput, termInput].forEach((input) => {
+        input.addEventListener('input', updateCalculator);
+        input.addEventListener('change', updateCalculator);
+    });
+
+    updateCalculator();
+}
 
 // ── Auth Functions ───────────────────────────────────────
 async function handleLogin(e) {
