@@ -1,71 +1,109 @@
 <%- include('partials/header') %>
 
-    <body>
-        <div class="auth-page">
-            <div class="auth-panel">
-                <div class="auth-form-wrapper">
-                    <a href="/" class="auth-brand" style="text-decoration:none;">
-                        <img src="/images/logo.svg" alt="Willow" class="nav-logo-img">
-                        Willow Banking Corp.
-                    </a>
-                    <h1>Open your account</h1>
-                    <p class="auth-sub">Create a free Willow Banking account in under a minute.</p>
+<body class="auth-experience-page">
+    <a class="skip-link" href="#authMain">Skip to account setup</a>
+    <div class="auth-layout">
+        <aside class="auth-visual auth-visual-register" aria-label="Willow banking campaign">
+            <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&amp;fit=crop&amp;w=1200&amp;q=80" alt="" aria-hidden="true" fetchpriority="high" decoding="async">
+            <div class="auth-visual-shade" aria-hidden="true"></div>
+            <div class="auth-visual-copy">
+                <p class="auth-visual-kicker">Willow Banking Corp. <span>Personal banking</span></p>
+                <p class="auth-visual-slogan">A clear start, at your own pace.</p>
+                <p>Begin with the details needed to create your Willow demonstration account.</p>
+            </div>
+        </aside>
 
-                    <div id="registerError" class="alert alert-danger hidden">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10" />
-                            <line x1="12" x2="12" y1="8" y2="12" />
-                            <line x1="12" x2="12.01" y1="16" y2="16" />
-                        </svg>
-                        <span id="registerErrorText"></span>
-                    </div>
+        <main class="auth-main" id="authMain">
+            <div class="auth-topline">
+                <a href="/" class="auth-brand">
+                    <img src="/images/logo.svg" alt="" class="nav-logo-img">
+                    <span>Willow Banking Corp.</span>
+                </a>
+                <a href="/" class="auth-back-link">Back to Willow</a>
+            </div>
 
-                    <form id="registerForm" onsubmit="handleRegister(event)">
-                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                        <div class="form-group">
-                            <label for="fullName">Full Name</label>
-                            <input type="text" id="fullName" name="fullName" class="form-control" placeholder="John Doe"
-                                required minlength="2" maxlength="100" autocomplete="name">
+            <section class="auth-form-wrapper auth-register-wrapper" aria-labelledby="registerTitle">
+                <p class="auth-eyebrow">Account setup</p>
+                <h1 id="registerTitle">Open your account</h1>
+                <p class="auth-sub">A few details to create your Willow demonstration profile.</p>
+
+                <div class="auth-progress-copy"><span id="registerStepLabel">Step 1 of 2</span><span id="registerStepName">Personal details</span></div>
+                <div class="auth-progress-track" role="progressbar" aria-label="Account setup progress" aria-valuemin="1" aria-valuemax="2" aria-valuenow="1">
+                    <span id="registerProgress"></span>
+                </div>
+
+                <div id="registerStatus" class="auth-message auth-message-success" role="status" aria-live="polite" hidden></div>
+                <div id="registerError" class="auth-message auth-message-error" role="alert" aria-live="assertive" tabindex="-1" hidden>
+                    <span id="registerErrorText"></span>
+                </div>
+
+                <form id="registerForm" onsubmit="handleRegister(event)">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <section class="auth-step" data-register-step="0" aria-labelledby="personalStepTitle">
+                        <h2 id="personalStepTitle">Your details</h2>
+                        <div class="auth-field">
+                            <label for="fullName">Full name</label>
+                            <input type="text" id="fullName" name="fullName" class="form-control" placeholder="Name as you'd like us to use" required minlength="2" maxlength="100" autocomplete="name">
                         </div>
-                        <div class="form-group">
-                            <label for="email">Email Address</label>
-                            <input type="email" id="email" name="email" class="form-control"
-                                placeholder="name@example.com" required autocomplete="email">
+                        <div class="auth-field">
+                            <label for="email">Email address</label>
+                            <input type="email" id="email" name="email" class="form-control" placeholder="you@example.com" required autocomplete="email" autocapitalize="none" spellcheck="false">
                         </div>
-                        <div class="form-group">
-                            <label for="phone">Phone Number <span class="text-muted">(optional)</span></label>
-                            <input type="tel" id="phone" name="phone" class="form-control" placeholder="+1-555-0100"
-                                autocomplete="tel">
+                        <div class="auth-field">
+                            <label for="phone">Phone number <span>(optional)</span></label>
+                            <input type="tel" id="phone" name="phone" class="form-control" placeholder="Add a number if you'd like" autocomplete="tel">
                         </div>
-                        <div class="form-group">
+                        <button class="auth-submit" id="registerNext" type="button">Continue to security</button>
+                    </section>
+
+                    <section class="auth-step" data-register-step="1" aria-labelledby="securityStepTitle" hidden>
+                        <h2 id="securityStepTitle">Create a password</h2>
+                        <div class="auth-field">
                             <label for="password">Password</label>
-                            <input type="password" id="password" name="password" class="form-control"
-                                placeholder="Minimum 8 characters" required minlength="8" autocomplete="new-password">
-                            <p class="form-help">Must be at least 8 characters</p>
+                            <div class="auth-password-field">
+                                <input type="password" id="password" name="password" class="form-control" placeholder="Create a password" required minlength="8" autocomplete="new-password" aria-describedby="passwordHint passwordStrengthText">
+                                <button class="auth-password-toggle" type="button" data-password-toggle aria-controls="password" aria-label="Show password" aria-pressed="false" title="Show password">
+                                    <svg class="password-show-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    <svg class="password-hide-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.9 10.9 0 0 1 12 5c6.5 0 10 7 10 7a14.7 14.7 0 0 1-3.2 4.1M6.2 6.2C3.5 8 2 12 2 12s3.5 7 10 7c1.3 0 2.5-.3 3.5-.7"/></svg>
+                                </button>
+                            </div>
+                            <p class="auth-field-help" id="passwordHint">Use at least 8 characters, including upper- and lowercase letters and a number.</p>
+                            <div class="auth-strength" aria-hidden="true"><span id="passwordStrengthBar"></span></div>
+                            <p class="auth-strength-copy" id="passwordStrengthText" aria-live="polite">Password strength</p>
                         </div>
-                        <div class="form-group">
-                            <label for="confirmPassword">Confirm Password</label>
-                            <input type="password" id="confirmPassword" name="confirmPassword" class="form-control"
-                                placeholder="Repeat your password" required autocomplete="new-password">
+                        <ul class="auth-password-rules" aria-label="Password requirements">
+                            <li data-password-rule="length">At least 8 characters</li>
+                            <li data-password-rule="upper">One uppercase letter</li>
+                            <li data-password-rule="lower">One lowercase letter</li>
+                            <li data-password-rule="number">One number</li>
+                        </ul>
+                        <div class="auth-field">
+                            <label for="confirmPassword">Confirm password</label>
+                            <div class="auth-password-field">
+                                <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" placeholder="Enter your password again" required autocomplete="new-password" aria-describedby="confirmPasswordError">
+                                <button class="auth-password-toggle" type="button" data-password-toggle aria-controls="confirmPassword" aria-label="Show password" aria-pressed="false" title="Show password">
+                                    <svg class="password-show-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    <svg class="password-hide-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.9 10.9 0 0 1 12 5c6.5 0 10 7 10 7a14.7 14.7 0 0 1-3.2 4.1M6.2 6.2C3.5 8 2 12 2 12s3.5 7 10 7c1.3 0 2.5-.3 3.5-.7"/></svg>
+                                </button>
+                            </div>
+                            <span class="auth-field-help auth-field-error" id="confirmPasswordError" hidden>Passwords must match.</span>
                         </div>
-                        <button type="submit" class="btn btn-primary w-full btn-lg" id="registerBtn">Create
-                            Account</button>
-                    </form>
+                        <div class="auth-step-actions">
+                            <button class="auth-back-button" id="registerBack" type="button">Back</button>
+                            <button class="auth-submit" id="registerBtn" type="submit">Open demo account</button>
+                        </div>
+                    </section>
+                </form>
 
-                    <p class="auth-footer">
-                        Already have an account? <a href="/login">Sign in</a>
-                    </p>
-                    <a href="/" class="auth-back">← Back to Home</a>
-                </div>
-            </div>
-            <div class="auth-image-panel">
-                <img src="https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=1200&q=80"
-                    alt="Professional business environment">
-                <div class="image-overlay">
-                    <h2>Start your journey</h2>
-                    <p>Join thousands who trust Willow Banking Corp. for their personal and business banking needs.</p>
-                </div>
-            </div>
-        </div>
-        <%- include('partials/footer') %>
+                <p class="auth-demo-note">This is a demonstration platform. Never reuse a password you use elsewhere.</p>
+                <p class="auth-switch">Already have a Willow account? <a href="/login">Sign in</a></p>
+            </section>
+
+            <footer class="auth-bottomline">
+                <a href="/contact">Help and support</a>
+                <a href="/privacy">Privacy</a>
+                <a href="/terms">Terms</a>
+            </footer>
+        </main>
+    </div>
+    <%- include('partials/footer') %>
