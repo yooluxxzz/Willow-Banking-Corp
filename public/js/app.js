@@ -31,10 +31,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function setupHeroCrossfade() {
     const hero = document.querySelector('[data-hero-crossfade]');
-    if (!hero) return;
+    const story = hero?.closest('[data-hero-story]');
+    if (!hero || !story) return;
     const photos = [hero.querySelector('.home-hero-photo-a'), hero.querySelector('.home-hero-photo-b')];
-    const imageArea = hero.querySelector('.home-hero-photos');
-    if (photos.some(photo => !photo) || !imageArea) return;
+    const copies = Array.from(hero.querySelectorAll('[data-hero-copy]'));
+    const guide = hero.querySelector('[data-hero-guide]');
+    const nav = document.querySelector('.home-nav');
+    if (photos.some(photo => !photo)) return;
 
     let frame = null;
     const show = (scene) => {
@@ -42,24 +45,42 @@ function setupHeroCrossfade() {
         hero.dataset.activeImage = scene;
         photos[0].setAttribute('aria-hidden', String(scene !== 'a'));
         photos[1].setAttribute('aria-hidden', String(scene !== 'b'));
+        copies.forEach(copy => {
+            const inactive = copy.dataset.heroCopy !== scene;
+            copy.inert = inactive;
+            copy.setAttribute('aria-hidden', String(inactive));
+        });
+        if (guide) guide.textContent = scene === 'a'
+            ? '01 / 02  Scroll to discover'
+            : '02 / 02  Keep scrolling to explore';
     };
     const updateFromScroll = () => {
         frame = null;
-        const bounds = imageArea.getBoundingClientRect();
-        // Fade while the photographs are still clearly visible, on phones too.
-        show(bounds.top < 0 ? 'b' : 'a');
+        const top = nav ? nav.getBoundingClientRect().height : 0;
+        const bounds = story.getBoundingClientRect();
+        const travel = Math.max(1, story.offsetHeight - hero.offsetHeight);
+        const progress = Math.min(1, Math.max(0, (top - bounds.top) / travel));
+        hero.style.setProperty('--story-progress', progress);
+        // Hold the second scene on screen before the sticky stage releases.
+        show(progress >= 0.3 ? 'b' : 'a');
     };
     const schedule = () => {
         if (frame === null) frame = window.requestAnimationFrame(updateFromScroll);
     };
+    const resize = () => {
+        story.style.setProperty('--hero-nav-height', `${nav ? nav.getBoundingClientRect().height : 0}px`);
+        schedule();
+    };
     Promise.all(photos.map(photo => photo.decode().then(() => true).catch(() => false))).then(loaded => {
         if (!loaded[0] && loaded[1]) show('b');
         if (!loaded.every(Boolean)) return;
-        // No timer: only scrolling or a viewport change can change the scene.
+        // Enhance only after both photos load; the first scene works without JS.
+        story.classList.add('is-scroll-ready');
+        resize();
         window.addEventListener('scroll', schedule, { passive: true });
-        window.addEventListener('resize', schedule, { passive: true });
-        window.addEventListener('pageshow', schedule);
-        schedule();
+        window.addEventListener('resize', resize, { passive: true });
+        window.addEventListener('pageshow', resize);
+        if ('ResizeObserver' in window && nav) new ResizeObserver(resize).observe(nav);
     });
 }
 

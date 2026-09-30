@@ -313,12 +313,16 @@ admin and authentication routes are preserved. Public navigation now includes
 /personal and /business. Business is explicitly a concept preview: no business
 accounts, payroll, lending or merchant processing are implemented.
 
-The homepage crossfades between two separate generated banking photographs.
-Both layers occupy exactly the same container with identical cover crops. Only
-opacity changes, over 800ms with cubic-bezier(0.35, 0, 0, 1), when the user scrolls
-the photo area past the top of the viewport. Scrolling back up restores the first
-image. There is no timer or playback UI. Reduced motion disables transitions. On phones,
-the fixed photo area sits above the copy. Photo cards use CSS overlays and HTML labels.
+The homepage opens with the customer photograph and original headline. A sticky,
+viewport-height hero holds its position while the user scrolls. At 30% of its
+scroll sequence, the employee photograph takes over with a new headline,
+account details and category links. Both photos and content panels crossfade
+over 800ms using cubic-bezier(0.35, 0, 0, 1). Further scrolling holds scene two,
+then releases the hero into the rest of the page. Scrolling up reverses it.
+There is no timer, wheel interception or playback UI. Inactive copy is inert
+and hidden from assistive technology. Reduced motion disables transitions;
+short viewports use normal scrolling so all controls remain reachable.
+Phones keep the photos above the copy within the same stage.
 Both hero photos are local WebP assets with responsive variants, about 132 KiB
 combined at full size. HERO_PHOTO_PROMPTS.md contains the two prompts and asset
 manifest. Selected feature cards and the account preview have soft shadows and

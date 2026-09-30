@@ -86,7 +86,7 @@ Do not use fabricated customer counts, ratings, uptime, rates, certifications, g
 
 The hero stacks two separate local WebP photographs in exactly the same full-size container. Photo A starts visible above Photo B. Their complementary opacity transitions last 800ms with cubic-bezier(0.35, 0, 0, 1). Both use identical object-fit: cover and object-position values, with no masks or position animation. An isolated plus-lighter blend prevents a dark midpoint flash; unsupported browsers retain an opaque lower image. Text, buttons and lower shading remain separate HTML/CSS above the images.
 
-On phones, retain the same overlapping layers in a fixed 360px-high photo area. Use matching centered crops and place the copy beneath the photos on forest green so no face is covered by text.
+On phones, keep the overlapping photographs in the upper 48% of the stage and the copy below them on forest green. Both scenes retain the same dimensions.
 
 Navigation stays flat; the current product set does not need dropdowns. On compact screens, links move into a keyboard-operable menu with an exposed expanded state and Escape-to-close behavior.
 
@@ -108,13 +108,13 @@ Navigation stays flat; the current product set does not need dropdowns. On compa
 
 ## Animation
 
-After both files decode, scrolling the photo area past the viewport top triggers the fade to Photo B; scrolling back above that point restores Photo A. Only image opacity animates; copy and geometry remain fixed. There is no timer or playback UI. Scroll work is coalesced into requestAnimationFrame, and resize and page restoration update the selected scene. Section copy reveals once as it enters the viewport. Avoid continuous number counters, parallax and large moving shapes.
+After both files decode, enhance the hero into a sticky stage beneath the navigation. The stage fills the available viewport and has 110svh of scroll travel. The first scene holds initially; at 30% progress, both the photograph and its HTML content fade to scene two over 800ms. Hold the second scene for the remaining travel, then release into the page. Reverse the sequence on upward scroll. Do not intercept wheel or touch input. Inactive copy is inert and aria-hidden. A small progress line and scroll cue explain the sequence. Short viewports fall back to normal flow to keep controls reachable. Section copy reveals once as it enters the viewport. Avoid continuous number counters, parallax and large moving shapes.
 
 For `prefers-reduced-motion: reduce`, disable opacity transitions and remove entrance/reveal movement. Scroll-triggered image changes are immediate.
 
 ## Responsive Behavior
 
-**Desktop:** Full-height editorial hero, four-column product row, two-column digital preview, and wide trust band.
+**Desktop:** Two-scene sticky editorial hero, four-column product row, two-column digital preview, and wide trust band.
 
 **Tablet:** Keep both image layers identically aligned; change product links to two columns and stack experience and trust layouts where needed.
 
