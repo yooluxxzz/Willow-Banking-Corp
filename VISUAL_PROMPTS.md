@@ -1,6 +1,6 @@
 # Visual Prompts for Nano Banana
 
-Nano Banana is not connected in this environment. These are ready-to-use prompts and an asset production plan; generated files are not included. The running site uses real Unsplash photographs as interim assets. Keep the current URLs until each replacement has been generated, reviewed for natural anatomy and cleared for use. Never substitute a missing local filename.
+Nano Banana is not connected. The two hero assets are included and were generated with the built-in image tool. Their two detailed prompts, exact generation inputs and saved asset manifest are in [HERO_PHOTO_PROMPTS.md](HERO_PHOTO_PROMPTS.md). Other campaign images still use Unsplash photographs as interim assets; the remaining prompts below are a future production plan.
 
 All photographs share an editorial campaign look: forest-green and warm neutral wardrobe, natural skin texture, realistic proportions, understated settings and gentle contrast. All text, balances, buttons, logos and gradients are rendered in HTML/CSS. Do not flatten an interface into a photograph.
 
@@ -8,8 +8,8 @@ All photographs share an editorial campaign look: forest-green and warm neutral 
 
 | Filename under public/images/ | Dimensions | Placement / current interim asset |
 |---|---|---|
-| willow-hero-left.webp | 2400 × 1600 | Home hero Photo A, shopper on the left; photo-1483985988355-763728e1935b |
-| willow-hero-right.webp | 2400 × 1600 | Home hero Photo B, shop scene on the right; photo-1556742049-0cfed4f6a45d |
+| willow-hero-customer.webp | 1536 × 1024 | Home hero Photo A, banking customer; generated and locally served |
+| willow-hero-employee.webp | 1536 × 1024 | Home hero Photo B, bank employee; generated and locally served |
 | willow-auth-everyday.webp | 2400 × 1600 | Sign-in/registration campaign; photo-1556742049-0cfed4f6a45d |
 | willow-planning.webp | 2400 × 1600 | Optional future supporting image; not currently used |
 | willow-personal.webp | 1200 × 1500 | Personal feature card and personal overview; photo-1556742049-0cfed4f6a45d |
@@ -17,25 +17,11 @@ All photographs share an editorial campaign look: forest-green and warm neutral 
 | willow-goals.webp | 1200 × 1500 | Savings feature card; photo-1476514525535-07fb3b4ae5f1 |
 | willow-family.webp | 1800 × 1200 | Optional future About/support image; not currently used |
 
-Export sRGB WebP, retain a high-resolution original, and produce 720/1200/1800px hero variants for responsive srcset. Target less than 350 KB for each card and less than 500 KB for each largest hero image. Review at 390px, 768px and 1440px widths. Update alt text, src, srcset and focal crops together when replacing assets. The hero is a static horizontal blend of two separate assets using overlapping layers and wide gradient masks in public/css/hero-blend.css. Both must remain recognizable at once. Never flatten the pair, bake the blend into either image, or supply a fade to a solid page surface. Cards use a separate CSS dark gradient. The interim shop photo is mirrored to keep the cashier on the outer right; remove that transform and reverse its mask direction if a replacement is already composed with the subject on the right.
+Export sRGB WebP, retain a high-resolution original, and produce appropriate responsive variants (the current hero uses 768/1536px srcset). Target less than 350 KB for each card and less than 500 KB for each largest hero image. Review at 390px, 768px and 1440px widths. Update alt text, src, srcset and focal crops together when replacing assets. The hero now uses two separate full-frame layers with identical cover crops in public/css/hero-crossfade.css. Only opacity changes, over 800ms with cubic-bezier(0.35, 0, 0, 1). Do not flatten the pair. Cards use a separate CSS dark gradient. Both generated hero photos have 768px variants. The original companion-photo prompts are retained for reproducibility; the latest animation brief supersedes their side-by-side placement.
 
-**1. Homepage Photo A — Everyday confidence, left side**
+**1. Homepage Photo A — Banking customer, left**
 
-**Subject:** One adult shopper in their early thirties, with natural skin texture, a simple forest-green coat and a relaxed expression, holding two plain paper shopping bags. A candid everyday moment, with attention directed toward an off-camera shop rather than the viewer.
-
-**Composition:** Separate landscape photograph, camera at eye height. Place the shopper around the left-middle of the source frame, with face and hands fully inside a generous crop-safe area. Keep the right 35 percent as softly lit, low-detail ivory wall for the center overlap with Photo B. The final hero places the subject in its outer left quarter. Keep lower-left clothing and background simple for live white headlines. Review the crop at phone width; no face or hand may enter the center mask.
-
-**Key Elements:** Plain bags with realistic handles, natural clothing folds and correct five-finger anatomy. No visible phone screen, card numbers or brand marks.
-
-**Environment:** A modest neighborhood shopping street or storefront with pale plaster and restrained timber details. Coordinate its wall tone and materials with Photo B so the transition feels continuous. No luxury showroom or currency props.
-
-**Lighting:** Broad diffused daylight, soft neutral-warm white balance and gentle shadows. Match exposure, direction and contrast to Photo B. No harsh highlights behind the copy.
-
-**Style & Details:** Believable premium editorial photography, approximately 50mm lens, mild depth of field, true skin tones and restrained forest accents. Maintain detail through every edge. Generate one photograph only; CSS supplies the blend with a different image.
-
-**Aspect Ratio & Placement:** 3:2, 2400 × 1600px, willow-hero-left.webp. Left layer of the static two-photo homepage hero, with responsive focal cropping.
-
-**Avoid:** Readable text, UI, numbers, bank or payment logos, card numbers, money, exaggerated smiles, waxy faces, extra fingers, duplicated limbs, cinematic neon, 3D rendering, branded devices, baked headlines and financial promises.
+See Photo 1 in [HERO_PHOTO_PROMPTS.md](HERO_PHOTO_PROMPTS.md) for Subject, Composition, Key Elements, Environment, Lighting, Style & Details, Aspect Ratio & Placement and Avoid. The generated customer faces right toward the companion employee, with simple wall and counter detail at the seam.
 
 **2. Personal banking feature card — A small everyday moment**
 
@@ -109,23 +95,9 @@ Export sRGB WebP, retain a high-resolution original, and produce 720/1200/1800px
 
 **Avoid:** Readable text, brand marks, artificial family poses, uniformly perfect smiles, malformed fingers, unsafe kitchen actions, money props, card data, fabricated endorsements and baked UI.
 
-**6. Homepage Photo B — An ordinary payment, right side**
+**6. Homepage Photo B — Bank employee, right**
 
-**Subject:** An adult customer and café worker sharing a natural moment at a small counter while the customer holds a plain unbranded card near an unbranded terminal. Both are concentrating on the interaction, not posing.
-
-**Composition:** A separate landscape photograph, with the worker and payment interaction in the outer right third. Leave the left 35 percent as a softly lit low-detail ivory wall or counter for the wide center blend with Photo A. Keep every face and important hand detail outside this overlap area, with generous crop margins for phones. The images must remain separately recognizable. Do not show Photo A, a collage, a seam or a divider inside this asset.
-
-**Key Elements:** One card without text or numbers, one plain terminal with no readable display, a simple ceramic cup. Anatomically accurate hands and a believable card-to-terminal distance.
-
-**Environment:** A small contemporary neighborhood café with restrained sage and timber finishes. No menus, advertisements or logos visible.
-
-**Lighting:** Natural overcast daylight and gentle ambient fill, matched to Photo A's warmth, light direction, exposure and contrast.
-
-**Style & Details:** Realistic commercial editorial photograph, 35–50mm perspective, believable scale and candid facial expressions. No overlays or retouched artificial skin.
-
-**Aspect Ratio & Placement:** 3:2, 2400 × 1600px, willow-hero-right.webp. Right layer of the static two-photo hero; supply responsive variants. The same campaign style may be exported separately as willow-auth-everyday.webp for authentication pages.
-
-**Avoid:** Payment network brands, readable terminal interfaces, card numbers, bank names, money, duplicated hands, staged grins, visible receipts, baked typography and implied real transactions.
+See Photo 2 in [HERO_PHOTO_PROMPTS.md](HERO_PHOTO_PROMPTS.md) for the complete prompt fields and exact generation input. The generated employee faces left, matching the customer image's counter, wall, lighting, scale and camera height.
 
 **7. Optional supporting photograph — A plan taking shape**
 

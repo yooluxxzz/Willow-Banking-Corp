@@ -53,10 +53,10 @@
     </nav>
 
     <main id="main-content">
-        <section class="home-hero home-hero-dual" id="home" aria-labelledby="homeHeroTitle">
-            <div class="home-hero-blend" aria-label="Two everyday moments, together">
-                <img class="home-hero-photo home-hero-photo-b" src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&amp;fit=crop&amp;w=1800&amp;q=85" srcset="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&amp;fit=crop&amp;w=900&amp;q=82 900w, https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&amp;fit=crop&amp;w=1800&amp;q=85 1800w" sizes="(max-width: 760px) 74vw, 70vw" alt="A shopkeeper helping a customer make an everyday payment" width="1800" height="1200" fetchpriority="high" decoding="async">
-                <img class="home-hero-photo home-hero-photo-a" src="https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&amp;fit=crop&amp;w=1800&amp;q=85" srcset="https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&amp;fit=crop&amp;w=900&amp;q=82 900w, https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&amp;fit=crop&amp;w=1800&amp;q=85 1800w" sizes="(max-width: 760px) 74vw, 70vw" alt="A customer out shopping for everyday essentials" width="1800" height="1200" fetchpriority="high" decoding="async">
+        <section class="home-hero home-hero-crossfade" id="home" aria-labelledby="homeHeroTitle" data-hero-crossfade data-active-image="a">
+            <div class="home-hero-photos">
+                <img class="home-hero-photo home-hero-photo-b" src="/images/willow-hero-employee.webp" srcset="/images/willow-hero-employee-768.webp 768w, /images/willow-hero-employee.webp 1536w" sizes="100vw" alt="A bank employee listening attentively across a service counter" aria-hidden="true" width="1536" height="1024" decoding="async">
+                <img class="home-hero-photo home-hero-photo-a" src="/images/willow-hero-customer.webp" srcset="/images/willow-hero-customer-768.webp 768w, /images/willow-hero-customer.webp 1536w" sizes="100vw" alt="A banking customer speaking with an employee at a service counter" width="1536" height="1024" fetchpriority="high" decoding="async">
             </div>
             <div class="home-hero-shade" aria-hidden="true"></div>
             <div class="home-hero-content">
@@ -69,6 +69,11 @@
                         <a href="#banking" class="home-text-link">Explore banking <span aria-hidden="true">&#8594;</span></a>
                     </div>
                 </div>
+            </div>
+            <div class="hero-image-controls" aria-label="Hero photographs" hidden>
+                <button type="button" data-hero-scene="a" aria-label="Show customer photograph" aria-pressed="true">01</button>
+                <button type="button" data-hero-scene="b" aria-label="Show employee photograph" aria-pressed="false">02</button>
+                <button type="button" data-hero-toggle aria-label="Pause image animation">Pause</button>
             </div>
         </section>
 

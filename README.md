@@ -313,11 +313,17 @@ admin and authentication routes are preserved. Public navigation now includes
 /personal and /business. Business is explicitly a concept preview: no business
 accounts, payroll, lending or merchant processing are implemented.
 
-The homepage shows two separate photographs together: a shopper on the left and
-a shopkeeper on the right. Overlapping image layers and wide CSS gradient masks
-blend across the center without revealing the page background. The blend is
-static. On phones, both focal subjects remain in the blended photo area and the
-copy sits beneath it. Photo cards have dark CSS overlays and live HTML labels.
+The homepage crossfades between two separate generated banking photographs.
+Both layers occupy exactly the same container with identical cover crops. Only
+opacity changes, over 800ms with cubic-bezier(0.35, 0, 0, 1), every five seconds.
+Scene selectors and a pause/play control are provided. Reduced motion disables
+autoplay and transitions; hidden or offscreen pages suspend autoplay. On phones,
+the fixed photo area sits above the copy. Photo cards use CSS overlays and HTML labels.
+Both hero photos are local WebP assets with responsive variants, about 132 KiB
+combined at full size. HERO_PHOTO_PROMPTS.md contains the two prompts and asset
+manifest. Selected feature cards and the account preview have soft shadows and
+a gentle CSS perspective hover on fine pointers only; touch and reduced-motion
+layouts stay stable. Account and balance cards receive static soft shadows.
 Sign-in and two-step registration share the forest/ivory identity, a vector willow
 tree emblem, accessible password toggles and visible error feedback. New demo
 registrations receive zero-balance checking and savings accounts. Existing users
@@ -367,6 +373,7 @@ the running application's rate limit is unchanged.
 
 See [Visual Prompts for Nano Banana](VISUAL_PROMPTS.md) for seven detailed prompts,
 expected filenames/dimensions, current photo mappings and responsive export notes.
-Nano Banana is not connected; the site uses interim real photographs from Unsplash.
+Nano Banana is not connected. The hero pair was generated with the built-in image
+tool; supporting photography still uses interim Unsplash assets.
 Their availability depends on that external host. The tree logo is editable SVG,
 and all interface text, balances and gradients are built in code.

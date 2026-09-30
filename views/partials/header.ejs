@@ -14,8 +14,9 @@
     href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=JetBrains+Mono:wght@400;500&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/depth.css">
   <% if (typeof currentPath !== 'undefined' && currentPath === '/') { %>
-    <link rel="stylesheet" href="/css/hero-blend.css">
+    <link rel="stylesheet" href="/css/hero-crossfade.css">
   <% } %>
   <% if (typeof csrfToken !=='undefined' ) { %>
     <meta name="csrf-token" content="<%= csrfToken %>">

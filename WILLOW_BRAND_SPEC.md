@@ -51,17 +51,17 @@ Keep letter spacing at 0. Change type size at responsive breakpoints rather than
 
 ### Spacing and Surface
 
-Use a 4px base rhythm with common steps at 8, 12, 16, 24, 32, 48, 64 and 96px. Use 4px radii for controls and repeated items, up to 8px for a single product-interface frame. Shadows should be soft and reserved for the illustrative banking interface; section structure should come from full-width bands and whitespace, not nested cards.
+Use a 4px base rhythm with common steps at 8, 12, 16, 24, 32, 48, 64 and 96px. Use 4px radii for controls and repeated items, up to 8px for a single product-interface frame. Use soft shadows selectively on account cards, feature panels and the illustrative banking interface. Full-width bands and whitespace define the sections.
 
 ### Photography and Willow Motif
 
-Use editorial everyday-life photography with natural light, human subjects and room for copy. The hero combines two separate photographs at once: a shopper on the left and a shopkeeper on the right. Match warmth and contrast, with a dark forest overlay behind the desktop copy. The willow emblem has a curved canopy, hanging fronds and a clear trunk.
+Use editorial everyday-life photography with natural light, human subjects and room for copy. The hero combines two separate generated photographs at once: a banking customer on the left and a bank employee on the right, facing each other across a service counter. Their neutral interior, lighting, camera height and scale match. A dark forest overlay supports the desktop copy. The willow emblem has a curved canopy, hanging fronds and a clear trunk.
 
 ## Homepage Story
 
 1. Utility bar: identify personal banking and provide a direct support path.
 2. Navigation: Banking, Digital experience, Trust and security, Help, Sign in and Open an account.
-3. Hero: explain what Willow is, who it serves and the next action, with two photographs blended together.
+3. Hero: explain what Willow is, who it serves and the next action, with two photographs crossfading in one fixed container.
 4. Brand proposition: connect everyday clarity, room to grow and a people-first experience.
 5. Products: checking, savings, debit cards and transfers link to their existing product pages.
 6. Digital experience: show a clearly labeled illustrative account view and the practical account tasks it represents.
@@ -84,9 +84,9 @@ Do not use fabricated customer counts, ratings, uptime, rates, certifications, g
 
 **Secondary action:** Explore banking.
 
-The hero uses two overlapping image layers with a broad horizontal gradient mask. Photo A occupies the left and gradually reveals Photo B across approximately 38–64 percent of the desktop hero. Photo B's own masked edge is hidden under fully opaque A, so the background never appears between the photographs. Both remain recognizable at the same time. The shop image is mirrored to keep the cashier's face on the outer right; the shopper stays left of the blend. A shared restrained color treatment matches tone and lighting. Text and buttons sit over a dark transparent overlay in the lower-left area. There is no carousel, rotation or timed crossfade, and the images are not flattened into a single file.
+The hero stacks two separate local WebP photographs in exactly the same full-size container. Photo A starts visible above Photo B. Their complementary opacity transitions last 800ms with cubic-bezier(0.35, 0, 0, 1). Both use identical object-fit: cover and object-position values, with no masks or position animation. An isolated plus-lighter blend prevents a dark midpoint flash; unsupported browsers retain an opaque lower image. Text, buttons and lower shading remain separate HTML/CSS above the images.
 
-On phones, retain the same horizontal blend in a 400px-high photo area. Crop around both outer subjects, and place the copy beneath the composition on forest green so no face is covered by text. Do not apply a vertical photo-to-background fade.
+On phones, retain the same overlapping layers in a fixed 360px-high photo area. Use matching centered crops and place the copy beneath the photos on forest green so no face is covered by text.
 
 Navigation stays flat; the current product set does not need dropdowns. On compact screens, links move into a keyboard-operable menu with an exposed expanded state and Escape-to-close behavior.
 
@@ -96,7 +96,9 @@ Navigation stays flat; the current product set does not need dropdowns. On compa
 
 **Product links:** Four unframed, numbered items with a small icon field, concise description and direct route. Hover states are subtle and do not alter layout dimensions.
 
-**Digital preview:** One framed, clearly illustrative sample experience; do not embed decorative cards inside more cards.
+**Digital preview:** One framed, clearly illustrative sample experience, with a soft layered shadow. Keep balances and labels as live HTML.
+
+**Depth:** Selected photo/feature cards and the digital preview lift by 4px and tilt by 1 degree on desktop hover. Account and balance cards have static soft shadows. Hover motion requires a fine pointer, hover support and no reduced-motion preference. Touchscreens and reduced-motion settings disable these transforms and transitions. The hero stays a flat photographic composition.
 
 **Trust content:** A plain-language disclosure section with `[To be confirmed before production use]` placeholders for regulatory, deposit-protection, privacy and security-certification information until verified details exist.
 
@@ -106,23 +108,23 @@ Navigation stays flat; the current product set does not need dropdowns. On compa
 
 ## Animation
 
-The hero images and copy stay static. Section copy reveals once as it enters the viewport. Link arrows and buttons move only a few pixels on hover. Avoid continuous number counters, parallax and large moving shapes.
+The hero changes images every five seconds after both files decode. Only image opacity animates; copy and geometry remain fixed. Manual scene selection pauses autoplay, and a pause/play control is available. Autoplay suspends when the page is hidden or the hero is offscreen. Section copy reveals once as it enters the viewport. Avoid continuous number counters, parallax and large moving shapes.
 
-For `prefers-reduced-motion: reduce`, remove transitions and entrance/reveal movement. Both hero images and all content remain visible.
+For `prefers-reduced-motion: reduce`, disable hero autoplay and opacity transitions, and remove entrance/reveal movement. Manual image selectors remain available with immediate changes; hide the unnecessary play control.
 
 ## Responsive Behavior
 
 **Desktop:** Full-height editorial hero, four-column product row, two-column digital preview, and wide trust band.
 
-**Tablet:** Preserve both photos and clear outer focal points; change product links to two columns and stack experience and trust layouts where needed.
+**Tablet:** Keep both image layers identically aligned; change product links to two columns and stack experience and trust layouts where needed.
 
-**Mobile:** Keep both photographs in a compact blended area with adjusted focal crops, followed by readable copy and calls to action. Use a 44px hero heading, expose navigation through the menu button, and collapse product links to one column. Keep the dashboard sample narrow and wrap its account rows without horizontal scrolling.
+**Mobile:** Crossfade in a compact fixed photo area with identical centered crops, followed by readable copy and calls to action. Use a 44px hero heading, expose navigation through the menu button, and collapse product links to one column. Keep the dashboard sample narrow and wrap its account rows without horizontal scrolling.
 
 ## Accessibility and Performance
 
 Use semantic sections and heading order, descriptive alt text for both hero photos, expanded states, Escape-to-close navigation and a visible focus outline. Ensure content remains available if JavaScript or IntersectionObserver is unavailable.
 
-Both responsive hero images use `srcset`, `sizes`, `fetchpriority="high"` and asynchronous decoding because both are visible immediately. In production, serve campaign images from a controlled asset host in AVIF/WebP with fallbacks and correct dimensions. Keep the blend as CSS gradient masks over separate assets.
+Both responsive hero images use `srcset`, `sizes` and asynchronous decoding; the first has `fetchpriority="high"`. In production, serve campaign images from a controlled asset host in AVIF/WebP with correct dimensions. Keep the images separate and animate only opacity. The first image remains visible without JavaScript, and selectors expose their current state through aria-pressed.
 
 ## Production Readiness
 
