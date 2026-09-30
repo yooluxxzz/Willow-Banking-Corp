@@ -342,8 +342,8 @@ Reload the transfer page before starting another transfer to refresh balances.
 All funds, cards, deposits, withdrawals and transfers are simulated. This app has
 no connection to a real bank or payment network. Do not enter real personal or
 financial details. The contact form validates locally; it does not send or store
-messages. The contact details are illustrative. Password recovery remains a
-support information page; no email recovery service is connected.
+messages. The contact details are illustrative. Password recovery uses one-time backup codes generated in account settings.
+No email recovery service is connected; save codes before losing account access.
 
 ### Local setup
 
@@ -381,3 +381,20 @@ Nano Banana is not connected. The hero pair was generated with the built-in imag
 tool; supporting photography still uses interim Unsplash assets.
 Their availability depends on that external host. The tree logo is editable SVG,
 and all interface text, balances and gradients are built in code.
+
+
+## Account recovery and settings
+
+In Settings, update your name and phone, change your password, generate eight
+one-time backup codes, or sign out all other sessions. Save recovery codes before
+you need them. Generating a replacement set invalidates all previous codes.
+Use your email and one unused code at /forgot-password to set a new password.
+Recovery ends all existing sessions; password changes retain the current session.
+Passwords support 8–72 UTF-8 bytes with uppercase, lowercase and a number.
+
+Recovery endpoints are CSRF protected and rate limited. Plaintext codes are shown
+once and are never stored in the database or audit log. A lost password with no
+saved code cannot be recovered through this demo's self-service flow.
+
+See [database changes](docs/DATABASE_CHANGES.md) for migration and session-version
+details, and [the work log](WORK_LOG.md) for the Git record of completed sessions.

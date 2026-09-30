@@ -68,7 +68,16 @@
 
     <script>
         (function () {
-            if (new URLSearchParams(window.location.search).get('error') !== 'account_suspended') return;
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('reset') === 'success') {
+                const status = document.getElementById('loginStatus');
+                status.textContent = 'Password reset. Sign in with your new password.'; status.hidden = false;
+            }
+            if (params.get('error') === 'session_expired') {
+                document.getElementById('loginErrorText').textContent = 'Your session ended. Please sign in again.';
+                document.getElementById('loginError').hidden = false;
+            }
+            if (params.get('error') !== 'account_suspended') return;
             const errorBox = document.getElementById('loginError');
             document.getElementById('loginErrorText').textContent = 'We can’t sign you in right now. Please contact support.';
             errorBox.hidden = false;

@@ -50,6 +50,13 @@ async function initializeDatabase() {
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS recovery_codes (
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      code_hash TEXT NOT NULL UNIQUE,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (user_id, code_hash)
+    );
+
     CREATE TABLE IF NOT EXISTS accounts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -138,6 +145,7 @@ async function initializeDatabase() {
 
     // Migrations for existing databases
     const migrations = [
+        "ALTER TABLE users ADD COLUMN auth_version INTEGER NOT NULL DEFAULT 0",
         "ALTER TABLE users ADD COLUMN status_reason TEXT DEFAULT NULL",
         "ALTER TABLE users ADD COLUMN scheduled_deletion_at TEXT DEFAULT NULL",
     ];

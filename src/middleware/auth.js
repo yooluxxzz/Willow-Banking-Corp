@@ -34,9 +34,18 @@ function requireAdmin(req, res, next) {
 
 function loadUser(req, res, next) {
     if (req.session && req.session.userId) {
+        res.set('Cache-Control', 'no-store');
         const { getDb } = require('../database');
         const db = getDb();
-        const user = db.prepare('SELECT id, email, full_name, role, status, customer_id FROM users WHERE id = ?').get(req.session.userId);
+        const user = db.prepare('SELECT id, email, full_name, phone, role, status, customer_id, auth_version FROM users WHERE id = ?').get(req.session.userId);
+        if (!user || (req.session.authVersion || 0) !== user.auth_version) {
+            req.session.destroy(() => {});
+            res.clearCookie('willow.sid');
+            if (req.path.startsWith('/api/') || req.path.startsWith('/auth/') || req.headers.accept?.includes('application/json')) {
+                return res.status(401).json({ error: 'Your session ended. Please sign in again.' });
+            }
+            return res.redirect('/login?error=session_expired');
+        }
         if (user) {
             if (user.status !== 'active' && user.role !== 'admin') {
                 req.session.destroy(() => { });

@@ -128,7 +128,9 @@ async function registerAgent(supertest, app, userData) {
         .set('X-CSRF-Token', csrfToken)
         .send(userData);
 
-    return { agent, csrfToken, regRes };
+    const settings = regRes.status === 200 ? await agent.get('/settings') : null;
+    const newCsrf = settings?.text.match(/name="_csrf"\s+value="([^"]+)"/)?.[1] || csrfToken;
+    return { agent, csrfToken: newCsrf, regRes };
 }
 
 module.exports = { createTestApp, loginAgent, registerAgent };

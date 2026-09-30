@@ -35,6 +35,7 @@ router.get('/register', (req, res) => {
 });
 
 router.get('/forgot-password', (req, res) => {
+    res.set('Cache-Control', 'no-store');
     if (req.session?.userId) {
         return res.redirect('/dashboard');
     }
@@ -132,7 +133,7 @@ router.get('/security', requireAuth, async (req, res) => {
                 req.sessionStore.all((err, sessions) => {
                     if (err || !sessions) return resolve([]);
                     const sessionArray = Array.isArray(sessions) ? sessions : Object.values(sessions);
-                    resolve(sessionArray.filter(s => s.userId === req.session.userId));
+                    resolve(sessionArray.filter(s => s.userId === req.session.userId && (s.authVersion || 0) === res.locals.user.auth_version));
                 });
             });
         } catch (e) {
@@ -144,7 +145,9 @@ router.get('/security', requireAuth, async (req, res) => {
 });
 
 router.get('/settings', requireAuth, (req, res) => {
-    res.render('settings', { title: 'Settings — Willow Banking Corp.' });
+    const recoveryCount = getDb().prepare('SELECT COUNT(*) AS count FROM recovery_codes WHERE user_id = ?').get(req.session.userId).count;
+    res.set('Cache-Control', 'no-store');
+    res.render('settings', { title: 'Settings — Willow Banking Corp.', recoveryCount });
 });
 
 // Admin pages
