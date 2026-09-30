@@ -313,8 +313,11 @@ admin and authentication routes are preserved. Public navigation now includes
 /personal and /business. Business is explicitly a concept preview: no business
 accounts, payroll, lending or merchant processing are implemented.
 
-The homepage photograph blends horizontally and vertically into the ivory page
-using CSS masks. Photo cards have dark CSS overlays and live HTML labels.
+The homepage shows two separate photographs together: a shopper on the left and
+a shopkeeper on the right. Overlapping image layers and wide CSS gradient masks
+blend across the center without revealing the page background. The blend is
+static. On phones, both focal subjects remain in the blended photo area and the
+copy sits beneath it. Photo cards have dark CSS overlays and live HTML labels.
 Sign-in and two-step registration share the forest/ivory identity, a vector willow
 tree emblem, accessible password toggles and visible error feedback. New demo
 registrations receive zero-balance checking and savings accounts. Existing users

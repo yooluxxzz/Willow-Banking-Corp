@@ -55,13 +55,13 @@ Use a 4px base rhythm with common steps at 8, 12, 16, 24, 32, 48, 64 and 96px. U
 
 ### Photography and Willow Motif
 
-Use editorial everyday-life photography with natural light, human subjects and room for copy. Keep the campaign sequence close in warmth and contrast, with a consistent dark forest overlay for legibility. The current sequence moves from a customer reviewing a payment, to an everyday card payment, to a quiet planning moment. The willow reference stays abstract: connected paths, branching information and restrained organic shapes rather than leaf illustrations.
+Use editorial everyday-life photography with natural light, human subjects and room for copy. The hero combines two separate photographs at once: a shopper on the left and a shopkeeper on the right. Match warmth and contrast, with a dark forest overlay behind the desktop copy. The willow emblem has a curved canopy, hanging fronds and a clear trunk.
 
 ## Homepage Story
 
 1. Utility bar: identify personal banking and provide a direct support path.
 2. Navigation: Banking, Digital experience, Trust and security, Help, Sign in and Open an account.
-3. Hero: explain what Willow is, who it serves and the next action, with the campaign image sequence.
+3. Hero: explain what Willow is, who it serves and the next action, with two photographs blended together.
 4. Brand proposition: connect everyday clarity, room to grow and a people-first experience.
 5. Products: checking, savings, debit cards and transfers link to their existing product pages.
 6. Digital experience: show a clearly labeled illustrative account view and the practical account tasks it represents.
@@ -84,7 +84,9 @@ Do not use fabricated customer counts, ratings, uptime, rates, certifications, g
 
 **Secondary action:** Explore banking.
 
-The hero uses an ivory editorial composition, dark forest copy on the left and a photograph on the right. Horizontal and vertical CSS masks dissolve the photo into the actual page surface. On phones, copy sits above the photo with a gradual blend between them. It has three responsive campaign photographs. Each image holds for about 5.2 seconds, then crossfades over 1.2 seconds. A pause/resume control and direct scene selectors keep the sequence user-controlled. Rotation pauses while the document is hidden, while the user is interacting with the controls, or when the hero is out of view.
+The hero uses two overlapping image layers with a broad horizontal gradient mask. Photo A occupies the left and gradually reveals Photo B across approximately 38–64 percent of the desktop hero. Photo B's own masked edge is hidden under fully opaque A, so the background never appears between the photographs. Both remain recognizable at the same time. The shop image is mirrored to keep the cashier's face on the outer right; the shopper stays left of the blend. A shared restrained color treatment matches tone and lighting. Text and buttons sit over a dark transparent overlay in the lower-left area. There is no carousel, rotation or timed crossfade, and the images are not flattened into a single file.
+
+On phones, retain the same horizontal blend in a 400px-high photo area. Crop around both outer subjects, and place the copy beneath the composition on forest green so no face is covered by text. Do not apply a vertical photo-to-background fade.
 
 Navigation stays flat; the current product set does not need dropdowns. On compact screens, links move into a keyboard-operable menu with an exposed expanded state and Escape-to-close behavior.
 
@@ -104,23 +106,23 @@ Navigation stays flat; the current product set does not need dropdowns. On compa
 
 ## Animation
 
-Hero copy enters in a short stagger: eyebrow, headline, supporting copy, then actions. The image sequence crossfades rather than slides; its slight scale change stays below 3%. Section copy reveals once as it enters the viewport. Link arrows and buttons move only a few pixels on hover. Avoid continuous number counters, parallax and large moving shapes.
+The hero images and copy stay static. Section copy reveals once as it enters the viewport. Link arrows and buttons move only a few pixels on hover. Avoid continuous number counters, parallax and large moving shapes.
 
-For `prefers-reduced-motion: reduce`, stop automatic rotation, remove transitions and entrance/reveal movement, and leave the first image and all content visible. The user may still select a static scene manually.
+For `prefers-reduced-motion: reduce`, remove transitions and entrance/reveal movement. Both hero images and all content remain visible.
 
 ## Responsive Behavior
 
 **Desktop:** Full-height editorial hero, four-column product row, two-column digital preview, and wide trust band.
 
-**Tablet:** Keep the hero text and controls separated; change product links to two columns and stack experience and trust layouts where needed.
+**Tablet:** Preserve both photos and clear outer focal points; change product links to two columns and stack experience and trust layouts where needed.
 
-**Mobile:** Preserve the image sequence and legible dark overlay, use a 42px hero heading, stack calls to action, expose navigation through the menu button, and collapse product links to one column. Keep the dashboard sample narrow and wrap its account rows without horizontal scrolling.
+**Mobile:** Keep both photographs in a compact blended area with adjusted focal crops, followed by readable copy and calls to action. Use a 44px hero heading, expose navigation through the menu button, and collapse product links to one column. Keep the dashboard sample narrow and wrap its account rows without horizontal scrolling.
 
 ## Accessibility and Performance
 
-Use semantic sections and heading order, descriptive stage labels, empty alt text for decorative overlapping slides, keyboard-operable scene controls, pressed/expanded states, Escape-to-close navigation and a visible focus outline. Ensure content remains available if JavaScript or IntersectionObserver is unavailable.
+Use semantic sections and heading order, descriptive alt text for both hero photos, expanded states, Escape-to-close navigation and a visible focus outline. Ensure content remains available if JavaScript or IntersectionObserver is unavailable.
 
-The first responsive image uses `srcset`, `sizes`, `fetchpriority="high"` and asynchronous decoding. Later images begin lazy and are promoted before their turn. In production, serve campaign images from a controlled asset host in AVIF/WebP with fallbacks, correct dimensions, and a preload for the first selected source. Keep overlays and fades on opacity/transform properties to avoid layout work.
+Both responsive hero images use `srcset`, `sizes`, `fetchpriority="high"` and asynchronous decoding because both are visible immediately. In production, serve campaign images from a controlled asset host in AVIF/WebP with fallbacks and correct dimensions. Keep the blend as CSS gradient masks over separate assets.
 
 ## Production Readiness
 
