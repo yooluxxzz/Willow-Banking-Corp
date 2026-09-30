@@ -19,6 +19,8 @@ function validatePassword(password) {
 }
 
 function validateAmount(amount) {
+    if (!['string', 'number'].includes(typeof amount)) return false;
+    if (!/^\d+(\.\d{1,2})?$/.test(String(amount).trim())) return false;
     const num = Number(amount);
     if (isNaN(num) || !isFinite(num)) return false;
     if (num <= 0) return false;

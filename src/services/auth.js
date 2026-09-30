@@ -71,6 +71,8 @@ async function registerUser({ email, password, fullName, phone }) {
         const userId = result.lastInsertRowid;
         const accountResult = insertAccount.run(userId, accountNumber);
         const accountId = accountResult.lastInsertRowid;
+        // Give newly registered demo customers a savings destination as well.
+        db.prepare("INSERT INTO accounts (user_id, account_number, account_type, balance, available_balance) VALUES (?, ?, 'savings', 0, 0)").run(userId, generateAccountNumber());
         insertNotification.run(userId);
 
         // Generate a demo debit card

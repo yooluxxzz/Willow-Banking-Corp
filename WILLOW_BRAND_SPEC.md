@@ -84,7 +84,7 @@ Do not use fabricated customer counts, ratings, uptime, rates, certifications, g
 
 **Secondary action:** Explore banking.
 
-The hero uses a full-bleed image with a dark forest gradient and copy anchored to the lower left. It has three responsive campaign photographs. Each image holds for about 5.2 seconds, then crossfades over 1.2 seconds. A pause/resume control and direct scene selectors keep the sequence user-controlled. Rotation pauses while the document is hidden, while the user is interacting with the controls, or when the hero is out of view.
+The hero uses an ivory editorial composition, dark forest copy on the left and a photograph on the right. Horizontal and vertical CSS masks dissolve the photo into the actual page surface. On phones, copy sits above the photo with a gradual blend between them. It has three responsive campaign photographs. Each image holds for about 5.2 seconds, then crossfades over 1.2 seconds. A pause/resume control and direct scene selectors keep the sequence user-controlled. Rotation pauses while the document is hidden, while the user is interacting with the controls, or when the hero is out of view.
 
 Navigation stays flat; the current product set does not need dropdowns. On compact screens, links move into a keyboard-operable menu with an exposed expanded state and Escape-to-close behavior.
 
@@ -125,3 +125,6 @@ The first responsive image uses `srcset`, `sizes`, `fetchpriority="high"` and as
 ## Production Readiness
 
 Willow is currently a fictional demonstration platform. Before presenting it as a real financial institution, replace every regulatory, deposit-protection, privacy and security placeholder with independently verified, jurisdiction-appropriate information and have the product and claims reviewed.
+## Authentication and emblem update
+
+Sign-in and two-step registration use a forest campaign panel and warm ivory form surface, Newsreader headings and DM Sans labels. At phone widths the form takes the full width. All form controls have labels, visible focus, password visibility controls and explicit errors. The SVG emblem shows a curved willow canopy, hanging fronds and a trunk in an evergreen circle with a subtle copper ground line. No rasterized text or generated logo is used.

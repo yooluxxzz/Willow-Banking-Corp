@@ -45,6 +45,8 @@ router.get('/forgot-password', (req, res) => {
 });
 
 // Public info pages
+router.get('/personal', (req, res) => res.render('banking-overview', { title: 'Personal banking — Willow Banking Corp.', business: false }));
+router.get('/business', (req, res) => res.render('banking-overview', { title: 'Business banking — Willow Banking Corp.', business: true }));
 router.get('/about', (req, res) => res.render('about', { title: 'About Us — Willow Banking Corp.' }));
 router.get('/careers', (req, res) => res.render('careers', { title: 'Careers — Willow Banking Corp.' }));
 router.get('/press', (req, res) => res.render('press', { title: 'Press — Willow Banking Corp.' }));

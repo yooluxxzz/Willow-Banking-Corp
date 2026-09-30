@@ -52,7 +52,7 @@ function setupHomeNavigation() {
         if (event.key === 'Escape') closeMenu();
     });
     window.addEventListener('resize', () => {
-        if (window.innerWidth > 760) closeMenu();
+        if (window.innerWidth > 900) closeMenu();
     }, { passive: true });
 }
 
@@ -67,9 +67,9 @@ function setupHeroCarousel() {
     if (!stage || slides.length < 2 || !controls || !pauseButton) return;
 
     const sceneLabels = [
-        'A customer reviewing a payment at home',
-        'A customer making an everyday card payment',
-        'A quiet moment for planning and saving',
+        'A customer making an everyday payment',
+        'A customer shopping for everyday essentials',
+        'A family spending time together',
     ];
     let activeIndex = 0;
     let timer = null;
@@ -227,7 +227,7 @@ async function handleLogin(e) {
 
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span> Signing in...';
-    errBox.classList.add('hidden');
+    errBox.hidden = true;
 
     try {
         const form = document.getElementById('loginForm');
@@ -242,9 +242,9 @@ async function handleLogin(e) {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Login failed.');
-        window.location.href = '/dashboard';
+        window.location.href = data.redirect || '/dashboard';
     } catch (err) {
-        errBox.classList.remove('hidden');
+        errBox.hidden = false; errBox.focus();
         errText.textContent = err.message || 'Invalid email or password.';
         btn.disabled = false;
         btn.textContent = 'Sign In';
@@ -260,14 +260,14 @@ async function handleRegister(e) {
     const password = document.getElementById('password').value;
     const confirm = document.getElementById('confirmPassword').value;
     if (password !== confirm) {
-        errBox.classList.remove('hidden');
+        errBox.hidden = false; errBox.focus();
         errText.textContent = 'Passwords do not match.';
         return;
     }
 
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span> Creating account...';
-    errBox.classList.add('hidden');
+    errBox.hidden = true;
 
     try {
         const form = document.getElementById('registerForm');
@@ -284,9 +284,9 @@ async function handleRegister(e) {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Registration failed.');
-        window.location.href = '/dashboard';
+        window.location.href = data.redirect || '/dashboard';
     } catch (err) {
-        errBox.classList.remove('hidden');
+        errBox.hidden = false; errBox.focus();
         errText.textContent = err.message || 'Could not create account. Please try again.';
         btn.disabled = false;
         btn.textContent = 'Create Account';
@@ -411,3 +411,49 @@ function toggleTheme() {
         });
     };
 })();
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-password-toggle]').forEach(button => {
+        button.addEventListener('click', () => {
+            const input = document.getElementById(button.getAttribute('aria-controls'));
+            const visible = input.type === 'password';
+            input.type = visible ? 'text' : 'password';
+            button.setAttribute('aria-pressed', String(visible));
+            button.setAttribute('aria-label', visible ? 'Hide password' : 'Show password');
+        });
+    });
+    const form = document.getElementById('registerForm');
+    if (!form) return;
+    const steps = Array.from(form.querySelectorAll('[data-register-step]'));
+    const setStep = index => {
+        steps.forEach((step, i) => {
+            step.hidden = i !== index;
+            step.querySelectorAll('input').forEach(input => { input.disabled = i !== index; });
+        });
+        document.getElementById('registerStepLabel').textContent = 'Step ' + (index + 1) + ' of 2';
+        document.getElementById('registerStepName').textContent = index ? 'Account security' : 'Personal details';
+        document.getElementById('registerProgress').style.width = index ? '100%' : '50%';
+        document.querySelector('.auth-progress-track').setAttribute('aria-valuenow', String(index + 1));
+        steps[index].querySelector('input').focus();
+    };
+    document.getElementById('registerNext').addEventListener('click', () => {
+        if (Array.from(steps[0].querySelectorAll('input')).every(input => input.reportValidity())) setStep(1);
+    });
+    document.getElementById('registerBack').addEventListener('click', () => setStep(0));
+    steps[1].querySelectorAll('input').forEach(input => { input.disabled = true; });
+    const password = document.getElementById('password');
+    password.addEventListener('input', () => {
+        const value = password.value;
+        const rules = { length: value.length >= 8 && value.length <= 128, upper: /[A-Z]/.test(value), lower: /[a-z]/.test(value), number: /[0-9]/.test(value) };
+        Object.entries(rules).forEach(([rule, valid]) => document.querySelector('[data-password-rule="' + rule + '"]').classList.toggle('is-valid', valid));
+        const met = Object.values(rules).filter(Boolean).length;
+        document.getElementById('passwordStrengthBar').style.width = met * 25 + '%';
+        document.getElementById('passwordStrengthText').textContent = met === 4 ? 'Password meets the requirements' : 'Meet all four password requirements';
+        password.setCustomValidity(met === 4 || !value ? '' : 'Use 8–128 characters with uppercase, lowercase and a number.');
+    });
+    document.getElementById('confirmPassword').addEventListener('input', event => {
+        const matches = event.target.value === password.value;
+        document.getElementById('confirmPasswordError').hidden = matches;
+        event.target.setCustomValidity(matches ? '' : 'Passwords must match.');
+    });
+});

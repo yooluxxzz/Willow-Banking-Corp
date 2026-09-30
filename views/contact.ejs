@@ -6,7 +6,8 @@
             <main class="info-page">
                 <div class="info-inner">
                     <h1>Contact Us</h1>
-                    <p class="info-sub">We'd love to hear from you. Reach out through any of the channels below.</p>
+                    <p class="info-sub">Explore Willow's help experience. This fictional demo has no staffed support service.</p>
+                    <p class="demo-notice">All contact details below are illustrative. Do not send personal, account or security information. The form validates locally and does not send or store messages.</p>
 
                     <section class="info-section">
                         <div class="info-grid">
@@ -96,7 +97,8 @@
                                 <textarea id="contactMessage" class="form-control" rows="5"
                                     placeholder="How can we help?" required style="resize:vertical;"></textarea>
                             </div>
-                            <button type="submit" class="btn btn-primary btn-lg">Send Message</button>
+                            <button type="submit" class="btn btn-primary btn-lg">Preview demo message</button>
+                            <p id="contactResult" role="status" aria-live="polite"></p>
                         </form>
                     </section>
                 </div>
@@ -105,20 +107,8 @@
             <%- include('partials/public-footer') %>
                 <script>
                     function handleContactSubmit(form) {
-                        const btn = form.querySelector('.btn');
-                        btn.disabled = true;
-                        btn.textContent = 'Sending...';
-                        setTimeout(function () {
-                            btn.textContent = 'Message Sent!';
-                            if (typeof showToast === 'function') {
-                                showToast('Thank you! Your message has been received. We will get back to you shortly.', 'success');
-                            }
-                            setTimeout(function () {
-                                form.reset();
-                                btn.disabled = false;
-                                btn.textContent = 'Send Message';
-                            }, 3000);
-                        }, 800);
+                        if (!form.reportValidity()) return;
+                        document.getElementById('contactResult').textContent = 'Demo preview complete. Your message was not sent or saved. A support backend must be connected before messages can be delivered.';
                     }
                 </script>
     </body>

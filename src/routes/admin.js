@@ -124,6 +124,9 @@ router.post('/users/:id/status', requireAdmin, (req, res) => {
             return res.status(400).json({ error: 'A reason is required for suspension or deletion.' });
         }
 
+        if (Number(req.params.id) === req.session.userId) {
+            return res.status(403).json({ error: 'You cannot modify your own account.' });
+        }
         const user = db.prepare("SELECT * FROM users WHERE id = ? AND role = 'customer'").get(parseInt(req.params.id));
         if (!user) return res.status(404).json({ error: 'User not found.' });
 

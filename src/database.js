@@ -16,14 +16,14 @@ let saveTimer = null;
  */
 async function initializeDatabase() {
     const SQL = await initSqlJs();
-    dbPath = path.resolve(config.paths.root, config.database.path);
-    const dir = path.dirname(dbPath);
+    dbPath = config.database.path === ':memory:' ? null : path.resolve(config.paths.root, config.database.path);
+    const dir = dbPath ? path.dirname(dbPath) : config.paths.data;
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
     }
 
     // Load existing database or create new
-    if (fs.existsSync(dbPath)) {
+    if (dbPath && fs.existsSync(dbPath)) {
         const buffer = fs.readFileSync(dbPath);
         db = new SQL.Database(buffer);
     } else {

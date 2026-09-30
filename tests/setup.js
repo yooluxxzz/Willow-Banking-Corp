@@ -10,6 +10,8 @@ const path = require('path');
 process.env.DATABASE_PATH = ':memory:';
 process.env.SESSION_SECRET = 'test-secret-key-for-testing';
 process.env.NODE_ENV = 'test';
+// Functional tests exercise many logins from one IP; rate limits are tested separately.
+process.env.AUTH_RATE_LIMIT_MAX = '100';
 process.env.ADMIN_EMAIL = 'admin@willow.test';
 process.env.ADMIN_PASSWORD = 'Admin123Test';
 
