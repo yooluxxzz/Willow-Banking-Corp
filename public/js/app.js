@@ -24,7 +24,148 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     setupLandingCalculator();
+    setupHomeNavigation();
+    setupHeroCarousel();
+    setupHomeReveals();
 });
+
+function setupHomeNavigation() {
+    const toggle = document.getElementById('homeMenuToggle');
+    const menu = document.getElementById('homeNavLinks');
+    if (!toggle || !menu) return;
+
+    const closeMenu = () => {
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.setAttribute('aria-label', 'Open navigation menu');
+        menu.classList.remove('is-open');
+    };
+
+    toggle.addEventListener('click', () => {
+        const isOpen = toggle.getAttribute('aria-expanded') === 'true';
+        toggle.setAttribute('aria-expanded', String(!isOpen));
+        toggle.setAttribute('aria-label', isOpen ? 'Open navigation menu' : 'Close navigation menu');
+        menu.classList.toggle('is-open', !isOpen);
+    });
+
+    menu.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeMenu));
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeMenu();
+    });
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 760) closeMenu();
+    }, { passive: true });
+}
+
+function setupHeroCarousel() {
+    const stage = document.querySelector('[data-hero-stage]');
+    const slides = Array.from(document.querySelectorAll('[data-hero-slide]'));
+    const controls = document.querySelector('.home-carousel-controls');
+    const pauseButton = document.querySelector('[data-carousel-toggle]');
+    const dots = Array.from(document.querySelectorAll('[data-slide-to]'));
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (!stage || slides.length < 2 || !controls || !pauseButton) return;
+
+    const sceneLabels = [
+        'A customer reviewing a payment at home',
+        'A customer making an everyday card payment',
+        'A quiet moment for planning and saving',
+    ];
+    let activeIndex = 0;
+    let timer = null;
+    let manuallyPaused = false;
+    let interactionPaused = false;
+    let isVisible = true;
+
+    const clearTimer = () => {
+        window.clearTimeout(timer);
+        timer = null;
+    };
+    const scheduleNext = () => {
+        clearTimer();
+        if (reduceMotion || manuallyPaused || interactionPaused || !isVisible || document.hidden) return;
+        timer = window.setTimeout(() => {
+            activateSlide((activeIndex + 1) % slides.length);
+            scheduleNext();
+        }, 5200);
+    };
+    const activateSlide = (index) => {
+        activeIndex = index;
+        slides.forEach((slide, slideIndex) => slide.classList.toggle('is-active', slideIndex === activeIndex));
+        dots.forEach((dot, dotIndex) => {
+            const isActive = dotIndex === activeIndex;
+            dot.classList.toggle('is-active', isActive);
+            dot.setAttribute('aria-pressed', String(isActive));
+        });
+        stage.setAttribute('aria-label', sceneLabels[activeIndex]);
+        slides[(activeIndex + 1) % slides.length].loading = 'eager';
+    };
+
+    slides[1].loading = 'eager';
+    dots.forEach((dot) => {
+        dot.addEventListener('click', () => {
+            activateSlide(Number(dot.dataset.slideTo));
+            scheduleNext();
+        });
+    });
+    pauseButton.addEventListener('click', () => {
+        manuallyPaused = !manuallyPaused;
+        pauseButton.setAttribute('aria-pressed', String(manuallyPaused));
+        pauseButton.setAttribute('aria-label', manuallyPaused ? 'Resume image rotation' : 'Pause image rotation');
+        pauseButton.title = manuallyPaused ? 'Resume image rotation' : 'Pause image rotation';
+        pauseButton.classList.toggle('is-paused', manuallyPaused);
+        scheduleNext();
+    });
+
+    controls.addEventListener('mouseenter', () => {
+        interactionPaused = true;
+        clearTimer();
+    });
+    controls.addEventListener('mouseleave', () => {
+        interactionPaused = false;
+        scheduleNext();
+    });
+    controls.addEventListener('focusin', () => {
+        interactionPaused = true;
+        clearTimer();
+    });
+    controls.addEventListener('focusout', (event) => {
+        if (!controls.contains(event.relatedTarget)) {
+            interactionPaused = false;
+            scheduleNext();
+        }
+    });
+    document.addEventListener('visibilitychange', scheduleNext);
+
+    if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(([entry]) => {
+            isVisible = entry.isIntersecting;
+            scheduleNext();
+        }, { threshold: 0.1 });
+        observer.observe(stage);
+    }
+
+    scheduleNext();
+}
+
+function setupHomeReveals() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return;
+
+    const sections = document.querySelectorAll('.home-reveal');
+    if (!sections.length) return;
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.14 });
+
+    sections.forEach((section) => observer.observe(section));
+    document.body.classList.add('home-reveals-enabled');
+}
 
 function setupLandingCalculator() {
     const amountInput = document.getElementById('loanAmount');

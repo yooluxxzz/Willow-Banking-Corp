@@ -1,23 +1,28 @@
 <%- include('partials/header') %>
 
-<body class="public-page">
+<body class="public-page home-page">
     <a class="skip-link" href="#main-content">Skip to main content</a>
 
-    <nav class="public-nav" aria-label="Main navigation">
+    <div class="home-utility">
+        <div class="home-utility-inner">
+            <span>Personal banking from Willow</span>
+            <a href="/contact">Help and support</a>
+        </div>
+    </div>
+
+    <nav class="public-nav home-nav" aria-label="Main navigation">
         <div class="nav-inner">
             <a href="/" class="nav-brand">
-                <img src="/images/logo.svg" alt="Willow" class="nav-logo-img">
+                <img src="/images/logo.svg" alt="" class="nav-logo-img">
                 Willow Banking Corp.
             </a>
-            <div class="nav-links">
-                <a href="#products" class="hide-mobile">Products</a>
-                <a href="#experience" class="hide-mobile">Experience</a>
-                <a href="#security" class="hide-mobile">Security</a>
-                <a href="#resources">Resources</a>
+            <div class="nav-links" id="homeNavLinks">
+                <a href="#banking">Banking</a>
+                <a href="#experience">Digital experience</a>
+                <a href="#security">Trust and security</a>
+                <a href="#resources">Help</a>
                 <button class="nav-theme-toggle" onclick="toggleTheme()" title="Toggle dark mode" aria-label="Toggle theme">
-                    <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="18" height="18"
-                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
+                    <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="5" />
                         <line x1="12" x2="12" y1="1" y2="3" />
                         <line x1="12" x2="12" y1="21" y2="23" />
@@ -28,365 +33,208 @@
                         <line x1="4.22" x2="5.64" y1="19.78" y2="18.36" />
                         <line x1="18.36" x2="19.78" y1="5.64" y2="4.22" />
                     </svg>
-                    <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="18" height="18"
-                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
+                    <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
                     </svg>
                 </button>
-                <a href="/login" class="btn btn-secondary btn-sm">Sign In</a>
-                <a href="/register" class="btn btn-primary btn-sm">Open Account</a>
+                <a href="/login" class="home-nav-signin">Sign in</a>
+                <a href="/register" class="home-nav-cta">Open an account</a>
             </div>
+            <button class="home-menu-toggle" id="homeMenuToggle" type="button" aria-controls="homeNavLinks" aria-expanded="false" aria-label="Open navigation menu">
+                <svg class="menu-open-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                    <path d="M4 7h16M4 12h16M4 17h16" />
+                </svg>
+                <svg class="menu-close-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                    <path d="m6 6 12 12M18 6 6 18" />
+                </svg>
+            </button>
         </div>
     </nav>
 
     <main id="main-content">
-        <section class="hero">
-            <div class="section-inner hero-inner">
+        <section class="home-hero" id="home" aria-labelledby="homeHeroTitle">
+            <div class="home-hero-media" data-hero-stage role="img" aria-label="A customer reviewing a payment at home">
+                <img class="home-hero-slide is-active" data-hero-slide src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&amp;fit=crop&amp;w=1600&amp;q=82" srcset="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&amp;fit=crop&amp;w=720&amp;q=74 720w, https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&amp;fit=crop&amp;w=1200&amp;q=80 1200w, https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&amp;fit=crop&amp;w=1800&amp;q=82 1800w" sizes="100vw" alt="" aria-hidden="true" fetchpriority="high" decoding="async">
+                <img class="home-hero-slide" data-hero-slide src="https://images.unsplash.com/photo-1556742502-ec7c0e9f34b1?auto=format&amp;fit=crop&amp;w=1600&amp;q=82" srcset="https://images.unsplash.com/photo-1556742502-ec7c0e9f34b1?auto=format&amp;fit=crop&amp;w=720&amp;q=74 720w, https://images.unsplash.com/photo-1556742502-ec7c0e9f34b1?auto=format&amp;fit=crop&amp;w=1200&amp;q=80 1200w, https://images.unsplash.com/photo-1556742502-ec7c0e9f34b1?auto=format&amp;fit=crop&amp;w=1800&amp;q=82 1800w" sizes="100vw" alt="" aria-hidden="true" loading="lazy" fetchpriority="low" decoding="async">
+                <img class="home-hero-slide" data-hero-slide src="https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&amp;fit=crop&amp;w=1600&amp;q=82" srcset="https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&amp;fit=crop&amp;w=720&amp;q=74 720w, https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&amp;fit=crop&amp;w=1200&amp;q=80 1200w, https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&amp;fit=crop&amp;w=1800&amp;q=82 1800w" sizes="100vw" alt="" aria-hidden="true" loading="lazy" fetchpriority="low" decoding="async">
+            </div>
+            <div class="home-hero-shade" aria-hidden="true"></div>
+            <div class="home-hero-content">
+                <div class="home-hero-copy">
+                    <p class="home-eyebrow">Willow Banking Corp. <span>Personal banking</span></p>
+                    <h1 id="homeHeroTitle">Steady for what's next.</h1>
+                    <p>Everyday accounts, cards, transfers and clear digital tools, brought together around the life you're building.</p>
+                    <div class="home-hero-actions">
+                        <a href="/register" class="home-button home-button-light">Open an account</a>
+                        <a href="#banking" class="home-text-link">Explore banking <span aria-hidden="true">&#8594;</span></a>
+                    </div>
+                </div>
+                <div class="home-carousel-controls" aria-label="Hero image controls">
+                    <div class="home-carousel-dots" role="group" aria-label="Choose a campaign image">
+                        <button class="is-active" type="button" data-slide-to="0" aria-label="Show everyday banking scene" aria-pressed="true"></button>
+                        <button type="button" data-slide-to="1" aria-label="Show contactless payment scene" aria-pressed="false"></button>
+                        <button type="button" data-slide-to="2" aria-label="Show long-term planning scene" aria-pressed="false"></button>
+                    </div>
+                    <button class="home-carousel-toggle" type="button" data-carousel-toggle aria-label="Pause image rotation" title="Pause image rotation" aria-pressed="false">
+                        <svg class="pause-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 5v14M16 5v14" /></svg>
+                        <svg class="play-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m7 4 13 8-13 8z" /></svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section class="home-intro home-reveal" aria-labelledby="homeIntroTitle">
+            <div class="section-inner home-intro-grid">
+                <p class="home-eyebrow">Made for real life</p>
                 <div>
-                    <div class="hero-badges">
-                        <span>Trusted by 42k+ households</span>
-                        <span>4.9/5 member rating</span>
-                    </div>
-                    <p class="eyebrow">Modern digital banking</p>
-                    <h1>Banking built around your life.</h1>
-                    <p>Willow Banking Corp. combines secure account management, instant transfers, and helpful financial tools in a clean, mobile-first experience designed around how people actually bank every day.</p>
-                    <div class="hero-actions">
-                        <a href="/register" class="btn btn-primary btn-lg">Get Started</a>
-                        <a href="/login" class="btn btn-secondary btn-lg">Sign In</a>
-                    </div>
-                    <div class="hero-meta">
-                        <div>
-                            <strong>3 min</strong>
-                            <span>setup</span>
-                        </div>
-                        <div>
-                            <strong>24/7</strong>
-                            <span>support</span>
-                        </div>
-                        <div>
-                            <strong>$0</strong>
-                            <span>monthly fee</span>
-                        </div>
-                    </div>
+                    <h2 id="homeIntroTitle">A clear place for money, through every kind of day.</h2>
+                    <p>From the everyday essentials to plans that take time, Willow brings the parts of banking you use together in one considered digital experience.</p>
                 </div>
-                <div class="hero-visual" aria-label="Account overview preview">
-                    <div class="balance-card">
-                        <div class="balance-header">
-                            <span class="balance-label">Available balance</span>
-                            <span class="balance-pill">+8.2%</span>
-                        </div>
-                        <h3>$24,840.76</h3>
-                        <div class="balance-row">
-                            <span>Checking</span>
-                            <strong>$12,640.57</strong>
-                        </div>
-                        <div class="balance-row">
-                            <span>Savings</span>
-                            <strong>$12,200.19</strong>
-                        </div>
-                    </div>
-                    <div class="mini-card">
-                        <span class="mini-label">Spending</span>
-                        <strong>$3,460</strong>
-                        <div class="mini-bars" aria-hidden="true">
-                            <span style="--bar-height: 42%"></span>
-                            <span style="--bar-height: 58%"></span>
-                            <span style="--bar-height: 71%"></span>
-                            <span style="--bar-height: 86%"></span>
-                            <span style="--bar-height: 63%"></span>
-                            <span style="--bar-height: 92%"></span>
-                        </div>
-                    </div>
+                <div class="home-principles" aria-label="Willow principles">
+                    <span>Everyday clarity</span>
+                    <span>Room to grow</span>
+                    <span>People first</span>
                 </div>
             </div>
         </section>
 
-        <section class="stats-strip" aria-label="Key banking highlights">
-            <div class="section-inner stats-grid">
-                <article class="stat-card">
-                    <strong>99.99%</strong>
-                    <span>secure uptime</span>
-                </article>
-                <article class="stat-card">
-                    <strong>24/7</strong>
-                    <span>digital support</span>
-                </article>
-                <article class="stat-card">
-                    <strong>2.5M+</strong>
-                    <span>transactions protected</span>
-                </article>
-                <article class="stat-card">
-                    <strong>0.00%</strong>
-                    <span>account opening fee</span>
-                </article>
-            </div>
-        </section>
-
-        <section class="features-section" id="products">
+        <section class="home-products home-reveal" id="banking" aria-labelledby="homeProductsTitle">
             <div class="section-inner">
-                <p class="eyebrow eyebrow-centered">Everything in one place</p>
-                <h2>Designed to help people manage money confidently</h2>
-                <p class="section-sub">From day-to-day payments to long-term planning, every feature is built for clarity, speed, and trust.</p>
-                <div class="features-grid">
-                    <article class="feature-card">
-                        <div class="feature-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
-                            </svg>
-                        </div>
-                        <h3>Bank-grade security</h3>
-                        <p>Encrypted sessions, secure logins, and proactive protection for every account and payment.</p>
-                    </article>
-                    <article class="feature-card">
-                        <div class="feature-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="m5 12 7-7 7 7" />
-                                <path d="M12 19V5" />
-                            </svg>
-                        </div>
-                        <h3>Instant transfers</h3>
-                        <p>Move money across accounts or to other Willow customers in seconds with complete transparency.</p>
-                    </article>
-                    <article class="feature-card">
-                        <div class="feature-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
-                                <path d="M14 2v6h6" />
-                            </svg>
-                        </div>
-                        <h3>Detailed statements</h3>
-                        <p>Track every payment, transfer, and deposit with searchable history and export-ready records.</p>
-                    </article>
-                    <article class="feature-card">
-                        <div class="feature-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <rect width="20" height="14" x="2" y="5" rx="2" />
-                                <line x1="2" x2="22" y1="10" y2="10" />
-                            </svg>
-                        </div>
-                        <h3>Card controls</h3>
-                        <p>Freeze, unfreeze, and review spending across your debit cards with one click from the dashboard.</p>
-                    </article>
-                    <article class="feature-card">
-                        <div class="feature-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-                                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-                            </svg>
-                        </div>
-                        <h3>Real-time alerts</h3>
-                        <p>Stay informed with timely updates about purchases, logins, transfers, and important account changes.</p>
-                    </article>
-                    <article class="feature-card">
-                        <div class="feature-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="3" y="3" width="7" height="7" />
-                                <rect x="14" y="3" width="7" height="7" />
-                                <rect x="14" y="14" width="7" height="7" />
-                                <rect x="3" y="14" width="7" height="7" />
-                            </svg>
-                        </div>
-                        <h3>Personalized dashboard</h3>
-                        <p>See balances, spending trends, upcoming bills, and account health in one easy-to-scan workspace.</p>
-                    </article>
+                <div class="home-section-heading">
+                    <div>
+                        <p class="home-eyebrow">Banking for the whole picture</p>
+                        <h2 id="homeProductsTitle">The essentials, thoughtfully connected.</h2>
+                    </div>
+                    <p>Choose what fits the way you manage money today. Your accounts and everyday tools stay close at hand.</p>
+                </div>
+                <div class="home-product-grid">
+                    <a class="home-product-item" href="/products/checking">
+                        <span class="home-product-number">01</span>
+                        <span class="home-product-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h3"/></svg></span>
+                        <h3>Checking</h3>
+                        <p>Keep day-to-day spending and account activity in view.</p>
+                        <span class="home-product-link">Explore checking <span aria-hidden="true">&#8594;</span></span>
+                    </a>
+                    <a class="home-product-item" href="/products/savings">
+                        <span class="home-product-number">02</span>
+                        <span class="home-product-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V12M8 15.5 12 12l4 3.5M5 5.5C8.5 4 15.5 4 19 5.5c-1 5-4 7-7 7s-6-2-7-7Z"/></svg></span>
+                        <h3>Savings</h3>
+                        <p>Set money aside for the plans you're working toward.</p>
+                        <span class="home-product-link">Explore savings <span aria-hidden="true">&#8594;</span></span>
+                    </a>
+                    <a class="home-product-item" href="/products/debit-cards">
+                        <span class="home-product-number">03</span>
+                        <span class="home-product-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h2"/></svg></span>
+                        <h3>Debit cards</h3>
+                        <p>Review card activity and manage card controls in one place.</p>
+                        <span class="home-product-link">Explore cards <span aria-hidden="true">&#8594;</span></span>
+                    </a>
+                    <a class="home-product-item" href="/products/transfers">
+                        <span class="home-product-number">04</span>
+                        <span class="home-product-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h13l-3-3M17 17H4l3 3M20 7l-4 4M4 17l4-4"/></svg></span>
+                        <h3>Transfers</h3>
+                        <p>Move money between accounts with a clear activity history.</p>
+                        <span class="home-product-link">Explore transfers <span aria-hidden="true">&#8594;</span></span>
+                    </a>
                 </div>
             </div>
         </section>
 
-        <section class="dashboard-showcase" id="experience">
-            <div class="section-inner dashboard-layout">
-                <div class="dashboard-copy">
-                    <p class="eyebrow">Personalized customer experience</p>
-                    <h2>Everything important, right where you need it.</h2>
-                    <p>Our dashboards are designed to surface account health, spending insights, and secure actions without friction, making digital banking feel simple and confidence-building.</p>
-                    <ul class="info-list">
-                        <li>Smart account summaries with spending forecasts</li>
-                        <li>Clear recommendations for saving, transfers, and card controls</li>
-                        <li>Accessible layouts built for desktop, tablet, and mobile</li>
+        <section class="home-experience home-reveal" id="experience" aria-labelledby="homeExperienceTitle">
+            <div class="section-inner home-experience-grid">
+                <div class="home-experience-copy">
+                    <p class="home-eyebrow">A calmer digital experience</p>
+                    <h2 id="homeExperienceTitle">See what's happening. Know what comes next.</h2>
+                    <p>Balances, recent activity, transfers and card controls come together in a dashboard designed to make the next step easier to find.</p>
+                    <ul class="home-check-list">
+                        <li>Account and savings summaries</li>
+                        <li>Searchable transaction history</li>
+                        <li>Card controls and account alerts</li>
                     </ul>
-                    <a href="/register" class="btn btn-primary btn-md">Open an account</a>
+                    <a href="/login" class="home-inline-link">Sign in to your account <span aria-hidden="true">&#8594;</span></a>
                 </div>
-                <div class="dashboard-preview" aria-label="Dashboard preview">
-                    <div class="summary-topbar">
-                        <span>Primary account</span>
-                        <span class="summary-badge">+8.2%</span>
+                <div class="home-sample-window" aria-label="Illustrative Willow digital banking experience">
+                    <div class="home-sample-topbar">
+                        <span class="home-sample-brand"><span class="home-sample-mark" aria-hidden="true"></span> Willow</span>
+                        <span class="home-sample-label">Illustrative account view</span>
                     </div>
-                    <h3>$24,840.76</h3>
-                    <div class="summary-row">
-                        <span>Income</span>
-                        <strong>$7,450</strong>
-                    </div>
-                    <div class="summary-row">
-                        <span>Expenses</span>
-                        <strong>$4,180</strong>
-                    </div>
-                    <div class="mini-chart large" aria-hidden="true">
-                        <span style="--bar-height: 45%"></span>
-                        <span style="--bar-height: 62%"></span>
-                        <span style="--bar-height: 52%"></span>
-                        <span style="--bar-height: 79%"></span>
-                        <span style="--bar-height: 70%"></span>
-                        <span style="--bar-height: 88%"></span>
-                        <span style="--bar-height: 94%"></span>
-                    </div>
-                    <div class="snapshot-grid">
-                        <div>
-                            <span>Savings goal</span>
-                            <strong>$9,200</strong>
+                    <div class="home-sample-main">
+                        <div class="home-sample-balance">
+                            <span>Available balance <span class="home-sample-tag">Sample data</span></span>
+                            <strong>$4,820.35</strong>
+                            <span>Across your everyday accounts</span>
                         </div>
-                        <div>
-                            <span>Card status</span>
-                            <strong>Active</strong>
+                        <div class="home-sample-accounts">
+                            <div><span>Everyday account</span><strong>$3,240.35</strong></div>
+                            <div><span>Savings account</span><strong>$1,580.00</strong></div>
+                        </div>
+                        <div class="home-sample-activity">
+                            <div class="home-sample-activity-heading"><strong>Recent activity</strong><span>Example transactions</span></div>
+                            <div><span class="home-activity-mark">M</span><span>Market Street Grocer<small>Today &middot; Debit card</small></span><strong>-$42.80</strong></div>
+                            <div><span class="home-activity-mark home-activity-mark-alt">T</span><span>Transfer to savings<small>Yesterday &middot; Transfer</small></span><strong>-$100.00</strong></div>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <section class="calculator-section" id="tools">
-            <div class="section-inner calc-layout">
-                <div class="calculator-copy">
-                    <p class="eyebrow">Helpful financial tools</p>
-                    <h2>See what a smarter plan could look like.</h2>
-                    <p>Use a quick estimate to explore monthly loan costs, compare scenarios, and make faster, more confident decisions.</p>
-                    <ul class="info-list">
-                        <li>Mortgage and loan estimate planning</li>
-                        <li>Simple cash-flow and savings insights</li>
-                        <li>Transparent, accessible financial guidance</li>
-                    </ul>
-                </div>
-                <div class="calculator-card" aria-live="polite">
-                    <div class="calc-header">
-                        <span class="calc-badge">Mortgage estimator</span>
-                    </div>
-                    <div class="calc-form">
-                        <label>
-                            Home value
-                            <input id="loanAmount" type="number" value="420000" min="0" step="1000">
-                        </label>
-                        <label>
-                            Down payment
-                            <input id="downPayment" type="number" value="70000" min="0" step="1000">
-                        </label>
-                        <label>
-                            APR
-                            <input id="aprRate" type="number" value="6.5" min="0" step="0.1">
-                        </label>
-                        <label>
-                            Term
-                            <select id="loanTerm">
-                                <option value="15">15 years</option>
-                                <option value="30" selected>30 years</option>
-                            </select>
-                        </label>
-                    </div>
-                    <div class="calc-result">
-                        <p>Estimated monthly payment</p>
-                        <div class="result-number" id="monthlyPayment">$0</div>
-                        <div class="result-grid">
-                            <div>
-                                <span>Loan amount</span>
-                                <strong id="loanPrincipal">$0</strong>
-                            </div>
-                            <div>
-                                <span>Total paid</span>
-                                <strong id="loanTotal">$0</strong>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section class="support-section" id="resources">
-            <div class="section-inner">
-                <p class="eyebrow eyebrow-centered">Learning and support</p>
-                <h2>Resources that help you feel informed and in control</h2>
-                <p class="section-sub">Whether you are planning a purchase or checking your options, Willow makes financial decisions easier to understand.</p>
-                <div class="resource-grid">
-                    <article class="resource-card">
-                        <div class="resource-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                                <path d="M6.5 2H20v15H6.5A2.5 2.5 0 0 1 4 14.5v-10A2.5 2.5 0 0 1 6.5 2Z" />
-                            </svg>
-                        </div>
-                        <h3>Guides & checklists</h3>
-                        <p>Learn how to set goals, compare account types, and build financial habits that last.</p>
-                    </article>
-                    <article class="resource-card">
-                        <div class="resource-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="12" cy="12" r="10" />
-                                <path d="M9.09 9a3 3 0 0 1 5.82 1c0 2-3 2.5-3 5" />
-                                <path d="M12 17h.01" />
-                            </svg>
-                        </div>
-                        <h3>FAQs & education</h3>
-                        <p>Find answers to common banking questions, security guidance, and step-by-step tutorials.</p>
-                    </article>
-                    <article class="resource-card highlight">
-                        <div class="resource-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                            </svg>
-                        </div>
-                        <h3>Live support</h3>
-                        <p>Talk to a Willow specialist for account setup, payment guidance, or security assistance.</p>
-                        <a href="/contact" class="btn btn-primary btn-sm">Chat with us</a>
-                    </article>
-                </div>
-            </div>
-        </section>
-
-        <section class="trust-section" id="security">
-            <div class="section-inner">
+        <section class="home-growth home-reveal" aria-labelledby="homeGrowthTitle">
+            <div class="section-inner home-growth-grid">
                 <div>
-                    <p class="eyebrow eyebrow-light">Security-first design</p>
-                    <h2>Your trust is our foundation.</h2>
-                    <p>At Willow Banking Corp., security is built into every layer of the experience, from account access to payments, alerts, and user activity monitoring.</p>
-                    <ul class="trust-list">
-                        <li>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                            Passwords are hashed and never stored in plain text
-                        </li>
-                        <li>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                            Server-side validation protects every transaction
-                        </li>
-                        <li>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                            Audit trails and rate limiting strengthen protection
-                        </li>
-                    </ul>
-                    <div class="trust-badges" aria-label="security badges">
-                        <span>SSL protected</span>
-                        <span>2FA ready</span>
-                        <span>Accessibility aware</span>
-                    </div>
+                    <p class="home-eyebrow">Today, and what comes after</p>
+                    <h2 id="homeGrowthTitle">Make the small decisions feel connected to the bigger ones.</h2>
                 </div>
-                <div>
-                    <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=80" alt="Professional customer service interaction" class="trust-image">
+                <div class="home-growth-copy">
+                    <p>See everyday spending beside the goals you're building toward. Willow gives routine money moments a little more context, without making them harder to manage.</p>
+                    <a href="/products/savings" class="home-inline-link">Explore savings <span aria-hidden="true">&#8594;</span></a>
+                </div>
+                <div class="home-growth-rhythm" aria-label="A connected view of now, next, and later">
+                    <div><span class="home-rhythm-point"></span><strong>Now</strong><small>Everyday spending</small></div>
+                    <div><span class="home-rhythm-point"></span><strong>Next</strong><small>Plans taking shape</small></div>
+                    <div><span class="home-rhythm-point"></span><strong>Later</strong><small>Goals in progress</small></div>
                 </div>
             </div>
         </section>
 
-        <section class="cta-section">
-            <div class="section-inner cta-inner">
+        <section class="home-support home-reveal" id="resources" aria-labelledby="homeSupportTitle">
+            <div class="section-inner home-support-grid">
                 <div>
-                    <p class="eyebrow eyebrow-centered">Ready when you are</p>
-                    <h2>Take control of your financial future.</h2>
+                    <p class="home-eyebrow">Here when you need us</p>
+                    <h2 id="homeSupportTitle">Good banking leaves room for good questions.</h2>
                 </div>
-                <div class="cta-actions">
-                    <a href="/register" class="btn btn-primary btn-lg">Create Your Account</a>
-                    <a href="/contact" class="btn btn-secondary btn-lg">Talk to Support</a>
+                <div class="home-support-actions">
+                    <p>Find product information or get in touch with the Willow team about the experience.</p>
+                    <a href="/contact" class="home-inline-link">Contact Willow <span aria-hidden="true">&#8594;</span></a>
+                    <a href="/about" class="home-inline-link">About Willow <span aria-hidden="true">&#8594;</span></a>
+                </div>
+            </div>
+        </section>
+
+        <section class="home-trust home-reveal" id="security" aria-labelledby="homeTrustTitle">
+            <div class="section-inner home-trust-grid">
+                <div class="home-trust-copy">
+                    <p class="home-eyebrow">Trust begins with transparency</p>
+                    <h2 id="homeTrustTitle">Clear about what is known, and what still needs to be verified.</h2>
+                    <p>Willow is a fictional demonstration platform. Before any real-world launch, regulatory status, deposit protection and independent security details must be confirmed and published.</p>
+                </div>
+                <dl class="home-disclosures">
+                    <div><dt>Regulatory information</dt><dd>[To be confirmed before production use]</dd></div>
+                    <div><dt>Deposit protection information</dt><dd>[To be confirmed before production use]</dd></div>
+                    <div><dt>Privacy and data use</dt><dd>[To be confirmed before production use]</dd></div>
+                    <div><dt>Security certification</dt><dd>[To be confirmed before production use]</dd></div>
+                </dl>
+            </div>
+        </section>
+
+        <section class="home-final-cta home-reveal" aria-labelledby="homeFinalTitle">
+            <div class="section-inner home-final-inner">
+                <div>
+                    <p class="home-eyebrow">A thoughtful place to begin</p>
+                    <h2 id="homeFinalTitle">Make your next money moment a little clearer.</h2>
+                </div>
+                <div class="home-final-actions">
+                    <a href="/register" class="home-button home-button-primary">Open an account</a>
+                    <a href="/contact" class="home-inline-link">Talk with Willow <span aria-hidden="true">&#8594;</span></a>
                 </div>
             </div>
         </section>
