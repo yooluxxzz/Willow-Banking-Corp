@@ -34,6 +34,16 @@ router.get('/register', (req, res) => {
     res.render('register', { title: 'Create Account — Willow Banking Corp.' });
 });
 
+router.get('/forgot-password', (req, res) => {
+    if (req.session?.userId) {
+        return res.redirect('/dashboard');
+    }
+    res.render('forgot-password', {
+        title: 'Reset access — Willow Banking Corp.',
+        error: req.query.error,
+    });
+});
+
 // Public info pages
 router.get('/about', (req, res) => res.render('about', { title: 'About Us — Willow Banking Corp.' }));
 router.get('/careers', (req, res) => res.render('careers', { title: 'Careers — Willow Banking Corp.' }));

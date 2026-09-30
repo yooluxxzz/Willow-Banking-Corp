@@ -41,7 +41,12 @@ router.post('/register', authLimiter, async (req, res) => {
             metadata: { customerId: result.customerId },
         });
 
-        res.json({ success: true, redirect: '/dashboard' });
+        req.session.save((err) => {
+            if (err) {
+                console.error('[Auth] Session save error after registration:', err.message);
+            }
+            res.json({ success: true, redirect: '/dashboard' });
+        });
     } catch (err) {
         console.error('[Auth] Registration error:', err.message);
         res.status(500).json({ error: 'Registration failed. Please try again.' });
@@ -81,7 +86,12 @@ router.post('/login', authLimiter, async (req, res) => {
             });
 
             const redirect = user.role === 'admin' ? '/admin' : '/dashboard';
-            res.json({ success: true, redirect });
+            req.session.save((saveErr) => {
+                if (saveErr) {
+                    console.error('[Auth] Session save error after login:', saveErr.message);
+                }
+                res.json({ success: true, redirect });
+            });
         });
     } catch (err) {
         console.error('[Auth] Login error:', err.message);

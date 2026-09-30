@@ -2213,6 +2213,61 @@ tbody tr:last-child td {
   margin-top: var(--space-6);
 }
 
+.auth-message-info {
+  display: block;
+  margin-bottom: var(--space-5);
+  background: rgba(31, 120, 109, 0.08);
+  border: 1px solid rgba(31, 120, 109, 0.2);
+  color: var(--green-900);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  line-height: 1.5;
+}
+
+.auth-support-card {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+.auth-support-card h2 {
+  margin: 0 0 var(--space-3);
+  font-size: 1.05rem;
+}
+
+.auth-support-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.auth-support-card li {
+  color: var(--gray-700);
+  line-height: 1.5;
+}
+
+.auth-step-actions {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.auth-center-actions {
+  justify-content: center;
+  margin-top: var(--space-5);
+}
+
+.auth-link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
 .auth-image-panel {
   flex: 1;
   background: var(--green-800);
