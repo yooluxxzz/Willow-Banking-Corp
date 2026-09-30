@@ -108,9 +108,9 @@ Navigation stays flat; the current product set does not need dropdowns. On compa
 
 ## Animation
 
-The hero changes images every five seconds after both files decode. Only image opacity animates; copy and geometry remain fixed. Manual scene selection pauses autoplay, and a pause/play control is available. Autoplay suspends when the page is hidden or the hero is offscreen. Section copy reveals once as it enters the viewport. Avoid continuous number counters, parallax and large moving shapes.
+After both files decode, scrolling the photo area past the viewport top triggers the fade to Photo B; scrolling back above that point restores Photo A. Only image opacity animates; copy and geometry remain fixed. There is no timer or playback UI. Scroll work is coalesced into requestAnimationFrame, and resize and page restoration update the selected scene. Section copy reveals once as it enters the viewport. Avoid continuous number counters, parallax and large moving shapes.
 
-For `prefers-reduced-motion: reduce`, disable hero autoplay and opacity transitions, and remove entrance/reveal movement. Manual image selectors remain available with immediate changes; hide the unnecessary play control.
+For `prefers-reduced-motion: reduce`, disable opacity transitions and remove entrance/reveal movement. Scroll-triggered image changes are immediate.
 
 ## Responsive Behavior
 
@@ -124,7 +124,7 @@ For `prefers-reduced-motion: reduce`, disable hero autoplay and opacity transiti
 
 Use semantic sections and heading order, descriptive alt text for both hero photos, expanded states, Escape-to-close navigation and a visible focus outline. Ensure content remains available if JavaScript or IntersectionObserver is unavailable.
 
-Both responsive hero images use `srcset`, `sizes` and asynchronous decoding; the first has `fetchpriority="high"`. In production, serve campaign images from a controlled asset host in AVIF/WebP with correct dimensions. Keep the images separate and animate only opacity. The first image remains visible without JavaScript, and selectors expose their current state through aria-pressed.
+Both responsive hero images use `srcset`, `sizes` and asynchronous decoding; the first has `fetchpriority="high"`. In production, serve campaign images from a controlled asset host in AVIF/WebP with correct dimensions. Keep the images separate and animate only opacity. The first image remains visible without JavaScript, and the inactive image is hidden from the accessibility tree.
 
 ## Production Readiness
 

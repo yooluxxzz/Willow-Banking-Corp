@@ -33,54 +33,32 @@ function setupHeroCrossfade() {
     const hero = document.querySelector('[data-hero-crossfade]');
     if (!hero) return;
     const photos = [hero.querySelector('.home-hero-photo-a'), hero.querySelector('.home-hero-photo-b')];
-    const controls = hero.querySelector('.hero-image-controls');
-    const scenes = Array.from(hero.querySelectorAll('[data-hero-scene]'));
-    const toggle = hero.querySelector('[data-hero-toggle]');
-    if (photos.some(photo => !photo) || !controls || !toggle) return;
+    const imageArea = hero.querySelector('.home-hero-photos');
+    if (photos.some(photo => !photo) || !imageArea) return;
 
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    let timer;
-    let ready = false;
-    let inView = true;
-    let paused = false;
+    let frame = null;
     const show = (scene) => {
+        if (hero.dataset.activeImage === scene) return;
         hero.dataset.activeImage = scene;
         photos[0].setAttribute('aria-hidden', String(scene !== 'a'));
         photos[1].setAttribute('aria-hidden', String(scene !== 'b'));
-        scenes.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.heroScene === scene)));
+    };
+    const updateFromScroll = () => {
+        frame = null;
+        const bounds = imageArea.getBoundingClientRect();
+        // Fade while the photographs are still clearly visible, on phones too.
+        show(bounds.top < 0 ? 'b' : 'a');
     };
     const schedule = () => {
-        window.clearTimeout(timer);
-        toggle.hidden = reducedMotion.matches;
-        toggle.textContent = paused ? 'Play' : 'Pause';
-        toggle.setAttribute('aria-label', paused ? 'Play image animation' : 'Pause image animation');
-        if (!ready || paused || reducedMotion.matches || document.hidden || !inView) return;
-        timer = window.setTimeout(() => {
-            show(hero.dataset.activeImage === 'a' ? 'b' : 'a');
-            schedule();
-        }, 5000);
+        if (frame === null) frame = window.requestAnimationFrame(updateFromScroll);
     };
-    scenes.forEach(button => button.addEventListener('click', () => {
-        paused = true;
-        show(button.dataset.heroScene);
-        schedule();
-    }));
-    toggle.addEventListener('click', () => {
-        paused = !paused;
-        schedule();
-    });
-    document.addEventListener('visibilitychange', schedule);
-    reducedMotion.addEventListener('change', schedule);
-    if ('IntersectionObserver' in window) {
-        new IntersectionObserver(([entry]) => {
-            inView = entry.isIntersecting;
-            schedule();
-        }, { threshold: 0.1 }).observe(hero);
-    }
     Promise.all(photos.map(photo => photo.decode().then(() => true).catch(() => false))).then(loaded => {
         if (!loaded[0] && loaded[1]) show('b');
-        ready = loaded.every(Boolean);
-        controls.hidden = !ready;
+        if (!loaded.every(Boolean)) return;
+        // No timer: only scrolling or a viewport change can change the scene.
+        window.addEventListener('scroll', schedule, { passive: true });
+        window.addEventListener('resize', schedule, { passive: true });
+        window.addEventListener('pageshow', schedule);
         schedule();
     });
 }

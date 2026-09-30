@@ -315,9 +315,9 @@ accounts, payroll, lending or merchant processing are implemented.
 
 The homepage crossfades between two separate generated banking photographs.
 Both layers occupy exactly the same container with identical cover crops. Only
-opacity changes, over 800ms with cubic-bezier(0.35, 0, 0, 1), every five seconds.
-Scene selectors and a pause/play control are provided. Reduced motion disables
-autoplay and transitions; hidden or offscreen pages suspend autoplay. On phones,
+opacity changes, over 800ms with cubic-bezier(0.35, 0, 0, 1), when the user scrolls
+the photo area past the top of the viewport. Scrolling back up restores the first
+image. There is no timer or playback UI. Reduced motion disables transitions. On phones,
 the fixed photo area sits above the copy. Photo cards use CSS overlays and HTML labels.
 Both hero photos are local WebP assets with responsive variants, about 132 KiB
 combined at full size. HERO_PHOTO_PROMPTS.md contains the two prompts and asset

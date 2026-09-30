@@ -59,42 +59,13 @@ body.home-page .home-hero-crossfade .home-button-light { color: #18342e; backgro
 body.home-page .home-hero-crossfade .home-button-light:hover { background: #fff; }
 body.home-page .home-hero-crossfade .home-text-link,
 body.home-page .home-hero-crossfade .home-text-link:hover { color: #fff; }
-.hero-image-controls {
-  position: absolute;
-  z-index: 2;
-  right: max(48px, calc((100% - 1280px) / 2 + 48px));
-  bottom: 56px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px;
-  background: rgba(10, 30, 24, .8);
-  border: 1px solid rgba(255, 255, 255, .28);
-  border-radius: 4px;
-}
-.hero-image-controls button {
-  min-width: 40px;
-  min-height: 40px;
-  padding: 8px 12px;
-  border: 0;
-  border-radius: 2px;
-  background: transparent;
-  color: #fff;
-  font: inherit;
-  font-size: 13px;
-  cursor: pointer;
-}
-.hero-image-controls [aria-pressed="true"] { background: #f4f5f0; color: #18342e; }
-.hero-image-controls[hidden], .hero-image-controls button[hidden] { display: none; }
-.hero-image-controls button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 @media (min-width: 1200px) {
   .home-hero.home-hero-crossfade { height: 800px; }
 }
 @media (max-width: 1000px) {
   .home-hero.home-hero-crossfade { height: 720px; }
   body.home-page .home-hero-crossfade h1 { font-size: 56px; }
-  .home-hero-crossfade .home-hero-content { padding: 40px 32px 100px; }
-  .hero-image-controls { right: 32px; bottom: 24px; }
+  .home-hero-crossfade .home-hero-content { padding: 40px 32px; }
 }
 @media (max-width: 760px) {
   .home-hero.home-hero-crossfade { height: auto; min-height: 0; }
@@ -105,7 +76,6 @@ body.home-page .home-hero-crossfade .home-text-link:hover { color: #fff; }
   body.home-page .home-hero-crossfade h1 { font-size: 44px; }
   body.home-page .home-hero-crossfade .home-hero-copy > p:not(.home-eyebrow) { font-size: 15px; }
   .home-hero-crossfade .home-hero-actions { gap: 20px; }
-  .hero-image-controls { top: 294px; bottom: auto; right: 16px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .home-hero-photo { transition: none; }
