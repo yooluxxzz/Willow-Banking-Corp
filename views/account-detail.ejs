@@ -8,7 +8,7 @@
             <p>Available: <strong><%= account.availableBalanceFormatted %></strong></p>
             <p class="text-sm text-muted">Currency: <%= account.currency %> · Opened <%= account.created_at.slice(0,10) %></p>
             <details class="mt-4"><summary>Show account number</summary><p class="font-mono"><%= account.account_number %></p></details>
-            <p class="mt-4"><a href="/transactions?accountId=<%= account.id %>">View all activity →</a></p>
+            <p class="mt-4"><a href="/transactions?accountId=<%= account.id %>">View all activity →</a> · <a href="/statements?accountId=<%= account.id %>">Statements →</a></p>
         </div></section>
         <section class="card"><div class="card-header"><h2>Make it yours</h2></div><div class="card-body">
             <form id="accountNameForm" data-account-id="<%= account.id %>">

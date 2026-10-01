@@ -8,6 +8,7 @@ const { getRecentTransactions, getTransactions } = require('../services/transact
 const { getDb } = require('../database');
 const { ownedSessions, deviceLabel } = require('../services/sessions');
 const { safeReturnTo } = require('../services/sign-in');
+const { getUserCards } = require('../services/card');
 
 const router = express.Router();
 
@@ -113,11 +114,14 @@ router.get('/transactions', requireAuth, (req, res) => {
 
 router.get('/statements', requireAuth, (req, res) => {
     const accounts = getUserAccounts(req.session.userId);
-    res.render('statements', { title: 'Statements — Willow Banking Corp.', accounts });
+    const selectedAccountId = req.query.accountId === undefined ? accounts[0]?.id : Number(req.query.accountId);
+    if (req.query.accountId !== undefined && (typeof req.query.accountId !== 'string' || !/^[1-9]\d*$/.test(req.query.accountId) || !accounts.some(a => a.id === selectedAccountId))) return res.status(404).render('error', { title: 'Account not found', message: 'This account is unavailable.' });
+    res.render('statements', { title: 'Statements — Willow Banking Corp.', accounts, selectedAccountId });
 });
 
 router.get('/cards', requireAuth, (req, res) => {
-    res.render('cards', { title: 'Cards — Willow Banking Corp.' });
+    const notices = { frozen: 'Demo card frozen.', active: 'Demo card unfrozen.', reported: 'Demo card reported lost and made inactive.', replaced: 'Replacement demo card created. The previous card is cancelled. Nothing will be shipped.' };
+    res.render('cards', { title: 'Cards — Willow Banking Corp.', cards: getUserCards(req.session.userId), notice: typeof req.query.notice === 'string' && Object.hasOwn(notices, req.query.notice) ? notices[req.query.notice] : '' });
 });
 
 router.get('/notifications', requireAuth, (req, res) => {

@@ -189,6 +189,7 @@ Tests run against an **in-memory database** — no test data touches your real d
 | `tests/accounts.test.js` | Account names, owned detail pages, filter validation and stable pagination |
 | `tests/sessions.test.js` | Individual session revocation, ownership, CSRF, replay and session metadata |
 | `tests/sign-in.test.js`, `tests/auth-client.test.js` | Safe return destinations, expired sessions, sign-out failures and client retries |
+| `tests/cards-statements.test.js` | Card transitions, replacement rollback/replay, statement balances, date validation and PDF output |
 
 Each test creates a fresh isolated database and handles CSRF tokens automatically.
 
@@ -441,3 +442,25 @@ Sign-out displays a success message only after the server confirms completion.
 Network or session-store failures show an error and allow a retry without navigating
 away. Duplicate sign-out clicks do not send overlapping requests. Sign-in and
 sign-out screens use explicit status messages, and error toasts render text safely.
+
+## Cards and statements
+
+Cards show their linked account name and current status with a review dialog for
+freeze, unfreeze, report-lost and replacement actions. Reporting a card makes it
+inactive immediately. Replacement atomically cancels a frozen/reported card and
+creates one active demo card; retrying a cancelled card cannot create another.
+Unfreeze and replacement require an active linked account. No physical cards are
+shipped, and the displayed daily-limit setting does not enable live card spending.
+
+Statements support this month, last month, this year and custom UTC date ranges,
+up to 366 days and 5,000 completed transactions per statement. Account detail pages
+link directly to the selected account's statements. Opening balances are rebuilt
+from the current posted balance by reversing completed movements since the start
+date, preserving any initial demo balance. Pending and failed entries are excluded.
+These calculations assume the account balance matches the recorded completed ledger.
+
+The preview shows money in/out and running balances using safely rendered text.
+PDF downloads handle errors without opening an error-only tab. PDF rows wrap long
+descriptions and references, repeat headers across pages, include page numbers and
+label each page as simulated. The built-in PDF fonts suit Latin-script demo content;
+broader script coverage would require embedding a suitable font.

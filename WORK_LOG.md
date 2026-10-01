@@ -48,3 +48,14 @@ Each completed work session is recorded here and committed locally. Git history 
 - Database: no schema or account-data changes this session. Existing private databases, backups and secrets remain ignored.
 - Validation: 76 tests across 22 suites pass, including five navigation/server tests and three client-logic tests for failures, retries and duplicate requests. All 36 templates compile and 51 JavaScript files pass syntax checks. Patch whitespace checks pass.
 - Browser visual review remains unavailable following the prior browser security-policy block; integration tests and isolated client-logic tests provide functional verification. Local preview restarted with this version. Completed changes are committed and synced under the user's standing instruction.
+
+## Cards and statements — 2026-10-01
+
+- User selected cards and statements as the next priority. Rebuilt Cards with linked account names, explicit demo labels and an accessible native review dialog for freeze, unfreeze, reporting and replacement.
+- Card IDs are validated strictly; owner checks and CSRF remain enforced. Unfreeze/replacement require an active linked account. Replacement now cancels and creates atomically, rejects duplicate replacement of a cancelled card, and reports immediate demo creation without implying physical delivery.
+- Rebuilt statement controls with labeled inputs, UTC date presets, custom ranges, account-specific links, busy/error states and PDF downloads that report failures in place. Statement preview renders descriptions as text.
+- Corrected statements to include completed entries only, reconstruct opening balances from the current posted balance (retaining initial demo balances), and sort ties by ID. Server validates real dates, ordered ranges, a 366-day range cap and a 5,000-row limit.
+- Reworked PDF rows to wrap long references/descriptions, repeat headers and demo disclosures, and number pages. A synthetic three-page sample was rendered and all pages visually inspected; text checks confirm all 45 sample rows, summary balance and page numbers.
+- Database: no schema changes or live ledger mutations. Card and statement tests use an isolated in-memory database. Source, tests and documentation are tracked; real account/session data and backups remain ignored.
+- Validation: all 85 tests across 23 suites pass, including nine new card/statement tests for ownership, CSRF, transitions, concurrent replacement, rollback, inactive accounts, completed-only balances, date validation and PDF generation. All 36 EJS templates compile, all 54 JavaScript files pass syntax checks, and patch whitespace checks pass.
+- Limitation: browser layout/interaction review remains unavailable after the prior browser policy block. PDF visual review succeeded separately. Built-in PDF fonts are intended for Latin-script demo content. Local preview restarted and finished work committed/synced as requested.
