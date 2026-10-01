@@ -19,3 +19,13 @@ Each completed work session is recorded here and committed locally. Git history 
 - Added database schema/migration documentation and this work-log policy. Preview data backed up locally before migration. No balances or real financial operations changed.
 - Validation: integration coverage for code generation/rotation/replay, concurrent reset, authentication/CSRF, rate limits, cross-user isolation, session revocation, profile persistence and malformed fields; UI review of recovery and settings using a synthetic demo account. All 55 tests pass, including registration session rotation. All 35 EJS templates compile; JavaScript syntax and whitespace checks pass. The synthetic profile update survived server restart.
 - Limitation: email recovery requires a separate delivery integration; this version uses backup codes saved in advance.
+
+## Account details and activity — 2026-10-01
+
+- Added account detail pages with available/current balances, account-number disclosure and the five latest transactions. Account cards and dashboard names now link to their detail pages.
+- Added owner-only account nicknames, saved with an audit event and reflected in dashboard and payment/activity selectors. Blank names restore defaults; invalid names, non-owned IDs and missing CSRF are rejected.
+- Added the startup `accounts.nickname` migration without modifying balances or account numbers. Preview database backed up privately before migration; live databases and backups remain ignored.
+- Rebuilt activity filtering with explicit Apply/Clear controls, account-specific links, URL-preserved filters, date validation, request cancellation, safe text rendering and stable pagination for matching timestamps.
+- Validation: all 63 tests across 20 suites pass, including eight new account/transaction tests. All 36 EJS templates compile, all 44 JavaScript files pass syntax checks, and `git diff --check` passes. No live database or environment files are tracked.
+- Browser verification limitation: the browser security policy blocked the preview tab action. This session's new pages were verified through integration rendering and API tests; no new visual verification is claimed.
+- User explicitly requested commit and sync on completion. This session is committed on `codex/willow-experience` for synchronization to the existing GitHub repository; Git records the exact commit and remote tracking state.

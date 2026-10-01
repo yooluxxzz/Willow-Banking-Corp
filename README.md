@@ -24,10 +24,10 @@ A full-stack demonstration banking platform built with **Node.js**, **Express**,
 
 ### Customer Portal
 - **Dashboard** — Overview of all accounts, balances, and recent transactions
-- **Accounts** — View checking and savings account details
+- **Accounts** — Name checking and savings accounts, view balances and recent activity, and open account-specific transaction history
 - **Transfers** — Send money between accounts or to other customers (daily limit: $25,000; includes own-account transfers with review and confirmation)
 - **Deposits & Withdrawals** — Manage account funds with daily limits and optional descriptions
-- **Transaction History** — Filterable, paginated list of all transactions
+- **Transaction History** — Filter by account, date, type, status, description or reference; sort and paginate with shareable filter URLs
 - **Statements** — Generate and download PDF account statements by date range
 - **Card Management** — View, freeze/unfreeze, and report debit cards
 - **Notifications** — Real-time alerts for account activity
@@ -185,6 +185,7 @@ Tests run against an **in-memory database** — no test data touches your real d
 | `tests/auth.test.js` | Registration, login, logout, account lockout, password change |
 | `tests/financial.test.js` | Deposits, withdrawals, transfers, daily limit enforcement |
 | `tests/admin.test.js` | Admin-only route protection, user management, stats endpoint |
+| `tests/accounts.test.js` | Account names, owned detail pages, filter validation and stable pagination |
 
 Each test creates a fresh isolated database and handles CSRF tokens automatically.
 
@@ -331,7 +332,7 @@ layouts stay stable. Account and balance cards receive static soft shadows.
 Sign-in and two-step registration share the forest/ivory identity, a vector willow
 tree emblem, accessible password toggles and visible error feedback. New demo
 registrations receive zero-balance checking and savings accounts. Existing users
-retain their accounts; no automatic database migration is performed.
+retain their accounts; startup schema migrations preserve existing accounts and balances.
 
 Transfers support either another demo customer by email or an owned destination
 account ID. The UI snapshots details for review before confirmation; the server
@@ -398,3 +399,15 @@ saved code cannot be recovered through this demo's self-service flow.
 
 See [database changes](docs/DATABASE_CHANGES.md) for migration and session-version
 details, and [the work log](WORK_LOG.md) for the Git record of completed sessions.
+
+## Account names and activity
+
+Open Accounts and select an account to see its available balance, account-number
+disclosure and five most recent transactions. Give it a name of up to 40 characters,
+or save a blank name to restore its default. Names appear on the dashboard and in
+transfer, deposit, withdrawal and activity selectors. Renaming does not change the
+account number, ownership or balances and is recorded in the audit log.
+
+Activity links preselect that account. Apply filters or clear them while retaining
+the selected account. Successful searches keep the filters and page in the URL
+for reloading or bookmarking; viewing the link still requires the owner's login.

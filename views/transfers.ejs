@@ -10,11 +10,11 @@
             <form id="transferForm">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <div class="form-group"><label for="fromAccountId">From account</label><select id="fromAccountId" class="form-control" required>
-                    <% accounts.filter(a => a.status === 'active').forEach(a => { %><option value="<%= a.id %>"><%= a.account_type %> (<%= a.maskedNumber %>) — available <%= a.availableBalanceFormatted %></option><% }) %>
+                    <% accounts.filter(a => a.status === 'active').forEach(a => { %><option value="<%= a.id %>"><%= a.displayName %> (<%= a.maskedNumber %>) — available <%= a.availableBalanceFormatted %></option><% }) %>
                 </select></div>
                 <div class="form-group"><label for="transferKind">Destination</label><select id="transferKind" class="form-control"><option value="own">My other account</option><option value="customer">Another Willow customer</option></select></div>
                 <div class="form-group" id="ownDestination"><label for="toAccountId">To account</label><select id="toAccountId" class="form-control" required>
-                    <% accounts.filter(a => a.status === 'active').forEach(a => { %><option value="<%= a.id %>"><%= a.account_type %> (<%= a.maskedNumber %>)</option><% }) %>
+                    <% accounts.filter(a => a.status === 'active').forEach(a => { %><option value="<%= a.id %>"><%= a.displayName %> (<%= a.maskedNumber %>)</option><% }) %>
                 </select></div>
                 <div class="form-group" id="customerDestination" hidden><label for="recipientEmail">Recipient email</label><input type="email" id="recipientEmail" class="form-control" placeholder="customer@example.com" maxlength="255" disabled></div>
                 <div class="form-group"><label for="amount">Amount (USD)</label><input type="number" id="amount" class="form-control" placeholder="0.00" min="0.01" max="1000000000" step="0.01" required></div>

@@ -145,6 +145,7 @@ async function initializeDatabase() {
 
     // Migrations for existing databases
     const migrations = [
+        "ALTER TABLE accounts ADD COLUMN nickname TEXT NOT NULL DEFAULT ''",
         "ALTER TABLE users ADD COLUMN auth_version INTEGER NOT NULL DEFAULT 0",
         "ALTER TABLE users ADD COLUMN status_reason TEXT DEFAULT NULL",
         "ALTER TABLE users ADD COLUMN scheduled_deletion_at TEXT DEFAULT NULL",

@@ -52,6 +52,7 @@ function getTotalBalance(userId) {
 function formatAccount(account) {
     return {
         ...account,
+        displayName: account.nickname || (account.account_type === 'savings' ? 'Savings account' : 'Checking account'),
         balanceFormatted: formatCurrency(account.balance),
         availableBalanceFormatted: formatCurrency(account.available_balance),
         maskedNumber: '••••' + account.account_number.slice(-4),

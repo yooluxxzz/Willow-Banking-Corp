@@ -108,7 +108,7 @@
                                     <div>
                                         <div class="text-xs font-semibold"
                                             style="text-transform:uppercase;color:var(--gray-600);">
-                                            <%= account.account_type %>
+                                            <a href="/accounts/<%= account.id %>"><%= account.displayName %></a>
                                         </div>
                                         <div class="font-mono text-sm" style="color:var(--gray-700);">
                                             <%= account.maskedNumber %>

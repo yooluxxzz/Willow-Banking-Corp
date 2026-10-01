@@ -3,8 +3,8 @@
  */
 const express = require('express');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
-const { getUserAccounts, getTotalBalance } = require('../services/account');
-const { getRecentTransactions } = require('../services/transaction');
+const { getUserAccounts, getTotalBalance, getAccountById } = require('../services/account');
+const { getRecentTransactions, getTransactions } = require('../services/transaction');
 const { getDb } = require('../database');
 
 const router = express.Router();
@@ -74,7 +74,14 @@ router.get('/dashboard', requireAuth, (req, res) => {
 });
 
 router.get('/accounts', requireAuth, (req, res) => {
-    res.render('accounts', { title: 'Accounts — Willow Banking Corp.' });
+    res.render('accounts', { title: 'Accounts — Willow Banking Corp.', accounts: getUserAccounts(req.session.userId), totals: getTotalBalance(req.session.userId) });
+});
+
+router.get('/accounts/:id', requireAuth, (req, res) => {
+    const account = /^[1-9]\d*$/.test(req.params.id) && Number.isSafeInteger(Number(req.params.id)) ? getAccountById(Number(req.params.id), req.session.userId) : null;
+    if (!account) return res.status(404).render('error', { title: 'Account not found', message: 'This account is unavailable.' });
+    const recent = getTransactions(account.id, { limit: 5 });
+    res.render('account-detail', { title: `${account.displayName} — Willow Banking Corp.`, account, recent });
 });
 
 router.get('/transfers', requireAuth, (req, res) => {
@@ -94,7 +101,11 @@ router.get('/withdrawals', requireAuth, (req, res) => {
 
 router.get('/transactions', requireAuth, (req, res) => {
     const accounts = getUserAccounts(req.session.userId);
-    res.render('transactions', { title: 'Transactions — Willow Banking Corp.', accounts });
+    const selectedAccountId = req.query.accountId === undefined ? accounts[0]?.id : Number(req.query.accountId);
+    if (req.query.accountId !== undefined && (typeof req.query.accountId !== 'string' || !/^[1-9]\d*$/.test(req.query.accountId) || !accounts.some(a => a.id === selectedAccountId))) {
+        return res.status(404).render('error', { title: 'Account not found', message: 'This account is unavailable.' });
+    }
+    res.render('transactions', { title: 'Transactions — Willow Banking Corp.', accounts, selectedAccountId });
 });
 
 router.get('/statements', requireAuth, (req, res) => {

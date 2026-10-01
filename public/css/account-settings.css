@@ -8,3 +8,8 @@
 .settings-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .settings-grid [hidden], .auth-form-wrapper [hidden] { display: none !important; }
 @media (max-width: 1000px) { .settings-grid { grid-template-columns: 1fr; } }
+.account-display-name { font-size: 20px; overflow-wrap: anywhere; margin: 10px 0; }
+#transactionFilters .filters-bar { flex-wrap: wrap; }
+#transactionFilters .form-group { min-width: 140px; flex: 1; }
+#transactionFilters select, #transactionFilters input { width: 100%; }
+#txnTableContainer td { overflow-wrap: anywhere; max-width: 340px; }

@@ -10,7 +10,14 @@ The application uses sql.js with its schema and startup migrations in `src/datab
 - Audit events record code generation, password recovery and session revocation without passwords or recovery codes. Successful sign-in auditing continues to use the existing audit log.
 - Revoked session rows may remain in `data/sessions.db` until store cleanup. Requests reject the old version, and session listings exclude revoked versions.
 
-## Delivery and backups
+## 2026-10-01: account names
+
+- Startup adds `accounts.nickname TEXT NOT NULL DEFAULT ''`. Existing accounts use their checking/savings default display name until the owner saves a nickname.
+- Nickname changes are validated, ownership checked and committed with an `account_renamed` audit event. Account numbers, balances and ledger entries are unchanged.
+- Transaction ordering now uses timestamp and ID together so records with the same timestamp paginate consistently.
+- The preview database was backed up privately as `data/preview.before-account-names.db` before startup migration. Automated account tests use only an in-memory database.
+
+## Recovery delivery and backups
 
 No email delivery service is configured. Recovery therefore requires a code saved before losing account access. There is no public reset-link shortcut. If all codes are lost and the password is forgotten, self-service recovery is unavailable.
 
