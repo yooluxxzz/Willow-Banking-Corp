@@ -315,8 +315,8 @@ This project is provided for educational and demonstration purposes.
 
 The original Express/EJS/sql.js architecture and existing ledger, cards, statements,
 admin and authentication routes are preserved. Public navigation now includes
-/personal and /business. Business is explicitly a concept preview: no business
-accounts, payroll, lending or merchant processing are implemented.
+/personal and /business. Business checking is available as a single-owner demo
+account. Payroll, lending, merchant processing and company verification are not implemented.
 
 The homepage opens with the customer photograph and original headline. A sticky,
 viewport-height hero holds its position while the user scrolls. At 30% of its
@@ -478,3 +478,21 @@ The remaining customer pages use a matching scoped workspace theme: account deta
 transfers, deposits, withdrawals, activity, statements, cards, settings, security and
 notifications. Money forms pair with explanatory guidance panels that stack on small
 screens. Existing controls, confirmation steps and server validation remain intact.
+
+## Optional account opening
+
+From Accounts, choose **Open another account**, select Checking, Savings or Business
+checking, optionally name it, and review the choice before confirming the demo
+acknowledgement. New accounts start at $0.00 USD and belong to the signed-in profile.
+Existing accounts are preserved; registration still includes the starter checking
+and savings accounts. Up to ten accounts are supported per profile. Additional
+accounts do not automatically issue debit cards or accrue savings interest.
+
+Business checking uses the existing checking ledger with a separate business
+purpose label. It is a single-owner simulated account, with no real business
+verification, shared users, payroll, merchant services, credit or real bank link.
+Public business links lead to the account chooser after sign-in.
+
+Opening requests use a unique per-form key: retrying the same request returns the
+created account rather than creating a duplicate. Account creation and its audit
+event are atomic. Schema changes preserve existing account numbers and balances.

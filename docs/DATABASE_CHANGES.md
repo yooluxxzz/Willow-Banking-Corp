@@ -24,6 +24,13 @@ The application uses sql.js with its schema and startup migrations in `src/datab
 - Newly authenticated sessions store browser user-agent (capped at 300 characters) and UTC sign-in time in the existing session JSON. Older sessions remain usable with an explicit missing-details label. No existing balances or accounts change.
 - Preview data was backed up as `data/preview.before-session-controls.db` before restarting for migration. Session data, revocation records and backups remain excluded from Git; schema and tests are versioned.
 
+## 2026-10-01: optional account opening
+
+- Startup adds `accounts.purpose` (`personal` by default, or `business`) and nullable `accounts.opening_key`. A unique index on `(user_id, opening_key)` supports per-user request retry protection. Existing accounts retain their numbers, balances and personal classification.
+- Business checking uses `account_type = 'checking'` with `purpose = 'business'`, preserving the existing ledger and foreign keys. It is a single-owner demo account, not a real business bank account. Checking/savings remain personal.
+- Each opening writes a zero-balance account and an `account_opened` audit event in one transaction. Repeated identical requests return the existing account; mismatched reuses are rejected. The form key is omitted from formatted account responses.
+- Up to ten accounts are allowed per profile. No extra card or initial ledger credit is created, and no savings interest is accrued. The preview was backed up privately to `data/preview.before-optional-accounts.db` before migration and restarted successfully.
+
 ## Recovery delivery and backups
 
 No email delivery service is configured. Recovery therefore requires a code saved before losing account access. There is no public reset-link shortcut. If all codes are lost and the password is forgotten, self-service recovery is unavailable.

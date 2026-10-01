@@ -3,6 +3,33 @@
  */
 const { getDb } = require('../database');
 const { fromCents, formatCurrency } = require('../middleware/validation');
+const { randomInt } = require('crypto');
+const { logAudit } = require('./audit');
+
+function openAccount(userId, input = {}) {
+    const { product, nickname = '', requestKey, demoAcknowledged } = input;
+    if (!['checking','savings','business'].includes(product)) return { error: 'Choose checking, savings or business checking.' };
+    if (typeof nickname !== 'string' || nickname.trim().length > 40 || /[<>\x00-\x1f\x7f]/.test(nickname)) return { error: 'Use an account name of up to 40 characters without markup.' };
+    if (demoAcknowledged !== true) return { error: 'Confirm that this is a simulated account.' };
+    if (typeof requestKey !== 'string' || !/^[a-f0-9-]{36}$/i.test(requestKey)) return { error: 'Refresh this page before opening an account.' };
+    const db = getDb(), type = product === 'savings' ? 'savings' : 'checking', purpose = product === 'business' ? 'business' : 'personal';
+    return db.transaction(() => {
+        const user = db.prepare('SELECT email, status FROM users WHERE id = ?').get(userId);
+        if (!user || user.status !== 'active') return { error: 'An active profile is required.' };
+        const existing = db.prepare('SELECT * FROM accounts WHERE user_id = ? AND opening_key = ?').get(userId, requestKey);
+        if (existing) {
+            if (existing.account_type !== type || existing.purpose !== purpose || existing.nickname !== nickname.trim()) return { error: 'This request has already been used. Refresh to start another account.' };
+            return { account: formatAccount(existing), reused: true };
+        }
+        if (db.prepare('SELECT COUNT(*) AS count FROM accounts WHERE user_id = ?').get(userId).count >= 10) return { error: 'This demo supports up to 10 accounts per profile.' };
+        let number;
+        do { number = '4200' + String(randomInt(1000000000, 10000000000)); }
+        while (db.prepare('SELECT id FROM accounts WHERE account_number = ?').get(number));
+        const created = db.prepare('INSERT INTO accounts (user_id, account_number, account_type, purpose, nickname, opening_key, balance, available_balance) VALUES (?, ?, ?, ?, ?, ?, 0, 0)').run(userId, number, type, purpose, nickname.trim(), requestKey);
+        logAudit({ actorId: userId, actorEmail: user.email, action: 'account_opened', targetType: 'account', targetId: String(created.lastInsertRowid), metadata: { product, simulated: true } });
+        return { account: getAccountById(created.lastInsertRowid, userId), reused: false };
+    })();
+}
 
 function getUserAccounts(userId) {
     const db = getDb();
@@ -50,13 +77,16 @@ function getTotalBalance(userId) {
 }
 
 function formatAccount(account) {
+    const { opening_key, ...publicAccount } = account;
+    const productLabel = account.purpose === 'business' ? 'Business checking' : account.account_type === 'savings' ? 'Savings account' : 'Checking account';
     return {
-        ...account,
-        displayName: account.nickname || (account.account_type === 'savings' ? 'Savings account' : 'Checking account'),
+        ...publicAccount,
+        productLabel,
+        displayName: account.nickname || productLabel,
         balanceFormatted: formatCurrency(account.balance),
         availableBalanceFormatted: formatCurrency(account.available_balance),
         maskedNumber: '••••' + account.account_number.slice(-4),
     };
 }
 
-module.exports = { getUserAccounts, getAccountById, getAccountByNumber, getTotalBalance, formatAccount };
+module.exports = { getUserAccounts, getAccountById, getAccountByNumber, getTotalBalance, formatAccount, openAccount };

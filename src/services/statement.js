@@ -58,8 +58,8 @@ function getStatement(accountId, userId, { dateFrom, dateTo }) {
 
     return {
         account: {
-            ...account,
-            displayName: account.nickname || (account.account_type === 'savings' ? 'Savings account' : 'Checking account'),
+            ...require('./account').formatAccount(account),
+            displayName: account.nickname || (account.purpose === 'business' ? 'Business checking' : account.account_type === 'savings' ? 'Savings account' : 'Checking account'),
             maskedNumber: '••••' + account.account_number.slice(-4),
         },
         period: { from: dateFrom, to: dateTo },

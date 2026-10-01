@@ -7,7 +7,7 @@ const { formatCurrency } = require('../middleware/validation');
 function getUserCards(userId) {
     const db = getDb();
     const cards = db.prepare(`
-    SELECT c.*, a.account_number, a.account_type, a.nickname, a.status AS account_status
+    SELECT c.*, a.account_number, a.account_type, a.nickname, a.purpose, a.status AS account_status
     FROM cards c
     JOIN accounts a ON c.account_id = a.id
     WHERE a.user_id = ?
@@ -20,7 +20,7 @@ function getUserCards(userId) {
 function getCardById(cardId, userId) {
     const db = getDb();
     const card = db.prepare(`
-    SELECT c.*, a.account_number, a.account_type, a.nickname, a.status AS account_status
+    SELECT c.*, a.account_number, a.account_type, a.nickname, a.purpose, a.status AS account_status
     FROM cards c
     JOIN accounts a ON c.account_id = a.id
     WHERE c.id = ? AND a.user_id = ?
@@ -73,7 +73,7 @@ function requestReplacement(cardId, userId) {
 function formatCard(card) {
     return {
         ...card,
-        accountName: card.nickname || (card.account_type === 'savings' ? 'Savings account' : 'Checking account'),
+        accountName: card.nickname || (card.purpose === 'business' ? 'Business checking' : card.account_type === 'savings' ? 'Savings account' : 'Checking account'),
         maskedNumber: `•••• •••• •••• ${card.last_four}`,
         dailyLimitFormatted: formatCurrency(card.daily_limit),
         statusLabel: card.status.charAt(0).toUpperCase() + card.status.slice(1),

@@ -18,12 +18,12 @@ describe('Banking experience and transfer boundaries', () => {
     after(() => closeDatabase());
     const transfer = body => agent.post('/api/transfers').set('Accept', 'application/json').set('X-CSRF-Token', csrf).send(body);
     const balances = () => db.prepare('SELECT id, balance FROM accounts ORDER BY id').all();
-    it('renders public pages and clearly labels business as a concept', async () => {
+    it('renders public pages and clearly labels business as simulated', async () => {
         for (const route of ['/', '/personal', '/business', '/contact', '/login', '/register', '/products/checking', '/products/savings', '/products/debit-cards', '/security-info', '/privacy', '/compliance', '/about']) {
             const response = await supertest(app).get(route);
             assert.equal(response.status, 200, route);
         }
-        assert.match((await supertest(app).get('/business')).text, /Business banking is a concept preview/);
+        assert.match((await supertest(app).get('/business')).text, /Business checking is a single-owner demo account/);
     });
     it('creates checking and savings destinations for new demo customers', () => {
         assert.deepEqual(accounts.map(a => a.account_type).sort(), ['checking', 'savings']);

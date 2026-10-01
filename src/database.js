@@ -151,12 +151,15 @@ async function initializeDatabase() {
 
     // Migrations for existing databases
     const migrations = [
+        "ALTER TABLE accounts ADD COLUMN purpose TEXT NOT NULL DEFAULT 'personal' CHECK(purpose IN ('personal','business'))",
+        "ALTER TABLE accounts ADD COLUMN opening_key TEXT DEFAULT NULL",
         "ALTER TABLE accounts ADD COLUMN nickname TEXT NOT NULL DEFAULT ''",
         "ALTER TABLE users ADD COLUMN auth_version INTEGER NOT NULL DEFAULT 0",
         "ALTER TABLE users ADD COLUMN status_reason TEXT DEFAULT NULL",
         "ALTER TABLE users ADD COLUMN scheduled_deletion_at TEXT DEFAULT NULL",
     ];
     migrations.forEach(m => { try { db.run(m); } catch (e) { /* column already exists */ } });
+    db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_opening_key ON accounts(user_id, opening_key)');
 
     // Auto-save to disk every 5 seconds
     saveTimer = setInterval(() => saveToDisk(), 5000);

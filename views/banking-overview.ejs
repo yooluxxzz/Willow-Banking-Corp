@@ -5,11 +5,11 @@
     <main id="main-content">
         <section class="banking-hero">
             <div class="section-inner banking-hero-grid">
-                <div><p class="home-eyebrow"><%= business ? 'Business banking / A look ahead' : 'Personal banking / Made for real life' %></p>
+                <div><p class="home-eyebrow"><%= business ? 'Business banking / Demo accounts' : 'Personal banking / Made for real life' %></p>
                     <h1><%= business ? 'For the work you believe in.' : 'Banking that fits around you.' %></h1>
                     <p><%= business ? 'Explore a considered approach to everyday business finances. Keep the working day clear, so you can focus on what you do best.' : 'Bring your everyday accounts, savings and card controls into one clear view. Less searching. More knowing where you stand.' %></p>
-                    <a class="home-button home-button-primary" href="<%= business ? '/contact' : '/register' %>"><%= business ? 'Explore with our demo help page' : 'Open a demo account' %></a>
-                    <p class="banking-disclosure"><%= business ? 'Business banking is a concept preview. Business accounts, merchant payments, lending and payroll are not available. Registration creates personal demo accounts only.' : 'Willow is a fictional banking demo. All balances and transactions are simulated; no real money moves.' %></p>
+                    <a class="home-button home-button-primary" href="<%= business ? '/accounts/new?type=business' : '/register' %>"><%= business ? 'Open business checking' : 'Open a demo account' %></a>
+                    <p class="banking-disclosure"><%= business ? 'Business checking is a single-owner demo account with simulated funds. Merchant payments, lending, payroll and company verification are not available. Sign in, then choose your account.' : 'Willow is a fictional banking demo. All balances and transactions are simulated; no real money moves.' %></p>
                 </div>
                 <div class="banking-hero-photo"><img src="<%= business ? 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1100&q=85' : 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1100&q=85' %>" alt="<%= business ? 'A thoughtfully arranged independent clothing shop' : 'A customer making an everyday payment' %>" width="1100" height="1000"></div>
             </div>

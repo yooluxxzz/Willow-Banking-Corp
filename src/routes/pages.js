@@ -81,6 +81,11 @@ router.get('/accounts', requireAuth, (req, res) => {
     res.render('accounts', { title: 'Accounts — Willow Banking Corp.', accounts: getUserAccounts(req.session.userId), totals: getTotalBalance(req.session.userId) });
 });
 
+router.get('/accounts/new', requireAuth, (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    res.render('open-account', { title: 'Choose an account — Willow Banking Corp.', product: ['checking','savings','business'].includes(req.query.type) ? req.query.type : 'checking', requestKey: require('crypto').randomUUID(), accountCount: getUserAccounts(req.session.userId).length });
+});
+
 router.get('/accounts/:id', requireAuth, (req, res) => {
     const account = /^[1-9]\d*$/.test(req.params.id) && Number.isSafeInteger(Number(req.params.id)) ? getAccountById(Number(req.params.id), req.session.userId) : null;
     if (!account) return res.status(404).render('error', { title: 'Account not found', message: 'This account is unavailable.' });

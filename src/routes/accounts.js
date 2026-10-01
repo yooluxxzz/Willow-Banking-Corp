@@ -3,11 +3,19 @@
  */
 const express = require('express');
 const { requireAuth } = require('../middleware/auth');
-const { getUserAccounts, getAccountById, getTotalBalance } = require('../services/account');
+const { getUserAccounts, getAccountById, getTotalBalance, openAccount } = require('../services/account');
 
 const { getDb } = require('../database');
 const { logAudit } = require('../services/audit');
 const router = express.Router();
+
+router.post('/', requireAuth, (req, res) => {
+    try {
+        const result = openAccount(req.session.userId, req.body);
+        if (result.error) return res.status(400).json({ error: result.error });
+        res.status(result.reused ? 200 : 201).json({ success: true, simulated: true, account: result.account, redirect: '/accounts/' + result.account.id });
+    } catch (err) { res.status(500).json({ error: 'Could not open this demo account. Please retry.' }); }
+});
 
 router.get('/', requireAuth, (req, res) => {
     try {

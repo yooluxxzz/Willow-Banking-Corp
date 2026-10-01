@@ -1,4 +1,4 @@
-const destinations = new Set(['/dashboard', '/accounts', '/transactions', '/transfers', '/deposits', '/withdrawals', '/statements', '/cards', '/notifications', '/security', '/settings', '/admin']);
+const destinations = new Set(['/dashboard', '/accounts', '/accounts/new', '/transactions', '/transfers', '/deposits', '/withdrawals', '/statements', '/cards', '/notifications', '/security', '/settings', '/admin']);
 
 function safeReturnTo(value, role) {
     if (typeof value !== 'string' || value.length > 2048 || !value.startsWith('/') || value.startsWith('//') || /[\\\s\x00-\x1f\x7f]/.test(value)) return '';

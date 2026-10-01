@@ -75,3 +75,12 @@ Each completed work session is recorded here and committed locally. Git history 
 - Preserved all form identifiers, scripts, validation, confirmation controls and backend behavior. Included dark-theme styling and narrow-screen layouts without adding animation or external assets.
 - Validation: all 85 tests pass; all 37 EJS templates compile; whitespace checks pass. No tests added solely for cosmetic changes. Browser visual review remains unverified after the prior browser security-policy block.
 - No schema or live-data changes. Source and documentation committed and synced as requested.
+
+## Optional checking, savings and business accounts — 2026-10-01
+
+- Added Accounts → Open another account, with a product chooser, optional nickname, review step and explicit demo acknowledgement. Checking, savings and single-owner business checking all start at zero USD; existing accounts remain untouched. No extra card is issued automatically.
+- Added authenticated, CSRF-protected account creation with product/name validation, a ten-account profile limit, unique account numbers and atomic audit logging. Per-form request keys prevent duplicate accounts after retries or concurrent clicks.
+- Added account purpose and opening-key migrations with a unique per-user key index. Business checking uses the existing checking ledger, clearly labeled separately across account cards/details, transfer selectors and statements. Public business copy and links now describe the implemented demo account instead of a concept-only page.
+- Existing registrations still receive their starter personal accounts. Business accounts do not implement shared ownership, company verification, payroll, lending or merchant processing; savings do not accrue interest.
+- Validation: all 92 tests across 24 suites pass, including seven new tests for all products, zero balances, legacy defaults, cross-user isolation, retries/concurrency, malformed input, CSRF, audit rollback, profile limits and business transfers/statements. All 38 templates compile and all 56 scripts pass syntax checks; whitespace checks pass.
+- Private preview backup created before migration; server restarted successfully. Browser interaction/layout review remains unverified after the prior browser-policy block. Live data, backups and secrets remain ignored. Completed code, schema, tests and documentation committed and synced as requested.
