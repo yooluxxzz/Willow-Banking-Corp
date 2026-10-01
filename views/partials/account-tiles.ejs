@@ -1,0 +1,10 @@
+<div class="overview-accounts">
+<% accounts.forEach(account => { %><article class="overview-account">
+<div class="overview-account-top"><span class="overview-icon" aria-hidden="true"><%= account.account_type === 'savings' ? '◎' : '↔' %></span><span class="overview-status"><%= account.status %></span></div>
+<h3><a href="/accounts/<%= account.id %>"><%= account.displayName %></a></h3>
+<p class="overview-muted"><%= account.account_type %> · <%= account.maskedNumber %></p>
+<p class="overview-account-balance"><%= account.balanceFormatted %></p><p class="overview-muted">Available <%= account.availableBalanceFormatted %></p>
+<div class="overview-account-links"><a href="/accounts/<%= account.id %>">Account details <span aria-hidden="true">↗</span></a><a href="/transactions?accountId=<%= account.id %>">Activity</a><a href="/statements?accountId=<%= account.id %>">Statements</a></div>
+</article><% }) %>
+</div>
+<% if (!accounts.length) { %><div class="overview-empty"><h3>Your accounts will appear here</h3><p>There are no accounts linked to this profile yet.</p></div><% } %>

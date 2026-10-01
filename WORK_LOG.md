@@ -59,3 +59,11 @@ Each completed work session is recorded here and committed locally. Git history 
 - Database: no schema changes or live ledger mutations. Card and statement tests use an isolated in-memory database. Source, tests and documentation are tracked; real account/session data and backups remain ignored.
 - Validation: all 85 tests across 23 suites pass, including nine new card/statement tests for ownership, CSRF, transitions, concurrent replacement, rollback, inactive accounts, completed-only balances, date validation and PDF generation. All 36 EJS templates compile, all 54 JavaScript files pass syntax checks, and patch whitespace checks pass.
 - Limitation: browser layout/interaction review remains unavailable after the prior browser policy block. PDF visual review succeeded separately. Built-in PDF fonts are intended for Latin-script demo content. Local preview restarted and finished work committed/synced as requested.
+
+## Dashboard and account overview revamp — 2026-10-01
+
+- Rebuilt the signed-in dashboard with a prominent available-balance panel, secondary total balance, primary transfer action, everyday shortcuts, account tiles and a recent-activity list. Added direct links to notifications, security and settings.
+- Redesigned the accounts overview using the same shared account tiles, with account-specific detail, activity and statement links. Names, status, balances and masked numbers are still server-rendered from the existing owned-account data.
+- Added scoped forest/ivory styling, responsive single-column layouts, dark-theme colors, keyboard focus states and empty states. No fabricated charts, growth figures or new financial data were introduced. Active-account totals and simulated funds are labeled explicitly.
+- Validation: all 85 tests pass; all 37 EJS templates compile; whitespace checks pass. Existing integration tests confirm dashboard/account nickname rendering and account links. No new tests were added solely for cosmetic markup. Browser visual review remains unverified following the prior security-policy block.
+- No backend, schema or live-data changes. Completed source and work log committed and synced under the user's standing instruction.

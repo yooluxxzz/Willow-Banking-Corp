@@ -464,3 +464,12 @@ PDF downloads handle errors without opening an error-only tab. PDF rows wrap lon
 descriptions and references, repeat headers across pages, include page numbers and
 label each page as simulated. The built-in PDF fonts suit Latin-script demo content;
 broader script coverage would require embedding a suitable font.
+
+## Account overview design
+
+The signed-in dashboard and accounts overview share responsive account tiles with
+real owned-account balances, nicknames, statuses and links to details, activity and
+statements. A prominent available-balance panel prioritizes transfers and everyday
+actions. Recent activity uses a compact list that wraps on phones; empty states
+explain how to explore with simulated funds. Styling is scoped to these two pages,
+with dark-theme colors and keyboard focus states. No chart or growth data is fabricated.

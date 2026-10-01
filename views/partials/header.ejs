@@ -16,6 +16,9 @@
   <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/account-settings.css">
   <link rel="stylesheet" href="/css/depth.css">
+  <% if (typeof currentPath !== 'undefined' && ['/dashboard','/accounts'].includes(currentPath)) { %>
+  <link rel="stylesheet" href="/css/account-overview.css">
+  <% } %>
   <% if (typeof currentPath !== 'undefined' && currentPath === '/') { %>
     <link rel="stylesheet" href="/css/hero-crossfade.css">
   <% } %>

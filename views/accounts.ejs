@@ -1,19 +1,9 @@
 <%- include('partials/header') %>
-<body><div class="app-layout"><%- include('partials/sidebar') %>
-<main class="main-content">
-    <div class="page-header"><h1>Your accounts</h1><p>A clear view of your money, with names that make sense to you.</p></div>
-    <div class="card mb-6"><div class="card-body"><p class="text-muted">Available across active accounts</p><h2><%= totals.availableFormatted %></h2></div></div>
-    <% if (!accounts.length) { %><div class="empty-state"><h2>No accounts yet</h2><p>Your accounts will appear here when available.</p></div><% } %>
-    <div class="stats-grid">
-    <% accounts.forEach(account => { %>
-        <section class="card account-card"><div class="card-body">
-            <p class="account-type"><%= account.account_type %> · <%= account.status %></p>
-            <h2 class="account-display-name"><a href="/accounts/<%= account.id %>"><%= account.displayName %></a></h2>
-            <p class="account-number font-mono"><%= account.maskedNumber %></p>
-            <div class="account-balance"><%= account.balanceFormatted %></div>
-            <p class="account-available">Available: <%= account.availableBalanceFormatted %></p>
-            <div class="settings-actions mt-4"><a class="btn btn-primary" href="/accounts/<%= account.id %>">View account</a><a class="btn btn-secondary" href="/transactions?accountId=<%= account.id %>">Activity</a></div>
-        </div></section>
-    <% }) %>
-    </div>
+<body class="account-overview-page"><div class="app-layout"><%- include('partials/sidebar') %><main class="main-content overview-main">
+<header class="overview-heading"><div><p class="overview-eyebrow">YOUR WILLOW / ACCOUNTS</p><h1>A place for every plan.</h1><p class="overview-muted">Everyday spending and future plans, clearly connected.</p></div><a class="overview-utility" href="/dashboard">Back to overview ↗</a></header>
+<section class="overview-balance overview-balance-compact" aria-labelledby="accountsBalance"><div><p id="accountsBalance" class="overview-eyebrow">AVAILABLE ACROSS ACTIVE ACCOUNTS</p><p class="overview-total"><%= totals.availableFormatted %></p><p>Total balance <%= totals.totalFormatted %> · USD</p></div><div class="overview-balance-aside"><span class="overview-demo">DEMO · SIMULATED FUNDS</span><div class="overview-balance-actions"><a href="/transfers">Move money ↗</a></div></div></section>
+<div class="overview-section-heading"><h2>Your accounts <span class="overview-count"><%= accounts.length %></span></h2><p class="overview-muted">Choose an account to view details or give it a name.</p></div>
+<%- include('partials/account-tiles', { accounts }) %>
+<section class="overview-account-tip"><div><p class="overview-eyebrow">MAKE IT YOURS</p><h2>Small details. A clearer picture.</h2><p>Name your accounts for what matters to you, then find their activity and statements in one place.</p></div><a href="/statements">Explore statements ↗</a></section>
+<p class="overview-footnote">Account totals include active accounts only. No real funds are held or transferred.</p>
 </main></div><%- include('partials/footer') %>
