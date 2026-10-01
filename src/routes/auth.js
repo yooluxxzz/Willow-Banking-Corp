@@ -9,6 +9,7 @@ const { logAudit } = require('../services/audit');
 const { validatePassword, validatePhone } = require('../middleware/validation');
 const { getDb } = require('../database');
 const config = require('../config');
+const { sessionMetadata } = require('../services/sessions');
 
 const router = express.Router();
 
@@ -32,6 +33,7 @@ router.post('/register', authLimiter, async (req, res) => {
         await new Promise((resolve, reject) => req.session.regenerate(err => err ? reject(err) : resolve()));
         req.session.userId = result.userId;
         req.session.userRole = 'customer';
+        req.session.device = sessionMetadata(req);
 
         logAudit({
             actorId: result.userId,
@@ -75,6 +77,7 @@ router.post('/login', authLimiter, async (req, res) => {
             req.session.userId = user.id;
             req.session.userRole = user.role;
             req.session.authVersion = user.authVersion;
+            req.session.device = sessionMetadata(req);
 
             logAudit({
                 actorId: user.id,
@@ -189,6 +192,7 @@ router.post('/update-profile', async (req, res) => {
     }
 });
 
+router.use(require('./sessions'));
 router.use(require('./recovery'));
 
 module.exports = router;

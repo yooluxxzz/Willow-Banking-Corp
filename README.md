@@ -33,6 +33,7 @@ A full-stack demonstration banking platform built with **Node.js**, **Express**,
 - **Notifications** — Real-time alerts for account activity
 - **Profile Editing** — Update your full name and phone number from Settings
 - **Security Center** — View recent login history and active sessions; change password
+- **Session Controls** — Recognize browser/device labels, identify the current session, and sign out an individual other session
 - **Dark / Light Mode** — Fully themed UI with persistent theme preference
 
 ### Admin Dashboard
@@ -186,6 +187,7 @@ Tests run against an **in-memory database** — no test data touches your real d
 | `tests/financial.test.js` | Deposits, withdrawals, transfers, daily limit enforcement |
 | `tests/admin.test.js` | Admin-only route protection, user management, stats endpoint |
 | `tests/accounts.test.js` | Account names, owned detail pages, filter validation and stable pagination |
+| `tests/sessions.test.js` | Individual session revocation, ownership, CSRF, replay and session metadata |
 
 Each test creates a fresh isolated database and handles CSRF tokens automatically.
 
@@ -411,3 +413,17 @@ account number, ownership or balances and is recorded in the audit log.
 Activity links preselect that account. Apply filters or clear them while retaining
 the selected account. Successful searches keep the filters and page in the URL
 for reloading or bookmarking; viewing the link still requires the owner's login.
+
+## Session management and public disclosures
+
+The Security page identifies the current session, shows approximate browser/device
+labels and UTC sign-in times, and lets you sign out a specific other session.
+Older sessions show a clear fallback when metadata is unavailable. Session listing
+errors are distinguished from an empty list. The UI never receives raw session IDs.
+Individual revocation writes a durable hash to the account database before removing
+the session from its store, so a stale store write cannot restore access. This does
+not cancel a request already executing when sign-out is requested.
+
+Homepage trust disclosures and the linked privacy, compliance and security pages
+describe the fictional demo, simulated funds, stored data and implemented controls.
+They do not claim a banking license, deposit insurance or independent certification.

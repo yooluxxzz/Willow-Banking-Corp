@@ -1,98 +1,11 @@
 <%- include('partials/header') %>
-
-    <body class="public-page">
-        <%- include('partials/public-nav') %>
-
-            <main class="info-page">
-                <div class="info-inner info-legal">
-                    <h1>Privacy Policy</h1>
-                    <p class="info-sub">Last updated: September 1, 2024</p>
-
-                    <section class="info-section">
-                        <h2>1. Information We Collect</h2>
-                        <p>We collect information you provide directly when creating an account, including your name,
-                            email address, phone number, and password. We also collect transaction data, account
-                            activity, and usage information to provide and improve our services.</p>
-                        <h3>Personal Information</h3>
-                        <ul>
-                            <li>Full legal name</li>
-                            <li>Email address</li>
-                            <li>Phone number</li>
-                            <li>Account credentials (stored in hashed form only)</li>
-                        </ul>
-                        <h3>Financial Information</h3>
-                        <ul>
-                            <li>Account balances and transaction history</li>
-                            <li>Transfer records and payment details</li>
-                            <li>Card information (last four digits only)</li>
-                        </ul>
-                    </section>
-
-                    <section class="info-section">
-                        <h2>2. How We Use Your Information</h2>
-                        <p>Your information is used to:</p>
-                        <ul>
-                            <li>Provide, maintain, and improve our banking services</li>
-                            <li>Process transactions and send related notifications</li>
-                            <li>Verify your identity and prevent fraud</li>
-                            <li>Comply with legal and regulatory requirements</li>
-                            <li>Communicate with you about account activity and updates</li>
-                            <li>Analyze usage patterns to improve user experience</li>
-                        </ul>
-                    </section>
-
-                    <section class="info-section">
-                        <h2>3. Data Protection</h2>
-                        <p>We implement robust security measures to protect your data:</p>
-                        <ul>
-                            <li>Passwords are hashed using bcrypt and never stored in plaintext</li>
-                            <li>All data transmissions are encrypted using TLS/SSL</li>
-                            <li>CSRF protection on all state-changing operations</li>
-                            <li>Rate limiting to prevent brute-force attacks</li>
-                            <li>Regular security audits and vulnerability assessments</li>
-                        </ul>
-                    </section>
-
-                    <section class="info-section">
-                        <h2>4. Data Sharing</h2>
-                        <p>We do not sell your personal information. We may share data with:</p>
-                        <ul>
-                            <li>Regulatory authorities as required by law</li>
-                            <li>Law enforcement agencies in response to valid legal requests</li>
-                            <li>Service providers who assist in operating our platform (subject to strict
-                                confidentiality agreements)</li>
-                        </ul>
-                    </section>
-
-                    <section class="info-section">
-                        <h2>5. Your Rights</h2>
-                        <p>You have the right to:</p>
-                        <ul>
-                            <li>Access your personal data at any time through your account settings</li>
-                            <li>Request correction of inaccurate information</li>
-                            <li>Request deletion of your account and associated data</li>
-                            <li>Receive a copy of your data in a portable format</li>
-                            <li>Opt out of non-essential communications</li>
-                        </ul>
-                    </section>
-
-                    <section class="info-section">
-                        <h2>6. Data Retention</h2>
-                        <p>We retain your data for as long as your account is active and for a reasonable period
-                            thereafter to comply with legal, tax, and regulatory obligations. Transaction records are
-                            retained for a minimum of seven years as required by financial regulations.</p>
-                    </section>
-
-                    <section class="info-section">
-                        <h2>7. Contact Us</h2>
-                        <p>For privacy-related inquiries, contact our Data Protection Officer at
-                            <strong>privacy@willowbank.com</strong> or write to us at 1200 Willow Avenue, Suite 400, San
-                            Francisco, CA 94105.</p>
-                    </section>
-                </div>
-            </main>
-
-            <%- include('partials/public-footer') %>
-    </body>
-
-    </html>
+<body class="public-page"><%- include('partials/public-nav') %>
+<main class="info-page"><div class="info-inner info-legal">
+<h1>Privacy notice for the demo</h1><p class="info-sub">Updated October 1, 2026 · Describes the current demonstration app.</p>
+<section class="info-section" id="stored-information"><h2>What the app stores</h2><p>Registration stores your name, email and optional phone number, plus a hash of your password. The app also stores demo accounts, account nicknames, simulated transactions, card records, notifications and an audit history of account actions. Recovery codes are stored as hashes; their readable values are shown only when generated.</p></section>
+<section class="info-section" id="sign-in-records"><h2>Sign-in and browser storage</h2><p>A session cookie keeps you signed in. Server-side session records include a sign-in time and browser/device information for newer sessions. Successful sign-ins record the request IP address and browser information in the audit log. Individual sign-out records retain a hashed session identifier to reject a revoked session. The theme preference is saved in your browser’s local storage.</p></section>
+<section class="info-section" id="data-use"><h2>How the information is used</h2><p>These records support sign-in, account settings, simulated banking activity, recovery and session management. The app’s operator can access its stored data and administrative tools. Enter fictional details and do not upload real identity, payment or financial information.</p></section>
+<section class="info-section" id="external-resources"><h2>External resources</h2><p>Some pages load fonts from Google Fonts and supporting photographs from Unsplash. Your browser contacts those providers when loading their resources, which can disclose your IP address and request information. The hero photographs are served with the app. No email recovery or contact-message delivery service is connected.</p></section>
+<section class="info-section" id="storage-retention"><h2>Storage and retention</h2><p>Account and activity records are stored in the app’s database, with sessions in a separate server-side store. Records can persist across server restarts and backups. No automatic account-data retention period is configured; expiration of a session does not erase account or audit records. HTTPS depends on the hosting setup; the local HTTP preview does not encrypt network traffic.</p></section>
+<section class="info-section" id="account-controls"><h2>Your available controls</h2><p>In <a href="/settings">Settings</a>, you can edit your name and phone, change your password, replace recovery codes and sign out other sessions. The <a href="/security">Security page</a> lets you review sign-ins and end an individual other session. There is no self-service full-data export or account-deletion request form. Contact the person operating your demo instance for data-handling questions; the sample contact page does not send messages.</p></section>
+</div></main><%- include('partials/public-footer') %></body></html>

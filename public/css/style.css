@@ -4719,6 +4719,10 @@ body.home-page .home-nav .nav-links .home-nav-cta:hover {
   font-size: 0.75rem;
 }
 
+.home-disclosures dd { line-height: 1.7; font-size: 0.8125rem; }
+.home-disclosures dd a { color: #F4F5F0; text-decoration: underline; text-underline-offset: 3px; }
+.home-disclosures dd a:focus-visible { outline: 2px solid #F4F5F0; outline-offset: 3px; }
+
 .home-final-cta {
   background: var(--home-paper);
 }

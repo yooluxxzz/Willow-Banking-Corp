@@ -29,3 +29,13 @@ Each completed work session is recorded here and committed locally. Git history 
 - Validation: all 63 tests across 20 suites pass, including eight new account/transaction tests. All 36 EJS templates compile, all 44 JavaScript files pass syntax checks, and `git diff --check` passes. No live database or environment files are tracked.
 - Browser verification limitation: the browser security policy blocked the preview tab action. This session's new pages were verified through integration rendering and API tests; no new visual verification is claimed.
 - User explicitly requested commit and sync on completion. This session is committed on `codex/willow-experience` for synchronization to the existing GitHub repository; Git records the exact commit and remote tracking state.
+
+## Session controls and completed trust disclosures — 2026-10-01
+
+- Rebuilt the Security page around recognizable signed-in sessions, a current-session label, approximate browser/device names, UTC sign-in times and recent sign-ins. Replaced the misleading “Online” label and added explicit unavailable/legacy states.
+- Added owner-only, CSRF-protected individual sign-out. Raw session IDs stay server-side. A durable hashed revocation record prevents a stale session-store write from restoring access; the current session and unrelated users remain signed in.
+- Added the `revoked_sessions` table and new-session metadata. Preview data was privately backed up and the local server restarted successfully. Live session/account databases, backup files and secrets remain ignored.
+- Filled all four homepage trust placeholders with factual demo disclosures and useful links. Updated the linked privacy, compliance and public security pages to remove unsupported insurance, regulatory and audit claims and explain stored data, third-party resources, available controls and simulated funds.
+- Validation: all 68 tests across 21 suites pass, including five new session tests covering ownership, CSRF, isolation, replay after stale store restoration, current-session protection, legacy metadata and store errors. All 36 EJS templates compile, all 48 JavaScript files pass syntax checks, and patch whitespace checks pass. Public privacy/compliance pages render in integration tests.
+- Visual limitation: the browser action was previously blocked by browser security policy, so this session does not claim a fresh browser/screenshot review. The local preview server is running with these changes.
+- Commit and sync continue under the user's explicit instruction to commit and synchronize completed work. No merge into main or deployment is included.

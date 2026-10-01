@@ -13,3 +13,7 @@
 #transactionFilters .form-group { min-width: 140px; flex: 1; }
 #transactionFilters select, #transactionFilters input { width: 100%; }
 #txnTableContainer td { overflow-wrap: anywhere; max-width: 340px; }
+
+.session-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--gray-200); }
+.session-row h3 { font-size: 16px; margin-bottom: 5px; }
+.session-row:last-child { border-bottom: 0; }

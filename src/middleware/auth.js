@@ -38,7 +38,8 @@ function loadUser(req, res, next) {
         const { getDb } = require('../database');
         const db = getDb();
         const user = db.prepare('SELECT id, email, full_name, phone, role, status, customer_id, auth_version FROM users WHERE id = ?').get(req.session.userId);
-        if (!user || (req.session.authVersion || 0) !== user.auth_version) {
+        const { isRevoked } = require('../services/sessions');
+        if (!user || (req.session.authVersion || 0) !== user.auth_version || isRevoked(req.sessionID)) {
             req.session.destroy(() => {});
             res.clearCookie('willow.sid');
             if (req.path.startsWith('/api/') || req.path.startsWith('/auth/') || req.headers.accept?.includes('application/json')) {

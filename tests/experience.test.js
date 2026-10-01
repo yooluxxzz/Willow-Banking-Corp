@@ -19,7 +19,7 @@ describe('Banking experience and transfer boundaries', () => {
     const transfer = body => agent.post('/api/transfers').set('Accept', 'application/json').set('X-CSRF-Token', csrf).send(body);
     const balances = () => db.prepare('SELECT id, balance FROM accounts ORDER BY id').all();
     it('renders public pages and clearly labels business as a concept', async () => {
-        for (const route of ['/', '/personal', '/business', '/contact', '/login', '/register', '/products/checking', '/products/savings', '/products/debit-cards', '/security-info', '/about']) {
+        for (const route of ['/', '/personal', '/business', '/contact', '/login', '/register', '/products/checking', '/products/savings', '/products/debit-cards', '/security-info', '/privacy', '/compliance', '/about']) {
             const response = await supertest(app).get(route);
             assert.equal(response.status, 200, route);
         }

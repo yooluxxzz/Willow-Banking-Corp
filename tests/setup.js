@@ -47,7 +47,9 @@ async function createTestApp() {
     app.use(securityHeaders);
 
     // In-memory session store for tests
+    const sessionStore = new session.MemoryStore();
     app.use(session({
+        store: sessionStore,
         secret: 'test-secret',
         resave: false,
         saveUninitialized: false,
@@ -85,7 +87,7 @@ async function createTestApp() {
         res.status(500).json({ error: 'Internal test error' });
     });
 
-    return { app, getDb, closeDatabase };
+    return { app, getDb, closeDatabase, sessionStore };
 }
 
 /**

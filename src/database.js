@@ -57,6 +57,12 @@ async function initializeDatabase() {
       PRIMARY KEY (user_id, code_hash)
     );
 
+    CREATE TABLE IF NOT EXISTS revoked_sessions (
+      session_hash TEXT PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      revoked_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS accounts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,

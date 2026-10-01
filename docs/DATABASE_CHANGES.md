@@ -17,6 +17,13 @@ The application uses sql.js with its schema and startup migrations in `src/datab
 - Transaction ordering now uses timestamp and ID together so records with the same timestamp paginate consistently.
 - The preview database was backed up privately as `data/preview.before-account-names.db` before startup migration. Automated account tests use only an in-memory database.
 
+## 2026-10-01: individual session controls
+
+- Startup creates `revoked_sessions(session_hash, user_id, revoked_at)`. The primary key is the SHA-256 digest of a high-entropy session ID, not the credential itself. Rows are owned by a user with cascading deletion and retained to reject replay; there is no automatic pruning policy.
+- Individual revocation checks ownership and CSRF, records a hash and audit event atomically, then removes the session-store row. Authentication and session listing reject revoked hashes even if a stale request restores a row. Already executing requests are not cancelled.
+- Newly authenticated sessions store browser user-agent (capped at 300 characters) and UTC sign-in time in the existing session JSON. Older sessions remain usable with an explicit missing-details label. No existing balances or accounts change.
+- Preview data was backed up as `data/preview.before-session-controls.db` before restarting for migration. Session data, revocation records and backups remain excluded from Git; schema and tests are versioned.
+
 ## Recovery delivery and backups
 
 No email delivery service is configured. Recovery therefore requires a code saved before losing account access. There is no public reset-link shortcut. If all codes are lost and the password is forgotten, self-service recovery is unavailable.

@@ -6,6 +6,7 @@ const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { getUserAccounts, getTotalBalance, getAccountById } = require('../services/account');
 const { getRecentTransactions, getTransactions } = require('../services/transaction');
 const { getDb } = require('../database');
+const { ownedSessions, deviceLabel } = require('../services/sessions');
 
 const router = express.Router();
 
@@ -137,22 +138,17 @@ router.get('/security', requireAuth, async (req, res) => {
         console.error('[Security] Error fetching login history:', e);
     }
 
-    let activeSessions = [];
-    if (req.sessionStore && req.sessionStore.all) {
-        try {
-            activeSessions = await new Promise((resolve) => {
-                req.sessionStore.all((err, sessions) => {
-                    if (err || !sessions) return resolve([]);
-                    const sessionArray = Array.isArray(sessions) ? sessions : Object.values(sessions);
-                    resolve(sessionArray.filter(s => s.userId === req.session.userId && (s.authVersion || 0) === res.locals.user.auth_version));
-                });
-            });
-        } catch (e) {
-            console.error('[Security] Error fetching active sessions:', e);
-        }
-    }
-
-    res.render('security', { title: 'Security — Willow Banking Corp.', loginHistory, activeSessions });
+    let activeSessions = [], sessionsUnavailable = false;
+    try {
+        activeSessions = (await ownedSessions(req, res.locals.user.auth_version)).map(({ sid, ...publicSession }) => publicSession);
+        activeSessions.sort((a, b) => Number(b.current) - Number(a.current));
+    } catch (err) { sessionsUnavailable = true; }
+    loginHistory = loginHistory.map(log => {
+        let metadata = {};
+        try { metadata = JSON.parse(log.metadata) || {}; } catch (err) { /* legacy record */ }
+        return { created_at: log.created_at, device: deviceLabel(metadata.userAgent) };
+    });
+    res.render('security', { title: 'Security — Willow Banking Corp.', loginHistory, activeSessions, sessionsUnavailable });
 });
 
 router.get('/settings', requireAuth, (req, res) => {
