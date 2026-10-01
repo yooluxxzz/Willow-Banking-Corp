@@ -1,14 +1,14 @@
 <%- include('partials/header') %>
 
-    <body>
+    <body class="banking-workspace">
         <div class="app-layout">
             <%- include('partials/sidebar') %>
-                <main class="main-content">
+                <main class="main-content workspace-main"><p class="workspace-eyebrow">YOUR WILLOW / ADD FUNDS</p>
                     <div class="page-header">
-                        <h1>Deposit Funds</h1>
+                        <h1>Add demo funds</h1>
                         <p>Add funds to your account (demo/fictional deposit)</p>
                     </div>
-                    <div class="card max-w-480">
+                    <div class="money-workspace"><div class="card money-form-card">
                         <div class="card-body">
                             <div id="depositAlert" class="hidden"></div>
                             <form id="depositForm" onsubmit="handleDeposit(event)">
@@ -40,7 +40,7 @@
                             </form>
                         </div>
                     </div>
-                </main>
+                <aside class="money-guide"><p class="workspace-eyebrow">EVERYDAY BANKING, SIMPLIFIED</p><h2>Room to try things out.</h2><p>Choose an account and add simulated funds to explore transfers and account activity.</p><div class="money-guide-note"><span aria-hidden="true">◎</span><p>Demo deposits do not charge a card or debit a real bank account.</p></div><a href="/accounts">Check your accounts <span aria-hidden="true">↗</span></a><a href="/transactions">See recent activity <span aria-hidden="true">↗</span></a></aside></div></main>
         </div>
         <script>
             const csrfToken = '<%= csrfToken %>';

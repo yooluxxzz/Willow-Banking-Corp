@@ -67,3 +67,11 @@ Each completed work session is recorded here and committed locally. Git history 
 - Added scoped forest/ivory styling, responsive single-column layouts, dark-theme colors, keyboard focus states and empty states. No fabricated charts, growth figures or new financial data were introduced. Active-account totals and simulated funds are labeled explicitly.
 - Validation: all 85 tests pass; all 37 EJS templates compile; whitespace checks pass. Existing integration tests confirm dashboard/account nickname rendering and account links. No new tests were added solely for cosmetic markup. Browser visual review remains unverified following the prior security-policy block.
 - No backend, schema or live-data changes. Completed source and work log committed and synced under the user's standing instruction.
+
+## Customer-page design extension — 2026-10-01
+
+- Extended the dashboard's forest/ivory design across account details, transfers, deposits, withdrawals, transactions, statements, cards, settings, security and notifications using scoped customer-page styles.
+- Money pages now pair their existing forms with a responsive guidance panel, larger amount fields, clearer demo explanations and account/activity links. Account details receive a prominent balance panel. Other customer pages share consistent headings, cards, inputs, tables, buttons and focus treatments.
+- Preserved all form identifiers, scripts, validation, confirmation controls and backend behavior. Included dark-theme styling and narrow-screen layouts without adding animation or external assets.
+- Validation: all 85 tests pass; all 37 EJS templates compile; whitespace checks pass. No tests added solely for cosmetic changes. Browser visual review remains unverified after the prior browser security-policy block.
+- No schema or live-data changes. Source and documentation committed and synced as requested.

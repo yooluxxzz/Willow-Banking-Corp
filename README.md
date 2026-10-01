@@ -473,3 +473,8 @@ statements. A prominent available-balance panel prioritizes transfers and everyd
 actions. Recent activity uses a compact list that wraps on phones; empty states
 explain how to explore with simulated funds. Styling is scoped to these two pages,
 with dark-theme colors and keyboard focus states. No chart or growth data is fabricated.
+
+The remaining customer pages use a matching scoped workspace theme: account details,
+transfers, deposits, withdrawals, activity, statements, cards, settings, security and
+notifications. Money forms pair with explanatory guidance panels that stack on small
+screens. Existing controls, confirmation steps and server validation remain intact.

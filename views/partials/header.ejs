@@ -16,6 +16,9 @@
   <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/account-settings.css">
   <link rel="stylesheet" href="/css/depth.css">
+  <% if (typeof currentPath !== 'undefined' && (['/transfers','/deposits','/withdrawals','/transactions','/statements','/cards','/settings','/security','/notifications'].includes(currentPath) || currentPath.startsWith('/accounts/'))) { %>
+  <link rel="stylesheet" href="/css/banking-workspace.css">
+  <% } %>
   <% if (typeof currentPath !== 'undefined' && ['/dashboard','/accounts'].includes(currentPath)) { %>
   <link rel="stylesheet" href="/css/account-overview.css">
   <% } %>

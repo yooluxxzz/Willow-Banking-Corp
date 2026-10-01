@@ -1,9 +1,9 @@
 <%- include('partials/header') %>
-<body><div class="app-layout"><%- include('partials/sidebar') %>
-<main class="main-content">
+<body class="banking-workspace"><div class="app-layout"><%- include('partials/sidebar') %>
+<main class="main-content workspace-main"><p class="workspace-eyebrow">YOUR WILLOW / ACCOUNT DETAILS</p>
     <div class="page-header"><a href="/accounts">← All accounts</a><h1 id="accountName"><%= account.displayName %></h1><p><%= account.account_type %> · <%= account.maskedNumber %> · <%= account.status %></p></div>
     <div class="settings-grid mb-6">
-        <section class="card"><div class="card-header"><h2>Account overview</h2></div><div class="card-body">
+        <section class="card account-detail-balance"><div class="card-header"><h2>Account overview</h2></div><div class="card-body">
             <p class="text-muted">Current balance</p><div class="account-balance"><%= account.balanceFormatted %></div>
             <p>Available: <strong><%= account.availableBalanceFormatted %></strong></p>
             <p class="text-sm text-muted">Currency: <%= account.currency %> · Opened <%= account.created_at.slice(0,10) %></p>

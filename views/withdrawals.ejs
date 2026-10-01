@@ -1,14 +1,14 @@
 <%- include('partials/header') %>
 
-    <body>
+    <body class="banking-workspace">
         <div class="app-layout">
             <%- include('partials/sidebar') %>
-                <main class="main-content">
+                <main class="main-content workspace-main"><p class="workspace-eyebrow">YOUR WILLOW / WITHDRAW</p>
                     <div class="page-header">
-                        <h1>Withdraw Funds</h1>
+                        <h1>Make a withdrawal</h1>
                         <p>Withdraw from your account (demo/fictional withdrawal)</p>
                     </div>
-                    <div class="card max-w-480">
+                    <div class="money-workspace"><div class="card money-form-card">
                         <div class="card-body">
                             <div id="withdrawAlert" class="hidden"></div>
                             <form id="withdrawForm" onsubmit="handleWithdraw(event)">
@@ -40,7 +40,7 @@
                             </form>
                         </div>
                     </div>
-                </main>
+                <aside class="money-guide"><p class="workspace-eyebrow">EVERYDAY BANKING, SIMPLIFIED</p><h2>Keep the full picture in view.</h2><p>Choose an account, check the available balance, then confirm your demo withdrawal.</p><div class="money-guide-note"><span aria-hidden="true">◎</span><p>Demo withdrawals reduce the simulated balance. No cash is dispensed.</p></div><a href="/accounts">Check your accounts <span aria-hidden="true">↗</span></a><a href="/transactions">See recent activity <span aria-hidden="true">↗</span></a></aside></div></main>
         </div>
         <script>
             const csrfToken = '<%= csrfToken %>';

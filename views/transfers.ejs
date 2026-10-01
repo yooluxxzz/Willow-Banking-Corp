@@ -1,10 +1,10 @@
 <%- include('partials/header') %>
-<body>
+<body class="banking-workspace">
 <div class="app-layout">
     <%- include('partials/sidebar') %>
-    <main class="main-content">
+    <main class="main-content workspace-main"><p class="workspace-eyebrow">YOUR WILLOW / MOVE MONEY</p>
         <div class="page-header"><h1>Move money</h1><p>Between your accounts, or to another Willow demo customer.</p></div>
-        <div class="card max-w-560"><div class="card-body">
+        <div class="money-workspace"><div class="card money-form-card"><div class="card-body">
             <p class="demo-notice">Demo transfer · Updates the simulated ledger only. No real money moves.</p>
             <div id="transferAlert" class="hidden" role="status" aria-live="polite"></div>
             <form id="transferForm">
@@ -28,7 +28,7 @@
                 <div class="transfer-actions"><button id="editTransfer" type="button" class="btn btn-secondary">Edit details</button><button id="confirmTransfer" type="button" class="btn btn-primary">Confirm demo transfer</button></div>
             </section>
         </div></div>
-    </main>
+    <aside class="money-guide"><p class="workspace-eyebrow">EVERYDAY BANKING, SIMPLIFIED</p><h2>A clear path from here to there.</h2><p>Choose your destination, check the amount, then review the details before confirming.</p><div class="money-guide-note"><span aria-hidden="true">◎</span><p>Transfers update your demo accounts only. No real money is sent.</p></div><a href="/accounts">Check your accounts <span aria-hidden="true">↗</span></a><a href="/transactions">See recent activity <span aria-hidden="true">↗</span></a></aside></div></main>
 </div>
 <script src="/js/transfers.js"></script>
 <%- include('partials/footer') %>

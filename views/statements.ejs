@@ -1,5 +1,5 @@
 <%- include('partials/header') %>
-<body><div class="app-layout"><%- include('partials/sidebar') %><main class="main-content">
+<body class="banking-workspace"><div class="app-layout"><%- include('partials/sidebar') %><main class="main-content workspace-main"><p class="workspace-eyebrow">YOUR WILLOW / YOUR RECORDS</p>
 <div class="page-header"><h1>Account statements</h1><p>Review completed transactions and download a PDF for your records.</p></div>
 <div class="card"><div class="card-body"><p class="mb-4 text-muted">Demo statements show simulated funds, not proof of real funds. Dates use UTC; pending and failed transactions are excluded.</p>
 <form id="statementForm"><div class="form-row"><div class="form-group"><label for="stmtAccount">Account</label><select id="stmtAccount" name="accountId" class="form-control" required><% accounts.forEach(a => { %><option value="<%= a.id %>" <%= a.id === selectedAccountId ? 'selected' : '' %>><%= a.displayName %> (<%= a.maskedNumber %>)</option><% }) %></select></div>

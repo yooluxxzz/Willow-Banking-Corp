@@ -1,5 +1,5 @@
 <%- include('partials/header') %>
-<body><div class="app-layout"><%- include('partials/sidebar') %><main class="main-content">
+<body class="banking-workspace"><div class="app-layout"><%- include('partials/sidebar') %><main class="main-content workspace-main"><p class="workspace-eyebrow">YOUR WILLOW / YOUR CARDS</p>
 <div class="page-header"><h1>Your cards</h1><p>Freeze, report or replace your demo card. No live payments or physical cards are connected.</p></div>
 <% if (notice) { %><p class="settings-feedback" role="status"><%= notice %></p><% } %>
 <% if (!cards.length) { %><div class="empty-state"><h2>No demo cards yet</h2><p>Your cards will appear here when available.</p></div><% } %>
