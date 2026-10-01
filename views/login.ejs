@@ -34,6 +34,7 @@
 
                 <form id="loginForm" onsubmit="handleLogin(event)">
                     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <input type="hidden" name="returnTo" value="<%= returnTo %>">
                     <div class="auth-field">
                         <label for="email">Email address</label>
                         <input type="email" id="email" name="email" class="form-control" placeholder="you@example.com" required autocomplete="email" autocapitalize="none" spellcheck="false">
@@ -69,6 +70,10 @@
     <script>
         (function () {
             const params = new URLSearchParams(window.location.search);
+            if (params.get('signedOut') === 'success') {
+                const status = document.getElementById('loginStatus');
+                status.textContent = 'You are signed out.'; status.hidden = false;
+            }
             if (params.get('reset') === 'success') {
                 const status = document.getElementById('loginStatus');
                 status.textContent = 'Password reset. Sign in with your new password.'; status.hidden = false;

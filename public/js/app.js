@@ -197,18 +197,19 @@ async function handleLogin(e) {
         const csrf = form.querySelector('[name="_csrf"]').value;
         const res = await fetch('/auth/login', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, Accept: 'application/json' },
             body: JSON.stringify({
                 email: document.getElementById('email').value,
                 password: document.getElementById('password').value,
+                returnTo: form.elements.returnTo.value,
             }),
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Login failed.');
+        const data = await res.json().catch(() => ({ error: 'Sign-in is temporarily unavailable. Please try again.' }));
+        if (!res.ok || !data.success) throw new Error(data.error || 'Login failed.');
         window.location.href = data.redirect || '/dashboard';
     } catch (err) {
         errBox.hidden = false; errBox.focus();
-        errText.textContent = err.message || 'Invalid email or password.';
+        errText.textContent = err instanceof TypeError ? 'Could not connect. Check your connection and try again.' : (err.message || 'Invalid email or password.');
         btn.disabled = false;
         btn.textContent = 'Sign In';
     }
@@ -237,7 +238,7 @@ async function handleRegister(e) {
         const csrf = form.querySelector('[name="_csrf"]').value;
         const res = await fetch('/auth/register', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, Accept: 'application/json' },
             body: JSON.stringify({
                 fullName: document.getElementById('fullName').value,
                 email: document.getElementById('email').value,
@@ -256,16 +257,24 @@ async function handleRegister(e) {
     }
 }
 
+let logoutPending = false;
 async function handleLogout() {
+    if (logoutPending) return;
+    logoutPending = true;
     try {
         const csrfMeta = document.querySelector('meta[name="csrf-token"]');
         const csrf = csrfMeta ? csrfMeta.getAttribute('content') : '';
-        await fetch('/auth/logout', {
+        const response = await fetch('/auth/logout', {
             method: 'POST',
-            headers: { 'X-CSRF-Token': csrf },
+            headers: { 'X-CSRF-Token': csrf, Accept: 'application/json' },
         });
-    } catch (e) { /* ignore */ }
-    window.location.href = '/login';
+        const data = await response.json().catch(() => ({}));
+        if (response.status === 401) { window.location.href = '/login?error=session_expired'; return; }
+        if (!response.ok || !data.success) throw new Error(data.error || 'Sign-out could not be completed. Please try again.');
+        window.location.href = '/login?signedOut=success';
+    } catch (error) {
+        showToast(error.message || 'Could not connect. Please try signing out again.', 'error');
+    } finally { logoutPending = false; }
 }
 
 // ── Theme Toggle ─────────────────────────────────────────
@@ -326,8 +335,10 @@ function toggleTheme() {
         const toast = document.createElement('div');
         toast.style.cssText = 'pointer-events:auto;display:flex;align-items:flex-start;gap:12px;padding:14px 18px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.12);border:1px solid ' + t.border + ';background:' + t.bg + ';color:' + t.text + ';font-size:0.9rem;line-height:1.5;transform:translateX(110%);transition:transform 0.35s cubic-bezier(0.22,1,0.36,1),opacity 0.3s;opacity:0;';
         toast.innerHTML = '<div style="flex-shrink:0;color:' + t.icon + ';margin-top:1px;">' + (icons[type] || icons.info) + '</div>'
-            + '<div style="flex:1;font-weight:500;">' + message + '</div>'
+            + '<div data-toast-message style="flex:1;font-weight:500;"></div>'
             + '<button onclick="this.parentElement.remove()" style="flex-shrink:0;background:none;border:none;cursor:pointer;color:' + t.text + ';opacity:0.5;font-size:1.2rem;line-height:1;padding:0;">&times;</button>';
+        toast.querySelector('[data-toast-message]').textContent = message;
+        toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
         c.appendChild(toast);
         requestAnimationFrame(function () {
             toast.style.transform = 'translateX(0)';

@@ -39,3 +39,12 @@ Each completed work session is recorded here and committed locally. Git history 
 - Validation: all 68 tests across 21 suites pass, including five new session tests covering ownership, CSRF, isolation, replay after stale store restoration, current-session protection, legacy metadata and store errors. All 36 EJS templates compile, all 48 JavaScript files pass syntax checks, and patch whitespace checks pass. Public privacy/compliance pages render in integration tests.
 - Visual limitation: the browser action was previously blocked by browser security policy, so this session does not claim a fresh browser/screenshot review. The local preview server is running with these changes.
 - Commit and sync continue under the user's explicit instruction to commit and synchronize completed work. No merge into main or deployment is included.
+
+## Sign-in navigation and reliable sign-out — 2026-10-01
+
+- Protected page links now preserve their destination and filters through sign-in, including after session revocation. Known internal page destinations are validated on both rendering and submission; external URLs, malformed routes and customer redirects to admin are rejected. Ownership remains enforced at the destination. No state-changing action is replayed.
+- Authentication failures from API routes consistently return JSON, even without an Accept header. Login responses handle connection and invalid-response failures clearly; the login page is not cached.
+- Sign-out checks server success before navigating, reports store/network failures and permits retries. Repeated clicks share one pending operation, cookies are cleared after successful destruction, and the login page shows confirmation. Error toasts now render messages as text with accessible status roles.
+- Database: no schema or account-data changes this session. Existing private databases, backups and secrets remain ignored.
+- Validation: 76 tests across 22 suites pass, including five navigation/server tests and three client-logic tests for failures, retries and duplicate requests. All 36 templates compile and 51 JavaScript files pass syntax checks. Patch whitespace checks pass.
+- Browser visual review remains unavailable following the prior browser security-policy block; integration tests and isolated client-logic tests provide functional verification. Local preview restarted with this version. Completed changes are committed and synced under the user's standing instruction.

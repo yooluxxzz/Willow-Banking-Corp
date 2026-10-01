@@ -10,6 +10,7 @@ const { validatePassword, validatePhone } = require('../middleware/validation');
 const { getDb } = require('../database');
 const config = require('../config');
 const { sessionMetadata } = require('../services/sessions');
+const { safeReturnTo } = require('../services/sign-in');
 
 const router = express.Router();
 
@@ -91,7 +92,7 @@ router.post('/login', authLimiter, async (req, res) => {
                 },
             });
 
-            const redirect = user.role === 'admin' ? '/admin' : '/dashboard';
+            const redirect = safeReturnTo(req.body.returnTo, user.role) || (user.role === 'admin' ? '/admin' : '/dashboard');
             req.session.save((saveErr) => {
                 if (saveErr) {
                     console.error('[Auth] Session save error after login:', saveErr.message);
@@ -107,10 +108,14 @@ router.post('/login', authLimiter, async (req, res) => {
 });
 
 router.post('/logout', (req, res) => {
-    const userId = req.session?.userId;
     req.session.destroy((err) => {
-        if (err) console.error('[Auth] Logout error:', err);
-        res.json({ success: true, redirect: '/' });
+        if (err) {
+            console.error('[Auth] Logout error:', err.message);
+            return res.status(500).json({ error: 'Sign-out could not be completed. Please try again.' });
+        }
+        res.clearCookie('willow.sid');
+        res.set('Cache-Control', 'no-store');
+        res.json({ success: true, redirect: '/login?signedOut=success' });
     });
 });
 router.post('/change-password', authLimiter, async (req, res) => {

@@ -2,25 +2,27 @@
  * Authentication middleware
  */
 
+const { signInUrl, wantsJson } = require('../services/sign-in');
+
 function requireAuth(req, res, next) {
     if (!req.session || !req.session.userId) {
-        if (req.xhr || req.headers.accept?.includes('application/json')) {
+        if (wantsJson(req)) {
             return res.status(401).json({ error: 'Authentication required' });
         }
-        return res.redirect('/login');
+        return res.redirect(signInUrl(req));
     }
     next();
 }
 
 function requireAdmin(req, res, next) {
     if (!req.session || !req.session.userId) {
-        if (req.xhr || req.headers.accept?.includes('application/json')) {
+        if (wantsJson(req)) {
             return res.status(401).json({ error: 'Authentication required' });
         }
-        return res.redirect('/login');
+        return res.redirect(signInUrl(req));
     }
     if (req.session.userRole !== 'admin') {
-        if (req.xhr || req.headers.accept?.includes('application/json')) {
+        if (wantsJson(req)) {
             return res.status(403).json({ error: 'Admin access required' });
         }
         return res.status(403).render('error', {
@@ -42,15 +44,15 @@ function loadUser(req, res, next) {
         if (!user || (req.session.authVersion || 0) !== user.auth_version || isRevoked(req.sessionID)) {
             req.session.destroy(() => {});
             res.clearCookie('willow.sid');
-            if (req.path.startsWith('/api/') || req.path.startsWith('/auth/') || req.headers.accept?.includes('application/json')) {
+            if (wantsJson(req)) {
                 return res.status(401).json({ error: 'Your session ended. Please sign in again.' });
             }
-            return res.redirect('/login?error=session_expired');
+            return res.redirect(signInUrl(req, 'session_expired'));
         }
         if (user) {
             if (user.status !== 'active' && user.role !== 'admin') {
                 req.session.destroy(() => { });
-                if (req.xhr || req.headers.accept?.includes('application/json')) {
+                if (wantsJson(req)) {
                     return res.status(401).json({ error: 'Account suspended. Please log in again.' });
                 }
                 return res.redirect('/login?error=account_suspended');

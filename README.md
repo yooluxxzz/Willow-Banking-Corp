@@ -188,6 +188,7 @@ Tests run against an **in-memory database** — no test data touches your real d
 | `tests/admin.test.js` | Admin-only route protection, user management, stats endpoint |
 | `tests/accounts.test.js` | Account names, owned detail pages, filter validation and stable pagination |
 | `tests/sessions.test.js` | Individual session revocation, ownership, CSRF, replay and session metadata |
+| `tests/sign-in.test.js`, `tests/auth-client.test.js` | Safe return destinations, expired sessions, sign-out failures and client retries |
 
 Each test creates a fresh isolated database and handles CSRF tokens automatically.
 
@@ -427,3 +428,16 @@ not cancel a request already executing when sign-out is requested.
 Homepage trust disclosures and the linked privacy, compliance and security pages
 describe the fictional demo, simulated funds, stored data and implemented controls.
 They do not claim a banking license, deposit insurance or independent certification.
+
+## Sign-in navigation
+
+Opening a protected page while signed out preserves its path and filters through
+sign-in. Return destinations are restricted to known Willow pages and checked
+again after authentication; account ownership and admin permissions still apply.
+No financial action is replayed. Expired or revoked sessions keep their page
+destination when redirecting back to sign-in. API authentication failures return JSON.
+
+Sign-out displays a success message only after the server confirms completion.
+Network or session-store failures show an error and allow a retry without navigating
+away. Duplicate sign-out clicks do not send overlapping requests. Sign-in and
+sign-out screens use explicit status messages, and error toasts render text safely.

@@ -7,6 +7,7 @@ const { getUserAccounts, getTotalBalance, getAccountById } = require('../service
 const { getRecentTransactions, getTransactions } = require('../services/transaction');
 const { getDb } = require('../database');
 const { ownedSessions, deviceLabel } = require('../services/sessions');
+const { safeReturnTo } = require('../services/sign-in');
 
 const router = express.Router();
 
@@ -22,10 +23,11 @@ router.get('/', (req, res) => {
 });
 
 router.get('/login', (req, res) => {
+    res.set('Cache-Control', 'no-store');
     if (req.session?.userId) {
-        return res.redirect(req.session.userRole === 'admin' ? '/admin' : '/dashboard');
+        return res.redirect(safeReturnTo(req.query.returnTo, req.session.userRole) || (req.session.userRole === 'admin' ? '/admin' : '/dashboard'));
     }
-    res.render('login', { title: 'Sign In — Willow Banking Corp.', error: req.query.error });
+    res.render('login', { title: 'Sign In — Willow Banking Corp.', error: req.query.error, returnTo: safeReturnTo(req.query.returnTo) });
 });
 
 router.get('/register', (req, res) => {
