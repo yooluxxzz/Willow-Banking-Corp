@@ -2,7 +2,7 @@
 .home-hero-story {
   --hero-nav-height: 73px;
   --hero-viewport-height: 100vh;
-  --hero-scroll-travel: 110vh;
+  --hero-scroll-travel: 190vh;
   --hero-stage-height: max(600px, calc(var(--hero-viewport-height) - var(--hero-nav-height)));
   --hero-photo-start-top: 8%;
   --hero-photo-start-right: 4%;
@@ -13,7 +13,7 @@
 @supports (height: 100svh) {
   .home-hero-story {
     --hero-viewport-height: 100svh;
-    --hero-scroll-travel: 110svh;
+    --hero-scroll-travel: 190svh;
   }
 }
 .home-hero-story.is-scroll-ready { height: calc(var(--hero-stage-height) + var(--hero-scroll-travel)); }
@@ -34,6 +34,8 @@
   overflow: hidden;
   isolation: isolate;
   border-radius: var(--hero-photo-radius, 0px);
+  border: 1px solid rgba(244,245,240,var(--hero-photo-border-opacity,.72));
+  box-sizing: border-box;
   box-shadow: 0 20px 72px rgba(0,0,0,.24);
 }
 .home-hero-photo {

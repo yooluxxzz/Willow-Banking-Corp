@@ -143,3 +143,11 @@ Each completed work session is recorded here and committed locally. Git history 
 - Kept the scroll cue visible in the pinned hero while preserving the premium landing-page interaction without altering the working banking backend or user flows.
 - Added the missing Node `vm` import in the goal-selection regression test so the page script can be evaluated in the project’s real test harness.
 - Validation: `node --test tests/*.test.js` passes with 93 tests passing and 0 failing. The fix remains isolated to the homepage experience layer; no account, session or database schema changes were introduced.
+
+## Homepage spacing and scroll finish - 2026-10-02
+
+- Restored the standard vertical rhythm on the Hub, financial-intelligence, platform and next-move sections, and brought the personalization section into the same compact mobile spacing system.
+- Rebalanced the four platform cards into a two-column layout so content fills the section instead of leaving an empty third column; the move cards stack cleanly on narrow screens.
+- Added a visible fine border to the hero photo frame, fading it as the image expands to full bleed. Extended the sticky story to 190svh, retimed the photo/copy crossfade to leave a clear hold on scene two, and synchronized scroll progress with the navigation's hidden state.
+- Updated the brand specification to describe the implemented scroll journey. No banking behavior or database schema changed.
+- Validation pending: responsive browser review and full regression suite.

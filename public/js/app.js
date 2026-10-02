@@ -59,25 +59,26 @@ function setupHeroCrossfade() {
     };
     const updateFromScroll = () => {
         frame = null;
-        const top = nav ? nav.getBoundingClientRect().height : 0;
+        const top = nav && !nav.classList.contains('is-hidden') ? nav.getBoundingClientRect().height : 0;
         const bounds = story.getBoundingClientRect();
         const travel = Math.max(1, story.offsetHeight - hero.offsetHeight);
         const progress = Math.min(1, Math.max(0, (top - bounds.top) / travel));
-        const photoProgress = Math.min(1, progress / 0.82);
+        const photoProgress = Math.min(1, progress / 0.68);
         const easedPhotoProgress = photoProgress * photoProgress * (3 - 2 * photoProgress);
-        const sceneProgress = Math.min(1, Math.max(0, (progress - 0.42) / 0.4));
-        const copyAOpacity = 1 - Math.min(1, Math.max(0, (progress - 0.24) / 0.26));
-        const copyBOpacity = Math.min(1, Math.max(0, (progress - 0.52) / 0.2));
+        const sceneProgress = Math.min(1, Math.max(0, (progress - 0.36) / 0.32));
+        const copyAOpacity = 1 - Math.min(1, Math.max(0, (progress - 0.26) / 0.22));
+        const copyBOpacity = Math.min(1, Math.max(0, (progress - 0.46) / 0.2));
         hero.style.setProperty('--hero-photo-inset-top', `${photoFrame.top * (1 - easedPhotoProgress)}%`);
         hero.style.setProperty('--hero-photo-inset-right', `${photoFrame.right * (1 - easedPhotoProgress)}%`);
         hero.style.setProperty('--hero-photo-inset-bottom', `${photoFrame.bottom * (1 - easedPhotoProgress)}%`);
         hero.style.setProperty('--hero-photo-inset-left', `${photoFrame.left * (1 - easedPhotoProgress)}%`);
         hero.style.setProperty('--hero-photo-radius', `${photoFrame.radius * (1 - easedPhotoProgress)}px`);
+        hero.style.setProperty('--hero-photo-border-opacity', 0.72 * (1 - easedPhotoProgress));
         hero.style.setProperty('--hero-scene-progress', sceneProgress);
         hero.style.setProperty('--hero-copy-a-opacity', copyAOpacity);
         hero.style.setProperty('--hero-copy-b-opacity', copyBOpacity);
         hero.style.setProperty('--story-progress', progress);
-        show(progress >= 0.52 ? 'b' : 'a');
+        show(progress >= 0.46 ? 'b' : 'a');
     };
     const schedule = () => {
         if (frame === null) frame = window.requestAnimationFrame(updateFromScroll);

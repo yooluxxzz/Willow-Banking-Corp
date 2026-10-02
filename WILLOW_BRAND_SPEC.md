@@ -108,7 +108,7 @@ Navigation stays flat; the current product set does not need dropdowns. On compa
 
 ## Animation
 
-After both files decode, enhance the hero into a sticky stage beneath the navigation. The stage fills the available viewport and has 110svh of scroll travel. The first scene holds initially; at 30% progress, both the photograph and its HTML content fade to scene two over 800ms. Hold the second scene for the remaining travel, then release into the page. Reverse the sequence on upward scroll. Do not intercept wheel or touch input. Inactive copy is inert and aria-hidden. A small progress line and scroll cue explain the sequence. Short viewports fall back to normal flow to keep controls reachable. Section copy reveals once as it enters the viewport. Avoid continuous number counters, parallax and large moving shapes.
+After both files decode, enhance the hero into a sticky stage beneath the navigation. The stage fills the available viewport and has 190svh of scroll travel. The first scene holds initially; then its framed photograph expands while the HTML copy fades into scene two. Hold the full-bleed second scene before releasing into the page. Reverse the sequence on upward scroll. Do not intercept wheel or touch input. Inactive copy is inert and aria-hidden. A progress line and changing scroll cue explain the sequence. Short viewports fall back to normal flow to keep controls reachable. Section copy reveals once as it enters the viewport. Avoid continuous number counters, parallax and large moving shapes.
 
 For `prefers-reduced-motion: reduce`, disable opacity transitions and remove entrance/reveal movement. Scroll-triggered image changes are immediate.
 
