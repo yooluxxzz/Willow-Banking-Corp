@@ -1,0 +1,1363 @@
+# WILLOW BANKING CORP — COMPLETE DIGITAL BANKING & FINANCIAL PLATFORM UPGRADE
+
+Upgrade the existing **Willow Banking Corp** project into a premium, modern, full-service digital banking and financial platform.
+
+**IMPORTANT:** This is an upgrade of an existing project. Do NOT throw away existing functionality that already works. Preserve the existing architecture and working features where possible, while substantially improving the product design, UX, information architecture, visual identity, interactions, and financial capabilities.
+
+The final result should feel like a serious next-generation financial institution combining the polish of a premium digital bank, the usability of a modern fintech app, and the depth of an investment platform.
+
+Do NOT make it look like a generic banking template.
+
+---
+
+# 1. CORE PRODUCT VISION
+
+Willow should feel like:
+
+> **A complete financial ecosystem, not just a bank website.**
+
+The customer should be able to use Willow for:
+
+* Everyday banking
+* Savings
+* Cards
+* Payments
+* Transfers
+* International money
+* Loans
+* Credit
+* Mortgages
+* Business banking
+* Stocks
+* ETFs
+* Funds
+* Crypto
+* Portfolio management
+* Financial insights
+* Financial education
+
+Everything should feel like one coherent Willow ecosystem.
+
+The experience should communicate:
+
+**Trust + sophistication + simplicity + intelligence + security**
+
+Avoid making Willow look like a crypto exchange, trading casino, or flashy startup.
+
+The visual language should remain premium, calm, trustworthy, and institutional.
+
+---
+
+# 2. BRAND DIRECTION
+
+Create a stronger, more distinctive Willow identity.
+
+The brand should feel:
+
+* Premium
+* Modern
+* Calm
+* Intelligent
+* Human
+* Secure
+* Forward-looking
+* International
+
+Create a memorable slogan/tagline that fits the brand.
+
+Use the slogan consistently throughout the experience without overusing it.
+
+Potential direction:
+
+> **Your money. Moving forward.**
+
+You may improve this wording if a stronger Willow-specific alternative fits the existing brand.
+
+The slogan should communicate progress, confidence, and financial freedom rather than simply saying "modern banking."
+
+---
+
+# 3. VISUAL DESIGN SYSTEM
+
+Create a cohesive design system.
+
+## Typography
+
+Use a premium modern sans-serif typeface.
+
+Typography hierarchy should be extremely clear:
+
+* Large editorial hero typography
+* Strong section headings
+* Comfortable body text
+* Clear financial numbers
+* Small supporting labels
+* Monospaced or tabular numerals where useful for financial data
+
+Large numbers such as balances, portfolio values, rates, and stock prices should feel visually important.
+
+## Color
+
+Maintain Willow's existing brand colors if they are already established, but refine them into a professional design system.
+
+Use:
+
+* Primary brand color
+* Secondary accent
+* Neutral backgrounds
+* Elevated card surfaces
+* Strong text colors
+* Muted secondary text
+* Positive financial state
+* Negative financial state
+* Warning state
+* Error state
+
+Do NOT turn the entire interface into gradients.
+
+Gradients should be subtle and intentional.
+
+## Shape language
+
+Use consistent:
+
+* Border radius
+* Card geometry
+* Button geometry
+* Input styling
+* Shadows
+* Borders
+* Spacing
+
+The interface should feel expensive without being ornamental.
+
+---
+
+# 4. HOMEPAGE
+
+Completely improve the homepage experience.
+
+The homepage should not simply be:
+
+Hero → Features → Products → Footer.
+
+It should tell a story.
+
+## Hero section
+
+Create a cinematic hero section with:
+
+* Strong headline
+* Short supporting statement
+* Primary CTA
+* Secondary CTA
+* High-quality imagery
+* Subtle motion
+
+Example messaging direction:
+
+> **Your money. Moving forward.**
+
+Supporting copy:
+
+> Banking, investing, and building wealth — brought together in one intelligent financial experience.
+
+Buttons:
+
+**Open an account**
+
+**Sign in**
+
+---
+
+# 5. HERO IMAGE TRANSITION SYSTEM
+
+Implement a sophisticated image transition system.
+
+Use multiple high-quality images representing different aspects of modern financial life:
+
+1. Person using Willow
+2. Family / home
+3. Entrepreneur / business
+4. Travel / international life
+5. Investing / wealth
+
+Images should transition using elegant crossfade/fade animations.
+
+Do NOT use aggressive sliders.
+
+The transitions should feel cinematic and slow.
+
+Example:
+
+Image 1:
+
+> **For everyday life.**
+
+Fade into Image 2:
+
+> **For what you're building.**
+
+Fade into Image 3:
+
+> **For what's next.**
+
+Text and imagery should feel connected.
+
+Support:
+
+* autoplay
+* pause on interaction
+* reduced-motion accessibility
+* mobile optimization
+
+Optimize all imagery so the page remains fast.
+
+---
+
+# 6. HOMEPAGE STORYTELLING
+
+After the hero, create sections that progressively explain Willow.
+
+Suggested flow:
+
+### Section 1 — Everyday banking
+
+> Everything you need for everyday money.
+
+Accounts, cards, payments, transfers, and bills.
+
+### Section 2 — Grow your money
+
+Introduce:
+
+* Savings
+* Investing
+* Stocks
+* ETFs
+* Crypto
+
+### Section 3 — Built around your goals
+
+Examples:
+
+* Buy a home
+* Build an emergency fund
+* Start a business
+* Invest for the future
+* Travel internationally
+
+### Section 4 — Your complete financial picture
+
+Show a beautiful conceptual Willow Hub dashboard.
+
+### Section 5 — Security
+
+Explain how Willow protects customers.
+
+### Section 6 — Final CTA
+
+> **Where will your money take you?**
+
+CTA:
+
+**Join Willow**
+
+---
+
+# 7. PERSONALIZATION
+
+Make Willow feel personalized before and after authentication.
+
+Add a section:
+
+> **What are you working toward?**
+
+Cards:
+
+* Build savings
+* Invest
+* Buy a home
+* Start a business
+* Manage everyday money
+* Go international
+
+Selecting one should surface relevant Willow products and information.
+
+Do not make this feel like a questionnaire.
+
+Make it visually elegant.
+
+---
+
+# 8. MAIN NAVIGATION
+
+Create a premium navigation system.
+
+Suggested structure:
+
+**Willow**
+
+### Money
+
+* Accounts
+* Cards
+* Payments
+* Transfers
+* Savings
+
+### Wealth
+
+* Stocks
+* ETFs
+* Funds
+* Crypto
+* Portfolio
+
+### Borrow
+
+* Personal loans
+* Credit
+* Mortgage
+
+### Business
+
+* Business banking
+* Business cards
+* Payments
+* Expenses
+
+### Explore
+
+* Insights
+* Markets
+* Education
+* Security
+* Help
+
+Right side:
+
+**Sign in**
+
+**Open an account**
+
+Make navigation responsive and excellent on mobile.
+
+---
+
+# 9. ACCOUNTS
+
+Create polished account pages.
+
+Include:
+
+* Checking/current account
+* Savings
+* Multiple currencies
+* Account details
+* Transaction history
+* Statements
+* Scheduled payments
+* Transfers
+
+Use beautiful financial cards.
+
+Avoid information overload.
+
+---
+
+# 10. CARDS
+
+Create a premium Willow Cards experience.
+
+Include:
+
+* Physical cards
+* Virtual cards
+* Card controls
+* Freeze/unfreeze
+* Spending limits
+* Online/offline controls
+* Apple/Google wallet-style integration placeholders
+* Transaction notifications
+
+Use realistic card mockups.
+
+Allow users to visually switch between cards.
+
+---
+
+# 11. PAYMENTS & TRANSFERS
+
+Create an elegant transfer flow.
+
+Flow:
+
+Choose recipient
+→ Enter amount
+→ Select account
+→ Review
+→ Confirm
+→ Success
+
+The confirmation should feel polished.
+
+Example:
+
+> **Money sent**
+
+€450.00
+
+To Maria Silva
+
+Today · 10:42
+
+Do not use fake confirmation states that could be mistaken for actual transactions.
+
+---
+
+# 12. INTERNATIONAL BANKING
+
+Make international money a major Willow capability.
+
+Include:
+
+* Multi-currency accounts
+* Currency conversion
+* International transfers
+* Exchange rates
+* Travel spending
+* Global card usage
+
+Show multiple currencies elegantly.
+
+Example:
+
+USD
+EUR
+GBP
+MZN
+ZAR
+
+Avoid implying real exchange execution if this is a demo.
+
+---
+
+# 13. STOCKS — DEMO INVESTMENT PLATFORM
+
+Add a complete **Stocks** experience.
+
+IMPORTANT:
+
+This is a **demo/simulation**.
+
+Do not claim Willow is executing real trades.
+
+Use **yfinance** for market-data prototyping where appropriate.
+
+Create backend endpoints that retrieve stock data and expose it safely to the frontend.
+
+Possible data:
+
+* Current/latest available price
+* Daily change
+* Percentage change
+* Historical prices
+* Market cap
+* Volume
+* 52-week high
+* 52-week low
+* P/E ratio where available
+* Company information
+
+Clearly display:
+
+> **Demo market data / simulated investing**
+
+when appropriate.
+
+---
+
+# 14. STOCKS MARKET PAGE
+
+Create:
+
+## Markets
+
+Show major indices:
+
+* S&P 500
+* NASDAQ
+* Dow Jones
+
+Then:
+
+### Popular stocks
+
+Include recognizable companies such as:
+
+* Apple — AAPL
+* Microsoft — MSFT
+* NVIDIA — NVDA
+* Amazon — AMZN
+* Tesla — TSLA
+* Alphabet — GOOGL
+* Meta — META
+
+Do not hardcode prices.
+
+Retrieve available market data dynamically.
+
+Create:
+
+* Search
+* Watchlist
+* Favorites
+* Sort
+* Filter
+* Asset categories
+
+---
+
+# 15. STOCK DETAIL PAGE
+
+Clicking a stock should open a sophisticated stock detail page.
+
+Example:
+
+# Apple
+
+AAPL
+
+$XXX.XX
+
++X.XX%
+
+Chart controls:
+
+**1D | 1W | 1M | 6M | 1Y | 5Y | MAX**
+
+Create a beautiful interactive chart.
+
+Then:
+
+### Key statistics
+
+Market cap
+P/E ratio
+52-week high
+52-week low
+Volume
+
+Then:
+
+### About
+
+Company description.
+
+Then:
+
+### News
+
+Use available data sources if integrated.
+
+Then:
+
+### Your position
+
+If the user owns simulated shares, show:
+
+Shares
+Average price
+Current value
+Gain/loss
+
+---
+
+# 16. DEMO TRADING
+
+Create simulated trading.
+
+Give users demo funds.
+
+Example:
+
+> **Demo Portfolio**
+
+$100,000.00
+
+Available to invest.
+
+Allow:
+
+**Buy**
+
+**Sell**
+
+Show:
+
+* Quantity
+* Estimated value
+* Simulated order
+* Confirmation
+* Portfolio update
+
+Always make the simulated nature clear.
+
+Example:
+
+> This is a simulated transaction. No real securities are purchased.
+
+Do NOT integrate real brokerage execution.
+
+---
+
+# 17. PORTFOLIO
+
+Create a beautiful portfolio dashboard.
+
+Show:
+
+Total portfolio value
+
+Daily change
+
+Total return
+
+Allocation:
+
+Stocks
+ETFs
+Crypto
+Cash
+
+Use elegant charts.
+
+Holdings:
+
+AAPL
+NVDA
+MSFT
+BTC
+ETH
+
+For demo accounts, calculate simulated P/L using available market data.
+
+Include:
+
+* Performance
+* Allocation
+* Holdings
+* Activity
+* Watchlist
+
+---
+
+# 18. CRYPTO
+
+Add a complete Crypto section.
+
+Include:
+
+* Crypto market overview
+* Bitcoin
+* Ethereum
+* Other supported demo assets
+* Price charts
+* Portfolio allocation
+* Buy/sell simulation
+* Send/receive UI
+* Wallet UI
+* Transaction history
+* Crypto education
+* Security controls
+
+Again:
+
+This is a demo unless real regulated infrastructure exists.
+
+Clearly label simulated functionality.
+
+The visual design should NOT resemble a gambling/crypto casino interface.
+
+It should feel like part of a professional wealth platform.
+
+---
+
+# 19. CRYPTO DETAIL PAGE
+
+Example:
+
+# Bitcoin
+
+BTC
+
+$XX,XXX.XX
+
++X.XX%
+
+Chart:
+
+1D
+1W
+1M
+1Y
+5Y
+
+Then:
+
+Market statistics
+
+Your position
+
+Portfolio allocation
+
+About Bitcoin
+
+Risk/education information
+
+Demo actions:
+
+**Buy**
+
+**Sell**
+
+---
+
+# 20. INVESTMENTS
+
+Create a broader Wealth section.
+
+Include:
+
+* Stocks
+* ETFs
+* Funds
+* Crypto
+* Portfolio
+* Watchlist
+* Market overview
+
+Users should be able to understand their entire investment portfolio from one location.
+
+---
+
+# 21. WILLOW HUB
+
+This should be one of the flagship features.
+
+Create a unified financial dashboard.
+
+Title:
+
+> **Your financial picture**
+
+Show:
+
+### Net worth
+
+$XXX,XXX
+
+Then:
+
+Cash
+Investments
+Crypto
+Savings
+Credit/debt
+
+Create visual breakdowns.
+
+Then:
+
+### Money movement
+
+Income
+
+Expenses
+
+Savings
+
+Investments
+
+Then:
+
+### Goals
+
+Emergency fund
+
+Home
+
+Travel
+
+Investing
+
+Then:
+
+### Insights
+
+Examples:
+
+> You've saved 18% more this month.
+
+> Your investment portfolio is currently distributed across 7 assets.
+
+> You have 3 scheduled payments this week.
+
+These should be presented as informational insights, not authoritative financial advice.
+
+---
+
+# 22. FINANCIAL INTELLIGENCE
+
+Introduce a Willow intelligence layer.
+
+Create an assistant/search experience where users can ask things such as:
+
+> "How much did I spend this month?"
+
+> "Show me my investments."
+
+> "What are my biggest expenses?"
+
+> "How much do I have in savings?"
+
+> "What is my portfolio allocation?"
+
+For a demo, use the application's own mock/connected data.
+
+Return:
+
+* Direct answer
+* Relevant accounts
+* Transactions
+* Charts
+* Links to relevant sections
+
+Do not invent financial information.
+
+---
+
+# 23. LOANS
+
+Create polished loan experiences.
+
+Include:
+
+* Personal loans
+* Home loans/mortgages
+* Business loans
+* Loan calculators
+
+Use interactive calculators.
+
+Example:
+
+Amount
+
+$25,000
+
+Term
+
+36 months
+
+Then show an estimated payment.
+
+Clearly label calculations as estimates where appropriate.
+
+---
+
+# 24. BUSINESS BANKING
+
+Create a dedicated business experience.
+
+Include:
+
+* Business accounts
+* Business cards
+* Team members
+* Expenses
+* Payments
+* Invoices
+* Cash flow
+* International payments
+
+Dashboard:
+
+Revenue
+Expenses
+Cash flow
+Upcoming payments
+
+Use a different information hierarchy while keeping Willow's visual identity.
+
+---
+
+# 25. LOGIN PAGE
+
+IMPORTANT:
+
+The login page must NOT look like a basic form.
+
+It must visually belong to the same premium Willow brand.
+
+Create a split/full-screen composition.
+
+Left:
+
+Large Willow imagery with slow fade transitions.
+
+Right:
+
+Elegant login panel.
+
+Headline:
+
+> **Welcome back.**
+
+Fields:
+
+Email / Customer ID
+
+Password
+
+Actions:
+
+**Sign in**
+
+**Forgot password?**
+
+**Use another sign-in method**
+
+Include appropriate security messaging.
+
+Add subtle authentication states:
+
+* Loading
+* Error
+* Success
+* Locked account
+* Incorrect password
+* Session timeout
+
+Do not expose sensitive information.
+
+---
+
+# 26. SIGN-UP / OPEN ACCOUNT
+
+Create a beautiful onboarding flow.
+
+Step 1:
+
+> **Welcome to Willow**
+
+Step 2:
+
+Personal information
+
+Step 3:
+
+Account type
+
+Step 4:
+
+Security
+
+Step 5:
+
+Verification
+
+Step 6:
+
+Confirmation
+
+Use a progress indicator.
+
+Do not overwhelm users.
+
+For the demo, make it clear which verification/KYC elements are simulated.
+
+---
+
+# 27. SECURITY CENTER
+
+Create a dedicated security experience.
+
+Include:
+
+* Login activity
+* Devices
+* Two-factor authentication
+* Password management
+* Card security
+* Transaction alerts
+* Session management
+* Privacy controls
+
+Make security feel like part of the product rather than an afterthought.
+
+---
+
+# 28. HELP CENTER
+
+Build a modern support experience.
+
+Search:
+
+> **How can we help?**
+
+Categories:
+
+Accounts
+Cards
+Payments
+Transfers
+Investing
+Crypto
+Loans
+Security
+Business
+
+Include FAQ pages and contact/support UI.
+
+---
+
+# 29. MICRO-INTERACTIONS
+
+Add high-quality micro-interactions throughout the product.
+
+Examples:
+
+* Button hover states
+* Smooth page transitions
+* Card hover elevation
+* Chart transitions
+* Number animations
+* Success animations
+* Loading skeletons
+* Toast notifications
+* Modal transitions
+* Dropdown transitions
+* Navigation animations
+
+Use motion sparingly.
+
+The interface should feel premium, not playful.
+
+---
+
+# 30. REDUCED MOTION
+
+Respect:
+
+`prefers-reduced-motion`
+
+When enabled:
+
+* Disable cinematic transitions
+* Reduce animation duration
+* Remove unnecessary movement
+* Preserve usability
+
+---
+
+# 31. RESPONSIVE DESIGN
+
+The entire product must work beautifully on:
+
+* Desktop
+* Laptop
+* Tablet
+* Mobile
+
+Do not simply shrink desktop components.
+
+Redesign layouts appropriately for mobile.
+
+The mobile navigation should be particularly polished.
+
+---
+
+# 32. DATA ARCHITECTURE
+
+Keep financial/demo data clearly separated.
+
+Use realistic seeded demo data.
+
+Possible data domains:
+
+```text
+users
+accounts
+transactions
+cards
+payments
+beneficiaries
+stocks
+watchlists
+holdings
+portfolios
+crypto_assets
+crypto_holdings
+goals
+loans
+businesses
+notifications
+security_events
+```
+
+Do not mix simulated trading data with real banking balances.
+
+Clearly distinguish:
+
+**Real application state**
+
+from
+
+**Demo/simulated financial data**
+
+---
+
+# 33. YFINANCE IMPLEMENTATION
+
+If Python/backend support exists, use `yfinance` for stock market-data prototyping.
+
+Do NOT expose Python/yfinance directly to the browser.
+
+Use a backend/service layer.
+
+Example conceptual architecture:
+
+```text
+Frontend
+   ↓
+Willow API
+   ↓
+Market Data Service
+   ↓
+yfinance
+   ↓
+Yahoo Finance data
+```
+
+Cache market data where appropriate.
+
+Handle:
+
+* API/data failures
+* missing symbols
+* rate limits
+* stale data
+* unavailable fields
+
+Never allow a failed market-data request to crash the entire application.
+
+Show:
+
+> Market data temporarily unavailable.
+
+when necessary.
+
+---
+
+# 34. DEMO MODE
+
+Add a clear demo environment.
+
+Possibly a small badge:
+
+> DEMO
+
+or:
+
+> **Willow Demo**
+
+Make the distinction between simulated functionality and actual banking functionality unmistakable.
+
+Demo features may include:
+
+* Simulated account balances
+* Simulated transfers
+* Simulated stock purchases
+* Simulated crypto purchases
+* Simulated portfolio performance
+
+Do not imply that demo actions move real money.
+
+---
+
+# 35. ERROR STATES
+
+Design every important error state.
+
+Examples:
+
+* Failed payment
+* Failed transfer
+* Market data unavailable
+* Invalid login
+* Session expired
+* Network error
+* Stock unavailable
+* Insufficient demo funds
+* Invalid amount
+
+Never leave users staring at a blank screen.
+
+---
+
+# 36. EMPTY STATES
+
+Create polished empty states.
+
+Examples:
+
+> **Your watchlist is empty.**
+
+> Add companies you're interested in and track them here.
+
+Button:
+
+**Explore markets**
+
+Likewise for:
+
+* Portfolio
+* Transactions
+* Goals
+* Crypto
+* Cards
+* Notifications
+
+---
+
+# 37. LOADING STATES
+
+Use skeleton loading rather than flashing blank components.
+
+Particularly for:
+
+* Market data
+* Portfolio
+* Transactions
+* Dashboard
+* Charts
+
+---
+
+# 38. ACCESSIBILITY
+
+Follow strong accessibility practices.
+
+Include:
+
+* Keyboard navigation
+* Focus states
+* Semantic HTML
+* Accessible labels
+* Good contrast
+* Screen-reader support
+* Reduced motion
+* Accessible charts
+* Clear error messages
+
+---
+
+# 39. PERFORMANCE
+
+Optimize heavily.
+
+Use:
+
+* Lazy loading
+* Image optimization
+* Code splitting
+* Cached market data
+* Efficient API calls
+* Skeleton states
+* Optimized charts
+
+Do not sacrifice performance for visual effects.
+
+---
+
+# 40. FINAL VISUAL STANDARD
+
+The final Willow experience should feel like a company that could plausibly exist as a major international financial technology company.
+
+It should NOT feel like:
+
+* A school project
+* A generic Bootstrap dashboard
+* A crypto trading template
+* A template copied from another bank
+* A collection of unrelated screens
+* A dashboard overloaded with cards
+
+It should feel like one carefully designed product.
+
+---
+
+# 41. DESIGN PRINCIPLE
+
+Use this principle throughout the project:
+
+> **Complex financial infrastructure. Simple human experience.**
+
+The user should be able to do sophisticated things without feeling overwhelmed.
+
+---
+
+# 42. FINAL QUALITY CHECK
+
+Before considering the upgrade complete, verify:
+
+* Homepage feels premium
+* Willow has a recognizable visual identity
+* Slogan is visible and meaningful
+* Hero imagery transitions smoothly
+* Login matches the main brand
+* Signup/open-account flow matches the brand
+* Banking works
+* Cards work
+* Payments work
+* Transfers work
+* Savings works
+* Loans work
+* Business banking works
+* Stocks section exists
+* Stock search works
+* Stock charts work
+* yfinance integration works where supported
+* Demo trading works
+* Demo portfolio works
+* Crypto section exists
+* Crypto portfolio works
+* Wealth dashboard works
+* Willow Hub exists
+* Financial insights work with available demo data
+* Security center exists
+* Help center exists
+* Mobile experience is polished
+* Loading states exist
+* Error states exist
+* Empty states exist
+* Accessibility is respected
+* Reduced-motion mode works
+* Demo functionality is clearly labeled
+* No fake real-world transactions are represented as genuine
+* No broken links
+* No placeholder lorem ipsum
+* No unfinished sections
+* No generic template-looking pages
+
+Most importantly:
+
+**Do not simply add more features. Make the entire Willow experience feel unified.**
+
+The customer should feel that banking, investing, stocks, crypto, cards, loans, business banking, and financial intelligence all belong to the same ecosystem.
+
+The final product should communicate:
+
+> **Willow — your money, moving forward.**
