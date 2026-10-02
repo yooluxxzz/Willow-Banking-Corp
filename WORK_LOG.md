@@ -203,3 +203,133 @@ Each completed work session is recorded here and committed locally. Git history 
 - Browser review at 1160px found the expanded nav links wrapped and produced horizontal overflow. The existing keyboard-accessible menu now activates through 1280px, and the header stays compact above the hero. The opening customer image crop was shifted to keep the subject inside its inset frame and eases back toward center as the frame expands.
 - Live interaction found the hero content wrapper intercepted clicks on the visible pause control. Pointer hit testing now passes through the wrapper while active copy links remain interactive; the pause control sits above it.
 - Validation: browser screenshot confirms the desktop nav no longer overflows and the first portrait is framed cleanly. Clicking Pause changes the accessible label to Resume. The complete suite passes with 109 tests and 0 failures; syntax, editor diagnostics and `git diff --check` are clean. The five external CDN image sources returned HTTP 200 during integration checks.
+
+## Complete digital banking and investing platform upgrade — 2026-10-02
+
+The user asked for Willow to be upgraded into one premium digital bank, investing and financial-intelligence platform, keeping the existing working features and architecture (Express, EJS, sql.js).
+
+**Design system and shells**
+- New design system in `public/css/willow.css`: Mona Sans (self-hosted variable font with tabular figures), forest/sage/copper/ivory tokens with semantic roles and a full dark theme, type, spacing, radius and motion scales, reduced-motion handling, privacy mode and a stroke icon sprite. About 40 components, including bank-card mockups and in-house SVG charts (`charts.js`).
+- New public header (mega menus, mobile navigation, demo strip) and footer. New app shell: sidebar, top bar with Ask Willow (⌘K), notifications, profile menu, mobile tab bar and More sheet. Shared client runtime in `app.js`: API helper, toasts, dialogs, step flows, transaction rows and detail sheet, local greeting, idle-timeout warning.
+- `src/app.js` app factory, used by both the server and the tests. `src/view-helpers.js` and the `src/content/` modules hold products, navigation, help, articles and the instrument universe.
+
+**Public site**
+- New homepage: five-scene crossfading hero with captions, tabs, pause controls and reduced-motion support; everyday banking, investing panel with live data, goal picker, Hub, security and closing sections.
+- 18 product pages, Markets, Insights and Education articles, and a Help center with search, 9 categories and a contact form that stores messages with a reference.
+- Info pages rewritten honestly: about, careers, press, contact, privacy, terms, compliance, security and a new “About the demo” page. Earlier claims of a SOC 2 audit, an industry award, fees and contact details were removed.
+- Legacy `/personal` and `/products/*` URLs return 301 redirects to their new pages.
+
+**Sign-in and sign-up**
+- Split-screen sign-in with fading imagery. Accepts email or customer ID and shows a warning when few attempts remain. Has paused, suspended, timeout, signed-out and reset states, a two-step code step, and other ways in (guest profile, recovery code, customer ID).
+- Six-step sign-up with progress: Welcome, About you, Account, Security, a clearly simulated identity check, then Done (shows the customer ID).
+- Restyled password recovery.
+- Server-side idle sign-out after 30 minutes (`SESSION_IDLE_MINUTES`) with a client-side warning one minute before. Guests can keep their profile by adding an email and password (`/auth/claim-guest`).
+- Registration now validates phone numbers.
+
+**Banking app (all views rewritten under `views/app/`)**
+- Dashboard, Willow Hub, accounts (grouped), account detail, opening a new account (including currency accounts), transactions (with CSV export), statements, adding and withdrawing money, cards, payees, scheduled transfers, international (rates and simulated conversion), goals, loan calculators, business (overview, invoices, team), notifications, Security center, settings and the admin console.
+- Cards: switcher, freeze, reveal, replace, lost or stolen, controls, limits, design and a placeholder for adding to a phone wallet.
+- Send-money flow: recipient (with payee name confirmation), amount, account, review, then the “Money sent” receipt.
+- Security center: score, two-step verification setup with QR code, sessions, freeze all cards, privacy and data export.
+- Supporting backend changes:
+  - payee lookup endpoint;
+  - `/auth/session` keepalive;
+  - five demo customers created at startup;
+  - like-for-like month-to-date spending comparisons;
+  - the personalized-insights preference is respected;
+  - deposit limit is configurable;
+  - anonymous `/loans` redirects to the public loans page, and bare `/wealth/stocks` to Markets;
+  - insight/guide URL mix-ups redirect to the right section;
+  - stricter content security policy (fonts self-hosted, no Google Fonts).
+
+**Wealth (built by a delegated agent and reviewed here)**
+- Portfolio dashboard, markets (search, filters, sort, watchlist, indices, popular), stock and crypto detail pages (1D–MAX charts, stats, profile, news, position), simulated buy and sell with receipts, and a crypto overview with send and receive.
+- Applied the agent’s fixes for bugs outside its files:
+  - missing market fields now read as “—” instead of 0;
+  - line-chart gradient fills now show;
+  - modals are centred on desktop;
+  - portfolio activity includes the instrument type.
+
+**Market data**
+- Python yfinance service (`market-data-service/`, 41 unit tests) behind a Node provider chain with a Yahoo chart fallback, caching, request coalescing and backoff. Honest unavailable states throughout.
+
+**Removed**
+- 35 legacy views, 6 legacy partials, 7 stylesheets and 6 scripts that are no longer referenced.
+- `public/images/logo.svg` now contains the new mark.
+
+**Database / schema**
+- See `docs/DATABASE_CHANGES.md` (2026-10-02 entry).
+- New tables: `payees`, `user_preferences`, `two_factor`, `business_profiles`, `business_invoices`, `business_team_members`, `loan_estimates`, `support_requests`.
+- New user, card and transaction columns, new indexes, and a one-time rebuild of `demo_crypto_transfers`.
+- Migrations are additive and in place.
+- Only scratch databases outside the repository were used. No local `data/` database was migrated, and databases, session stores and backups remain ignored.
+
+**Docs and tooling**
+- New README, brand/design-system specification and `.env.example` (no secrets).
+- New `npm run seed`: it uses the sample-data generator and prints a generated password rather than storing one.
+- New npm scripts: `market-service`, `test:python` and `test:all`.
+
+**Checks run**
+- `npm test`: 122 tests pass across 20 files. Updated suites: auth-client (now jsdom), experience (hero and goal picker tested against `home.js` with jsdom), auth, business, crypto, hub, scheduled transfers and wealth.
+- New `tests/platform.test.js`:
+  - crawls every public and signed-in page (over 80 URLs) plus links found in source code, failing on broken links or placeholder output;
+  - covers idle timeout, sign-in notices, payee lookup and guest claim.
+- New `tests/wealth-screens.test.js` checks the investing pages’ required disclosure text and their escaping and redirect handling.
+- `python3 -m unittest`: 41 tests pass.
+- All 61 EJS templates compile, all 32 browser scripts parse, and `git diff --check` is clean.
+- axe-core: 0 violations on 30 pages, in light and dark themes with reduced motion. It found 6 issue types, all fixed: ARIA roles, the tab `aria-selected` attribute and contrast.
+- Playwright screenshots reviewed:
+  - desktop, tablet and mobile, light and dark, for the public, auth and app pages;
+  - end-to-end flows: registration, sign-in errors and lockout, recovery, send money, and buy/sell plus crypto send (the agent's run).
+- Populated market-data screens were checked against a fake sidecar kept only in the scratchpad (outbound market data is blocked in this environment). The real yfinance path is covered by unit tests and could not be exercised live here.
+
+**Known limitations**
+- Real-time data depends on running `npm run market-service` with internet access.
+- Guest profiles are not deleted automatically.
+- There is no self-service account deletion; operators can delete accounts from the admin console.
+
+## Platform polish round 2 — 2026-10-02
+
+**Behavior**
+- **Guest clean-up.** Guest demo profiles are now deleted automatically after `GUEST_RETENTION_DAYS` (default 7; `0` keeps them).
+  - A guest qualifies when its newest audit-log entry (or its creation date, if there is none) is older than the cutoff.
+  - The server runs the clean-up at startup and then hourly; each removal is audited as `guest_profile_purged`.
+  - Other customers’ ledger rows and balances are never changed.
+  - The dashboard notice, Settings → Keep this profile, the privacy notice, “About the demo”, README and `.env.example` now state the retention period.
+  - This resolves the earlier known limitation that guest profiles were never deleted.
+- **Admin console copy.** The delete confirmation now says what actually happens: the profile is marked deleted (soft delete) and its records stay for the audit trail. It no longer claims data is removed.
+- **Product pages when signed in.** The calls to action now go straight to the feature (“Go to Cards”) plus “Open another account”. On Business pages the second action is “Open business checking”. Signed-out visitors still see “Open an account” and “Sign in to …”.
+- **Asset detail layout.** At 1180px and narrower, the “Your position” and risk panels now sit directly under the quote, both visually and in DOM order. This keeps screen-reader and keyboard order matching what is on screen. Previously only CSS `order` moved them.
+- **Markets paging.** The markets list shows 20 assets at a time, with “Showing 20 of 42” and a “Show 20 more” button.
+  - Focus moves to the first newly shown asset.
+  - Changing the filter, search or sort starts again from the first page.
+- **Ask Willow** was re-checked in the browser:
+  - spending and expense questions answer with charts;
+  - “Should I buy Tesla?” is declined;
+  - there were no console errors.
+
+**Database / schema**
+- No schema change. The clean-up deletes guest rows in one transaction per profile:
+  1. clears `transactions.related_account_id` on other customers’ rows that pointed at the guest’s accounts;
+  2. clears `business_invoices.paid_account_id` on other customers’ invoices that pointed at the guest’s accounts;
+  3. deletes `scheduled_transfers` to or from the guest’s accounts;
+  4. deletes the guest’s own `transactions`;
+  5. deletes the `users` row. This cascades to the guest’s own records, plus other customers’ saved-payee entries and internal crypto-transfer records that name the guest.
+- See `docs/DATABASE_CHANGES.md`.
+
+**Checks run**
+- `npm test`: 125 tests pass. New tests:
+  - guest clean-up removes only the stale guest, keeps a fresh guest and a claimed profile, leaves other customers’ rows and balances unchanged, and ends the stale guest’s session;
+  - signed-in and signed-out product calls to action;
+  - markets paging, run in jsdom against the real `wealth-markets.js`. It was confirmed to fail against the previous script.
+- `python3 -m unittest`: 41 tests pass.
+- All 61 EJS templates compile, all 32 browser scripts parse, and `git diff --check` is clean. The dev server restarted cleanly with the clean-up job.
+- Playwright:
+  - markets paging at 1440px and 390px;
+  - asset-page DOM order at 390px and 1440px;
+  - the Ask Willow panel;
+  - tablet layouts.
+
+**Known limitations**
+- Real-time data still depends on running `npm run market-service` with internet access.
+- There is no self-service account deletion. Admin deletion is a soft delete.

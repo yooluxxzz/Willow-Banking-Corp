@@ -1,0 +1,83 @@
+<%
+  const extraCss = typeof css !== 'undefined' ? css : [];
+  const isAdmin = user && user.role === 'admin';
+  const navGroups = isAdmin
+    ? [{ label: 'Administration', items: [{ label: 'Admin overview', href: '/admin', icon: 'shield', match: ['/admin'] }] }]
+    : appNavigation;
+  const secondary = isAdmin ? [] : appSecondaryNavigation;
+  const unread = typeof unreadNotifications !== 'undefined' ? unreadNotifications : 0;
+%><%- include('head', { css: ['app'].concat(extraCss), bodyClass: 'app-body ' + (typeof bodyClass !== 'undefined' ? bodyClass : ''), idleWatch: true }) %>
+<div class="app" data-app>
+    <aside class="app-sidebar" id="appSidebar" aria-label="Willow navigation">
+        <div class="app-sidebar-head">
+            <%- include('brand', { href: isAdmin ? '/admin' : '/dashboard', inverse: false, label: 'Willow home' }) %>
+            <span class="demo-badge" title="All balances and activity are simulated">Demo</span>
+        </div>
+        <nav class="app-nav">
+            <% navGroups.forEach(group => { %>
+            <div class="app-nav-group">
+                <% if (group.label) { %><p class="app-nav-label"><%= group.label %></p><% } %>
+                <ul role="list">
+                    <% group.items.forEach(item => { const current = isCurrentNav(item); %>
+                    <li><a href="<%= item.href %>" class="app-nav-link"<%- current ? ' aria-current="page"' : '' %>><%- icon(item.icon, 'icon-md') %><span><%= item.label %></span></a></li>
+                    <% }) %>
+                </ul>
+            </div>
+            <% }) %>
+        </nav>
+        <div class="app-sidebar-foot">
+            <ul role="list" class="app-nav-secondary">
+                <% secondary.forEach(item => { const current = isCurrentNav(item); %>
+                <li><a href="<%= item.href %>" class="app-nav-link"<%- current ? ' aria-current="page"' : '' %>><%- icon(item.icon, 'icon-md') %><span><%= item.label %></span></a></li>
+                <% }) %>
+            </ul>
+            <a href="/settings" class="app-user">
+                <span class="avatar avatar-sm"><%= initials(user && user.full_name) %></span>
+                <span class="app-user-copy"><strong><%= user ? user.full_name : '' %></strong><small><%= user ? user.email : '' %></small></span>
+            </a>
+        </div>
+    </aside>
+    <div class="app-frame">
+        <header class="app-topbar">
+            <div class="app-topbar-start">
+                <%- include('brand', { href: isAdmin ? '/admin' : '/dashboard', inverse: false, label: 'Willow home' }) %>
+                <% if (!isAdmin) { %>
+                <button type="button" class="ask-trigger" data-ask-open aria-haspopup="dialog" aria-controls="askPanel">
+                    <%- icon('sparkle', 'icon-md') %>
+                    <span class="ask-trigger-text">Ask Willow about your money</span>
+                    <span class="ask-trigger-keys" aria-hidden="true"><span class="kbd">⌘</span><span class="kbd">K</span></span>
+                </button>
+                <% } %>
+            </div>
+            <div class="app-topbar-actions">
+                <% if (!isAdmin) { %>
+                <button type="button" class="btn btn-ghost btn-icon ask-trigger-compact" data-ask-open aria-label="Ask Willow" aria-haspopup="dialog" aria-controls="askPanel"><%- icon('sparkle', 'icon-md') %></button>
+                <button type="button" class="btn btn-ghost btn-icon" data-privacy-toggle aria-pressed="false" aria-label="Hide balances" title="Hide balances on screen"><%- icon('eye', 'icon-md privacy-icon-show') %><%- icon('eye-off', 'icon-md privacy-icon-hide') %></button>
+                <% } %>
+                <button type="button" class="btn btn-ghost btn-icon theme-toggle" data-theme-toggle aria-label="Switch to dark theme"><%- icon('moon', 'icon-md theme-icon-dark') %><%- icon('sun', 'icon-md theme-icon-light') %></button>
+                <% if (!isAdmin) { %>
+                <a href="/notifications" class="btn btn-ghost btn-icon app-bell" aria-label="Notifications<%= unread ? `, ${unread} unread` : '' %>"<%- currentPath === '/notifications' ? ' aria-current="page"' : '' %>>
+                    <%- icon('bell', 'icon-md') %><% if (unread) { %><span class="app-bell-count"><%= unread > 9 ? '9+' : unread %></span><% } %>
+                </a>
+                <% } %>
+                <div class="app-profile">
+                    <button type="button" class="app-profile-trigger" aria-haspopup="menu" aria-expanded="false" aria-controls="profileMenu" data-menu-trigger="profileMenu">
+                        <span class="avatar avatar-sm"><%= initials(user && user.full_name) %></span>
+                        <span class="visually-hidden">Open profile menu</span>
+                    </button>
+                    <div class="menu app-profile-menu" id="profileMenu" role="menu" data-menu>
+                        <div class="app-profile-head"><strong><%= user ? user.full_name : '' %></strong><small><%= user ? user.email : '' %></small><% if (user && user.customer_id) { %><small class="mono">ID <%= user.customer_id %></small><% } %></div>
+                        <hr>
+                        <% if (!isAdmin) { %>
+                        <a href="/settings" role="menuitem"><%- icon('user') %>Profile & settings</a>
+                        <a href="/security" role="menuitem"><%- icon('shield') %>Security center</a>
+                        <a href="/help" role="menuitem"><%- icon('help') %>Help center</a>
+                        <a href="/" role="menuitem"><%- icon('globe') %>Willow website</a>
+                        <hr>
+                        <% } %>
+                        <button type="button" role="menuitem" data-logout><%- icon('logout') %>Sign out</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <main id="main" class="app-content" tabindex="-1">

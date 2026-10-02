@@ -1,0 +1,228 @@
+<%
+  // Asset detail for stocks, ETFs, funds and (via crypto-detail.ejs) crypto.
+  // Locals: title, instrument (no provider), holding ({ symbol, quantity, average_price } | null), watching.
+  const isCrypto = instrument.type === 'crypto';
+  const symbol = instrument.symbol;
+  const display = String(symbol).replace(/^\^/, '');
+  const markText = display.replace(/[^A-Z0-9]/gi, '').slice(0, 4);
+  const cryptoTones = { BTC: 1, ETH: 2, SOL: 3, XRP: 6, ADA: 4, LTC: 0 };
+  let toneIndex;
+  if (isCrypto && Object.prototype.hasOwnProperty.call(cryptoTones, symbol)) toneIndex = cryptoTones[symbol];
+  else { let hash = 7; for (const char of String(symbol).toUpperCase()) hash = (hash * 31 + char.charCodeAt(0)) % 9973; toneIndex = hash % 8; }
+  const unitPlural = isCrypto ? display : 'shares';
+  const unitTitle = isCrypto ? 'Units' : 'Shares';
+  const fmtQty = value => {
+      const fixed = Number(value).toFixed(isCrypto ? 8 : 6).replace(/0+$/, '').replace(/\.$/, '');
+      const parts = fixed.split('.');
+      return Number(parts[0]).toLocaleString('en-US') + (parts[1] ? '.' + parts[1] : '');
+  };
+  const fmtPrice = value => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: Math.abs(value) < 1 ? 4 : 2, maximumFractionDigits: Math.abs(value) < 1 ? 4 : 2 }).format(value);
+  const backHref = isCrypto ? '/crypto' : '/wealth/markets';
+  const backLabel = isCrypto ? 'Crypto' : 'Markets';
+  const disclaimer = isCrypto ? 'This is a simulated transaction. No real crypto is purchased.' : 'This is a simulated transaction. No real securities are purchased.';
+  const metaParts = [display, instrument.typeLabel || (isCrypto ? 'Crypto' : 'Stock')];
+  if (instrument.sector && !isCrypto) metaParts.push(instrument.sector);
+  const pageData = {
+      symbol, name: instrument.name, type: instrument.type, typeLabel: instrument.typeLabel, tradable: Boolean(instrument.tradable),
+      holding: holding ? { quantity: holding.quantity, averagePrice: holding.average_price } : null,
+      watching: Boolean(watching),
+  };
+  const ranges = [['1d', '1D', 'One day'], ['1w', '1W', 'One week'], ['1m', '1M', 'One month'], ['6m', '6M', 'Six months'], ['1y', '1Y', 'One year'], ['5y', '5Y', 'Five years'], ['max', 'MAX', 'All available history']];
+  const defaultRange = instrument.type === 'fund' ? '1m' : '1d';
+%><%- include('../partials/app-start', { css: ['wealth-app'] }) %>
+
+<div class="wl-page wl-asset" data-wealth-page="asset" data-asset-type="<%= instrument.type %>">
+    <a class="back-link" href="<%= backHref %>"><%- icon('arrow-left') %> <%= backLabel %></a>
+
+    <header class="page-head wl-asset-head">
+        <div class="wl-asset-id">
+            <span class="asset-mark asset-mark-lg wl-tone-<%= toneIndex %><%= isCrypto ? ' is-round' : '' %>" aria-hidden="true"><%= markText %></span>
+            <div class="page-head-copy">
+                <h1 class="page-head-title"><%= instrument.name %></h1>
+                <p class="wl-asset-meta"><span><%= metaParts.join(' · ') %></span><span data-exchange></span><% if (isCrypto) { %><span class="badge badge-warning"><%- icon('alert') %> Higher risk</span><% } %></p>
+            </div>
+        </div>
+        <div class="page-head-actions wl-asset-actions">
+            <button type="button" class="btn btn-secondary wl-watch" aria-pressed="<%= watching ? 'true' : 'false' %>" aria-label="Watch <%= instrument.name %>" data-watch>
+                <%- icon('star', 'wl-star-off') %><%- icon('star-fill', 'wl-star-on') %><span aria-hidden="true">Watch</span>
+            </button>
+            <button type="button" class="btn btn-secondary" data-trade-open="sell"<%- holding ? '' : ' hidden' %>><%- icon('minus') %> Sell</button>
+            <button type="button" class="btn btn-primary" data-trade-open="buy"><%- icon('plus') %> Buy</button>
+        </div>
+    </header>
+
+    <div class="layout-main-aside wl-asset-layout">
+        <div class="col-stack">
+            <section class="panel wl-quote-panel" aria-labelledby="priceLabel">
+                <div class="wl-quote-top">
+                    <div class="wl-quote-copy">
+                        <p class="label" id="priceLabel"><%= isCrypto ? 'Price · USD' : 'Last price · USD' %></p>
+                        <p class="figure figure-lg wl-quote-price" data-price><span class="skeleton skeleton-figure" style="width:4.5ch"></span></p>
+                        <p class="wl-quote-change" data-change><span class="skeleton skeleton-line" style="width:170px"></span></p>
+                    </div>
+                    <p class="wl-quote-status" data-quote-status aria-live="polite"></p>
+                </div>
+                <div class="data-banner mt-4" data-quote-error role="alert" hidden>
+                    <%- icon('alert') %>
+                    <span><strong>Market data temporarily unavailable.</strong> Orders are paused until a price can be retrieved.</span>
+                    <button type="button" class="btn btn-secondary btn-sm" data-retry><%- icon('refresh', 'icon-sm') %> Retry</button>
+                </div>
+                <div class="wl-chart-head wl-chart-head-asset">
+                    <p class="wl-range-summary" data-range-summary aria-live="polite"></p>
+                    <div class="segmented wl-ranges" role="radiogroup" aria-label="Chart range" data-range-group>
+                        <% ranges.forEach(([key, label, long]) => { const on = key === defaultRange; %>
+                        <button type="button" role="radio" aria-checked="<%= on %>" aria-label="<%= long %>" data-range="<%= key %>"<%- on ? ' class="is-active"' : '' %>><%= label %></button>
+                        <% }) %>
+                    </div>
+                </div>
+                <div class="wl-chart-box wl-chart-tall" data-price-chart data-default-range="<%= defaultRange %>">
+                    <div class="skeleton skeleton-block wl-chart-skeleton" aria-hidden="true"></div>
+                </div>
+            </section>
+
+            <section class="panel wl-o-stats" aria-labelledby="statsTitle">
+                <div class="panel-head"><h2 id="statsTitle">Key statistics</h2><span class="text-xs muted" data-stats-source></span></div>
+                <div data-stats aria-busy="true">
+                    <div class="wl-stats" aria-hidden="true"><% for (let i = 0; i < 6; i++) { %><div><span class="skeleton skeleton-line w-40"></span><span class="skeleton skeleton-line w-60"></span></div><% } %></div>
+                </div>
+            </section>
+
+            <section class="panel wl-o-about" aria-labelledby="aboutTitle">
+                <div class="panel-head"><h2 id="aboutTitle">About <%= instrument.name %></h2></div>
+                <p class="wl-about-text" data-about-text><%= instrument.description || '' %></p>
+                <dl class="dl-rows wl-facts mt-4" data-about-facts>
+                    <% if (instrument.legalName && instrument.legalName !== instrument.name) { %><div><dt>Full name</dt><dd><%= instrument.legalName %></dd></div><% } %>
+                    <% if (instrument.sector) { %><div><dt><%= isCrypto ? 'Category' : 'Sector' %></dt><dd><%= instrument.sector %></dd></div><% } %>
+                    <% if (instrument.country) { %><div><dt>Country</dt><dd><%= instrument.country %></dd></div><% } %>
+                </dl>
+                <p class="text-xs muted mt-4" data-about-source>Summary written by Willow for this demo.</p>
+            </section>
+
+            <section class="panel wl-o-news" aria-labelledby="newsTitle">
+                <div class="panel-head"><h2 id="newsTitle">News</h2><span class="text-xs muted" data-news-status></span></div>
+                <div data-news aria-busy="true">
+                    <% for (let i = 0; i < 3; i++) { %><div class="wl-news-skel" aria-hidden="true"><span class="skeleton skeleton-line w-80"></span><span class="skeleton skeleton-line w-40"></span></div><% } %>
+                </div>
+            </section>
+        </div>
+
+        <aside class="col-stack" aria-label="Your position and orders">
+            <section class="panel wl-position" aria-labelledby="positionTitle">
+                <div class="panel-head"><h2 id="positionTitle">Your position</h2><span class="sim-tag"><%- icon('info') %> Simulated</span></div>
+                <div data-position aria-live="polite">
+                    <% if (holding) { %>
+                    <p class="label">Market value</p>
+                    <p class="figure figure-md mt-2" data-private data-position-value><span class="skeleton skeleton-line" style="width:140px;height:1.1em"></span></p>
+                    <dl class="dl-rows mt-4" data-position-rows>
+                        <div><dt><%= unitTitle %></dt><dd data-private><%= fmtQty(holding.quantity) %><%= isCrypto ? ' ' + display : '' %></dd></div>
+                        <div><dt>Average cost</dt><dd data-private><%= fmtPrice(holding.average_price) %></dd></div>
+                        <div><dt>Cost basis</dt><dd data-private><%= fmtPrice(holding.quantity * holding.average_price) %></dd></div>
+                    </dl>
+                    <% } else { %>
+                    <p class="wl-position-empty">You don’t own <%= display %> yet.</p>
+                    <p class="text-sm muted mt-2">Buy with simulated cash — as little as $1.</p>
+                    <% } %>
+                </div>
+                <div class="wl-position-actions">
+                    <button type="button" class="btn btn-primary btn-block" data-trade-open="buy">Buy <%= display %></button>
+                    <button type="button" class="btn btn-secondary btn-block" data-trade-open="sell"<%- holding ? '' : ' hidden' %>>Sell <%= display %></button>
+                </div>
+                <p class="text-sm muted wl-cash-line" data-cash-line>Cash available: <span data-private data-cash>—</span></p>
+                <p class="notice notice-warning mt-4" data-trade-note hidden><%- icon('alert') %><span data-trade-note-text></span></p>
+                <% if (isCrypto) { %><a class="link-arrow text-sm mt-4" href="/crypto#wallet">Send to another Willow profile <%- icon('arrow-right') %></a><% } %>
+            </section>
+
+            <% if (isCrypto) { %>
+            <section class="notice notice-warning wl-risk" aria-labelledby="riskTitle">
+                <%- icon('alert') %>
+                <div>
+                    <p><strong id="riskTitle">Higher risk</strong></p>
+                    <p>Crypto prices can rise or fall sharply within hours, and the value can fall to zero. Willow’s crypto is simulated: there are no public wallet addresses, keys or blockchain transactions.</p>
+                </div>
+            </section>
+            <% } %>
+
+            <section class="panel wl-about wl-o-sim" aria-labelledby="simTitle">
+                <div class="panel-head"><h2 id="simTitle">About simulated orders</h2></div>
+                <ul class="wl-points" role="list">
+                    <li><span class="icon-tile icon-tile-sm"><%- icon('clock') %></span><span>Orders fill instantly at the latest delayed price Willow can retrieve. If no fresh price is available, ordering is paused.</span></li>
+                    <li><span class="icon-tile icon-tile-sm"><%- icon('shield-check') %></span><span><%= disclaimer %> Your bank balances are never touched.</span></li>
+                </ul>
+                <p class="text-xs muted mt-4"><span class="demo-badge">DEMO · NOT A BROKERAGE</span></p>
+            </section>
+        </aside>
+    </div>
+</div>
+
+<dialog class="modal wl-modal wl-trade" id="tradeDialog" aria-labelledby="tradeTitle" data-trade-dialog>
+    <div class="modal-head">
+        <div class="wl-trade-headcopy">
+            <p class="label">Simulated order</p>
+            <h2 id="tradeTitle" data-trade-title>Buy <%= instrument.name %></h2>
+        </div>
+        <button type="button" class="btn btn-ghost btn-icon" data-dialog-close aria-label="Close"><%- icon('x', 'icon-md') %></button>
+    </div>
+
+    <form class="wl-trade-step" data-step="form" novalidate>
+        <div class="modal-body">
+            <div class="wl-trade-switches">
+                <div class="segmented wl-side-switch" role="radiogroup" aria-label="Order side" data-side-group>
+                    <button type="button" role="radio" aria-checked="true" class="is-active" data-side="buy">Buy</button>
+                    <button type="button" role="radio" aria-checked="false" data-side="sell">Sell</button>
+                </div>
+                <div class="segmented wl-mode-switch" role="radiogroup" aria-label="Enter order as" data-mode-group>
+                    <button type="button" role="radio" aria-checked="true" class="is-active" data-mode="amount">USD</button>
+                    <button type="button" role="radio" aria-checked="false" data-mode="quantity"><%= unitTitle %></button>
+                </div>
+            </div>
+
+            <label class="field-label wl-amount-label" for="tradeInput" data-input-label>Amount in US dollars</label>
+            <div class="amount-input wl-amount">
+                <span class="currency" data-input-prefix aria-hidden="true">$</span>
+                <input id="tradeInput" name="value" type="text" inputmode="decimal" autocomplete="off" placeholder="0" aria-describedby="tradeHelp tradeError" data-trade-input>
+                <span class="wl-amount-suffix" data-input-suffix aria-hidden="true" hidden><%= unitPlural %></span>
+            </div>
+            <p class="field-help mt-2" id="tradeHelp" data-trade-help>Cash available: <span data-private data-help-cash>—</span></p>
+            <p class="field-error mt-2" id="tradeError" data-trade-error role="alert" hidden></p>
+            <div class="wl-quick" data-quick aria-label="Quick amounts" role="group"></div>
+
+            <dl class="dl-rows wl-estimate" data-estimate>
+                <div><dt>Market price <span class="badge badge-outline wl-mini-badge" data-est-fresh>Delayed</span></dt><dd data-est-price>—</dd></div>
+                <div><dt data-est-label>Estimated <%= unitPlural %></dt><dd data-est-value data-private>—</dd></div>
+                <div><dt data-est-after-label>Cash after order</dt><dd data-est-after data-private>—</dd></div>
+            </dl>
+
+            <div class="notice notice-error mt-4" data-trade-blocked role="alert" hidden><%- icon('alert') %><span data-trade-blocked-text>Market data temporarily unavailable.</span></div>
+            <p class="notice notice-demo mt-4 wl-sim-notice"><%- icon('info') %><span><strong>Simulated order.</strong> <span data-disclaimer><%= disclaimer %></span> The final price is the latest delayed quote when you confirm.</span></p>
+        </div>
+        <div class="modal-foot">
+            <button type="submit" class="btn btn-primary btn-lg btn-block" data-review>Review order</button>
+        </div>
+    </form>
+
+    <section class="wl-trade-step" data-step="review" aria-labelledby="reviewTitle" hidden>
+        <div class="modal-body">
+            <h3 class="wl-step-title" id="reviewTitle" tabindex="-1">Review your simulated order</h3>
+            <div data-review-rows></div>
+            <p class="field-error mt-4" data-confirm-error role="alert" hidden></p>
+            <p class="notice notice-demo mt-4 wl-sim-notice"><%- icon('info') %><span><strong>Simulated order.</strong> <span data-disclaimer><%= disclaimer %></span></span></p>
+        </div>
+        <div class="modal-foot">
+            <button type="button" class="btn btn-secondary" data-back><%- icon('arrow-left') %> Edit</button>
+            <button type="button" class="btn btn-primary" data-confirm>Confirm simulated buy</button>
+        </div>
+    </section>
+
+    <section class="wl-trade-step" data-step="receipt" aria-labelledby="receiptTitle" hidden>
+        <div class="modal-body">
+            <div class="receipt" data-receipt></div>
+        </div>
+        <div class="modal-foot">
+            <a class="btn btn-secondary" href="/wealth">View portfolio</a>
+            <button type="button" class="btn btn-primary" data-dialog-close>Done</button>
+        </div>
+    </section>
+</dialog>
+
+<script type="application/json" id="assetData"><%- JSON.stringify(pageData).replace(/</g, '\\u003c') %></script>
+<%- include('../partials/app-end', { js: ['wealth-app', 'wealth-asset'] }) %>

@@ -3,7 +3,9 @@ const { getDb } = require('../database');
 const { createNotification } = require('./notification');
 const { logAudit } = require('./audit');
 
-const SUPPORTED_ASSETS = new Set(['BTC', 'ETH']);
+const { CRYPTO } = require('../content/instruments');
+
+const SUPPORTED_ASSETS = new Set(CRYPTO);
 const normalizeUnits = quantity => Math.round((quantity + Number.EPSILON) * 1e8) / 1e8;
 
 function parseQuantity(value) {
@@ -13,27 +15,29 @@ function parseQuantity(value) {
 }
 
 function getCryptoWallet(userId) {
+    const placeholders = CRYPTO.map(() => '?').join(',');
     const holdings = getDb().prepare(`SELECT symbol, quantity, average_price FROM demo_holdings
-        WHERE user_id = ? AND symbol IN ('BTC', 'ETH') ORDER BY symbol`).all(userId);
+        WHERE user_id = ? AND symbol IN (${placeholders}) ORDER BY symbol`).all(userId, ...CRYPTO);
     return { simulated: true, holdings };
 }
 
 function getCryptoHistory(userId) {
     return getDb().prepare(`SELECT t.id, t.reference, t.symbol, t.quantity, t.created_at,
             CASE WHEN t.sender_user_id = ? THEN 'sent' ELSE 'received' END AS direction,
-            CASE WHEN t.sender_user_id = ? THEN recipient.email ELSE sender.email END AS counterparty
+            CASE WHEN t.sender_user_id = ? THEN recipient.email ELSE sender.email END AS counterparty,
+            CASE WHEN t.sender_user_id = ? THEN recipient.full_name ELSE sender.full_name END AS counterparty_name
         FROM demo_crypto_transfers t
         JOIN users sender ON sender.id = t.sender_user_id
         JOIN users recipient ON recipient.id = t.recipient_user_id
         WHERE t.sender_user_id = ? OR t.recipient_user_id = ?
-        ORDER BY t.id DESC LIMIT 50`).all(userId, userId, userId, userId);
+        ORDER BY t.id DESC LIMIT 50`).all(userId, userId, userId, userId, userId);
 }
 
 function sendDemoCrypto(senderUserId, input = {}) {
     const symbol = typeof input.symbol === 'string' ? input.symbol.trim().toUpperCase() : '';
     const quantity = parseQuantity(input.quantity);
     const recipientEmail = typeof input.recipientEmail === 'string' ? input.recipientEmail.trim().toLowerCase() : '';
-    if (!SUPPORTED_ASSETS.has(symbol)) throw new Error('Choose BTC or ETH for this demo wallet transfer.');
+    if (!SUPPORTED_ASSETS.has(symbol)) throw new Error('Choose a supported demo crypto asset.');
     if (quantity === null) throw new Error('Enter a valid quantity with up to eight decimal places.');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail) || recipientEmail.length > 255) throw new Error('Enter a valid Willow demo customer email.');
 

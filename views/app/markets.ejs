@@ -1,0 +1,98 @@
+<%
+  const filters = [
+    { key: 'all', label: 'All' },
+    { key: 'stock', label: 'Stocks' },
+    { key: 'etf', label: 'ETFs' },
+    { key: 'fund', label: 'Funds' },
+    { key: 'crypto', label: 'Crypto' },
+    { key: 'watchlist', label: 'Watchlist' },
+  ];
+  const activeFilter = filters.some(item => item.key === filter) ? filter : 'all';
+  const initialQuery = typeof query === 'string' ? query.slice(0, 40) : '';
+  const indices = [
+    { symbol: '^GSPC', name: 'S&P 500' },
+    { symbol: '^IXIC', name: 'NASDAQ' },
+    { symbol: '^DJI', name: 'Dow Jones' },
+  ];
+%><%- include('../partials/app-start', { css: ['wealth-app'] }) %>
+
+<header class="page-head">
+    <div class="page-head-copy">
+        <p class="label">Wealth · <span class="wl-label-sim">Simulated</span></p>
+        <h1 class="page-head-title">Markets</h1>
+        <p class="page-head-sub">Explore stocks, ETFs, funds and crypto with delayed market data. Anything you buy here is a simulated order with demo cash.</p>
+    </div>
+    <div class="page-head-actions">
+        <a class="btn btn-secondary" href="/wealth"><%- icon('pie') %> Your portfolio</a>
+    </div>
+</header>
+
+<div class="wl-page" data-wealth-page="markets" data-initial-filter="<%= activeFilter %>" data-initial-query="<%= initialQuery %>">
+    <div class="data-banner mb-6" data-market-banner role="alert" hidden>
+        <%- icon('alert') %>
+        <span><strong>Market data temporarily unavailable.</strong> You can still browse assets; prices will appear when they can be retrieved.</span>
+        <button type="button" class="btn btn-secondary btn-sm" data-retry><%- icon('refresh', 'icon-sm') %> Retry</button>
+    </div>
+
+    <section aria-labelledby="indicesTitle" class="wl-section">
+        <div class="section-heading">
+            <h2 id="indicesTitle" class="wl-section-title">Major indices</h2>
+            <span class="text-xs muted" data-market-status><%- icon('clock', 'icon-sm') %> Delayed data</span>
+        </div>
+        <ul class="wl-indices" role="list" data-indices>
+            <% indices.forEach(item => { %>
+            <li class="wl-index" data-index="<%= item.symbol %>">
+                <div class="wl-index-head"><span class="wl-index-name"><%= item.name %></span><span class="skeleton skeleton-line" style="width:64px"></span></div>
+                <p class="wl-index-level"><span class="skeleton skeleton-line" style="width:120px;height:1.2em"></span></p>
+                <div class="wl-index-spark" aria-hidden="true"></div>
+            </li>
+            <% }) %>
+        </ul>
+    </section>
+
+    <section aria-labelledby="popularTitle" class="wl-section">
+        <div class="section-heading">
+            <h2 id="popularTitle" class="wl-section-title">Popular</h2>
+            <span class="text-xs muted">Widely followed US companies</span>
+        </div>
+        <ul class="wl-popular" role="list" data-popular>
+            <% for (let i = 0; i < 7; i++) { %><li class="wl-popular-card is-loading" aria-hidden="true"><span class="skeleton wl-skel-mark"></span><span class="skeleton skeleton-line w-60"></span><span class="skeleton skeleton-line w-40"></span></li><% } %>
+        </ul>
+    </section>
+
+    <section class="panel wl-explore" aria-labelledby="exploreTitle">
+        <div class="panel-head">
+            <h2 id="exploreTitle">Explore</h2>
+            <p class="text-xs muted" data-result-count aria-live="polite"></p>
+        </div>
+        <div class="wl-explore-controls">
+            <div class="search-field">
+                <label for="marketSearch" class="visually-hidden">Search by name, ticker or sector</label>
+                <%- icon('search') %>
+                <input id="marketSearch" class="input" type="search" placeholder="Search by name, ticker or sector" autocomplete="off" spellcheck="false" maxlength="40" value="<%= initialQuery %>" data-search>
+            </div>
+            <div class="wl-sort">
+                <label for="marketSort" class="visually-hidden">Sort assets</label>
+                <select id="marketSort" class="select" data-sort>
+                    <option value="featured">Sort: Featured</option>
+                    <option value="name">Name (A–Z)</option>
+                    <option value="price-desc">Price (high to low)</option>
+                    <option value="price-asc">Price (low to high)</option>
+                    <option value="change-desc">Change % (gainers first)</option>
+                    <option value="change-asc">Change % (decliners first)</option>
+                </select>
+            </div>
+        </div>
+        <div class="tabs wl-tabs" role="tablist" aria-label="Asset categories" data-filters>
+            <% filters.forEach(item => { const on = item.key === activeFilter; %>
+            <button type="button" role="tab" id="tab-<%= item.key %>" aria-selected="<%= on %>" aria-controls="marketList" tabindex="<%= on ? 0 : -1 %>" data-filter="<%= item.key %>"><% if (item.key === 'watchlist') { %><%- icon('star', 'icon-sm') %> <% } %><%= item.label %></button>
+            <% }) %>
+        </div>
+        <div id="marketList" role="tabpanel" aria-labelledby="tab-<%= activeFilter %>" class="wl-market-list" data-market-list aria-busy="true">
+            <% for (let i = 0; i < 6; i++) { %><div class="wl-skel-row" aria-hidden="true"><span class="skeleton wl-skel-mark"></span><span class="wl-skel-main"><span class="skeleton skeleton-line w-60"></span><span class="skeleton skeleton-line w-40"></span></span><span class="skeleton skeleton-line wl-skel-end"></span></div><% } %>
+        </div>
+        <p class="text-xs muted mt-4">Prices are delayed and for demonstration only. Willow is not a brokerage; orders placed here are simulated.</p>
+    </section>
+</div>
+
+<%- include('../partials/app-end', { js: ['wealth-app', 'wealth-markets'] }) %>

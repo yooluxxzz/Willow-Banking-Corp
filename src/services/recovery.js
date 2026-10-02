@@ -55,4 +55,14 @@ async function revokeOtherSessions(userId, password) {
     const result = db.prepare("UPDATE users SET auth_version = auth_version + 1 WHERE id = ? AND auth_version = ? AND password_hash = ? AND status = 'active'").run(user.id, user.auth_version, user.password_hash);
     return result.changes ? { version: user.auth_version + 1 } : { error: 'Account changed. Please sign in again.' };
 }
-module.exports = { generateCodes, resetPassword, revokeOtherSessions };
+/** Consumes one backup code for a signed-in or pending-verification user. */
+function consumeCode(userId, recoveryCode) {
+    const code = normalize(recoveryCode);
+    if (!/^[A-F0-9]{32}$/.test(code)) return false;
+    const result = getDb().prepare('DELETE FROM recovery_codes WHERE user_id = ? AND code_hash = ?').run(userId, digest(code));
+    return result.changes === 1;
+}
+function remainingCodes(userId) {
+    return getDb().prepare('SELECT COUNT(*) AS count FROM recovery_codes WHERE user_id = ?').get(userId).count;
+}
+module.exports = { generateCodes, resetPassword, revokeOtherSessions, verifyPassword, consumeCode, remainingCodes };

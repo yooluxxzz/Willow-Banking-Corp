@@ -1,0 +1,49 @@
+<%- include('../partials/app-start', { css: [] }) %>
+
+<a class="back-link" href="/transfers"><%- icon('arrow-left') %> Send money</a>
+<header class="page-head mt-4">
+    <div class="page-head-copy">
+        <h1 class="page-head-title">Payees</h1>
+        <p class="page-head-sub">People you pay on Willow. Payments only reach other Willow demo customers.</p>
+    </div>
+</header>
+
+<div class="layout-main-aside">
+    <section class="panel" aria-labelledby="payeesTitle">
+        <div class="panel-head"><h2 id="payeesTitle">Saved payees</h2><span class="text-sm muted" data-payee-count><%= payees.length %> saved</span></div>
+        <ul class="list-plain payee-list" role="list" data-payee-rows>
+            <% payees.forEach(payee => { %>
+            <li class="list-row" data-payee-row="<%= payee.id %>">
+                <span class="avatar"><%= initials(payee.name) %></span>
+                <span class="list-row-main"><span class="list-row-title"><%= payee.displayName %><% if (payee.nickname) { %> <small class="muted">· <%= payee.name %></small><% } %></span><span class="list-row-sub"><%= payee.email %><%= payee.last_paid_at ? ' · Last paid ' + relativeDay(payee.last_paid_at) : '' %></span></span>
+                <span class="cluster">
+                    <% if (payee.active) { %><a class="btn btn-secondary btn-sm" href="/transfers?payee=<%= payee.id %>"><%- icon('send', 'icon-sm') %> Pay</a><% } else { %><span class="status-pill">Unavailable</span><% } %>
+                    <button type="button" class="btn btn-ghost btn-icon btn-sm" data-remove-payee="<%= payee.id %>" data-payee-name="<%= payee.displayName %>" aria-label="Remove <%= payee.displayName %>"><%- icon('x') %></button>
+                </span>
+            </li>
+            <% }) %>
+        </ul>
+        <div data-payee-empty<%= payees.length ? ' hidden' : '' %>>
+            <div class="empty is-compact"><div class="empty-art"><%- icon('users') %></div><h3>No payees yet</h3><p>Add someone you pay often, or save them when you send money.</p></div>
+        </div>
+    </section>
+
+    <aside>
+        <form class="panel" id="payeeForm" novalidate>
+            <div class="panel-head"><h2>Add a payee</h2></div>
+            <div class="field">
+                <label for="payeeEmail">Their Willow email</label>
+                <input class="input" id="payeeEmail" name="email" type="email" required maxlength="255" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="name@example.com">
+                <p class="field-help">Try <button type="button" class="text-link text-sm" data-suggest="amara.nkosi@community.willow.test">Amara Nkosi</button> or <button type="button" class="text-link text-sm" data-suggest="lucas.moreau@community.willow.test">Lucas Moreau</button>, demo customers.</p>
+            </div>
+            <div class="field">
+                <label for="payeeNickname">Nickname <span class="optional">· optional</span></label>
+                <input class="input" id="payeeNickname" name="nickname" maxlength="40" placeholder="e.g. Landlord, Mum">
+            </div>
+            <p class="field-error mt-3" data-payee-error role="alert" hidden></p>
+            <div class="form-actions"><button type="submit" class="btn btn-primary">Add payee</button></div>
+        </form>
+    </aside>
+</div>
+
+<%- include('../partials/app-end', { js: ['payees'] }) %>

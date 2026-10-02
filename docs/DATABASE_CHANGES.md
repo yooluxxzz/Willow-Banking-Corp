@@ -68,3 +68,46 @@ The application uses sql.js with its schema and startup migrations in `src/datab
 No email delivery service is configured. Recovery therefore requires a code saved before losing account access. There is no public reset-link shortcut. If all codes are lost and the password is forgotten, self-service recovery is unavailable.
 
 Before modifying a live database, stop the server and copy it to a private backup location. The local preview was backed up as `data/preview.before-recovery.db` before this migration. Database files and backups remain ignored; commit schema/migration code and tests, not account or session data.
+
+## 2026-10-02: complete platform upgrade
+
+All changes are additive and applied in place at startup by `src/database.js`. Existing users, accounts, balances and ledger rows are not rewritten.
+
+- **New tables** (user-owned with `ON DELETE CASCADE`, except where noted):
+  - `payees` — saved recipients (`recipient_user_id`, optional `nickname`, `last_paid_at`); unique per owner and recipient.
+  - `user_preferences` — alert switches, `privacy_hide_balances`, `privacy_personalized_insights`, large-transaction threshold and `sample_data_loaded_at` (makes sample activity idempotent).
+  - `two_factor` — TOTP secret encrypted with AES-256-GCM (key from `TWO_FACTOR_KEY` or the session secret), `enabled_at` and `last_used_step` to reject code reuse.
+  - `business_profiles`, `business_invoices` (`open` | `paid` | `void`, paid account and transaction reference), `business_team_members` (`admin` | `approver` | `cardholder` | `viewer`; invitations only, no access granted).
+  - `loan_estimates` — saved calculator results (estimates only).
+  - `support_requests` — Help center messages with a `WLW-` reference; signed-out visitors can send them, so `user_id` is optional (`ON DELETE SET NULL`). Stored, never sent anywhere.
+- **New columns:** `users.country`, `users.is_guest` (guest demo profiles; cleared when a guest adds their own email and password); `cards.form` (`physical` | `virtual`), `nickname`, `design`, `holder_name`, `online_enabled`, `contactless_enabled`, `atm_enabled`, `international_enabled`, `notifications_enabled` (existing cards default to physical with every control on); `transactions.category`, `counterparty`, `card_id` (nullable; older rows are categorised by description at read time).
+- **Indexes:** payees, invoices, team, loan estimates, support requests, crypto-transfer sender/recipient and `transactions(account_id, created_at)`.
+- **`demo_crypto_transfers`:** the symbol check now allows the supported crypto list (`length(symbol) BETWEEN 2 AND 10`, validated in code) instead of BTC/ETH only. Older databases are rebuilt once inside a transaction, copying every row.
+- **Sessions:** session JSON now carries `lastSeenAt`. Requests after `SESSION_IDLE_MINUTES` (default 30) of inactivity end the session; background requests marked `X-Willow-Passive` don’t count as activity. No table change.
+- **Ledger semantics:** currency conversions write a debit/credit pair (`CNV-…` / `CNV-…-C`) in each account’s own currency at an indicative rate, blocked when rates are stale or unavailable. Invoice “mark paid” writes one credit (`INV-PAY-…`). Simulated portfolio, watchlist and trades remain in the separate `demo_*` tables.
+- **Sample data:** `src/services/demo-data.js` creates five `@community.willow.test` customers on startup and, on request, months of consistent sample activity per profile. `npm run seed` uses the same generator.
+- This session ran the app only against scratch databases outside the repository; no local `data/` database was migrated or backed up. Databases, session stores and backups remain ignored by Git.
+
+## 2026-10-02: guest profile clean-up
+
+No table or column changes. `purgeStaleGuests` in `src/services/demo-data.js` runs at startup and then hourly when `GUEST_RETENTION_DAYS` is above 0 (the default is 7).
+
+**Which profiles are removed.** A profile qualifies when all of these hold:
+- `is_guest = 1` and `role = 'customer'`;
+- it was created before the cutoff;
+- its newest `audit_logs` entry is also older than the cutoff.
+
+Profiles whose owners saved their own email and password have `is_guest = 0` and are never touched.
+
+**How each profile is removed.** One transaction per profile:
+1. Null `transactions.related_account_id` on other customers’ rows that point at the guest’s accounts. Those rows and their balances are kept.
+2. Null `business_invoices.paid_account_id` on other customers’ invoices that point at the guest’s accounts.
+3. Delete `scheduled_transfers` to or from the guest’s accounts.
+4. Delete the guest’s own `transactions`.
+5. Delete the `users` row. This cascades to:
+   - the guest’s accounts, cards, payees, preferences, notifications, goals, two-factor settings, business records and `demo_*` portfolio, watchlist and trade rows;
+   - rows that name the guest on other customers’ profiles: saved-payee entries and internal `demo_crypto_transfers` records.
+
+   `support_requests.user_id` is set to NULL.
+
+Each removal writes a `guest_profile_purged` audit event with the actor `system`. Other customers’ `transactions` rows and balances are never deleted or re-balanced.

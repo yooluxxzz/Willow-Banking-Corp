@@ -5,7 +5,8 @@ const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const { requireAuth } = require('../middleware/auth');
 const { getDb } = require('../database');
-const { validateAmount, toCents } = require('../middleware/validation');
+const { validateAmount, toCents, formatCurrency } = require('../middleware/validation');
+const { scaledLimit } = require('../services/currencies');
 const { createNotification } = require('../services/notification');
 const { logAudit } = require('../services/audit');
 const config = require('../config');
@@ -52,10 +53,11 @@ router.post('/', requireAuth, (req, res) => {
       WHERE account_id = ? AND type = 'withdrawal' AND date(created_at) = date('now')
     `).get(account.id);
 
-        if (todayWithdrawals.total + amountCents > DAILY_WITHDRAWAL_LIMIT_CENTS) {
-            const remaining = ((DAILY_WITHDRAWAL_LIMIT_CENTS - todayWithdrawals.total) / 100).toFixed(2);
+        const currency = account.currency || 'USD';
+        const dailyLimit = scaledLimit(DAILY_WITHDRAWAL_LIMIT_CENTS, currency);
+        if (todayWithdrawals.total + amountCents > dailyLimit) {
             return res.status(400).json({
-                error: `Daily withdrawal limit is $10,000. You can withdraw up to $${Math.max(0, remaining)} more today.`
+                error: `Daily withdrawal limit is ${formatCurrency(dailyLimit, currency)}. You can withdraw up to ${formatCurrency(Math.max(0, dailyLimit - todayWithdrawals.total), currency)} more today.`
             });
         }
 
@@ -75,8 +77,8 @@ router.post('/', requireAuth, (req, res) => {
 
             db.prepare(`
         INSERT INTO transactions (reference, account_id, type, amount, currency, direction, status, description)
-        VALUES (?, ?, 'withdrawal', ?, 'USD', 'debit', 'completed', ?)
-      `).run(reference, account.id, amountCents, desc);
+        VALUES (?, ?, 'withdrawal', ?, ?, 'debit', 'completed', ?)
+      `).run(reference, account.id, amountCents, account.currency || 'USD', desc);
         });
 
         try {
@@ -89,8 +91,8 @@ router.post('/', requireAuth, (req, res) => {
         }
 
         try {
-            createNotification(req.session.userId, 'withdrawal', 'Withdrawal Processed',
-                `$${Number(amount).toFixed(2)} has been withdrawn from your account (Ref: ${reference})`);
+            createNotification(req.session.userId, 'withdrawal', 'Demo withdrawal recorded',
+                `${formatCurrency(amountCents, currency)} was withdrawn from your demo account (Ref: ${reference}). No cash was dispensed.`);
         } catch (e) { /* non-critical */ }
 
         logAudit({
@@ -102,7 +104,7 @@ router.post('/', requireAuth, (req, res) => {
             metadata: { amount: amountCents, reference },
         });
 
-        res.json({ success: true, reference });
+        res.json({ success: true, simulated: true, reference, amountCents, currency });
     } catch (err) {
         console.error('[Withdrawal] Error:', err.message);
         res.status(500).json({ error: 'Withdrawal failed. Please try again.' });

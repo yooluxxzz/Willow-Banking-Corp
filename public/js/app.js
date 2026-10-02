@@ -1,651 +1,849 @@
-/* ═══════════════════════════════════════════════════════════
-   Willow Banking Corp. — Client-Side Application
-   ═══════════════════════════════════════════════════════════ */
-
+/* ═══════════════════════════════════════════════════════════════════════
+   Willow — shared client runtime
+   Loaded on every page. Page features live in their own deferred scripts
+   and build on the helpers exposed on window.Willow.
+   ═══════════════════════════════════════════════════════════════════════ */
 'use strict';
 
-// ── Sidebar Toggle (Mobile) ──────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-    const sidebar = document.getElementById('sidebar');
-    const toggle = document.getElementById('menuToggle');
-    const overlay = document.getElementById('sidebarOverlay');
+(function (global) {
+    const doc = global.document;
+    const prefersReducedMotion = () => Boolean(global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
-    if (toggle && sidebar) {
-        toggle.addEventListener('click', () => {
-            sidebar.classList.toggle('open');
-            overlay && overlay.classList.toggle('active');
-        });
-    }
-    if (overlay && sidebar) {
-        overlay.addEventListener('click', () => {
-            sidebar.classList.remove('open');
-            overlay.classList.remove('active');
-        });
+    function csrfToken() {
+        const meta = doc.querySelector('meta[name="csrf-token"]');
+        return meta ? meta.getAttribute('content') : '';
     }
 
-    setupLandingCalculator();
-    setupHomeNavigation();
-    setupHeroCrossfade();
-    setupHomeReveals();
-    setupGoalSelection();
-    setupPromptAnswers();
-});
-
-function setupHeroCrossfade() {
-    const hero = document.querySelector('[data-hero-crossfade]');
-    const story = hero?.closest('[data-hero-story]');
-    if (!hero || !story) return;
-    const photos = Array.from(hero.querySelectorAll('[data-hero-photo]'));
-    const copies = Array.from(hero.querySelectorAll('[data-hero-copy]'));
-    const guide = hero.querySelector('[data-hero-guide]');
-    const toggle = hero.querySelector('[data-hero-toggle]');
-    const nav = document.querySelector('.home-nav');
-    const sceneIds = photos.map(photo => photo.dataset.heroPhoto);
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (photos.length < 2 || copies.length !== photos.length || photos.some((photo, index) => !photo || !copies.some(copy => copy.dataset.heroCopy === sceneIds[index]))) return;
-
-    let frame = null;
-    let autoplayTimer = null;
-    let photoFrame = { top: 8, right: 4, bottom: 8, left: 62, radius: 20 };
-    const show = (scene) => {
-        if (hero.dataset.activeImage === scene) return;
-        hero.dataset.activeImage = scene;
-        photos.forEach(photo => photo.setAttribute('aria-hidden', String(photo.dataset.heroPhoto !== scene)));
-        copies.forEach(copy => {
-            const inactive = copy.dataset.heroCopy !== scene;
-            copy.inert = inactive;
-            copy.setAttribute('aria-hidden', String(inactive));
-        });
-        const sceneIndex = sceneIds.indexOf(scene);
-        const sceneCopy = copies.find(copy => copy.dataset.heroCopy === scene);
-        if (guide) guide.textContent = `${String(sceneIndex + 1).padStart(2, '0')} / ${String(sceneIds.length).padStart(2, '0')} · ${sceneCopy.dataset.heroLabel || 'Explore Willow'}`;
-    };
-    const updateToggle = () => {
-        if (!toggle) return;
-        const playing = autoplayTimer !== null;
-        toggle.textContent = playing ? 'Pause scenes' : 'Resume scenes';
-        toggle.setAttribute('aria-label', playing ? 'Pause hero scenes' : 'Resume hero scenes');
-        toggle.setAttribute('aria-pressed', String(playing));
-    };
-    const pauseAutoplay = () => {
-        if (autoplayTimer === null) return;
-        window.clearInterval(autoplayTimer);
-        autoplayTimer = null;
-        updateToggle();
-    };
-    const startAutoplay = () => {
-        if (reducedMotion || autoplayTimer !== null) return;
-        autoplayTimer = window.setInterval(() => {
-            const activeIndex = Math.max(0, sceneIds.indexOf(hero.dataset.activeImage));
-            const nextIndex = (activeIndex + 1) % sceneIds.length;
-            show(sceneIds[nextIndex]);
-            hero.style.setProperty('--story-progress', String(nextIndex / (sceneIds.length - 1)));
-        }, 10000);
-        updateToggle();
-    };
-    const pauseForInteraction = event => {
-        if (event?.target?.closest?.('[data-hero-toggle]')) return;
-        pauseAutoplay();
-    };
-    const updateFromScroll = () => {
-        frame = null;
-        const top = nav && !nav.classList.contains('is-hidden') ? nav.getBoundingClientRect().height : 0;
-        const bounds = story.getBoundingClientRect();
-        const travel = Math.max(1, story.offsetHeight - hero.offsetHeight);
-        const progress = Math.min(1, Math.max(0, (top - bounds.top) / travel));
-        const photoProgress = Math.min(1, progress / 0.68);
-        const easedPhotoProgress = photoProgress * photoProgress * (3 - 2 * photoProgress);
-        hero.style.setProperty('--hero-photo-inset-top', `${photoFrame.top * (1 - easedPhotoProgress)}%`);
-        hero.style.setProperty('--hero-photo-inset-right', `${photoFrame.right * (1 - easedPhotoProgress)}%`);
-        hero.style.setProperty('--hero-photo-inset-bottom', `${photoFrame.bottom * (1 - easedPhotoProgress)}%`);
-        hero.style.setProperty('--hero-photo-inset-left', `${photoFrame.left * (1 - easedPhotoProgress)}%`);
-        hero.style.setProperty('--hero-photo-radius', `${photoFrame.radius * (1 - easedPhotoProgress)}px`);
-        hero.style.setProperty('--hero-photo-a-x', `${35 + 15 * easedPhotoProgress}%`);
-        hero.style.setProperty('--hero-photo-border-opacity', 0.72 * (1 - easedPhotoProgress));
-        if (autoplayTimer === null) {
-            const sceneIndex = Math.min(sceneIds.length - 1, Math.floor(progress * sceneIds.length));
-            show(sceneIds[sceneIndex]);
+    /** Fetch JSON with CSRF, timeouts and consistent error messages. */
+    async function api(url, options = {}) {
+        const { method = 'GET', body, timeout = 15000, headers = {}, passive = false } = options;
+        const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        const timer = controller ? setTimeout(() => controller.abort(), timeout) : null;
+        let response;
+        try {
+            response = await fetch(url, {
+                method,
+                headers: {
+                    Accept: 'application/json',
+                    ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+                    ...(method !== 'GET' ? { 'X-CSRF-Token': csrfToken() } : {}),
+                    ...(passive ? { 'X-Willow-Passive': '1' } : {}),
+                    ...headers,
+                },
+                body: body !== undefined ? JSON.stringify(body) : undefined,
+                credentials: 'same-origin',
+                signal: controller ? controller.signal : undefined,
+            });
+        } catch (error) {
+            const networkError = new Error(error && error.name === 'AbortError'
+                ? 'The request took too long. Check your connection and try again.'
+                : 'We couldn’t reach Willow. Check your connection and try again.');
+            networkError.network = true;
+            throw networkError;
+        } finally {
+            if (timer) clearTimeout(timer);
         }
-        hero.style.setProperty('--story-progress', progress);
-    };
-    const schedule = () => {
-        if (frame === null) frame = window.requestAnimationFrame(updateFromScroll);
-    };
-    const resize = () => {
-        story.style.setProperty('--hero-nav-height', `${nav ? nav.getBoundingClientRect().height : 0}px`);
-        const styles = window.getComputedStyle(story);
-        photoFrame = {
-            top: Number.parseFloat(styles.getPropertyValue('--hero-photo-start-top')) || 0,
-            right: Number.parseFloat(styles.getPropertyValue('--hero-photo-start-right')) || 0,
-            bottom: Number.parseFloat(styles.getPropertyValue('--hero-photo-start-bottom')) || 0,
-            left: Number.parseFloat(styles.getPropertyValue('--hero-photo-start-left')) || 0,
-            radius: Number.parseFloat(styles.getPropertyValue('--hero-photo-start-radius')) || 0
+        const data = await response.json().catch(() => ({}));
+        if (response.status === 401 && data.code === 'session_timeout' && doc.querySelector('[data-app]')) {
+            redirectToSignIn('session_timeout');
+        }
+        if (response.status === 401 && !url.startsWith('/auth/')) {
+            const expired = new Error(data.error || 'Your session ended. Please sign in again.');
+            expired.status = 401;
+            expired.sessionExpired = true;
+            throw expired;
+        }
+        if (!response.ok) {
+            const error = new Error(data.error || data.answer || 'Something went wrong. Please try again.');
+            error.status = response.status;
+            error.data = data;
+            throw error;
+        }
+        if (!passive) noteActivity();
+        return data;
+    }
+
+    function redirectToSignIn(reason) {
+        const returnTo = global.location.pathname + global.location.search;
+        global.location.href = `/login?error=${encodeURIComponent(reason)}&returnTo=${encodeURIComponent(returnTo)}`;
+    }
+
+    // ── Formatting ──────────────────────────────────────────────────────
+    const formatters = new Map();
+    function currencyFormatter(currency, digits) {
+        const key = `${currency}:${digits}`;
+        if (!formatters.has(key)) {
+            formatters.set(key, new Intl.NumberFormat('en-US', { style: 'currency', currency, minimumFractionDigits: digits, maximumFractionDigits: digits }));
+        }
+        return formatters.get(key);
+    }
+
+    /** Formats a major-unit amount (e.g. 12.5 → $12.50). */
+    function formatMoney(amount, currency = 'USD', options = {}) {
+        const value = Number(amount);
+        if (!Number.isFinite(value)) return '—';
+        let digits = options.digits;
+        if (digits === undefined) digits = Math.abs(value) > 0 && Math.abs(value) < 1 ? 4 : 2;
+        const text = currencyFormatter(currency || 'USD', digits).format(Math.abs(value));
+        if (options.sign && value !== 0) return (value > 0 ? '+' : '−') + text;
+        return value < 0 ? '−' + text : text;
+    }
+
+    /** Formats integer minor units (cents). */
+    function formatCents(cents, currency = 'USD', options = {}) {
+        return formatMoney(Number(cents || 0) / 100, currency, { digits: 2, ...options });
+    }
+
+    function formatNumber(value, digits = 2) {
+        const number = Number(value);
+        if (!Number.isFinite(number)) return '—';
+        return new Intl.NumberFormat('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(number);
+    }
+
+    function formatCompact(value, currency) {
+        const number = Number(value);
+        if (!Number.isFinite(number)) return 'Unavailable';
+        const options = { notation: 'compact', maximumFractionDigits: 2 };
+        if (currency) Object.assign(options, { style: 'currency', currency });
+        return new Intl.NumberFormat('en-US', options).format(number);
+    }
+
+    function formatPercent(value, options = {}) {
+        const number = Number(value);
+        if (!Number.isFinite(number)) return '—';
+        const text = `${Math.abs(number).toFixed(options.digits ?? 2)}%`;
+        if (options.sign === false) return text;
+        return (number > 0 ? '+' : number < 0 ? '−' : '') + text;
+    }
+
+    function formatQuantity(value) {
+        const number = Number(value);
+        if (!Number.isFinite(number)) return '0';
+        return number.toFixed(8).replace(/0+$/, '').replace(/\.$/, '') || '0';
+    }
+
+    function parseDate(value) {
+        if (!value) return null;
+        if (value instanceof Date) return value;
+        const text = String(value);
+        const date = new Date(/Z$|[+-]\d\d:?\d\d$/.test(text) ? text : text.replace(' ', 'T') + 'Z');
+        return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    function formatDate(value, style = 'medium') {
+        const date = parseDate(value);
+        if (!date) return '';
+        const options = style === 'short' ? { month: 'short', day: 'numeric' }
+            : style === 'time' ? { hour: '2-digit', minute: '2-digit' }
+                : style === 'datetime' ? { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }
+                    : { month: 'short', day: 'numeric', year: 'numeric' };
+        return new Intl.DateTimeFormat('en-US', options).format(date);
+    }
+
+    function relativeDay(value) {
+        const date = parseDate(value);
+        if (!date) return '';
+        const today = new Date();
+        const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const diff = Math.round((start - new Date(date.getFullYear(), date.getMonth(), date.getDate())) / 86400000);
+        if (diff === 0) return 'Today';
+        if (diff === 1) return 'Yesterday';
+        return formatDate(date, diff < 300 ? 'short' : 'medium');
+    }
+
+    // ── DOM helpers ─────────────────────────────────────────────────────
+    function el(tag, attrs, ...children) {
+        const node = doc.createElement(tag);
+        if (attrs) {
+            Object.entries(attrs).forEach(([key, value]) => {
+                if (value === null || value === undefined || value === false) return;
+                if (key === 'className') node.className = value;
+                else if (key === 'text') node.textContent = value;
+                else if (key === 'html') node.innerHTML = value;
+                else if (key === 'dataset') Object.assign(node.dataset, value);
+                else if (key.startsWith('on') && typeof value === 'function') node.addEventListener(key.slice(2).toLowerCase(), value);
+                else node.setAttribute(key, value === true ? '' : value);
+            });
+        }
+        children.flat().forEach(child => {
+            if (child === null || child === undefined || child === false) return;
+            node.append(child instanceof Node ? child : doc.createTextNode(String(child)));
+        });
+        return node;
+    }
+
+    function iconSprite() {
+        const meta = doc.querySelector('meta[name="willow-icons"]');
+        return meta ? meta.getAttribute('content') : '/images/icons.svg';
+    }
+
+    function icon(name, className = '') {
+        const svg = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('class', `icon ${className}`.trim());
+        svg.setAttribute('aria-hidden', 'true');
+        svg.setAttribute('focusable', 'false');
+        const use = doc.createElementNS('http://www.w3.org/2000/svg', 'use');
+        use.setAttribute('href', `${iconSprite()}#${name}`);
+        svg.append(use);
+        return svg;
+    }
+
+    function empty({ iconName = 'info', title, text, action, error = false, compact = false }) {
+        return el('div', { className: `empty${error ? ' is-error' : ''}${compact ? ' is-compact' : ''}` },
+            el('div', { className: 'empty-art' }, icon(iconName)),
+            el('h3', { text: title }),
+            text ? el('p', { text }) : null,
+            action ? el(action.href ? 'a' : 'button', { className: `btn ${action.primary === false ? 'btn-secondary' : 'btn-primary'} btn-sm`, href: action.href, type: action.href ? null : 'button', onclick: action.onClick, text: action.label }) : null);
+    }
+
+    function skeletonRows(count = 4) {
+        return el('div', { className: 'skeleton-rows', 'aria-hidden': 'true' },
+            Array.from({ length: count }, () => el('div', { className: 'txn-row' },
+                el('div', { className: 'skeleton skeleton-circle', style: 'width:42px;height:42px;border-radius:13px' }),
+                el('div', { className: 'txn-main' }, el('div', { className: 'skeleton skeleton-line w-60' }), el('div', { className: 'skeleton skeleton-line w-40' })),
+                el('div', { className: 'skeleton skeleton-line', style: 'width:72px' }))));
+    }
+
+    // ── Toasts ──────────────────────────────────────────────────────────
+    function toastRegion() {
+        let region = doc.getElementById('toastRegion');
+        if (!region) {
+            region = el('div', { className: 'toast-region', id: 'toastRegion', 'aria-live': 'polite' });
+            doc.body.append(region);
+        }
+        return region;
+    }
+
+    function showToast(message, type = 'info', duration = 4600) {
+        const icons = { success: 'check-circle', error: 'x-circle', warning: 'alert', info: 'info' };
+        const toast = el('div', { className: `toast toast-${type}`, role: type === 'error' ? 'alert' : 'status' },
+            icon(icons[type] || 'info'),
+            el('div', { className: 'toast-message', text: message }));
+        const close = el('button', { type: 'button', className: 'toast-close', 'aria-label': 'Dismiss notification' }, icon('x', 'icon-sm'));
+        const dismiss = () => {
+            if (!toast.isConnected) return;
+            toast.classList.add('is-leaving');
+            setTimeout(() => toast.remove(), 320);
         };
-        updateFromScroll();
-    };
-    const enableScrollStory = () => {
-        if (reducedMotion) {
-            hero.dataset.motionPreference = 'reduced';
-            if (toggle) {
-                toggle.disabled = true;
-                toggle.textContent = 'Motion reduced';
-                toggle.setAttribute('aria-label', 'Autoplay disabled by reduced motion preference');
+        close.addEventListener('click', dismiss);
+        toast.append(close);
+        toastRegion().append(toast);
+        setTimeout(dismiss, duration);
+        return toast;
+    }
+
+    // ── Dialogs ─────────────────────────────────────────────────────────
+    function openDialog(dialog) {
+        if (!dialog) return;
+        if (typeof dialog.showModal === 'function' && !dialog.open) dialog.showModal();
+        doc.body.classList.add('has-dialog');
+    }
+
+    function closeDialog(dialog) {
+        if (!dialog) return;
+        if (dialog.open) dialog.close();
+        doc.body.classList.remove('has-dialog');
+    }
+
+    function enableBackdropClose(dialog) {
+        dialog.addEventListener('click', event => {
+            if (event.target !== dialog) return;
+            const rect = dialog.getBoundingClientRect();
+            const inside = event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
+            if (!inside || getComputedStyle(dialog).display === 'flex') closeDialog(dialog);
+        });
+    }
+
+    /** Promise-based confirmation dialog. */
+    function showConfirm(message, title = 'Please confirm', options = {}) {
+        return new Promise(resolve => {
+            const dialog = el('dialog', { className: 'modal', 'aria-labelledby': 'confirmTitle' },
+                el('div', { className: 'modal-head' }, el('h2', { id: 'confirmTitle', text: title })),
+                el('div', { className: 'modal-body' }, el('p', { className: 'secondary', text: message })));
+            const cancel = el('button', { type: 'button', className: 'btn btn-secondary', text: options.cancelLabel || 'Cancel' });
+            const confirm = el('button', { type: 'button', className: `btn ${options.danger ? 'btn-danger' : 'btn-primary'}`, text: options.confirmLabel || 'Confirm' });
+            dialog.append(el('div', { className: 'modal-foot' }, cancel, confirm));
+            doc.body.append(dialog);
+            const finish = value => { closeDialog(dialog); dialog.remove(); resolve(value); };
+            cancel.addEventListener('click', () => finish(false));
+            confirm.addEventListener('click', () => finish(true));
+            dialog.addEventListener('cancel', event => { event.preventDefault(); finish(false); });
+            openDialog(dialog);
+            cancel.focus();
+        });
+    }
+
+    // ── Theme & privacy ─────────────────────────────────────────────────
+    function syncThemeControls() {
+        const dark = doc.documentElement.getAttribute('data-theme') === 'dark';
+        doc.querySelectorAll('[data-theme-toggle]').forEach(button => {
+            button.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
+            button.setAttribute('aria-pressed', String(dark));
+            const label = button.querySelector('.theme-toggle-label');
+            if (label) label.textContent = dark ? 'Light theme' : 'Dark theme';
+        });
+    }
+
+    function toggleTheme() {
+        const root = doc.documentElement;
+        const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        if (next === 'dark') root.setAttribute('data-theme', 'dark');
+        else root.removeAttribute('data-theme');
+        try { localStorage.setItem('willow-theme', next); } catch (error) { /* storage unavailable */ }
+        syncThemeControls();
+        doc.dispatchEvent(new CustomEvent('willow:themechange', { detail: { theme: next } }));
+    }
+
+    function syncPrivacyControls() {
+        const hidden = doc.documentElement.classList.contains('is-private');
+        doc.querySelectorAll('[data-privacy-toggle]').forEach(button => {
+            button.setAttribute('aria-pressed', String(hidden));
+            button.setAttribute('aria-label', hidden ? 'Show balances' : 'Hide balances');
+            button.title = hidden ? 'Show balances on screen' : 'Hide balances on screen';
+        });
+    }
+
+    function togglePrivacy() {
+        const hidden = doc.documentElement.classList.toggle('is-private');
+        try { localStorage.setItem('willow-private', hidden ? '1' : '0'); } catch (error) { /* storage unavailable */ }
+        syncPrivacyControls();
+        showToast(hidden ? 'Balances hidden on this device.' : 'Balances visible.', 'info', 2600);
+    }
+
+    // ── Menus ───────────────────────────────────────────────────────────
+    function setupMenus() {
+        doc.querySelectorAll('[data-menu-trigger]').forEach(trigger => {
+            const menu = doc.getElementById(trigger.dataset.menuTrigger);
+            if (!menu) return;
+            const items = () => Array.from(menu.querySelectorAll('a, button'));
+            const close = (focusTrigger) => {
+                menu.classList.remove('is-open');
+                trigger.setAttribute('aria-expanded', 'false');
+                if (focusTrigger) trigger.focus();
+            };
+            const open = () => {
+                menu.classList.add('is-open');
+                trigger.setAttribute('aria-expanded', 'true');
+                const first = items()[0];
+                if (first) setTimeout(() => first.focus(), 30);
+            };
+            trigger.addEventListener('click', event => {
+                event.stopPropagation();
+                if (menu.classList.contains('is-open')) close(false); else open();
+            });
+            menu.addEventListener('keydown', event => {
+                const list = items();
+                const index = list.indexOf(doc.activeElement);
+                if (event.key === 'ArrowDown') { event.preventDefault(); list[(index + 1) % list.length].focus(); }
+                if (event.key === 'ArrowUp') { event.preventDefault(); list[(index - 1 + list.length) % list.length].focus(); }
+                if (event.key === 'Escape') { event.preventDefault(); close(true); }
+                if (event.key === 'Tab') close(false);
+            });
+            doc.addEventListener('click', event => {
+                if (!menu.contains(event.target) && event.target !== trigger) close(false);
+            });
+        });
+    }
+
+    // ── Sheets & dialogs declared in markup ─────────────────────────────
+    function setupSheets() {
+        doc.querySelectorAll('[data-sheet-open]').forEach(button => {
+            const sheet = doc.getElementById(button.dataset.sheetOpen);
+            if (!sheet) return;
+            button.addEventListener('click', () => openDialog(sheet));
+        });
+        doc.querySelectorAll('dialog.sheet, dialog.modal').forEach(dialog => {
+            enableBackdropClose(dialog);
+            dialog.querySelectorAll('[data-sheet-close], [data-dialog-close]').forEach(button => button.addEventListener('click', () => closeDialog(dialog)));
+            dialog.addEventListener('close', () => doc.body.classList.remove('has-dialog'));
+        });
+    }
+
+    // ── Public header: scroll state, mega menu, mobile nav ──────────────
+    function setupSiteHeader() {
+        const header = doc.querySelector('[data-site-header]');
+        if (!header) return;
+        const triggers = Array.from(header.querySelectorAll('[data-mega-trigger]'));
+        const mobileToggle = header.querySelector('[data-mobile-toggle]');
+        const mobileNav = header.querySelector('[data-mobile-nav]');
+        let openKey = null;
+        let hoverTimer = null;
+
+        const panelFor = key => header.querySelector(`[data-mega-panel="${key}"]`);
+        const updateOffsets = () => {
+            const rect = header.getBoundingClientRect();
+            header.style.setProperty('--mega-top', `${Math.max(0, rect.bottom)}px`);
+            if (mobileNav) mobileNav.style.setProperty('--mobile-nav-top', `${Math.max(0, rect.bottom)}px`);
+        };
+        const closeMega = () => {
+            triggers.forEach(trigger => trigger.setAttribute('aria-expanded', 'false'));
+            header.querySelectorAll('[data-mega-panel]').forEach(panel => panel.classList.remove('is-open'));
+            header.classList.remove('has-mega-open', 'is-menu-open');
+            openKey = null;
+        };
+        const openMega = key => {
+            if (openKey === key) return;
+            closeMega();
+            const trigger = triggers.find(item => item.dataset.megaTrigger === key);
+            const panel = panelFor(key);
+            if (!trigger || !panel) return;
+            updateOffsets();
+            trigger.setAttribute('aria-expanded', 'true');
+            panel.classList.add('is-open');
+            header.classList.add('has-mega-open', 'is-menu-open');
+            openKey = key;
+        };
+
+        triggers.forEach(trigger => {
+            const key = trigger.dataset.megaTrigger;
+            const item = trigger.closest('.site-nav-item');
+            trigger.addEventListener('click', () => (openKey === key ? closeMega() : openMega(key)));
+            trigger.addEventListener('keydown', event => {
+                if (event.key === 'ArrowDown') {
+                    event.preventDefault();
+                    openMega(key);
+                    const first = panelFor(key).querySelector('a');
+                    if (first) first.focus();
+                }
+            });
+            if (item && global.matchMedia && global.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+                item.addEventListener('pointerenter', () => { clearTimeout(hoverTimer); hoverTimer = setTimeout(() => openMega(key), openKey ? 0 : 140); });
+                item.addEventListener('pointerleave', () => { clearTimeout(hoverTimer); hoverTimer = setTimeout(closeMega, 220); });
             }
+        });
+        header.querySelectorAll('[data-mega-panel]').forEach(panel => {
+            panel.addEventListener('focusout', event => {
+                if (!header.contains(event.relatedTarget)) closeMega();
+            });
+        });
+        const scrim = header.querySelector('[data-mega-scrim]');
+        if (scrim) scrim.addEventListener('click', closeMega);
+
+        const setMobile = open => {
+            if (!mobileToggle || !mobileNav) return;
+            updateOffsets();
+            mobileToggle.setAttribute('aria-expanded', String(open));
+            mobileToggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+            mobileNav.classList.toggle('is-open', open);
+            header.classList.toggle('is-menu-open', open);
+            doc.body.classList.toggle('is-locked', open);
+        };
+        if (mobileToggle) mobileToggle.addEventListener('click', () => setMobile(mobileToggle.getAttribute('aria-expanded') !== 'true'));
+        if (mobileNav) mobileNav.querySelectorAll('a').forEach(link => link.addEventListener('click', () => setMobile(false)));
+
+        doc.addEventListener('keydown', event => {
+            if (event.key !== 'Escape') return;
+            if (openKey) {
+                const trigger = triggers.find(item => item.dataset.megaTrigger === openKey);
+                closeMega();
+                if (trigger) trigger.focus();
+            }
+            if (mobileToggle && mobileToggle.getAttribute('aria-expanded') === 'true') { setMobile(false); mobileToggle.focus(); }
+        });
+        doc.addEventListener('click', event => { if (openKey && !header.contains(event.target)) closeMega(); });
+
+        const onScroll = () => {
+            header.classList.toggle('is-scrolled', global.scrollY > 8);
+        };
+        onScroll();
+        global.addEventListener('scroll', onScroll, { passive: true });
+        global.addEventListener('resize', () => { updateOffsets(); if (global.innerWidth > 1120) setMobile(false); }, { passive: true });
+    }
+
+    function setupAppTopbar() {
+        const topbar = doc.querySelector('.app-topbar');
+        if (!topbar) return;
+        const onScroll = () => topbar.classList.toggle('is-scrolled', global.scrollY > 4);
+        onScroll();
+        global.addEventListener('scroll', onScroll, { passive: true });
+    }
+
+    // ── Reveal on scroll & count-up figures ─────────────────────────────
+    function setupReveals() {
+        const targets = doc.querySelectorAll('.reveal');
+        if (!targets.length) return;
+        if (prefersReducedMotion() || !('IntersectionObserver' in global)) {
+            targets.forEach(target => target.classList.add('is-visible'));
             return;
         }
-        story.classList.add('is-scroll-ready');
-        resize();
-        window.addEventListener('scroll', schedule, { passive: true });
-        window.addEventListener('resize', resize, { passive: true });
-        window.addEventListener('pageshow', resize);
-        if ('ResizeObserver' in window && nav) new ResizeObserver(resize).observe(nav);
-        hero.addEventListener('pointerdown', pauseForInteraction);
-        hero.addEventListener('focusin', pauseForInteraction);
-        hero.addEventListener('keydown', pauseForInteraction);
-        window.addEventListener('wheel', pauseAutoplay, { passive: true });
-        window.addEventListener('touchstart', pauseAutoplay, { passive: true });
-        if (toggle) toggle.addEventListener('click', () => autoplayTimer === null ? startAutoplay() : pauseAutoplay());
-        startAutoplay();
-    };
-    if (photos[0].complete) {
-        enableScrollStory();
-    } else {
-        const firstPhotoReady = () => enableScrollStory();
-        photos[0].addEventListener('load', firstPhotoReady, { once: true });
-        photos[0].addEventListener('error', firstPhotoReady, { once: true });
-    }
-}
-
-function setupHomeNavigation() {
-    const toggle = document.getElementById('homeMenuToggle');
-    const menu = document.getElementById('homeNavLinks');
-    const nav = document.querySelector('.home-nav');
-    if (!toggle || !menu) return;
-
-    const closeMenu = () => {
-        toggle.setAttribute('aria-expanded', 'false');
-        toggle.setAttribute('aria-label', 'Open navigation menu');
-        menu.classList.remove('is-open');
-    };
-
-    toggle.addEventListener('click', () => {
-        const isOpen = toggle.getAttribute('aria-expanded') === 'true';
-        toggle.setAttribute('aria-expanded', String(!isOpen));
-        toggle.setAttribute('aria-label', isOpen ? 'Open navigation menu' : 'Close navigation menu');
-        menu.classList.toggle('is-open', !isOpen);
-        if (!isOpen) nav?.classList.remove('is-hidden');
-    });
-
-    let previousScrollY = window.scrollY;
-    window.addEventListener('scroll', () => {
-        const currentScrollY = window.scrollY;
-        const direction = currentScrollY - previousScrollY;
-        if (Math.abs(direction) < 6) return;
-        previousScrollY = currentScrollY;
-        const menuOpen = toggle.getAttribute('aria-expanded') === 'true';
-        nav?.classList.toggle('is-hidden', currentScrollY > 96 && direction > 0 && !menuOpen);
-    }, { passive: true });
-
-    menu.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeMenu));
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') closeMenu();
-    });
-    window.addEventListener('resize', () => {
-        if (window.innerWidth > 900) closeMenu();
-    }, { passive: true });
-}
-
-function setupHomeReveals() {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return;
-
-    const sections = document.querySelectorAll('.home-reveal');
-    if (!sections.length) return;
-
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-            if (entry.isIntersecting) {
+        doc.documentElement.classList.add('reveal-ready');
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
                 entry.target.classList.add('is-visible');
                 observer.unobserve(entry.target);
-            }
-        });
-    }, { threshold: 0.14 });
-
-    sections.forEach((section) => observer.observe(section));
-    document.body.classList.add('home-reveals-enabled');
-}
-
-function setupPromptAnswers() {
-    const chips = document.querySelectorAll('.prompt-chip');
-    const answerHeading = document.getElementById('intelligenceAnswer');
-    const answerText = document.querySelector('.intelligence-answer');
-    if (!chips.length || !answerHeading || !answerText) return;
-
-    const answers = {
-        'How much did I spend this month?': 'You spent $5,360 this month across everyday accounts and recurring payments. The largest categories were groceries, rent and recurring subscriptions.',
-        'Show me my investments.': 'Your investment portfolio is spread across seven demo assets, with the strongest weight in large-cap equities and a smaller allocation in crypto.',
-        'What are my biggest expenses?': 'Your biggest recurring expenses are housing, groceries and transport, with the largest and most recent variation coming from monthly utility spending.',
-        'How much do I have in savings?': 'You have $19,800 in active savings across your primary and goal-based accounts, with $3,200 earmarked for travel and $1,920 added this month.',
-        'What is my portfolio allocation?': 'Your portfolio is split roughly 58% equities, 24% cash, 12% crypto and 6% alternative holdings, keeping risk balanced across the current demo mix.'
-    };
-
-    chips.forEach((chip) => {
-        chip.addEventListener('click', () => {
-            chips.forEach((button) => button.classList.toggle('is-active', button === chip));
-            const text = chip.dataset.answer || chip.textContent.trim();
-            answerHeading.textContent = text;
-            answerText.textContent = answers[text] || 'This demo insight is based on the current connected Willow data view.';
-        });
-    });
-}
-
-function setupGoalSelection() {
-    const pills = document.querySelectorAll('.goal-pill');
-    if (!pills.length) return;
-
-    const goalContent = {
-        savings: {
-            tag: 'Savings',
-            title: 'Build a stronger cushion.',
-            description: 'Keep everyday spending in view while setting aside money for the moments that matter most.',
-            bullets: ['Goal-based savings', 'Clear transfer tracking', 'Monthly insight summaries'],
-            stats: [
-                { label: 'Suggested allocation', value: '$18.5K', note: 'target balance' },
-                { label: 'Next step', value: 'Open', note: 'savings goal' },
-                { label: 'Recommended tools', value: '3', note: 'connected features' },
-                { label: 'Focus', value: 'Steady', note: 'monthly growth' },
-            ],
-        },
-        invest: {
-            tag: 'Investing',
-            title: 'Plan for compounding growth.',
-            description: 'Bring long-term goals and portfolio context into the same view without losing sight of everyday spending.',
-            bullets: ['Diversified portfolio tracking', 'Periodic allocation review', 'Long-view goal planning'],
-            stats: [
-                { label: 'Suggested allocation', value: '$42K', note: 'portfolio target' },
-                { label: 'Next step', value: 'Review', note: 'investment mix' },
-                { label: 'Recommended tools', value: '5', note: 'connected features' },
-                { label: 'Focus', value: 'Growth', note: 'compounding pace' },
-            ],
-        },
-        home: {
-            tag: 'Home',
-            title: 'Make the next move feel manageable.',
-            description: 'Stay organized around deposit goals, purchase timing and the monthly rhythm that supports a confident decision.',
-            bullets: ['Home purchase timing', 'Down payment planning', 'Timeline milestones'],
-            stats: [
-                { label: 'Suggested allocation', value: '$64K', note: 'down payment' },
-                { label: 'Next step', value: 'Build', note: 'home timeline' },
-                { label: 'Recommended tools', value: '4', note: 'connected features' },
-                { label: 'Focus', value: 'Ready', note: 'purchase runway' },
-            ],
-        },
-        business: {
-            tag: 'Business',
-            title: 'Keep momentum moving behind the work.',
-            description: 'Connect business spending, savings and daily cash flow so your next opportunity is easier to act on.',
-            bullets: ['Business reserve planning', 'Fast cash visibility', 'Working capital review'],
-            stats: [
-                { label: 'Suggested allocation', value: '$30K', note: 'cash reserve' },
-                { label: 'Next step', value: 'Open', note: 'business hub' },
-                { label: 'Recommended tools', value: '6', note: 'connected features' },
-                { label: 'Focus', value: 'Flow', note: 'operating pace' },
-            ],
-        },
-        money: {
-            tag: 'Everyday money',
-            title: 'Give your routine a clearer rhythm.',
-            description: 'Simplify the essentials while keeping your savings, bills and next-step decisions in one more focused view.',
-            bullets: ['Budget clarity', 'Recurring bill control', 'Daily movement insights'],
-            stats: [
-                { label: 'Suggested allocation', value: '$12K', note: 'monthly buffer' },
-                { label: 'Next step', value: 'Review', note: 'weekly budget' },
-                { label: 'Recommended tools', value: '3', note: 'connected features' },
-                { label: 'Focus', value: 'Clear', note: 'day-to-day pace' },
-            ],
-        },
-        travel: {
-            tag: 'Travel',
-            title: 'Build a plan for the next adventure.',
-            description: 'Keep international spending and your broader goals in sync so the trip feels exciting and prepared.',
-            bullets: ['Travel reserve setting', 'FX-aware planning', 'Trip milestone tracking'],
-            stats: [
-                { label: 'Suggested allocation', value: '$9.8K', note: 'travel budget' },
-                { label: 'Next step', value: 'Set', note: 'travel date' },
-                { label: 'Recommended tools', value: '4', note: 'connected features' },
-                { label: 'Focus', value: 'Flexible', note: 'next departure' },
-            ],
-        },
-    };
-
-    const updateGoalContent = (selectedGoal) => {
-        const content = goalContent[selectedGoal] || goalContent.savings;
-        const tag = document.getElementById('goalTag');
-        const title = document.getElementById('goalStoryTitle');
-        const description = document.getElementById('goalStoryDescription');
-        const list = document.getElementById('goalStoryList');
-
-        if (tag) tag.textContent = content.tag;
-        if (title) title.textContent = content.title;
-        if (description) description.textContent = content.description;
-        if (list) list.innerHTML = content.bullets.map((item) => `<li>${item}</li>`).join('');
-
-        content.stats.forEach((stat, index) => {
-            const label = document.getElementById(`goalStat${index + 1}Label`);
-            const value = document.getElementById(`goalStat${index + 1}Value`);
-            const note = document.getElementById(`goalStat${index + 1}Note`);
-            if (label) label.textContent = stat.label;
-            if (value) value.textContent = stat.value;
-            if (note) note.textContent = stat.note;
-        });
-    };
-
-    pills.forEach((pill) => {
-        pill.addEventListener('click', () => {
-            const selectedGoal = pill.dataset.goal;
-            pills.forEach((button) => button.classList.toggle('is-active', button === pill));
-            updateGoalContent(selectedGoal);
-        });
-    });
-}
-
-function setupLandingCalculator() {
-    const amountInput = document.getElementById('loanAmount');
-    const downInput = document.getElementById('downPayment');
-    const aprInput = document.getElementById('aprRate');
-    const termInput = document.getElementById('loanTerm');
-    const paymentNode = document.getElementById('monthlyPayment');
-    const totalNode = document.getElementById('loanTotal');
-    const principalNode = document.getElementById('loanPrincipal');
-
-    if (!amountInput || !downInput || !aprInput || !termInput || !paymentNode || !totalNode || !principalNode) {
-        return;
+            });
+        }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+        targets.forEach(target => observer.observe(target));
     }
 
-    const formatCurrency = (value) => new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        maximumFractionDigits: 0,
-    }).format(value || 0);
+    /** Animates a number into an element. Respects reduced motion. */
+    function countUp(node, to, format, duration = 900) {
+        if (!node) return;
+        const target = Number(to);
+        if (!Number.isFinite(target)) return;
+        if (prefersReducedMotion() || !global.requestAnimationFrame) { node.textContent = format(target); return; }
+        const start = performance.now();
+        const from = Number(node.dataset.countFrom || 0);
+        const step = now => {
+            const progress = Math.min(1, (now - start) / duration);
+            const eased = 1 - Math.pow(1 - progress, 4);
+            node.textContent = format(from + (target - from) * eased);
+            if (progress < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+    }
 
-    const updateCalculator = () => {
-        const amount = Number(amountInput.value) || 0;
-        const down = Number(downInput.value) || 0;
-        const apr = Number(aprInput.value) || 0;
-        const years = Number(termInput.value) || 30;
-        const principal = Math.max(amount - down, 0);
-        const payments = years * 12;
-        const monthlyRate = apr / 100 / 12;
+    function setupCountUps() {
+        const nodes = doc.querySelectorAll('[data-count-to]');
+        if (!nodes.length) return;
+        const run = node => {
+            const currency = node.dataset.currency;
+            const digits = node.dataset.digits !== undefined ? Number(node.dataset.digits) : 2;
+            const format = currency ? value => formatMoney(value, currency, { digits }) : value => formatNumber(value, digits);
+            countUp(node, node.dataset.countTo, format);
+        };
+        if (!('IntersectionObserver' in global)) { nodes.forEach(run); return; }
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+                run(entry.target);
+                observer.unobserve(entry.target);
+            });
+        }, { threshold: 0.4 });
+        nodes.forEach(node => observer.observe(node));
+    }
 
-        let monthlyPayment = 0;
-        if (principal > 0 && monthlyRate > 0) {
-            monthlyPayment = principal * (monthlyRate * Math.pow(1 + monthlyRate, payments)) /
-                (Math.pow(1 + monthlyRate, payments) - 1);
-        } else if (principal > 0) {
-            monthlyPayment = principal / payments;
+    // ── Ask Willow (financial intelligence) ─────────────────────────────
+    function setupAskWillow() {
+        const panel = doc.querySelector('[data-ask-panel]');
+        if (!panel) return;
+        const thread = panel.querySelector('[data-ask-thread]');
+        const form = panel.querySelector('[data-ask-form]');
+        const input = form.querySelector('input');
+        let busy = false;
+
+        const open = (question) => {
+            openDialog(panel);
+            setTimeout(() => input.focus(), 60);
+            if (question) ask(question);
+        };
+        doc.querySelectorAll('[data-ask-open]').forEach(button => button.addEventListener('click', () => open(button.dataset.askQuestion)));
+        panel.querySelectorAll('[data-ask-close]').forEach(button => button.addEventListener('click', () => closeDialog(panel)));
+        enableBackdropClose(panel);
+        doc.addEventListener('keydown', event => {
+            const typing = /input|textarea|select/i.test((event.target && event.target.tagName) || '') || (event.target && event.target.isContentEditable);
+            if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); panel.open ? closeDialog(panel) : open(); }
+            else if (event.key === '/' && !typing && !panel.open) { event.preventDefault(); open(); }
+        });
+        panel.querySelectorAll('[data-ask-prompt]').forEach(button => button.addEventListener('click', () => ask(button.dataset.askPrompt)));
+        form.addEventListener('submit', event => {
+            event.preventDefault();
+            const question = input.value.trim();
+            if (question) ask(question);
+        });
+        doc.addEventListener('willow:ask', event => open(event.detail && event.detail.question));
+
+        async function ask(question) {
+            if (busy) return;
+            busy = true;
+            const welcome = panel.querySelector('[data-ask-welcome]');
+            if (welcome) welcome.hidden = true;
+            thread.append(el('div', { className: 'ask-message is-user', text: question }));
+            const thinking = el('div', { className: 'ask-thinking', 'aria-label': 'Willow is checking your data' }, el('span'), el('span'), el('span'));
+            thread.append(thinking);
+            thread.scrollTop = thread.scrollHeight;
+            input.value = '';
+            try {
+                const result = await api('/api/hub/ask', { method: 'POST', body: { question } });
+                thinking.replaceWith(renderAnswer(result));
+            } catch (error) {
+                thinking.replaceWith(el('div', { className: 'ask-message is-answer' },
+                    el('p', { className: 'ask-answer-lead', text: error.sessionExpired ? 'Your session ended. Sign in again to keep asking questions.' : (error.message || 'Willow couldn’t answer right now.') })));
+            } finally {
+                busy = false;
+                thread.scrollTop = thread.scrollHeight;
+            }
         }
 
-        const totalPaid = monthlyPayment * payments;
-
-        paymentNode.textContent = formatCurrency(monthlyPayment);
-        principalNode.textContent = formatCurrency(principal);
-        totalNode.textContent = formatCurrency(totalPaid);
-    };
-
-    [amountInput, downInput, aprInput, termInput].forEach((input) => {
-        input.addEventListener('input', updateCalculator);
-        input.addEventListener('change', updateCalculator);
-    });
-
-    updateCalculator();
-}
-
-// ── Auth Functions ───────────────────────────────────────
-async function handleLogin(e) {
-    e.preventDefault();
-    const btn = document.getElementById('loginBtn');
-    const errBox = document.getElementById('loginError');
-    const errText = document.getElementById('loginErrorText');
-
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> Signing in...';
-    errBox.hidden = true;
-
-    try {
-        const form = document.getElementById('loginForm');
-        const csrf = form.querySelector('[name="_csrf"]').value;
-        const res = await fetch('/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, Accept: 'application/json' },
-            body: JSON.stringify({
-                email: document.getElementById('email').value,
-                password: document.getElementById('password').value,
-                returnTo: form.elements.returnTo.value,
-            }),
-        });
-        const data = await res.json().catch(() => ({ error: 'Sign-in is temporarily unavailable. Please try again.' }));
-        if (!res.ok || !data.success) throw new Error(data.error || 'Login failed.');
-        window.location.href = data.redirect || '/dashboard';
-    } catch (err) {
-        errBox.hidden = false; errBox.focus();
-        errText.textContent = err instanceof TypeError ? 'Could not connect. Check your connection and try again.' : (err.message || 'Invalid email or password.');
-        btn.disabled = false;
-        btn.textContent = 'Sign In';
-    }
-}
-
-async function handleRegister(e) {
-    e.preventDefault();
-    const btn = document.getElementById('registerBtn');
-    const errBox = document.getElementById('registerError');
-    const errText = document.getElementById('registerErrorText');
-
-    const password = document.getElementById('password').value;
-    const confirm = document.getElementById('confirmPassword').value;
-    if (password !== confirm) {
-        errBox.hidden = false; errBox.focus();
-        errText.textContent = 'Passwords do not match.';
-        return;
-    }
-
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> Creating account...';
-    errBox.hidden = true;
-
-    try {
-        const form = document.getElementById('registerForm');
-        const csrf = form.querySelector('[name="_csrf"]').value;
-        const res = await fetch('/auth/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, Accept: 'application/json' },
-            body: JSON.stringify({
-                fullName: document.getElementById('fullName').value,
-                email: document.getElementById('email').value,
-                phone: document.getElementById('phone').value,
-                password,
-            }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Registration failed.');
-        window.location.href = data.redirect || '/dashboard';
-    } catch (err) {
-        errBox.hidden = false; errBox.focus();
-        errText.textContent = err.message || 'Could not create account. Please try again.';
-        btn.disabled = false;
-        btn.textContent = 'Create Account';
-    }
-}
-
-let logoutPending = false;
-async function handleLogout() {
-    if (logoutPending) return;
-    logoutPending = true;
-    try {
-        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
-        const csrf = csrfMeta ? csrfMeta.getAttribute('content') : '';
-        const response = await fetch('/auth/logout', {
-            method: 'POST',
-            headers: { 'X-CSRF-Token': csrf, Accept: 'application/json' },
-        });
-        const data = await response.json().catch(() => ({}));
-        if (response.status === 401) { window.location.href = '/login?error=session_expired'; return; }
-        if (!response.ok || !data.success) throw new Error(data.error || 'Sign-out could not be completed. Please try again.');
-        window.location.href = '/login?signedOut=success';
-    } catch (error) {
-        showToast(error.message || 'Could not connect. Please try signing out again.', 'error');
-    } finally { logoutPending = false; }
-}
-
-// ── Theme Toggle ─────────────────────────────────────────
-function toggleTheme() {
-    const html = document.documentElement;
-    const current = html.getAttribute('data-theme');
-    const next = current === 'dark' ? 'light' : 'dark';
-    if (next === 'dark') {
-        html.setAttribute('data-theme', 'dark');
-    } else {
-        html.removeAttribute('data-theme');
-    }
-    localStorage.setItem('willow-theme', next);
-}
-
-// ── Toast Notification System ────────────────────────────
-(function () {
-    // Create toast container on load
-    let container;
-    function getContainer() {
-        if (container) return container;
-        container = document.createElement('div');
-        container.id = 'toastContainer';
-        container.style.cssText = 'position:fixed;top:20px;right:20px;z-index:99999;display:flex;flex-direction:column;gap:10px;pointer-events:none;max-width:420px;width:100%;';
-        document.body.appendChild(container);
-        return container;
-    }
-
-    const icons = {
-        success: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
-        error: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" x2="9" y1="9" y2="15"/><line x1="9" x2="15" y1="9" y2="15"/></svg>',
-        warning: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>',
-        info: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>',
-    };
-
-    const lightColors = {
-        success: { bg: '#ecfdf5', border: '#6ee7b7', text: '#065f46', icon: '#059669' },
-        error: { bg: '#fef2f2', border: '#fca5a5', text: '#991b1b', icon: '#dc2626' },
-        warning: { bg: '#fffbeb', border: '#fcd34d', text: '#92400e', icon: '#d97706' },
-        info: { bg: '#eff6ff', border: '#93c5fd', text: '#1e40af', icon: '#3b82f6' },
-    };
-    const darkColors = {
-        success: { bg: '#064e3b', border: '#065f46', text: '#d1fae5', icon: '#6ee7b7' },
-        error: { bg: '#7f1d1d', border: '#991b1b', text: '#fef2f2', icon: '#fca5a5' },
-        warning: { bg: '#78350f', border: '#92400e', text: '#fef3c7', icon: '#fcd34d' },
-        info: { bg: '#1e3a5f', border: '#1e40af', text: '#dbeafe', icon: '#93c5fd' },
-    };
-    function getColors() {
-        return document.documentElement.getAttribute('data-theme') === 'dark' ? darkColors : lightColors;
-    }
-
-    window.showToast = function (message, type, duration) {
-        type = type || 'info';
-        duration = duration || 4000;
-        const c = getContainer();
-        const colors = getColors();
-        const t = colors[type] || colors.info;
-        const toast = document.createElement('div');
-        toast.style.cssText = 'pointer-events:auto;display:flex;align-items:flex-start;gap:12px;padding:14px 18px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.12);border:1px solid ' + t.border + ';background:' + t.bg + ';color:' + t.text + ';font-size:0.9rem;line-height:1.5;transform:translateX(110%);transition:transform 0.35s cubic-bezier(0.22,1,0.36,1),opacity 0.3s;opacity:0;';
-        toast.innerHTML = '<div style="flex-shrink:0;color:' + t.icon + ';margin-top:1px;">' + (icons[type] || icons.info) + '</div>'
-            + '<div data-toast-message style="flex:1;font-weight:500;"></div>'
-            + '<button onclick="this.parentElement.remove()" style="flex-shrink:0;background:none;border:none;cursor:pointer;color:' + t.text + ';opacity:0.5;font-size:1.2rem;line-height:1;padding:0;">&times;</button>';
-        toast.querySelector('[data-toast-message]').textContent = message;
-        toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
-        c.appendChild(toast);
-        requestAnimationFrame(function () {
-            toast.style.transform = 'translateX(0)';
-            toast.style.opacity = '1';
-        });
-        setTimeout(function () {
-            toast.style.transform = 'translateX(110%)';
-            toast.style.opacity = '0';
-            setTimeout(function () { toast.remove(); }, 400);
-        }, duration);
-    };
-
-    // ── Confirm Dialog ────────────────────────────────────
-    window.showConfirm = function (message, title) {
-        return new Promise(function (resolve) {
-            const overlay = document.createElement('div');
-            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:99998;display:flex;align-items:center;justify-content:center;animation:willowFadeIn 0.2s;';
-
-            const dialog = document.createElement('div');
-            dialog.style.cssText = 'background:var(--white,#fff);color:var(--charcoal,#1a1a2e);border-radius:16px;padding:28px 32px;max-width:440px;width:90%;box-shadow:0 25px 60px rgba(0,0,0,0.2);border:1px solid var(--border-color,#e5e7eb);animation:willowSlideUp 0.25s cubic-bezier(0.22,1,0.36,1);';
-
-            const titleEl = title ? '<h3 style="margin:0 0 8px 0;font-size:1.1rem;font-weight:600;">' + title + '</h3>' : '';
-            dialog.innerHTML = titleEl
-                + '<p style="margin:0 0 24px 0;font-size:0.925rem;line-height:1.6;opacity:0.85;">' + message + '</p>'
-                + '<div style="display:flex;gap:10px;justify-content:flex-end;">'
-                + '<button id="_confirmCancel" style="padding:10px 22px;border-radius:8px;border:1px solid var(--border-color,#d1d5db);background:var(--gray-100,#f3f4f6);color:var(--charcoal,#374151);font-size:0.875rem;font-weight:500;cursor:pointer;transition:background 0.15s;">Cancel</button>'
-                + '<button id="_confirmOk" style="padding:10px 22px;border-radius:8px;border:none;background:var(--green-600,#16a34a);color:#fff;font-size:0.875rem;font-weight:600;cursor:pointer;transition:background 0.15s;">Confirm</button>'
-                + '</div>';
-
-            overlay.appendChild(dialog);
-            document.body.appendChild(overlay);
-
-            function close(val) {
-                overlay.style.opacity = '0';
-                overlay.style.transition = 'opacity 0.2s';
-                setTimeout(function () { overlay.remove(); }, 200);
-                resolve(val);
+        function renderAnswer(result) {
+            const box = el('div', { className: 'ask-message is-answer' }, el('p', { className: 'ask-answer-lead', text: result.answer }));
+            if (result.figure) box.append(el('p', { className: 'ask-answer-figure', 'data-private': '', text: result.figure }));
+            if (result.chart && global.WillowCharts) {
+                const holder = el('div', { className: 'ask-answer-section' });
+                if (result.chart.title) holder.append(el('h3', { text: result.chart.title }));
+                const target = el('div');
+                holder.append(target);
+                box.append(holder);
+                requestAnimationFrame(() => {
+                    if (result.chart.type === 'donut') global.WillowCharts.donut(target, result.chart.series, { size: 150, currency: result.chart.currency, legend: true });
+                    else global.WillowCharts.bars(target, result.chart.series, { currency: result.chart.currency });
+                });
             }
+            if (Array.isArray(result.accounts) && result.accounts.length) {
+                const section = el('div', { className: 'ask-answer-section' }, el('h3', { text: 'Relevant accounts' }));
+                result.accounts.slice(0, 5).forEach(account => section.append(
+                    el('a', { className: 'list-row', href: account.href || '/accounts' },
+                        el('span', { className: 'list-row-main' }, el('span', { className: 'list-row-title', text: account.name }), el('span', { className: 'list-row-sub', text: account.detail || '' })),
+                        el('span', { className: 'list-row-end' }, el('strong', { 'data-private': '', text: account.balance })))));
+                box.append(section);
+            }
+            if (Array.isArray(result.transactions) && result.transactions.length) {
+                const section = el('div', { className: 'ask-answer-section' }, el('h3', { text: result.transactionsTitle || 'Transactions' }));
+                result.transactions.slice(0, 5).forEach(txn => section.append(
+                    el('div', { className: 'list-row' },
+                        el('span', { className: 'list-row-main' }, el('span', { className: 'list-row-title', text: txn.description }), el('span', { className: 'list-row-sub', text: txn.detail || '' })),
+                        el('span', { className: 'list-row-end' }, el('strong', { 'data-private': '', className: txn.direction === 'credit' ? 'positive' : '', text: txn.amount })))));
+                box.append(section);
+            }
+            if (Array.isArray(result.items) && result.items.length) {
+                const section = el('div', { className: 'ask-answer-section' }, result.itemsTitle ? el('h3', { text: result.itemsTitle }) : null);
+                result.items.slice(0, 6).forEach(item => section.append(
+                    el('div', { className: 'list-row' },
+                        el('span', { className: 'list-row-main' }, el('span', { className: 'list-row-title', text: item.label }), item.detail ? el('span', { className: 'list-row-sub', text: item.detail }) : null),
+                        item.value ? el('span', { className: 'list-row-end' }, el('strong', { 'data-private': '', text: item.value })) : null)));
+                box.append(section);
+            }
+            if (Array.isArray(result.links) && result.links.length) {
+                const links = el('div', { className: 'ask-answer-links' });
+                result.links.forEach(link => links.append(el('a', { href: link.href }, link.label, icon('arrow-right', 'icon-sm'))));
+                box.append(links);
+            }
+            return box;
+        }
+    }
 
-            overlay.querySelector('#_confirmCancel').onclick = function () { close(false); };
-            overlay.querySelector('#_confirmOk').onclick = function () { close(true); };
-            overlay.addEventListener('click', function (e) { if (e.target === overlay) close(false); });
-            overlay.querySelector('#_confirmCancel').focus();
-        });
-    };
-})();
+    // ── Transactions: shared row and detail sheet ──────────────────────
+    const TXN_TYPES = { deposit: 'Money added', withdrawal: 'Withdrawal', transfer: 'Transfer', payment: 'Payment', refund: 'Refund', adjustment: 'Adjustment' };
 
-document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('[data-password-toggle]').forEach(button => {
-        button.addEventListener('click', () => {
-            const input = document.getElementById(button.getAttribute('aria-controls'));
-            const visible = input.type === 'password';
-            input.type = visible ? 'text' : 'password';
-            button.setAttribute('aria-pressed', String(visible));
-            button.setAttribute('aria-label', visible ? 'Hide password' : 'Show password');
+    function txnTitle(txn) {
+        return txn.counterparty || txn.description || TXN_TYPES[txn.type] || 'Transaction';
+    }
+
+    /** Builds a transaction row that opens the detail sheet. */
+    function txnRow(txn, options = {}) {
+        const credit = txn.direction === 'credit';
+        const detail = {
+            id: txn.id, description: txn.description, counterparty: txn.counterparty, type: txn.type, direction: txn.direction,
+            status: txn.status, amountFormatted: txn.amountFormatted || formatCents(txn.amount, txn.currency), currency: txn.currency,
+            categoryLabel: txn.categoryLabel, categoryIcon: txn.categoryIcon, created_at: txn.created_at, reference: txn.reference,
+            accountName: options.accountName || txn.accountName || '',
+        };
+        const sub = [txn.categoryLabel, options.accountName].filter(Boolean).join(' · ');
+        return el('li', null, el('button', { type: 'button', className: 'txn-row', 'data-txn': JSON.stringify(detail) },
+            el('span', { className: `txn-icon${credit ? ' is-credit' : ''}` }, icon(txn.categoryIcon || (credit ? 'arrow-down-left' : 'arrow-up-right'))),
+            el('span', { className: 'txn-main' },
+                el('span', { className: 'txn-title', text: txnTitle(txn) }),
+                el('span', { className: 'txn-sub' }, sub, txn.status && txn.status !== 'completed' ? el('span', { className: `status-pill is-${txn.status}`, text: txn.status }) : null)),
+            el('span', { className: `txn-amount${credit ? ' is-credit' : ''}`, 'data-private': '' },
+                `${credit ? '+' : '−'}${detail.amountFormatted}`,
+                el('small', { text: options.time ? formatDate(txn.created_at, 'time') : relativeDay(txn.created_at) }))));
+    }
+
+    function showTransaction(txn) {
+        const credit = txn.direction === 'credit';
+        const rows = [
+            ['Date', formatDate(txn.created_at, 'datetime')],
+            ['Type', TXN_TYPES[txn.type] || txn.type],
+            ['Category', txn.categoryLabel],
+            ['Account', txn.accountName],
+            ['Status', txn.status ? txn.status.charAt(0).toUpperCase() + txn.status.slice(1) : ''],
+            ['Description', txn.counterparty && txn.description !== txn.counterparty ? txn.description : ''],
+            ['Reference', txn.reference],
+        ].filter(([, value]) => value);
+        const dialog = el('dialog', { className: 'modal txn-sheet', 'aria-labelledby': 'txnSheetTitle' },
+            el('div', { className: 'modal-head' },
+                el('h2', { id: 'txnSheetTitle', className: 'visually-hidden', text: 'Transaction details' }),
+                el('button', { type: 'button', className: 'btn btn-ghost btn-icon', 'aria-label': 'Close', 'data-dialog-close': '' }, icon('x', 'icon-md'))),
+            el('div', { className: 'modal-body txn-sheet-body' },
+                el('span', { className: `txn-icon is-lg${credit ? ' is-credit' : ''}` }, icon(txn.categoryIcon || 'receipt')),
+                el('p', { className: 'txn-sheet-title', text: txnTitle(txn) }),
+                el('p', { className: `txn-sheet-amount${credit ? ' positive' : ''}`, 'data-private': '', text: `${credit ? '+' : '−'}${txn.amountFormatted}` }),
+                el('dl', { className: 'dl-rows txn-sheet-rows' }, rows.map(([label, value]) => el('div', null, el('dt', { text: label }), el('dd', { text: value })))),
+                el('p', { className: 'sim-note' }, icon('info', 'icon-sm'), 'Simulated transaction. No real money moved.')));
+        doc.body.append(dialog);
+        enableBackdropClose(dialog);
+        dialog.querySelector('[data-dialog-close]').addEventListener('click', () => closeDialog(dialog));
+        dialog.addEventListener('close', () => { doc.body.classList.remove('has-dialog'); dialog.remove(); });
+        openDialog(dialog);
+    }
+
+    /**
+     * Multi-step flows: panes marked [data-flow-pane="n"], optional stepper dots
+     * [data-flow-dot="n"] and a [data-flow-label] that reads "Step n of N · Name".
+     */
+    function flow(root, { labels = [], onShow } = {}) {
+        const panes = Array.from(root.querySelectorAll('[data-flow-pane]'));
+        const dots = Array.from(root.querySelectorAll('[data-flow-dot]'));
+        const label = root.querySelector('[data-flow-label]');
+        let current = 0;
+        function show(index, { focus = true } = {}) {
+            current = Math.max(0, Math.min(index, panes.length - 1));
+            panes.forEach((pane, i) => { pane.hidden = i !== current; });
+            dots.forEach((dot, i) => {
+                dot.classList.toggle('is-done', i < current);
+                dot.classList.toggle('is-current', i === current);
+            });
+            if (label) label.textContent = `Step ${current + 1} of ${panes.length}${labels[current] ? ` · ${labels[current]}` : ''}`;
+            const heading = panes[current].querySelector('h2, h1');
+            if (focus && heading) {
+                if (!heading.hasAttribute('tabindex')) heading.setAttribute('tabindex', '-1');
+                heading.focus({ preventScroll: true });
+                const top = root.getBoundingClientRect().top + global.scrollY - 90;
+                if (global.scrollY > top) global.scrollTo({ top, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+            }
+            if (onShow) onShow(current, panes[current]);
+        }
+        show(0, { focus: false });
+        return { show, next: () => show(current + 1), back: () => show(current - 1), get index() { return current; }, panes };
+    }
+
+    /** Local-time greeting, today's date and dismissible notices. */
+    function setupLocalDetails() {
+        const hour = new Date().getHours();
+        const text = hour < 5 || hour >= 22 ? 'Good evening' : hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+        doc.querySelectorAll('[data-greeting]').forEach(node => { node.textContent = text; });
+        doc.querySelectorAll('[data-today]').forEach(node => {
+            node.textContent = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date());
         });
-    });
-    const form = document.getElementById('registerForm');
-    if (!form) return;
-    const steps = Array.from(form.querySelectorAll('[data-register-step]'));
-    const setStep = index => {
-        steps.forEach((step, i) => {
-            step.hidden = i !== index;
-            step.querySelectorAll('input').forEach(input => { input.disabled = i !== index; });
+        doc.querySelectorAll('[data-dismiss]').forEach(button => button.addEventListener('click', () => {
+            const box = button.closest('[data-dismissible]');
+            if (box) box.remove();
+        }));
+    }
+
+    function setupTransactionDetails() {
+        doc.addEventListener('click', event => {
+            const row = event.target.closest && event.target.closest('[data-txn]');
+            if (!row) return;
+            try { showTransaction(JSON.parse(row.dataset.txn)); } catch (error) { /* malformed row */ }
         });
-        document.getElementById('registerStepLabel').textContent = 'Step ' + (index + 1) + ' of 2';
-        document.getElementById('registerStepName').textContent = index ? 'Account security' : 'Personal details';
-        document.getElementById('registerProgress').style.width = index ? '100%' : '50%';
-        document.querySelector('.auth-progress-track').setAttribute('aria-valuenow', String(index + 1));
-        steps[index].querySelector('input').focus();
+    }
+
+    // ── Idle sign-out ───────────────────────────────────────────────────
+    const idle = { ms: 0, warnTimer: null, endTimer: null, tick: null, dialog: null };
+
+    function noteActivity() {
+        if (!idle.ms) return;
+        clearTimeout(idle.warnTimer);
+        clearTimeout(idle.endTimer);
+        clearInterval(idle.tick);
+        if (idle.dialog) { closeDialog(idle.dialog); idle.dialog.remove(); idle.dialog = null; }
+        const warning = Math.min(60000, idle.ms / 2);
+        idle.warnTimer = setTimeout(() => warnIdle(warning), idle.ms - warning);
+        idle.endTimer = setTimeout(() => redirectToSignIn('session_timeout'), idle.ms + 1500);
+    }
+
+    function warnIdle(remaining) {
+        const ends = Date.now() + remaining;
+        const countdown = el('strong', { className: 'num' });
+        const update = () => {
+            const left = Math.max(0, Math.round((ends - Date.now()) / 1000));
+            countdown.textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+        };
+        update();
+        const stay = el('button', { type: 'button', className: 'btn btn-primary', text: 'Stay signed in' });
+        const leave = el('button', { type: 'button', className: 'btn btn-secondary', text: 'Sign out' });
+        idle.dialog = el('dialog', { className: 'modal', 'aria-labelledby': 'idleTitle', 'aria-describedby': 'idleText' },
+            el('div', { className: 'modal-head' }, el('h2', { id: 'idleTitle', text: 'Are you still there?' })),
+            el('div', { className: 'modal-body' }, el('p', { id: 'idleText', className: 'secondary' }, 'For your security, Willow will sign you out in ', countdown, ' unless you choose to stay.')),
+            el('div', { className: 'modal-foot' }, leave, stay));
+        doc.body.append(idle.dialog);
+        idle.tick = setInterval(update, 1000);
+        stay.addEventListener('click', async () => {
+            stay.classList.add('is-loading');
+            try { await api('/auth/session'); } catch (error) { redirectToSignIn('session_timeout'); }
+        });
+        leave.addEventListener('click', handleLogout);
+        idle.dialog.addEventListener('cancel', event => event.preventDefault());
+        openDialog(idle.dialog);
+        stay.focus();
+    }
+
+    function setupIdleTimeout() {
+        const minutes = Number(doc.body && doc.body.dataset.idleMinutes);
+        if (!minutes || !doc.querySelector('[data-app]')) return;
+        idle.ms = minutes * 60000;
+        noteActivity();
+    }
+
+    // ── Sign-out ────────────────────────────────────────────────────────
+    let logoutPending = false;
+    async function handleLogout() {
+        if (logoutPending) return;
+        logoutPending = true;
+        try {
+            const response = await fetch('/auth/logout', {
+                method: 'POST',
+                headers: { 'X-CSRF-Token': csrfToken(), Accept: 'application/json' },
+            });
+            const data = await response.json().catch(() => ({}));
+            if (response.status === 401) { global.location.href = '/login?error=session_expired'; return; }
+            if (!response.ok || !data.success) throw new Error(data.error || 'Sign-out could not be completed. Please try again.');
+            global.location.href = '/login?signedOut=success';
+        } catch (error) {
+            global.showToast(error.message || 'Could not connect. Please try signing out again.', 'error');
+        } finally {
+            logoutPending = false;
+        }
+    }
+
+    // ── Password visibility ─────────────────────────────────────────────
+    function setupPasswordToggles() {
+        doc.querySelectorAll('[data-password-toggle]').forEach(button => {
+            button.addEventListener('click', () => {
+                const input = doc.getElementById(button.getAttribute('aria-controls'));
+                if (!input) return;
+                const show = input.type === 'password';
+                input.type = show ? 'text' : 'password';
+                button.setAttribute('aria-pressed', String(show));
+                button.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+            });
+        });
+    }
+
+    function setupRangeFill(root = doc) {
+        root.querySelectorAll('input[type="range"].range').forEach(range => {
+            const update = () => {
+                const min = Number(range.min || 0);
+                const max = Number(range.max || 100);
+                range.style.setProperty('--range-progress', `${((Number(range.value) - min) / (max - min)) * 100}%`);
+            };
+            range.addEventListener('input', update);
+            update();
+        });
+    }
+
+    function init() {
+        syncThemeControls();
+        syncPrivacyControls();
+        doc.querySelectorAll('[data-theme-toggle]').forEach(button => button.addEventListener('click', toggleTheme));
+        doc.querySelectorAll('[data-privacy-toggle]').forEach(button => button.addEventListener('click', togglePrivacy));
+        doc.querySelectorAll('[data-logout]').forEach(button => button.addEventListener('click', handleLogout));
+        setupMenus();
+        setupSheets();
+        setupSiteHeader();
+        setupAppTopbar();
+        setupReveals();
+        setupCountUps();
+        setupAskWillow();
+        setupPasswordToggles();
+        setupRangeFill();
+        setupTransactionDetails();
+        setupLocalDetails();
+        setupIdleTimeout();
+    }
+
+    global.Willow = {
+        api, csrfToken, el, icon, empty, skeletonRows, showToast, showConfirm, openDialog, closeDialog, enableBackdropClose,
+        formatMoney, formatCents, formatNumber, formatCompact, formatPercent, formatQuantity, formatDate, relativeDay, parseDate,
+        countUp, prefersReducedMotion, setupRangeFill, toggleTheme, txnRow, showTransaction, flow,
     };
-    document.getElementById('registerNext').addEventListener('click', () => {
-        if (Array.from(steps[0].querySelectorAll('input')).every(input => input.reportValidity())) setStep(1);
-    });
-    document.getElementById('registerBack').addEventListener('click', () => setStep(0));
-    steps[1].querySelectorAll('input').forEach(input => { input.disabled = true; });
-    const password = document.getElementById('password');
-    password.addEventListener('input', () => {
-        const value = password.value;
-        const rules = { length: value.length >= 8 && value.length <= 128, upper: /[A-Z]/.test(value), lower: /[a-z]/.test(value), number: /[0-9]/.test(value) };
-        Object.entries(rules).forEach(([rule, valid]) => document.querySelector('[data-password-rule="' + rule + '"]').classList.toggle('is-valid', valid));
-        const met = Object.values(rules).filter(Boolean).length;
-        document.getElementById('passwordStrengthBar').style.width = met * 25 + '%';
-        document.getElementById('passwordStrengthText').textContent = met === 4 ? 'Password meets the requirements' : 'Meet all four password requirements';
-        password.setCustomValidity(met === 4 || !value ? '' : 'Use 8–128 characters with uppercase, lowercase and a number.');
-    });
-    document.getElementById('confirmPassword').addEventListener('input', event => {
-        const matches = event.target.value === password.value;
-        document.getElementById('confirmPasswordError').hidden = matches;
-        event.target.setCustomValidity(matches ? '' : 'Passwords must match.');
-    });
-});
+    global.showToast = showToast;
+    global.showConfirm = showConfirm;
+    global.handleLogout = handleLogout;
+    global.toggleTheme = toggleTheme;
+
+    if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', init);
+    else init();
+})(typeof window !== 'undefined' ? window : this);

@@ -1,0 +1,14 @@
+<%
+  const credit = txn.direction === 'credit';
+  const rowAccount = typeof accountName !== 'undefined' ? accountName : '';
+  const typeTitles = { deposit: 'Money added', withdrawal: 'Withdrawal', transfer: 'Transfer', payment: 'Payment', refund: 'Refund', adjustment: 'Adjustment' };
+  const title = txn.counterparty || txn.description || typeTitles[txn.type] || 'Transaction';
+  const detail = { id: txn.id, description: txn.description, counterparty: txn.counterparty, type: txn.type, direction: txn.direction, status: txn.status, amountFormatted: txn.amountFormatted, currency: txn.currency, categoryLabel: txn.categoryLabel, categoryIcon: txn.categoryIcon, created_at: txn.created_at, reference: txn.reference, accountName: rowAccount };
+%><li><button type="button" class="txn-row" data-txn="<%= JSON.stringify(detail) %>">
+    <span class="txn-icon<%= credit ? ' is-credit' : '' %>"><%- icon(txn.categoryIcon || (credit ? 'arrow-down-left' : 'arrow-up-right')) %></span>
+    <span class="txn-main">
+        <span class="txn-title"><%= title %></span>
+        <span class="txn-sub"><%= [txn.categoryLabel, rowAccount].filter(Boolean).join(' · ') %><% if (txn.status && txn.status !== 'completed') { %><span class="status-pill is-<%= txn.status %>"><%= txn.status %></span><% } %></span>
+    </span>
+    <span class="txn-amount<%= credit ? ' is-credit' : '' %>" data-private><%= credit ? '+' : '−' %><%= txn.amountFormatted %><small><%= relativeDay(txn.created_at) %></small></span>
+</button></li>

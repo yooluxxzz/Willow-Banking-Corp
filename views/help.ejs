@@ -1,15 +1,132 @@
-<%- include('partials/header') %>
-<body class="account-overview-page wealth-page">
-<div class="app-layout"><%- include('partials/sidebar') %><main class="main-content wealth-main">
-    <header class="wealth-heading"><div><p class="wealth-kicker">WILLOW / SUPPORT</p><h1>How can we help?</h1><p>Clear answers about the Willow demo and the tools available here.</p></div><span class="wealth-demo-label">DEMO SUPPORT</span></header>
-    <section class="help-search-panel"><label for="helpSearch">Search help topics</label><input id="helpSearch" type="search" placeholder="Try “simulated transfers” or “account security”" autocomplete="off"><p id="helpSearchStatus" role="status" aria-live="polite">Browse the topics below.</p></section>
-    <div class="help-grid" id="helpTopics">
-        <section class="help-topic"><p class="wealth-kicker">ACCOUNTS</p><h2>Accounts and balances</h2><details><summary>Are the balances real?</summary><p>No. Willow is a fictional demo. Balances and ledger entries shown in this application are simulated and are not connected to a financial institution.</p></details><details><summary>Can I open more than one account?</summary><p>Signed-in demo customers can create checking, savings or single-owner business checking accounts. New accounts start at zero and do not receive a card automatically.</p></details></section>
-        <section class="help-topic"><p class="wealth-kicker">MOVING MONEY</p><h2>Transfers and cards</h2><details><summary>Do transfers move real money?</summary><p>No. Transfers update only the demo ledger inside this application. No external payments or bank rails are connected.</p></details><details><summary>Can a physical card be shipped?</summary><p>No. Card controls and replacement cards are simulations. Nothing is issued or shipped.</p></details></section>
-        <section class="help-topic"><p class="wealth-kicker">WEALTH</p><h2>Markets and investing</h2><details><summary>Are market quotes live?</summary><p>Quotes are fetched server-side from an external market-data source, may be delayed or unavailable, and are shown for demonstration only. No orders are sent to a broker.</p></details><details><summary>What happens when I place a demo order?</summary><p>The simulated portfolio and its separate activity record are updated using the available quote. It does not affect your banking balance and does not purchase real assets.</p></details></section>
-        <section class="help-topic"><p class="wealth-kicker">SECURITY</p><h2>Access and privacy</h2><details><summary>Where can I review sign-ins?</summary><p>Open Security from the signed-in navigation to review this browser session, sign-in history and other available sessions.</p></details><details><summary>Where can I get direct assistance?</summary><p>This fictional demo has no staffed support operation. The Contact page describes the available project/demo context.</p></details></section>
-    </div>
-    <p class="wealth-footnote">This is product guidance for a fictional demo, not financial, legal or security advice.</p>
-</main></div>
-<script src="/js/help.js" defer></script>
-<%- include('partials/footer') %>
+<%
+  const inApp = Boolean(user && user.role !== 'admin');
+  const searchIndex = categories.flatMap(cat => cat.articles.map(article => ({ c: cat.title, s: cat.slug, a: article.slug, q: article.question, t: article.answer.join(' ').slice(0, 400) })));
+  const popular = categories.slice(0, 6).map(cat => ({ cat, article: cat.articles[0] }));
+  const topics = [['accounts','Accounts'],['cards','Cards'],['payments','Payments'],['transfers','Transfers'],['investing','Investing'],['crypto','Crypto'],['loans','Loans'],['security','Security'],['business','Business'],['other','Something else']];
+%>
+<% if (inApp) { %>
+<%- include('partials/app-start', { css: ['site'] }) %>
+<% } else { %>
+<%- include('partials/head', { css: ['site'], bodyClass: 'help-page' }) %>
+<%- include('partials/site-header') %>
+<main id="main">
+<% } %>
+
+<% if (!category) { %>
+    <section class="help-hero<%= inApp ? ' is-in-app' : '' %>">
+        <div class="container-narrow">
+            <p class="eyebrow">Help center</p>
+            <h1 class="h1">How can we help?</h1>
+            <p class="lede" style="margin-inline:auto">Search answers about accounts, cards, payments, investing, security and more.</p>
+            <div class="help-search" role="search">
+                <%- icon('search') %>
+                <label for="helpSearch" class="visually-hidden">Search help articles</label>
+                <input id="helpSearch" type="search" placeholder="Try “freeze a card” or “scheduled transfer”" autocomplete="off" aria-controls="helpResults" data-help-search>
+            </div>
+            <div class="help-results" id="helpResults" data-help-results aria-live="polite"></div>
+        </div>
+    </section>
+
+    <section class="section-tight">
+        <div class="container">
+            <div class="section-heading"><h2>Browse by topic</h2></div>
+            <div class="help-categories">
+                <% categories.forEach(cat => { %>
+                <a class="help-category card-interactive" href="/help/<%= cat.slug %>">
+                    <span class="icon-tile"><%- icon(cat.icon) %></span>
+                    <div><h3><%= cat.title %></h3><p><%= cat.summary %></p><small><%= cat.articles.length %> articles</small></div>
+                </a>
+                <% }) %>
+            </div>
+        </div>
+    </section>
+
+    <section class="section-tight">
+        <div class="container faq-layout">
+            <div>
+                <p class="eyebrow">Popular questions</p>
+                <h2 class="h3">What people ask most.</h2>
+            </div>
+            <div class="faq">
+                <% popular.forEach(({ cat, article }) => { %>
+                <details>
+                    <summary><%= article.question %><span class="faq-icon" aria-hidden="true"><%- icon('plus', 'icon-sm') %></span></summary>
+                    <div class="faq-answer"><% article.answer.forEach(paragraph => { %><p><%= paragraph %></p><% }) %><p><a class="text-link" href="/help/<%= cat.slug %>#<%= article.slug %>">More in <%= cat.title %></a></p></div>
+                </details>
+                <% }) %>
+            </div>
+        </div>
+    </section>
+
+    <section class="section" id="contact">
+        <div class="container">
+            <div class="contact-panel">
+                <div class="stack">
+                    <p class="eyebrow">Still need help?</p>
+                    <h2 class="h3">Send us a message.</h2>
+                    <p class="secondary">Messages are saved with a reference so you can see how support would work. Willow Demo has no staffed support team, so no one will reply — and please never share real passwords or financial details.</p>
+                    <ul class="contact-options" role="list">
+                        <li><span class="icon-tile icon-tile-sm"><%- icon('book') %></span><div><strong>Guides</strong><a class="text-link" href="/learn">Read Willow Education</a></div></li>
+                        <li><span class="icon-tile icon-tile-sm"><%- icon('shield') %></span><div><strong>Account security</strong><a class="text-link" href="<%= inApp ? '/security' : '/security-info' %>"><%= inApp ? 'Open the Security center' : 'How Willow protects you' %></a></div></li>
+                        <li><span class="icon-tile icon-tile-sm"><%- icon('info') %></span><div><strong>About the demo</strong><a class="text-link" href="/demo">What’s simulated</a></div></li>
+                    </ul>
+                </div>
+                <form class="card card-pad-lg" data-support-form novalidate>
+                    <% if (!user) { %>
+                    <div class="field"><label for="supportName">Your name</label><input class="input" id="supportName" name="name" autocomplete="name" required maxlength="100"></div>
+                    <div class="field"><label for="supportEmail">Email</label><input class="input" id="supportEmail" name="email" type="email" autocomplete="email" required maxlength="255"></div>
+                    <% } else { %>
+                    <p class="text-sm secondary mb-4">Sending as <strong><%= user.full_name %></strong> · <%= user.email %></p>
+                    <% } %>
+                    <div class="field"><label for="supportTopic">Topic</label><select class="select" id="supportTopic" name="topic" required><% topics.forEach(([value, label]) => { %><option value="<%= value %>"><%= label %></option><% }) %></select></div>
+                    <div class="field"><label for="supportMessage">How can we help?</label><textarea class="textarea" id="supportMessage" name="message" required minlength="10" maxlength="2000" placeholder="Describe what you were trying to do."></textarea><p class="field-help">10–2,000 characters. Don’t include passwords or real account details.</p></div>
+                    <p class="field-error" data-support-error role="alert" hidden></p>
+                    <div class="form-actions"><button type="submit" class="btn btn-primary">Send message</button></div>
+                    <div class="notice notice-success mt-4" data-support-success hidden><%- icon('check-circle') %><div data-support-success-text></div></div>
+                </form>
+            </div>
+        </div>
+    </section>
+<% } else { %>
+    <section class="<%= inApp ? '' : 'page-hero' %>">
+        <div class="container">
+            <nav aria-label="Breadcrumb"><ol class="breadcrumbs"><li><a href="/help">Help center</a></li><li aria-current="page"><%= category.title %></li></ol></nav>
+            <div class="help-category-head">
+                <span class="icon-tile"><%- icon(category.icon) %></span>
+                <div><h1 class="h2"><%= category.title %></h1><p class="secondary"><%= category.summary %></p></div>
+            </div>
+        </div>
+    </section>
+    <section class="section-tight">
+        <div class="container help-layout">
+            <nav class="help-sidebar" aria-label="Help topics">
+                <ul role="list">
+                    <% categories.forEach(cat => { %><li><a href="/help/<%= cat.slug %>"<%- cat.slug === category.slug ? ' aria-current="page"' : '' %>><%- icon(cat.icon, 'icon-sm') %><%= cat.title %></a></li><% }) %>
+                </ul>
+            </nav>
+            <div>
+                <div class="faq">
+                    <% category.articles.forEach((article, index) => { %>
+                    <details id="<%= article.slug %>"<%= index === 0 ? ' open' : '' %>>
+                        <summary><%= article.question %><span class="faq-icon" aria-hidden="true"><%- icon('plus', 'icon-sm') %></span></summary>
+                        <div class="faq-answer">
+                            <% article.answer.forEach(paragraph => { %><p><%= paragraph %></p><% }) %>
+                            <% if (article.links && article.links.length) { %><p class="cluster mt-4"><% article.links.forEach(link => { %><a class="chip" href="<%= link.href %>"><%= link.label %> <%- icon('arrow-right', 'icon-sm') %></a><% }) %></p><% } %>
+                        </div>
+                    </details>
+                    <% }) %>
+                </div>
+                <div class="disclosure-note mt-8"><%- icon('help') %><p>Didn’t find your answer? <a class="text-link" href="/help#contact">Send a message</a> or browse <a class="text-link" href="/learn">Willow Education</a>.</p></div>
+            </div>
+        </div>
+    </section>
+<% } %>
+<script type="application/json" id="helpIndex"><%- JSON.stringify(searchIndex).replace(/</g, '\\u003c') %></script>
+
+<% if (inApp) { %>
+<%- include('partials/app-end', { js: ['help'] }) %>
+<% } else { %>
+</main>
+<%- include('partials/site-footer') %>
+<%- include('partials/foot', { js: ['help'] }) %>
+<% } %>

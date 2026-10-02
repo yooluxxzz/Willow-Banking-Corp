@@ -1,0 +1,108 @@
+<%
+  const symbols = { USD: '$', EUR: '€', GBP: '£', ZAR: 'R', MZN: 'MT' };
+  const held = new Set(accounts.map(account => account.currency));
+  const missing = Object.values(currencies).filter(item => !held.has(item.code));
+  const converterAccounts = accounts.map(account => ({ id: account.id, name: account.displayName, masked: account.maskedNumber, currency: account.currency, available: account.available_balance, balance: account.balanceFormatted }));
+%><%- include('../partials/app-start', { css: [] }) %>
+
+<header class="page-head">
+    <div class="page-head-copy">
+        <h1 class="page-head-title">International</h1>
+        <p class="page-head-sub">Hold money in five currencies and convert between your accounts at indicative rates.</p>
+    </div>
+    <div class="page-head-actions">
+        <a class="btn btn-secondary" href="/accounts/new?type=currency"><%- icon('plus') %> Currency account</a>
+    </div>
+</header>
+
+<section aria-labelledby="balancesTitle">
+    <h2 class="visually-hidden" id="balancesTitle">Balances by currency</h2>
+    <div class="currency-tiles">
+        <% totals.byCurrency.forEach(row => { const info = currencies[row.currency] || { name: row.currency }; %>
+        <div class="currency-tile">
+            <div class="currency-tile-top"><span class="currency-flag" aria-hidden="true"><%= symbols[row.currency] || row.currency %></span><span class="label"><%= row.currency %></span></div>
+            <p class="figure figure-md" data-private><%= row.totalFormatted %></p>
+            <p class="text-xs muted"><%= info.name %> · <%= row.count %> account<%= row.count === 1 ? '' : 's' %></p>
+        </div>
+        <% }) %>
+        <% missing.slice(0, 2).forEach(item => { %>
+        <a class="currency-tile is-new" href="/accounts/new?type=currency&amp;currency=<%= item.code %>">
+            <div class="currency-tile-top"><span class="currency-flag" aria-hidden="true"><%= item.symbol %></span><span class="label"><%= item.code %></span></div>
+            <p class="text-sm"><strong>Open a <%= item.code %> account</strong></p>
+            <p class="text-xs muted"><%= item.name %></p>
+        </a>
+        <% }) %>
+    </div>
+</section>
+
+<div class="layout-main-aside mt-8">
+    <section class="panel converter" aria-labelledby="convertTitle" data-converter>
+        <div class="panel-head"><h2 id="convertTitle">Convert between your accounts</h2><span class="sim-tag">Simulated</span></div>
+        <% if (accounts.length < 2 || held.size < 2) { %>
+        <div class="empty is-compact"><div class="empty-art"><%- icon('swap') %></div><h3>Add a second currency</h3><p>Open an account in EUR, GBP, MZN or ZAR to convert between currencies.</p><a class="btn btn-primary btn-sm" href="/accounts/new?type=currency">Open a currency account</a></div>
+        <% } else { %>
+        <form id="convertForm" novalidate>
+            <div class="convert-grid">
+                <div class="convert-side">
+                    <div class="field">
+                        <label for="convertFrom">From</label>
+                        <select class="select" id="convertFrom" name="fromAccountId"></select>
+                    </div>
+                    <div class="amount-input mt-3"><span class="amount-currency" data-from-symbol>$</span><input class="input amount-field" id="convertAmount" name="amount" inputmode="decimal" autocomplete="off" placeholder="0.00" aria-label="Amount to convert" aria-describedby="convertError"></div>
+                    <p class="text-xs muted mt-2" data-from-available></p>
+                </div>
+                <button type="button" class="convert-swap" data-swap aria-label="Swap accounts"><%- icon('swap') %></button>
+                <div class="convert-side">
+                    <div class="field">
+                        <label for="convertTo">To</label>
+                        <select class="select" id="convertTo" name="toAccountId"></select>
+                    </div>
+                    <div class="convert-result mt-3" aria-live="polite">
+                        <span class="label">You’ll receive about</span>
+                        <strong class="figure" data-converted data-private>—</strong>
+                    </div>
+                </div>
+            </div>
+            <p class="convert-rate" data-rate><%- icon('clock', 'icon-sm') %> Enter an amount to see the indicative rate.</p>
+            <p class="field-error" id="convertError" role="alert" hidden></p>
+            <div class="form-actions"><button type="submit" class="btn btn-primary" data-convert-review disabled>Review conversion</button></div>
+        </form>
+        <% } %>
+    </section>
+
+    <aside class="col-stack">
+        <section class="panel" aria-labelledby="ratesTitle">
+            <div class="panel-head"><h2 id="ratesTitle">Indicative rates</h2><span class="text-xs muted" data-rates-status>Loading…</span></div>
+            <div data-rates-board></div>
+            <p class="text-xs muted mt-4">Mid-market rates from delayed market data, for illustration only. No fees or spreads are modelled and no real currency is exchanged.</p>
+        </section>
+        <section class="panel" aria-labelledby="abroadTitle">
+            <div class="panel-head"><h2 id="abroadTitle">Paying people abroad</h2></div>
+            <p class="text-sm secondary">Send from a currency account to another Willow customer and they’ll receive it in the same currency — if they hold an account in it.</p>
+            <a class="btn btn-secondary btn-sm mt-4" href="/transfers"><%- icon('send', 'icon-sm') %> Send money</a>
+        </section>
+    </aside>
+</div>
+
+<dialog class="modal" id="convertReview" aria-labelledby="convertReviewTitle">
+    <div class="modal-head"><h2 id="convertReviewTitle">Confirm conversion</h2></div>
+    <div class="modal-body">
+        <div class="convert-summary">
+            <div><span class="label">You convert</span><strong class="figure" data-review-from data-private></strong></div>
+            <%- icon('arrow-right') %>
+            <div><span class="label">You receive about</span><strong class="figure" data-review-to data-private></strong></div>
+        </div>
+        <dl class="dl-rows mt-5">
+            <div><dt>Rate</dt><dd data-review-rate></dd></div>
+            <div><dt>From</dt><dd data-review-from-account></dd></div>
+            <div><dt>To</dt><dd data-review-to-account></dd></div>
+            <div><dt>Fee</dt><dd>None</dd></div>
+        </dl>
+        <p class="text-sm muted mt-4">The final amount uses the latest indicative rate when you confirm. This is a simulated conversion — no real currency is exchanged.</p>
+        <p class="field-error mt-3" data-review-error role="alert" hidden></p>
+    </div>
+    <div class="modal-foot"><button type="button" class="btn btn-secondary" data-dialog-close>Cancel</button><button type="button" class="btn btn-primary" data-convert-confirm>Convert</button></div>
+</dialog>
+
+<script type="application/json" id="fxData"><%- JSON.stringify({ accounts: converterAccounts }).replace(/</g, '\\u003c') %></script>
+<%- include('../partials/app-end', { js: ['international'] }) %>

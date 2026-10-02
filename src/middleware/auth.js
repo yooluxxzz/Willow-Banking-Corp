@@ -2,6 +2,7 @@
  * Authentication middleware
  */
 
+const config = require('../config');
 const { signInUrl, wantsJson } = require('../services/sign-in');
 
 function requireAuth(req, res, next) {
@@ -49,6 +50,18 @@ function loadUser(req, res, next) {
             }
             return res.redirect(signInUrl(req, 'session_expired'));
         }
+        const now = Date.now();
+        const idleTimeout = config.session.idleTimeoutMs;
+        if (idleTimeout && req.session.lastSeenAt && now - req.session.lastSeenAt > idleTimeout) {
+            req.session.destroy(() => {});
+            res.clearCookie('willow.sid');
+            if (wantsJson(req)) {
+                return res.status(401).json({ error: 'You were signed out after a period of inactivity. Please sign in again.', code: 'session_timeout' });
+            }
+            return res.redirect(signInUrl(req, 'session_timeout'));
+        }
+        // Background requests (marked by the client) don't count as activity.
+        if (!req.get('X-Willow-Passive')) req.session.lastSeenAt = now;
         if (user) {
             if (user.status !== 'active' && user.role !== 'admin') {
                 req.session.destroy(() => { });

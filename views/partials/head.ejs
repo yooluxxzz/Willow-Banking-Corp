@@ -1,0 +1,38 @@
+<%
+  const pageStyles = typeof css !== 'undefined' ? css : [];
+  const metaDescription = typeof description !== 'undefined' && description ? description : 'Willow brings banking, investing and building wealth together in one intelligent financial experience. A fictional demo bank — no real money moves.';
+  const htmlClass = typeof htmlClassName !== 'undefined' ? htmlClassName : '';
+%><!DOCTYPE html>
+<html lang="en" class="<%= htmlClass %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title><%= pageTitle(typeof title !== 'undefined' ? title : '') %></title>
+    <meta name="description" content="<%= metaDescription %>">
+    <meta name="theme-color" content="#F5F3ED" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#09130F" media="(prefers-color-scheme: dark)">
+    <meta property="og:site_name" content="Willow">
+    <meta property="og:title" content="<%= pageTitle(typeof title !== 'undefined' ? title : '') %>">
+    <meta property="og:description" content="<%= metaDescription %>">
+    <% if (typeof noIndex !== 'undefined' && noIndex) { %><meta name="robots" content="noindex"><% } %>
+    <link rel="icon" href="<%= asset('/images/favicon.svg') %>" type="image/svg+xml">
+    <meta name="willow-icons" content="<%= asset('/images/icons.svg') %>">
+    <link rel="preload" href="/fonts/mona-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="<%= asset('/css/willow.css') %>">
+    <% pageStyles.forEach(name => { %><link rel="stylesheet" href="<%= asset('/css/' + name + '.css') %>">
+    <% }) %>
+    <% if (typeof csrfToken !== 'undefined') { %><meta name="csrf-token" content="<%= csrfToken %>"><% } %>
+    <script>
+        (function () {
+            var root = document.documentElement;
+            try {
+                var theme = localStorage.getItem('willow-theme');
+                if (theme === 'dark' || (!theme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) root.setAttribute('data-theme', 'dark');
+                if (localStorage.getItem('willow-private') === '1') root.classList.add('is-private');
+            } catch (error) { /* storage unavailable */ }
+            root.classList.add('js');
+        })();
+    </script>
+</head>
+<body class="<%= typeof bodyClass !== 'undefined' ? bodyClass : '' %>"<% if (typeof idleWatch !== 'undefined' && idleWatch && typeof user !== 'undefined' && user && idleMinutes) { %> data-idle-minutes="<%= idleMinutes %>"<% } %>>
+<a class="skip-link" href="#main">Skip to main content</a>

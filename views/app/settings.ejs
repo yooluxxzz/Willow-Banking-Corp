@@ -1,0 +1,132 @@
+<%
+  const isGuest = Boolean(profile && profile.is_guest);
+  const alerts = [
+    ['alertTransactions', 'Payments and transfers', 'Money in and out of your accounts'],
+    ['alertCards', 'Card activity', 'Freezes, new cards and card payments'],
+    ['alertSecurity', 'Security', 'Sign-ins, password and verification changes'],
+    ['alertMarkets', 'Markets', 'Updates about your demo portfolio and watchlist'],
+    ['alertProductNews', 'Willow news', 'New features in the demo'],
+  ];
+%><%- include('../partials/app-start', { css: [] }) %>
+
+<header class="page-head">
+    <div class="page-head-copy">
+        <h1 class="page-head-title">Settings</h1>
+        <p class="page-head-sub">Your profile, sign-in, alerts and privacy.</p>
+    </div>
+</header>
+<input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+<nav class="settings-nav" aria-label="Settings sections">
+    <a href="#profile">Profile</a><% if (isGuest) { %><a href="#keep">Keep this profile</a><% } %><a href="#password">Password</a><a href="#recovery">Recovery codes</a><a href="#alerts">Alerts</a><a href="#privacy">Privacy</a><a href="#appearance">Appearance</a>
+</nav>
+
+<div class="panel settings-panel">
+    <section class="settings-section" id="profile" aria-labelledby="profileTitle">
+        <div class="settings-section-intro"><h2 id="profileTitle">Profile</h2><p>How you appear in Willow.</p></div>
+        <form data-settings-form="profile" novalidate>
+            <div class="field"><label for="fullName">Full name</label><input class="input" id="fullName" name="fullName" value="<%= user.full_name %>" required maxlength="100" autocomplete="name"></div>
+            <div class="field-grid">
+                <div class="field"><label for="phone">Phone <span class="optional">· optional</span></label><input class="input" id="phone" name="phone" type="tel" value="<%= user.phone || '' %>" maxlength="40" autocomplete="tel"></div>
+                <div class="field"><label for="emailShown">Email</label><input class="input" id="emailShown" value="<%= user.email %>" readonly></div>
+            </div>
+            <dl class="dl-rows mt-5">
+                <div><dt>Customer ID</dt><dd><span class="mono"><%= user.customer_id %></span> <button type="button" class="btn btn-ghost btn-sm" data-copy="<%= user.customer_id %>"><%- icon('copy', 'icon-sm') %> Copy</button></dd></div>
+                <% if (profile && profile.country) { %><div><dt>Country</dt><dd><%= profile.country %></dd></div><% } %>
+                <% if (profile && profile.created_at) { %><div><dt>Member since</dt><dd><%= formatDate(profile.created_at) %></dd></div><% } %>
+            </dl>
+            <div class="form-actions"><button type="submit" class="btn btn-primary">Save profile</button><p class="form-status settings-feedback" role="status" tabindex="-1" hidden></p></div>
+        </form>
+    </section>
+
+    <% if (isGuest) { %>
+    <section class="settings-section" id="keep" aria-labelledby="keepTitle">
+        <div class="settings-section-intro"><h2 id="keepTitle">Keep this profile</h2><p>You’re using a guest profile. Add your own email and password to sign back in later.<% if (guestRetentionDays) { %> Guest profiles are deleted after <%= guestRetentionDays %> days without use.<% } %></p></div>
+        <form data-settings-form="claim" novalidate>
+            <div class="field"><label for="claimEmail">Email</label><input class="input" id="claimEmail" name="email" type="email" required maxlength="255" autocomplete="email" autocapitalize="none"></div>
+            <div class="field"><label for="claimPassword">Password</label><input class="input" id="claimPassword" name="newPassword" type="password" required minlength="8" maxlength="72" autocomplete="new-password"><p class="field-help">At least 8 characters, with an uppercase letter, a lowercase letter and a number.</p></div>
+            <div class="form-actions"><button type="submit" class="btn btn-primary">Save sign-in details</button><p class="form-status settings-feedback" role="status" tabindex="-1" hidden></p></div>
+        </form>
+    </section>
+    <% } %>
+
+    <section class="settings-section" id="password" aria-labelledby="passwordTitle">
+        <div class="settings-section-intro"><h2 id="passwordTitle">Password</h2><p>Changing it signs out your other sessions.</p></div>
+        <% if (isGuest) { %>
+        <p class="muted text-sm">Guest profiles don’t have a password yet. Use “Keep this profile” above to set one.</p>
+        <% } else { %>
+        <form data-settings-form="password" novalidate>
+            <div class="field"><label for="currentPassword">Current password</label><input class="input" id="currentPassword" name="currentPassword" type="password" required autocomplete="current-password"></div>
+            <div class="field-grid">
+                <div class="field"><label for="newPassword">New password</label><input class="input" id="newPassword" name="newPassword" type="password" required minlength="8" maxlength="72" autocomplete="new-password"></div>
+                <div class="field"><label for="confirmPassword">Confirm new password</label><input class="input" id="confirmPassword" name="confirmPassword" type="password" required maxlength="72" autocomplete="new-password"></div>
+            </div>
+            <p class="field-help mt-2">At least 8 characters, with an uppercase letter, a lowercase letter and a number.</p>
+            <div class="form-actions"><button type="submit" class="btn btn-primary">Change password</button><p class="form-status settings-feedback" role="status" tabindex="-1" hidden></p></div>
+        </form>
+        <% } %>
+    </section>
+
+    <section class="settings-section" id="recovery" aria-labelledby="recoveryTitle">
+        <div class="settings-section-intro"><h2 id="recoveryTitle">Recovery codes</h2><p>Eight single-use codes that reset your password without email. Creating new codes replaces the old ones.</p></div>
+        <div>
+            <p class="recovery-count"><strong id="recoveryCount"><%= recoveryCount %></strong> unused code<%= recoveryCount === 1 ? '' : 's' %> remaining</p>
+            <% if (isGuest) { %>
+            <p class="muted text-sm mt-3">Save your sign-in details first, then create recovery codes.</p>
+            <% } else { %>
+            <form data-settings-form="recovery" class="mt-4" novalidate>
+                <div class="field"><label for="recoveryPassword">Confirm with your password</label><input class="input" id="recoveryPassword" name="currentPassword" type="password" required autocomplete="current-password"></div>
+                <div class="form-actions"><button type="submit" class="btn btn-secondary">Create new codes</button><p class="form-status settings-feedback" role="status" tabindex="-1" hidden></p></div>
+            </form>
+            <div class="recovery-results" id="recoveryResults" hidden>
+                <div class="notice notice-warning"><%- icon('alert') %><div><strong>Save these now.</strong> They won’t be shown again. Each works once.</div></div>
+                <pre class="recovery-codes mono" id="recoveryCodeList"></pre>
+                <div class="cluster"><button type="button" class="btn btn-secondary btn-sm" id="downloadRecoveryCodes"><%- icon('download', 'icon-sm') %> Download</button><button type="button" class="btn btn-secondary btn-sm" data-copy-codes><%- icon('copy', 'icon-sm') %> Copy</button><button type="button" class="btn btn-ghost btn-sm" id="hideRecoveryCodes">I’ve saved them</button></div>
+            </div>
+            <% } %>
+        </div>
+    </section>
+
+    <section class="settings-section" id="alerts" aria-labelledby="alertsTitle">
+        <div class="settings-section-intro"><h2 id="alertsTitle">Alerts</h2><p>Choose what appears in your notifications. Willow doesn’t send email or texts.</p></div>
+        <ul class="control-list" role="list">
+            <% alerts.forEach(([key, label, text]) => { %>
+            <li><label class="control-copy" for="pref-<%= key %>"><strong><%= label %></strong><small><%= text %></small></label><span class="switch"><input type="checkbox" role="switch" id="pref-<%= key %>" data-pref="<%= key %>"<%= prefs[key] ? ' checked' : '' %>><span class="switch-track"></span></span></li>
+            <% }) %>
+        </ul>
+    </section>
+
+    <section class="settings-section" id="privacy" aria-labelledby="privacyTitle">
+        <div class="settings-section-intro"><h2 id="privacyTitle">Privacy</h2><p>Control how your data is used and take a copy with you.</p></div>
+        <div>
+            <ul class="control-list" role="list">
+                <li><label class="control-copy" for="pref-insights"><strong>Personalized insights</strong><small>Use your activity to show tips on Home</small></label><span class="switch"><input type="checkbox" role="switch" id="pref-insights" data-pref="personalizedInsights"<%= prefs.personalizedInsights ? ' checked' : '' %>><span class="switch-track"></span></span></li>
+                <li><label class="control-copy" for="privacyMode"><strong>Hide balances on this device</strong><small>Blur amounts until you choose to show them</small></label><span class="switch"><input type="checkbox" role="switch" id="privacyMode" data-privacy-switch><span class="switch-track"></span></span></li>
+            </ul>
+            <div class="cluster mt-4"><a class="btn btn-secondary btn-sm" href="/api/security/export" download><%- icon('download', 'icon-sm') %> Download my data</a><a class="btn btn-ghost btn-sm" href="/privacy">Privacy notice</a></div>
+        </div>
+    </section>
+
+    <section class="settings-section" id="appearance" aria-labelledby="appearanceTitle">
+        <div class="settings-section-intro"><h2 id="appearanceTitle">Appearance</h2><p>Saved in this browser.</p></div>
+        <div class="segmented" role="radiogroup" aria-label="Theme" data-theme-choice>
+            <button type="button" role="radio" aria-checked="false" data-theme-value="system"><%- icon('laptop', 'icon-sm') %> System</button>
+            <button type="button" role="radio" aria-checked="false" data-theme-value="light"><%- icon('sun', 'icon-sm') %> Light</button>
+            <button type="button" role="radio" aria-checked="false" data-theme-value="dark"><%- icon('moon', 'icon-sm') %> Dark</button>
+        </div>
+    </section>
+
+    <% if (user.role !== 'admin' && !prefs.sampleDataLoadedAt) { %>
+    <section class="settings-section" aria-labelledby="sampleTitle">
+        <div class="settings-section-intro"><h2 id="sampleTitle">Sample activity</h2><p>Fill your profile with a few months of realistic demo activity.</p></div>
+        <div><button type="button" class="btn btn-secondary" data-load-sample><%- icon('sparkle', 'icon-sm') %> Add sample activity</button></div>
+    </section>
+    <% } %>
+
+    <section class="settings-section" aria-labelledby="signOutTitle">
+        <div class="settings-section-intro"><h2 id="signOutTitle">Sign out</h2><p>Sign out of Willow on this device.</p></div>
+        <div class="cluster"><button type="button" class="btn btn-secondary" data-logout><%- icon('logout', 'icon-sm') %> Sign out</button><a class="btn btn-ghost" href="/security#sessionsTitle">Manage other sessions</a></div>
+    </section>
+</div>
+
+<%- include('../partials/app-end', { js: ['settings'] }) %>

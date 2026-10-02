@@ -1,0 +1,17 @@
+<%
+  const brandHref = typeof href !== 'undefined' ? href : '/';
+  const brandInverse = typeof inverse !== 'undefined' && inverse;
+  const brandLabel = typeof label !== 'undefined' ? label : 'Willow home';
+%><a href="<%= brandHref %>" class="brand<%= brandInverse ? ' is-inverse' : '' %>" aria-label="<%= brandLabel %>">
+    <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+        <rect class="mark-bg" width="40" height="40" rx="12"/>
+        <g fill="none" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+            <path class="mark-line" d="M9.5 22.5C9.5 14.6 14 10 20 10s10.5 4.6 10.5 12.5"/>
+            <path class="mark-line" d="M14 23c0-5.6 2.3-8.6 6-8.6s6 3 6 8.6"/>
+            <path class="mark-line" d="M9.5 22.5v4M14 23v5.5M26 23v5.5M30.5 22.5v4"/>
+            <path class="mark-line" d="M20 14.4V30"/>
+            <path class="mark-root" d="M16.5 30.5h7"/>
+        </g>
+    </svg>
+    <span>Willow</span>
+</a>

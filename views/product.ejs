@@ -1,0 +1,171 @@
+<%
+  const calculatorFor = { 'personal-loans': 'personal', credit: 'credit', mortgages: 'mortgage' };
+  // Signed-in visitors go straight to the feature instead of being asked to sign in or register.
+  const [primaryCta, secondaryCta] = (() => {
+    if (!user) return [product.primaryCta, product.secondaryCta];
+    const destination = decodeURIComponent(product.secondaryCta.href.split('returnTo=')[1] || '%2Fdashboard');
+    const feature = product.secondaryCta.label.replace(/^Sign in to /, '');
+    const opening = product.primaryCta.href.includes('type=business') ? { label: 'Open business checking', href: '/accounts/new?type=business' } : { label: 'Open another account', href: '/accounts/new' };
+    return [{ label: `Go to ${feature}`, href: destination }, opening];
+  })();
+  const liveLists = {
+    stocks: { title: 'Popular stocks', symbols: 'AAPL,MSFT,NVDA,AMZN,GOOGL,META,TSLA,JPM', href: '/wealth/markets?type=stock' },
+    etfs: { title: 'Curated ETFs', symbols: 'SPY,QQQ,VTI,VXUS,VWO,BND,GLD', href: '/wealth/markets?type=etf' },
+    funds: { title: 'Index funds', symbols: 'VFIAX,FXAIX,SWPPX,VTSAX,VTIAX,VBTLX', href: '/wealth/markets?type=fund' },
+    crypto: { title: 'Crypto markets', symbols: 'BTC,ETH,SOL,XRP,ADA,LTC', href: '/crypto' },
+    portfolio: { title: 'What you can hold', symbols: 'AAPL,VTI,VFIAX,BTC,ETH,MSFT', href: '/wealth' },
+  };
+  const calculator = calculatorFor[product.slug];
+  const live = liveLists[product.slug];
+  const isBusiness = product.group === 'business';
+%><%- include('partials/head', { css: ['site', 'product'], bodyClass: 'product-page' }) %>
+<%- include('partials/site-header') %>
+<main id="main">
+    <section class="page-hero product-hero">
+        <div class="container page-hero-grid">
+            <div class="page-hero-copy">
+                <nav aria-label="Breadcrumb"><ol class="breadcrumbs"><li><a href="/">Willow</a></li><li><%= group ? group.label : 'Products' %></li><li aria-current="page"><%= product.navLabel %></li></ol></nav>
+                <p class="eyebrow"><%= product.eyebrow %></p>
+                <h1 class="h1"><%= product.headline %></h1>
+                <p class="lede"><%= product.lede %></p>
+                <div class="page-hero-actions">
+                    <a href="<%= primaryCta.href %>" class="btn btn-primary btn-lg"><%= primaryCta.label %> <%- icon('arrow-right', 'icon-arrow') %></a>
+                    <a href="<%= secondaryCta.href %>" class="btn btn-secondary btn-lg"><%= secondaryCta.label %></a>
+                </div>
+                <p class="page-hero-note"><%- icon('info') %><span><%= product.disclosure %></span></p>
+            </div>
+            <div class="stage product-stage product-stage-<%= product.slug %>">
+                <%- include('partials/product-visual', { visual: product.slug }) %>
+            </div>
+        </div>
+    </section>
+
+    <section class="section-tight">
+        <div class="container">
+            <div class="feature-grid">
+                <% product.highlights.forEach((item, index) => { %>
+                <article class="feature-card reveal" style="--reveal-delay: <%= index * 80 %>ms">
+                    <span class="icon-tile"><%- icon(item.icon) %></span>
+                    <h2 class="h5"><%= item.title %></h2>
+                    <p><%= item.body %></p>
+                </article>
+                <% }) %>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container split-feature<%= calculator || live ? '' : ' is-reversed' %>">
+            <div class="split-feature-copy reveal">
+                <p class="eyebrow"><%= product.feature.eyebrow %></p>
+                <h2 class="h2"><%= product.feature.title %></h2>
+                <p class="lede"><%= product.feature.body %></p>
+                <ul class="check-list">
+                    <% product.feature.points.forEach(point => { %><li><%= point %></li><% }) %>
+                </ul>
+            </div>
+            <div class="reveal">
+                <% if (calculator) { %>
+                    <div class="calc-card">
+                        <div class="calc-card-head"><p class="label">Calculator</p><span class="badge badge-accent">Estimate only</span></div>
+                        <%- include('partials/loan-calculator', { kind: calculator, canSave: false }) %>
+                        <% if (user) { %><a class="link-arrow calc-card-link" href="/loans">Save estimates in your Willow app <%- icon('arrow-right') %></a><% } else { %><a class="link-arrow calc-card-link" href="/login?returnTo=%2Floans">Sign in to save estimates <%- icon('arrow-right') %></a><% } %>
+                    </div>
+                <% } else if (live) { %>
+                    <div class="live-card" data-live-quotes="<%= live.symbols %>">
+                        <div class="live-card-head"><div><p class="label">Live market data</p><h3><%= live.title %></h3></div><span class="data-source" data-live-status><%- icon('clock') %> Delayed</span></div>
+                        <ul class="live-list" role="list" data-live-list>
+                            <% live.symbols.split(',').slice(0, 6).forEach(() => { %><li class="market-row"><span class="skeleton" style="width:40px;height:40px;border-radius:12px"></span><span class="market-row-main"><span class="skeleton skeleton-line w-60"></span><span class="skeleton skeleton-line w-40"></span></span><span class="skeleton skeleton-line" style="width:72px"></span></li><% }) %>
+                        </ul>
+                        <a class="btn btn-secondary btn-block" href="<%= user ? live.href : '/login?returnTo=' + encodeURIComponent(live.href) %>">Explore in Willow <%- icon('arrow-right', 'icon-arrow') %></a>
+                        <p class="live-note">Quotes are delayed, retrieved for prototyping and may be unavailable. Investing in Willow is simulated.</p>
+                    </div>
+                <% } else if (product.slug === 'international') { %>
+                    <div class="currency-board" data-fx-board>
+                        <div class="currency-board-head"><p class="label">Indicative rates · 1 USD</p><span class="data-source" data-fx-status><%- icon('clock') %> Loading</span></div>
+                        <ul role="list">
+                            <% [['EUR','Euro','€'],['GBP','British pound','£'],['ZAR','South African rand','R'],['MZN','Mozambican metical','MT']].forEach(([code, name, symbol]) => { %>
+                            <li data-fx-row="<%= code %>"><span class="currency-flag"><%= code %></span><span class="currency-name"><strong><%= name %></strong><small><%= code %> · <%= symbol %></small></span><span class="currency-rate num" data-fx-rate><span class="skeleton skeleton-line" style="width:70px"></span></span></li>
+                            <% }) %>
+                        </ul>
+                        <p class="currency-board-note">Indicative mid-market rates for information only. Willow Demo never executes real currency exchange.</p>
+                    </div>
+                <% } else { %>
+                    <div class="feature-panel">
+                        <% product.feature.points.forEach((point, index) => { %>
+                        <div class="feature-panel-row" style="--i:<%= index %>"><span class="feature-panel-index num">0<%= index + 1 %></span><span><%= point %></span><%- icon('check', 'icon-sm') %></div>
+                        <% }) %>
+                        <p class="feature-panel-foot"><span class="demo-badge">Demo</span> Every action is simulated in the Willow demo ledger.</p>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </section>
+
+    <section class="section section-muted">
+        <div class="container">
+            <div class="section-intro reveal">
+                <p class="eyebrow">How it works</p>
+                <h2 class="h2">Up and running in three steps.</h2>
+            </div>
+            <ol class="steps" role="list">
+                <% product.steps.forEach(step => { %><li class="reveal"><h3><%= step.title %></h3><p><%= step.body %></p></li><% }) %>
+            </ol>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container faq-layout">
+            <div class="reveal">
+                <p class="eyebrow">Questions</p>
+                <h2 class="h2">Good to know.</h2>
+                <p class="secondary mt-4">More answers live in the <a class="text-link" href="/help">Help center</a>.</p>
+            </div>
+            <div class="faq reveal">
+                <% product.faqs.forEach((faq, index) => { %>
+                <details<%= index === 0 ? ' open' : '' %>>
+                    <summary><%= faq.q %><span class="faq-icon" aria-hidden="true"><%- icon('plus', 'icon-sm') %></span></summary>
+                    <div class="faq-answer"><p><%= faq.a %></p></div>
+                </details>
+                <% }) %>
+            </div>
+        </div>
+    </section>
+
+    <% if (related.length) { %>
+    <section class="section-tight">
+        <div class="container">
+            <div class="section-heading"><h2>Works well with</h2></div>
+            <div class="related-grid">
+                <% related.forEach(item => { %>
+                <a href="<%= item.path %>" class="related-card card-interactive">
+                    <span class="icon-tile"><%- icon(item.icon) %></span>
+                    <h3><%= item.navLabel %></h3>
+                    <p><%= item.navDescription %></p>
+                    <span class="link-arrow">Explore <%- icon('arrow-right') %></span>
+                </a>
+                <% }) %>
+            </div>
+        </div>
+    </section>
+    <% } %>
+
+    <section class="section">
+        <div class="container">
+            <div class="cta-band reveal">
+                <div class="cta-band-grid">
+                    <div>
+                        <h2 class="h2"><%= isBusiness ? 'Bring your business to Willow.' : 'Your money. Moving forward.' %></h2>
+                        <p><%= isBusiness ? 'Open a business demo profile and explore accounts, cards, invoices and cash flow in minutes.' : 'Open a Willow demo account in minutes and explore everything with simulated money.' %></p>
+                    </div>
+                    <div class="cta-band-actions">
+                        <a href="<%= primaryCta.href %>" class="btn btn-light btn-lg"><%= primaryCta.label %> <%- icon('arrow-right', 'icon-arrow') %></a>
+                        <a href="/demo" class="btn btn-outline-light btn-lg">How the demo works</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+<%- include('partials/site-footer') %>
+<%- include('partials/foot', { js: ['public-markets', 'calculators'] }) %>

@@ -1,76 +1,122 @@
+/* Willow scheduled transfers — list, schedule and cancel. */
 'use strict';
 
-document.addEventListener('DOMContentLoaded', () => {
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
-    const form = document.getElementById('scheduledForm');
-    const review = document.getElementById('scheduleReview');
-    const status = document.getElementById('scheduleStatus');
-    const list = document.getElementById('scheduledRows');
-    const money = cents => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(cents / 100);
-    const element = (tag, content, className) => { const node = document.createElement(tag); node.textContent = content; if (className) node.className = className; return node; };
+(function (global) {
+    const doc = global.document;
+    const W = global.Willow;
 
-    async function request(url, options = {}) {
-        const response = await fetch(url, { ...options, headers: { ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...(options.method && options.method !== 'GET' ? { 'X-CSRF-Token': csrf } : {}), ...options.headers } });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(result.error || 'Could not complete this request.');
-        return result;
-    }
-
-    function accountName(select) {
-        return select.selectedOptions[0]?.textContent?.trim() || 'Not selected';
-    }
-
-    function render(transfers) {
-        list.replaceChildren();
-        if (!transfers.length) { list.append(element('p', 'No scheduled demo transfers yet.', 'wealth-empty')); return; }
-        transfers.forEach(transfer => {
-            const row = document.createElement('article'); row.className = 'scheduled-row';
-            const details = document.createElement('div'); details.className = 'scheduled-row-details';
-            details.append(element('strong', transfer.description || 'Transfer between your accounts'));
-            details.append(element('span', `${transfer.from_nickname || (transfer.from_type === 'savings' ? 'Savings' : 'Checking')} ·••••${transfer.from_last_four} → ${transfer.to_nickname || (transfer.to_type === 'savings' ? 'Savings' : 'Checking')} ·••••${transfer.to_last_four}`));
-            details.append(element('small', `${new Date(transfer.scheduled_for).toLocaleDateString(undefined, { timeZone: 'UTC', dateStyle: 'medium' })} UTC · ${transfer.status}${transfer.result_message ? ` · ${transfer.result_message}` : ''}`));
-            const amount = element('strong', money(transfer.amount), 'scheduled-row-amount');
-            row.append(details, amount);
-            if (transfer.status === 'pending') {
-                const cancel = element('button', 'Cancel'); cancel.type = 'button'; cancel.className = 'scheduled-cancel'; cancel.setAttribute('aria-label', `Cancel scheduled transfer ${transfer.description || transfer.id}`);
-                cancel.addEventListener('click', async () => {
-                    cancel.disabled = true;
-                    try { await request(`/api/scheduled-transfers/${transfer.id}`, { method: 'DELETE' }); status.textContent = 'Scheduled demo transfer cancelled.'; await load(); }
-                    catch (error) { status.textContent = error.message; cancel.disabled = false; }
-                });
-                row.append(cancel);
-            }
-            list.append(row);
-        });
-    }
-
-    async function load() {
-        list.replaceChildren(element('p', 'Loading scheduled transfers…', 'wealth-loading'));
-        try { render((await request('/api/scheduled-transfers')).transfers); }
-        catch (error) { list.replaceChildren(element('p', error.message, 'wealth-error')); }
-    }
-
-    form.addEventListener('submit', event => {
-        event.preventDefault();
-        if (document.getElementById('scheduleFrom').value === document.getElementById('scheduleTo').value) {
-            status.textContent = 'Choose two different accounts.'; return;
+    function init() {
+        const upcoming = doc.getElementById('scheduledUpcoming');
+        const history = doc.getElementById('scheduledHistory');
+        const form = doc.getElementById('scheduledForm');
+        const dialog = doc.getElementById('scheduleReview');
+        if (!upcoming) return;
+        let currencyById = new Map();
+        if (form && form.elements.fromAccountId) {
+            Array.from(form.elements.fromAccountId.options).forEach(option => currencyById.set(Number(option.value), option.dataset.currency));
         }
-        const data = Object.fromEntries(new FormData(form));
-        document.getElementById('reviewScheduleFrom').textContent = accountName(document.getElementById('scheduleFrom'));
-        document.getElementById('reviewScheduleTo').textContent = accountName(document.getElementById('scheduleTo'));
-        document.getElementById('reviewScheduleAmount').textContent = money(Math.round(Number(data.amount) * 100));
-        document.getElementById('reviewScheduleDate').textContent = `${data.scheduledDate} UTC`;
-        review.hidden = false; form.hidden = true; review.focus(); status.textContent = '';
-    });
-    document.getElementById('editSchedule').addEventListener('click', () => { review.hidden = true; form.hidden = false; document.getElementById('scheduleFrom').focus(); });
-    document.getElementById('confirmSchedule').addEventListener('click', async event => {
-        const button = event.currentTarget; button.disabled = true; status.textContent = 'Saving your scheduled demo transfer…';
-        try {
-            const transfer = await request('/api/scheduled-transfers', { method: 'POST', body: JSON.stringify(Object.fromEntries(new FormData(form))) });
-            review.hidden = true; form.hidden = false; form.reset(); status.textContent = `Transfer scheduled for ${transfer.transfer.scheduled_for.slice(0, 10)} UTC. No funds have moved.`; await load();
-        } catch (error) { status.textContent = error.message; }
-        finally { button.disabled = false; }
-    });
-    document.getElementById('refreshSchedules').addEventListener('click', load);
-    load();
-});
+        const label = (nickname, type, lastFour) => `${nickname || (type === 'savings' ? 'Savings' : 'Checking')} ••${lastFour}`;
+        const dateLabel = value => new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }).format(new Date(value));
+
+        function row(transfer) {
+            const currency = currencyById.get(transfer.from_account_id) || 'USD';
+            const pending = transfer.status === 'pending';
+            const item = W.el('li', { className: 'list-row' },
+                W.el('span', { className: 'icon-tile icon-tile-sm' }, W.icon(pending ? 'calendar' : transfer.status === 'completed' ? 'check-circle' : 'x-circle')),
+                W.el('span', { className: 'list-row-main' },
+                    W.el('span', { className: 'list-row-title', text: transfer.description || 'Transfer between your accounts' }),
+                    W.el('span', { className: 'list-row-sub', text: `${label(transfer.from_nickname, transfer.from_type, transfer.from_last_four)} → ${label(transfer.to_nickname, transfer.to_type, transfer.to_last_four)} · ${dateLabel(transfer.scheduled_for)}` }),
+                    transfer.result_message && !pending ? W.el('span', { className: 'list-row-sub', text: transfer.result_message }) : null),
+                W.el('span', { className: 'list-row-end' },
+                    W.el('strong', { 'data-private': '', text: W.formatCents(transfer.amount, currency) }),
+                    W.el('small', null, W.el('span', { className: `status-pill is-${transfer.status}`, text: transfer.status }))));
+            if (pending) {
+                const cancel = W.el('button', { type: 'button', className: 'btn btn-ghost btn-sm', text: 'Cancel', 'aria-label': `Cancel ${transfer.description || 'scheduled transfer'}` });
+                cancel.addEventListener('click', async () => {
+                    const ok = await W.showConfirm('This scheduled transfer won’t run. Nothing has moved yet.', 'Cancel scheduled transfer?', { confirmLabel: 'Cancel transfer', cancelLabel: 'Keep it', danger: true });
+                    if (!ok) return;
+                    cancel.classList.add('is-loading');
+                    try {
+                        await W.api(`/api/scheduled-transfers/${transfer.id}`, { method: 'DELETE' });
+                        W.showToast('Scheduled transfer cancelled.', 'success');
+                        load();
+                    } catch (error) {
+                        W.showToast(error.message, 'error');
+                        cancel.classList.remove('is-loading');
+                    }
+                });
+                item.append(cancel);
+            }
+            return item;
+        }
+
+        async function load() {
+            upcoming.replaceChildren(W.skeletonRows(2));
+            try {
+                const { transfers } = await W.api('/api/scheduled-transfers');
+                const pending = transfers.filter(item => item.status === 'pending');
+                const past = transfers.filter(item => item.status !== 'pending');
+                upcoming.replaceChildren(pending.length
+                    ? W.el('ul', { className: 'list-plain', role: 'list' }, pending.map(row))
+                    : W.empty({ iconName: 'calendar', title: 'Nothing scheduled', text: 'Schedule a transfer for a future date using the form.', compact: true }));
+                history.replaceChildren(past.length
+                    ? W.el('ul', { className: 'list-plain', role: 'list' }, past.slice(0, 20).map(row))
+                    : W.el('p', { className: 'muted text-sm', text: 'Completed, failed and cancelled transfers will appear here.' }));
+            } catch (error) {
+                upcoming.replaceChildren(W.empty({ iconName: 'alert', title: 'Couldn’t load scheduled transfers', text: error.message, error: true, compact: true, action: { label: 'Try again', onClick: load } }));
+            }
+        }
+
+        doc.getElementById('refreshSchedules').addEventListener('click', load);
+
+        if (form && form.elements.fromAccountId) {
+            const error = doc.getElementById('scheduleError');
+            const reviewError = doc.getElementById('scheduleReviewError');
+            W.enableBackdropClose(dialog);
+            const fail = message => { error.textContent = message; error.hidden = false; };
+            form.addEventListener('submit', event => {
+                event.preventDefault();
+                error.hidden = true;
+                const data = Object.fromEntries(new FormData(form));
+                const from = form.elements.fromAccountId.selectedOptions[0];
+                const to = form.elements.toAccountId.selectedOptions[0];
+                if (data.fromAccountId === data.toAccountId) return fail('Choose two different accounts.');
+                if (from.dataset.currency !== to.dataset.currency) return fail('Both accounts need the same currency. Use International to convert between currencies.');
+                if (!/^\d+(\.\d{1,2})?$/.test(String(data.amount).trim()) || Number(data.amount) <= 0) return fail('Enter a positive amount with up to two decimal places.');
+                if (!data.scheduledDate) return fail('Choose a date.');
+                doc.getElementById('reviewScheduleAmount').textContent = W.formatMoney(Number(data.amount), from.dataset.currency, { digits: 2 });
+                doc.getElementById('reviewScheduleFrom').textContent = from.textContent.split(' · ')[0];
+                doc.getElementById('reviewScheduleTo').textContent = to.textContent.split(' · ')[0];
+                doc.getElementById('reviewScheduleDate').textContent = `${dateLabel(`${data.scheduledDate}T00:00:00Z`)} (UTC)`;
+                reviewError.hidden = true;
+                W.openDialog(dialog);
+            });
+            doc.getElementById('editSchedule').addEventListener('click', () => { W.closeDialog(dialog); form.elements.amount.focus(); });
+            doc.getElementById('confirmSchedule').addEventListener('click', async event => {
+                const button = event.currentTarget;
+                button.classList.add('is-loading');
+                button.disabled = true;
+                try {
+                    const body = Object.fromEntries(new FormData(form));
+                    body.amount = String(body.amount).trim();
+                    await W.api('/api/scheduled-transfers', { method: 'POST', body });
+                    W.closeDialog(dialog);
+                    form.elements.amount.value = '';
+                    form.elements.description.value = '';
+                    W.showToast('Transfer scheduled. Nothing has moved yet.', 'success');
+                    load();
+                } catch (err) {
+                    reviewError.textContent = err.message;
+                    reviewError.hidden = false;
+                } finally {
+                    button.classList.remove('is-loading');
+                    button.disabled = false;
+                }
+            });
+        }
+        load();
+    }
+
+    if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', init);
+    else init();
+})(window);

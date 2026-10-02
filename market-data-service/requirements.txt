@@ -1,0 +1,4 @@
+# The only runtime dependency; everything else is the Python standard library.
+# 1.0 is the first release with yfinance.config.debug.hide_exceptions, which the service switches
+# off so network failures surface as errors (503) instead of looking like unknown symbols (404).
+yfinance>=1.0

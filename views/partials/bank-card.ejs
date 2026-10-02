@@ -1,0 +1,23 @@
+<%
+  // Card mockup. Locals: card (formatted card), size ('sm' optional).
+  const designClass = { forest: '', sage: 'is-sage', copper: 'is-copper', ivory: 'is-virtual', graphite: 'is-business' };
+  const fallback = card.form === 'virtual' ? 'is-virtual' : card.purpose === 'business' ? 'is-business' : '';
+  const tone = card.design && Object.hasOwn(designClass, card.design) ? designClass[card.design] : fallback;
+  const state = card.status === 'frozen' ? ' is-frozen' : ['cancelled', 'lost', 'stolen', 'expired', 'inactive', 'replaced'].includes(card.status) ? ' is-inactive' : '';
+  const kind = [card.purpose === 'business' ? 'Business' : 'Debit', card.form === 'virtual' ? 'Virtual' : ''].filter(Boolean).join(' · ');
+  const cardSize = typeof size !== 'undefined' && size ? ` is-${size}` : '';
+%><div class="bank-card <%= tone %><%= state %><%= cardSize %>" role="img" aria-label="<%= card.displayName %>, <%= kind %> card ending <%= card.last_four %><%= card.status === 'frozen' ? ', frozen' : card.status !== 'active' ? ', ' + card.status : '' %>">
+    <div class="bank-card-top">
+        <span class="bank-card-brand"><%- icon('willow') %>Willow</span>
+        <span class="bank-card-kind"><%= kind %></span>
+    </div>
+    <% if (card.form === 'virtual') { %><span class="bank-card-virtual-mark"><%- icon('smartphone', 'icon-sm') %> Online & wallets</span><% } else { %><span class="bank-card-chip"></span><% } %>
+    <div class="bank-card-bottom">
+        <div class="bank-card-meta"><%= card.holder ? 'Card holder' : 'Card' %><strong><%= card.holder || card.displayName %></strong></div>
+        <div class="bank-card-end">
+            <span class="bank-card-number">•••• <%= card.last_four %></span>
+            <span class="bank-card-network" aria-hidden="true"><span></span><span></span></span>
+        </div>
+    </div>
+    <div class="bank-card-frost"><span><%- icon('snowflake', 'icon-sm') %> Frozen</span></div>
+</div>

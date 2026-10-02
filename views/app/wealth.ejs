@@ -1,0 +1,114 @@
+<%- include('../partials/app-start', { css: ['wealth-app'] }) %>
+
+<header class="page-head">
+    <div class="page-head-copy">
+        <p class="label">Wealth · <span class="wl-label-sim">Simulated</span></p>
+        <h1 class="page-head-title">Portfolio</h1>
+        <p class="page-head-sub">Practice investing with $100,000 in simulated cash. Prices are delayed market data; every order is simulated.</p>
+    </div>
+    <div class="page-head-actions">
+        <a class="btn btn-secondary" href="/crypto"><%- icon('bitcoin') %> Crypto</a>
+        <a class="btn btn-primary" href="/wealth/markets"><%- icon('search') %> Explore markets</a>
+    </div>
+</header>
+
+<div class="wl-page" data-wealth-page="portfolio">
+    <div class="data-banner mb-6" data-market-banner role="alert" hidden>
+        <%- icon('alert') %>
+        <span><strong>Market data temporarily unavailable.</strong> <span data-market-banner-text>Holdings are shown at cost until prices can be retrieved.</span></span>
+        <button type="button" class="btn btn-secondary btn-sm" data-retry><%- icon('refresh', 'icon-sm') %> Retry</button>
+    </div>
+
+    <section class="panel wl-hero" aria-labelledby="portfolioValueLabel">
+        <div class="wl-hero-top">
+            <div class="wl-hero-copy">
+                <div class="wl-hero-label">
+                    <p class="label" id="portfolioValueLabel">Demo portfolio value</p>
+                    <span class="demo-badge">DEMO · NOT A BROKERAGE</span>
+                </div>
+                <p class="figure figure-xl wl-hero-value" data-private data-portfolio-total><span class="skeleton skeleton-figure" style="width:5.5ch"></span></p>
+                <p class="wl-hero-change" data-portfolio-day><span class="skeleton skeleton-line" style="width:180px"></span></p>
+            </div>
+            <p class="wl-updated" data-updated aria-live="polite"><span class="badge badge-outline"><%- icon('clock') %> Delayed prices</span></p>
+        </div>
+
+        <dl class="wl-metrics">
+            <div>
+                <dt class="label">Total return</dt>
+                <dd><span class="figure figure-sm" data-private data-metric="return"><span class="skeleton skeleton-line" style="width:96px"></span></span></dd>
+                <dd class="wl-metric-sub" data-metric-sub="return">vs $100,000 starting cash</dd>
+            </div>
+            <div>
+                <dt class="label">Invested</dt>
+                <dd><span class="figure figure-sm" data-private data-metric="invested"><span class="skeleton skeleton-line" style="width:96px"></span></span></dd>
+                <dd class="wl-metric-sub" data-metric-sub="invested">Market value of holdings</dd>
+            </div>
+            <div>
+                <dt class="label">Cash available</dt>
+                <dd><span class="figure figure-sm" data-private data-metric="cash"><span class="skeleton skeleton-line" style="width:96px"></span></span></dd>
+                <dd class="wl-metric-sub">Simulated cash to invest</dd>
+            </div>
+        </dl>
+
+        <div class="wl-perf">
+            <div class="wl-chart-head">
+                <div>
+                    <h2 class="wl-chart-title" id="performanceTitle">Performance</h2>
+                    <p class="text-xs muted" data-perf-note>Portfolio value over time, including cash. Dashed line: $100,000 starting cash.</p>
+                </div>
+                <div class="segmented" role="radiogroup" aria-label="Performance range" data-range-group>
+                    <button type="button" role="radio" aria-checked="false" data-range="1m">1M</button>
+                    <button type="button" role="radio" aria-checked="true" class="is-active" data-range="6m">6M</button>
+                    <button type="button" role="radio" aria-checked="false" data-range="1y">1Y</button>
+                    <button type="button" role="radio" aria-checked="false" data-range="all">All</button>
+                </div>
+            </div>
+            <div class="wl-chart-box" data-perf-chart data-private-chart aria-labelledby="performanceTitle">
+                <div class="skeleton skeleton-block wl-chart-skeleton" aria-hidden="true"></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="panel mt-6" aria-labelledby="holdingsTitle">
+        <div class="panel-head">
+            <h2 id="holdingsTitle">Holdings</h2>
+            <a class="link-arrow" href="/wealth/markets">Add investments <%- icon('arrow-right') %></a>
+        </div>
+        <div data-holdings aria-busy="true"><% for (let i = 0; i < 4; i++) { %><div class="wl-skel-row" aria-hidden="true"><span class="skeleton wl-skel-mark"></span><span class="wl-skel-main"><span class="skeleton skeleton-line w-60"></span><span class="skeleton skeleton-line w-40"></span></span><span class="skeleton skeleton-line wl-skel-end"></span></div><% } %></div>
+    </section>
+
+    <div class="layout-main-aside mt-6">
+        <div class="col-stack">
+            <section class="panel" aria-labelledby="activityTitle">
+                <div class="panel-head">
+                    <h2 id="activityTitle">Recent activity</h2>
+                    <span class="sim-tag"><%- icon('info') %> Simulated orders</span>
+                </div>
+                <div data-activity aria-busy="true"><% for (let i = 0; i < 3; i++) { %><div class="wl-skel-row" aria-hidden="true"><span class="skeleton wl-skel-mark"></span><span class="wl-skel-main"><span class="skeleton skeleton-line w-60"></span><span class="skeleton skeleton-line w-40"></span></span><span class="skeleton skeleton-line wl-skel-end"></span></div><% } %></div>
+            </section>
+
+            <section class="panel wl-about" aria-labelledby="aboutDemoTitle">
+                <div class="panel-head"><h2 id="aboutDemoTitle">How this portfolio works</h2></div>
+                <ul class="wl-points" role="list">
+                    <li><span class="icon-tile icon-tile-sm"><%- icon('banknote') %></span><span>You start with <strong>$100,000 in simulated cash</strong>, kept separate from your Willow accounts.</span></li>
+                    <li><span class="icon-tile icon-tile-sm"><%- icon('clock') %></span><span>Prices come from delayed market data. If they can’t be retrieved, Willow says so — it never estimates a price.</span></li>
+                    <li><span class="icon-tile icon-tile-sm"><%- icon('shield-check') %></span><span>Every trade is a Simulated order. No real securities or crypto are bought or sold, and nothing here is investment advice.</span></li>
+                </ul>
+            </section>
+        </div>
+
+        <aside class="col-stack" aria-label="Portfolio details">
+            <section class="panel" aria-labelledby="allocationTitle">
+                <div class="panel-head"><h2 id="allocationTitle">Allocation</h2><span class="text-xs muted">By asset type</span></div>
+                <div class="wl-allocation" data-allocation><div class="skeleton skeleton-block" style="min-height:168px" aria-hidden="true"></div></div>
+            </section>
+
+            <section class="panel" aria-labelledby="watchlistTitle">
+                <div class="panel-head"><h2 id="watchlistTitle">Watchlist</h2><a class="link-arrow" href="/wealth/markets?type=watchlist">Manage <%- icon('arrow-right') %></a></div>
+                <div data-watchlist aria-busy="true"><% for (let i = 0; i < 3; i++) { %><div class="wl-skel-row is-compact" aria-hidden="true"><span class="skeleton wl-skel-mark"></span><span class="wl-skel-main"><span class="skeleton skeleton-line w-60"></span><span class="skeleton skeleton-line w-40"></span></span><span class="skeleton skeleton-line wl-skel-end"></span></div><% } %></div>
+            </section>
+        </aside>
+    </div>
+</div>
+
+<%- include('../partials/app-end', { js: ['wealth-app', 'wealth-portfolio'] }) %>

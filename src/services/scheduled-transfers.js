@@ -4,6 +4,8 @@ const { toCents, validateAmount } = require('../middleware/validation');
 const { createNotification } = require('./notification');
 const { logAudit } = require('./audit');
 const config = require('../config');
+const { formatCurrency } = require('../middleware/validation');
+const { scaledLimit } = require('./currencies');
 
 function parseAccountId(value) {
     const text = String(value ?? '');
@@ -49,13 +51,16 @@ function scheduleTransfer(userId, input = {}) {
         throw new Error('Choose a future UTC date within the next year.');
     }
     const amount = toCents(input.amount);
-    if (amount > config.limits.dailyTransferCents) throw new Error('This amount exceeds the daily demo transfer limit.');
 
     const db = getDb();
     const accounts = db.prepare(`SELECT id, status, currency FROM accounts WHERE user_id = ? AND id IN (?, ?)`).all(userId, fromAccountId, toAccountId);
-    if (accounts.length !== 2 || accounts.some(account => account.status !== 'active' || account.currency !== 'USD')) {
-        throw new Error('Choose two active USD accounts that belong to you.');
+    if (accounts.length !== 2 || accounts.some(account => account.status !== 'active')) {
+        throw new Error('Choose two active accounts that belong to you.');
     }
+    if (accounts[0].currency !== accounts[1].currency) {
+        throw new Error('Scheduled transfers need two accounts in the same currency. Use Convert in International to move money between currencies.');
+    }
+    if (amount > scaledLimit(config.limits.dailyTransferCents, accounts[0].currency)) throw new Error('This amount exceeds the daily demo transfer limit.');
     const inserted = db.transaction(() => {
         const result = db.prepare(`INSERT INTO scheduled_transfers
             (user_id, from_account_id, to_account_id, amount, description, scheduled_for)
@@ -90,12 +95,12 @@ function processDueScheduledTransfers(now = new Date().toISOString()) {
             let failure = null;
             if (!source || !destination || source.status !== 'active' || destination.status !== 'active' || source.user_status !== 'active') {
                 failure = 'One of the demo accounts is no longer active.';
-            } else if (source.currency !== 'USD' || destination.currency !== 'USD') {
-                failure = 'Scheduled demo transfers currently support USD accounts only.';
+            } else if (source.currency !== destination.currency) {
+                failure = 'Scheduled demo transfers need two accounts in the same currency.';
             } else {
                 const daily = db.prepare(`SELECT COALESCE(SUM(amount), 0) AS total FROM transactions
                     WHERE account_id = ? AND type = 'transfer' AND direction = 'debit' AND date(created_at) = date('now')`).get(source.id);
-                if (daily.total + schedule.amount > config.limits.dailyTransferCents) failure = 'The daily demo transfer limit would be exceeded.';
+                if (daily.total + schedule.amount > scaledLimit(config.limits.dailyTransferCents, source.currency)) failure = 'The daily demo transfer limit would be exceeded.';
                 else if (source.available_balance < schedule.amount) failure = 'Insufficient available demo funds on the scheduled date.';
             }
             if (failure) {
@@ -116,15 +121,15 @@ function processDueScheduledTransfers(now = new Date().toISOString()) {
             const reference = `SCH-${randomUUID().slice(0, 8).toUpperCase()}`;
             const description = schedule.description || 'Scheduled demo transfer';
             db.prepare(`INSERT INTO transactions (reference, account_id, related_account_id, type, amount, currency, direction, status, description)
-                VALUES (?, ?, ?, 'transfer', ?, 'USD', 'debit', 'completed', ?)`)
-                .run(reference, source.id, destination.id, schedule.amount, description);
+                VALUES (?, ?, ?, 'transfer', ?, ?, 'debit', 'completed', ?)`)
+                .run(reference, source.id, destination.id, schedule.amount, source.currency, description);
             db.prepare(`INSERT INTO transactions (reference, account_id, related_account_id, type, amount, currency, direction, status, description)
-                VALUES (?, ?, ?, 'transfer', ?, 'USD', 'credit', 'completed', ?)`)
-                .run(`${reference}-C`, destination.id, source.id, schedule.amount, `Scheduled transfer from ••••${source.account_number.slice(-4)}`);
+                VALUES (?, ?, ?, 'transfer', ?, ?, 'credit', 'completed', ?)`)
+                .run(`${reference}-C`, destination.id, source.id, schedule.amount, source.currency, `Scheduled transfer from ••••${source.account_number.slice(-4)}`);
             db.prepare(`UPDATE scheduled_transfers SET status = 'completed', transaction_reference = ?, result_message = 'Simulated transfer completed', executed_at = ? WHERE id = ?`)
                 .run(reference, now, id);
             logAudit({ actorId: schedule.user_id, actorEmail: source.user_email, action: 'scheduled_transfer_completed', targetType: 'scheduled_transfer', targetId: String(id), metadata: { amountCents: schedule.amount, reference } });
-            createNotification(schedule.user_id, 'transfer', 'Scheduled demo transfer completed', `Your scheduled transfer of $${(schedule.amount / 100).toFixed(2)} was simulated. No real money moved.`);
+            createNotification(schedule.user_id, 'transfer', 'Scheduled demo transfer completed', `Your scheduled transfer of ${formatCurrency(schedule.amount, source.currency)} was simulated. No real money moved.`);
             return 'completed';
         })();
         if (outcome === 'completed') completed += 1;

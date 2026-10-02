@@ -1,63 +1,145 @@
+/* Willow goals — plans with self-reported progress. */
 'use strict';
 
-document.addEventListener('DOMContentLoaded', () => {
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
-    const list = document.getElementById('goalList');
-    const form = document.getElementById('goalForm');
-    const status = document.getElementById('goalFormStatus');
-    const categoryLabels = { savings: 'Savings', home: 'Home', travel: 'Travel', business: 'Business', investing: 'Investing', other: 'Other' };
-    const money = cents => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(cents / 100);
-    const node = (tag, text, className) => { const element = document.createElement(tag); element.textContent = text; if (className) element.className = className; return element; };
-    let goals = [];
+(function (global) {
+    const doc = global.document;
+    const W = global.Willow;
+    const ICONS = { savings: 'savings', home: 'house', travel: 'plane', business: 'briefcase', investing: 'trend', other: 'target' };
+    const LABELS = { savings: 'Safety net', home: 'Home', travel: 'Travel', business: 'Business', investing: 'Investing', other: 'Goal' };
 
-    async function request(url, options = {}) {
-        const response = await fetch(url, { ...options, headers: { ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...(options.method && options.method !== 'GET' ? { 'X-CSRF-Token': csrf } : {}), ...options.headers } });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(result.error || 'Could not save this goal.');
-        return result;
-    }
+    function init() {
+        const list = doc.getElementById('goalList');
+        const dialog = doc.getElementById('goalDialog');
+        const form = doc.getElementById('goalForm');
+        if (!list || !form) return;
+        const error = form.querySelector('[data-goal-error]');
+        const remove = form.querySelector('[data-goal-delete]');
+        let goals = [];
 
-    function render() {
-        list.replaceChildren();
-        document.getElementById('goalCount').textContent = `${goals.length} saved`;
-        if (!goals.length) { list.append(node('p', 'No goals yet. Add a plan to see it here.', 'wealth-empty')); return; }
-        goals.forEach(goal => {
-            const card = document.createElement('article'); card.className = 'goal-item';
-            const top = document.createElement('div'); top.className = 'goal-item-top';
-            const title = document.createElement('div'); title.append(node('span', categoryLabels[goal.category] || 'Goal', 'wealth-kicker'), node('h3', goal.name));
-            const remove = node('button', 'Remove'); remove.type = 'button'; remove.className = 'goal-delete'; remove.setAttribute('aria-label', `Remove ${goal.name}`); remove.addEventListener('click', () => removeGoal(goal));
-            top.append(title, remove); card.append(top);
-            const progress = goal.target_cents > 0 ? Math.min(100, goal.current_cents / goal.target_cents * 100) : 0;
-            const summary = document.createElement('div'); summary.className = 'goal-progress-copy'; summary.append(node('strong', money(goal.current_cents)), node('span', `${progress.toFixed(0)}% of ${money(goal.target_cents)}`)); card.append(summary);
-            const track = document.createElement('div'); track.className = 'goal-progress-track'; track.setAttribute('role', 'progressbar'); track.setAttribute('aria-label', `${goal.name} self-reported progress`); track.setAttribute('aria-valuemin', '0'); track.setAttribute('aria-valuemax', String(goal.target_cents)); track.setAttribute('aria-valuenow', String(goal.current_cents));
-            const fill = document.createElement('span'); fill.style.width = `${progress}%`; track.append(fill); card.append(track);
-            const update = document.createElement('form'); update.className = 'goal-update-form';
-            const label = node('label', 'Update progress · USD'); const input = document.createElement('input'); input.type = 'number'; input.min = '0'; input.max = (goal.target_cents / 100).toFixed(2); input.step = '0.01'; input.inputMode = 'decimal'; input.value = (goal.current_cents / 100).toFixed(2); input.required;
-            const button = node('button', 'Update'); button.type = 'submit'; label.append(input); update.append(label, button);
-            update.addEventListener('submit', async event => {
-                event.preventDefault(); button.disabled = true;
-                try { await request(`/api/goals/${goal.id}`, { method: 'PATCH', body: JSON.stringify({ currentAmount: input.value }) }); await load(); }
-                catch (error) { status.textContent = error.message; }
-                finally { button.disabled = false; }
+        const money = cents => W.formatCents(cents, 'USD', { digits: 0 });
+
+        function summary() {
+            const box = doc.querySelector('[data-goal-summary]');
+            box.hidden = !goals.length;
+            if (!goals.length) return;
+            const saved = goals.reduce((sum, goal) => sum + goal.current_cents, 0);
+            const target = goals.reduce((sum, goal) => sum + goal.target_cents, 0);
+            box.querySelector('[data-summary-count]').textContent = goals.length;
+            box.querySelector('[data-summary-saved]').textContent = money(saved);
+            box.querySelector('[data-summary-left]').textContent = money(Math.max(0, target - saved));
+            box.querySelector('[data-summary-pct]').textContent = `${target ? Math.round(saved / target * 100) : 0}%`;
+        }
+
+        function card(goal) {
+            const pct = Math.min(100, Math.round(goal.current_cents / goal.target_cents * 100));
+            const done = goal.current_cents >= goal.target_cents;
+            const quick = W.el('form', { className: 'goal-quick', 'aria-label': `Update progress for ${goal.name}` },
+                W.el('label', { className: 'visually-hidden', for: `goalAdd${goal.id}`, text: 'Add to progress' }),
+                W.el('div', { className: 'input-group has-prefix' }, W.el('span', { className: 'input-prefix', text: '$' }), W.el('input', { className: 'input input-sm num', id: `goalAdd${goal.id}`, inputmode: 'decimal', placeholder: 'Add amount' })),
+                W.el('button', { type: 'submit', className: 'btn btn-secondary btn-sm', text: 'Add' }));
+            quick.addEventListener('submit', async event => {
+                event.preventDefault();
+                const input = quick.querySelector('input');
+                const value = Number(input.value.replace(/[,\s$]/g, ''));
+                if (!Number.isFinite(value) || value <= 0) { input.setAttribute('aria-invalid', 'true'); input.focus(); return; }
+                const next = Math.min(goal.target_cents, goal.current_cents + Math.round(value * 100));
+                try {
+                    const result = await W.api(`/api/goals/${goal.id}`, { method: 'PATCH', body: { currentAmount: (next / 100).toFixed(2) } });
+                    Object.assign(goal, result.goal);
+                    W.showToast(next >= goal.target_cents ? `“${goal.name}” reached its target.` : 'Progress updated.', 'success');
+                    render();
+                } catch (err) { W.showToast(err.message, 'error'); }
             });
-            card.append(update); list.append(card);
+            const edit = W.el('button', { type: 'button', className: 'btn btn-ghost btn-icon btn-sm', 'aria-label': `Edit ${goal.name}` }, W.icon('settings'));
+            edit.addEventListener('click', () => open(goal));
+            return W.el('article', { className: `goal-card${done ? ' is-done' : ''}` },
+                W.el('div', { className: 'goal-card-head' },
+                    W.el('span', { className: 'icon-tile' }, W.icon(ICONS[goal.category] || 'target')),
+                    W.el('div', { className: 'goal-card-title' }, W.el('h2', { text: goal.name }), W.el('span', { className: 'text-xs muted', text: LABELS[goal.category] || 'Goal' })),
+                    edit),
+                W.el('div', { className: 'goal-card-body' },
+                    W.el('div', { className: 'progress-ring', style: `--value:${pct}`, role: 'img', 'aria-label': `${pct}% of target` }, W.el('span', { text: `${pct}%` })),
+                    W.el('div', null,
+                        W.el('p', { className: 'figure figure-md', 'data-private': '', text: money(goal.current_cents) }),
+                        W.el('p', { className: 'text-sm muted', 'data-private': '', text: `of ${money(goal.target_cents)}` }),
+                        W.el('p', { className: 'text-xs muted mt-2', text: done ? 'Target reached' : `${money(goal.target_cents - goal.current_cents)} to go` }))),
+                done ? W.el('p', { className: 'goal-done' }, W.icon('check-circle', 'icon-sm'), 'Target reached') : quick);
+        }
+
+        function render() {
+            summary();
+            if (!goals.length) {
+                list.replaceChildren(W.el('div', { className: 'panel goal-empty' }, W.empty({ iconName: 'target', title: 'Set your first goal', text: 'A trip, a home, a safety net — name it, set a target and track your progress.', action: { label: 'Create a goal', onClick: () => open() } })));
+                return;
+            }
+            list.replaceChildren(...goals.map(card));
+        }
+
+        async function load() {
+            list.replaceChildren(W.el('div', { className: 'panel' }, W.skeletonRows(3)));
+            try {
+                goals = (await W.api('/api/goals')).goals;
+                render();
+            } catch (err) {
+                list.replaceChildren(W.el('div', { className: 'panel' }, W.empty({ iconName: 'alert', title: 'Goals couldn’t load', text: err.message, error: true, action: { label: 'Try again', onClick: load } })));
+            }
+        }
+
+        function open(goal) {
+            form.reset();
+            error.hidden = true;
+            form.elements.id.value = goal ? goal.id : '';
+            doc.getElementById('goalDialogTitle').textContent = goal ? 'Edit goal' : 'New goal';
+            remove.hidden = !goal;
+            form.querySelector('[data-goal-categories]').hidden = Boolean(goal);
+            form.elements.name.disabled = Boolean(goal);
+            if (goal) {
+                form.elements.name.value = goal.name;
+                form.elements.targetAmount.value = (goal.target_cents / 100).toFixed(2);
+                form.elements.currentAmount.value = (goal.current_cents / 100).toFixed(2);
+            }
+            W.openDialog(dialog);
+            (goal ? form.elements.currentAmount : form.elements.name).focus();
+        }
+
+        doc.querySelectorAll('[data-goal-new]').forEach(button => button.addEventListener('click', () => open()));
+        form.addEventListener('submit', async event => {
+            event.preventDefault();
+            error.hidden = true;
+            const id = form.elements.id.value;
+            const clean = value => String(value || '').replace(/[,\s$]/g, '');
+            const button = form.querySelector('[type="submit"]');
+            button.classList.add('is-loading');
+            try {
+                if (id) {
+                    await W.api(`/api/goals/${id}`, { method: 'PATCH', body: { targetAmount: clean(form.elements.targetAmount.value), currentAmount: clean(form.elements.currentAmount.value) || '0' } });
+                } else {
+                    await W.api('/api/goals', { method: 'POST', body: { name: form.elements.name.value.trim(), category: form.querySelector('input[name="category"]:checked').value, targetAmount: clean(form.elements.targetAmount.value), currentAmount: clean(form.elements.currentAmount.value) || '0' } });
+                }
+                W.closeDialog(dialog);
+                W.showToast(id ? 'Goal updated.' : 'Goal created.', 'success');
+                load();
+            } catch (err) {
+                error.textContent = err.message;
+                error.hidden = false;
+            } finally {
+                button.classList.remove('is-loading');
+            }
         });
+        remove.addEventListener('click', async () => {
+            const id = form.elements.id.value;
+            W.closeDialog(dialog);
+            const ok = await W.showConfirm('This removes the goal and its recorded progress. Your accounts aren’t affected.', 'Delete goal?', { confirmLabel: 'Delete', danger: true });
+            if (!ok) return;
+            try {
+                await W.api(`/api/goals/${id}`, { method: 'DELETE' });
+                W.showToast('Goal deleted.', 'success');
+                load();
+            } catch (err) { W.showToast(err.message, 'error'); }
+        });
+        load();
     }
 
-    async function load() {
-        try { goals = (await request('/api/goals')).goals; render(); }
-        catch (error) { list.replaceChildren(node('p', error.message, 'wealth-error')); }
-    }
-    async function removeGoal(goal) {
-        try { await request(`/api/goals/${goal.id}`, { method: 'DELETE' }); status.textContent = `${goal.name} removed.`; await load(); }
-        catch (error) { status.textContent = error.message; }
-    }
-    form.addEventListener('submit', async event => {
-        event.preventDefault(); const button = form.querySelector('button[type="submit"]'); button.disabled = true; status.textContent = 'Saving planning goal…';
-        const data = Object.fromEntries(new FormData(form));
-        try { await request('/api/goals', { method: 'POST', body: JSON.stringify(data) }); form.reset(); document.getElementById('goalCurrent').value = '0'; status.textContent = 'Planning goal saved. No money was moved.'; await load(); }
-        catch (error) { status.textContent = error.message; }
-        finally { button.disabled = false; }
-    });
-    load();
-});
+    if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', init);
+    else init();
+})(window);

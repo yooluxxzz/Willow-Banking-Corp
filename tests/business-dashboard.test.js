@@ -17,8 +17,9 @@ describe('Business demo workspace', () => {
         assert.equal((await supertest(app).get('/business/dashboard')).status, 302);
         const empty = await owner.agent.get('/business/dashboard');
         assert.equal(empty.status, 200);
-        assert.match(empty.text, /NO BUSINESS ACCOUNT/);
-        assert.match(empty.text, /team access, invoices, payroll/);
+        assert.match(empty.text, /No business account yet/);
+        assert.match(empty.text, /invoices, expense insights, team access/);
+        assert.match(empty.text, /href="\/accounts\/new\?type=business"/);
     });
 
     it('lists only the owner’s business checking and its account-specific ledger', async () => {
@@ -28,7 +29,8 @@ describe('Business demo workspace', () => {
         const page = await owner.agent.get('/business/dashboard');
         assert.equal(page.status, 200);
         assert.match(page.text, /Studio operations/);
-        assert.match(page.text, /Credits this month/);
+        assert.match(page.text, /Money in this month/);
+        assert.match(page.text, /href="\/business\/invoices"/);
         assert.match(page.text, /not accounting revenue or expense reports/);
         assert.doesNotMatch(page.text, /Personal checking/);
     });

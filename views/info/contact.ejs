@@ -1,0 +1,20 @@
+<%- include('../partials/info-start', { crumb: 'Company', eyebrow: 'Contact', heading: 'Get in touch.', intro: 'Willow is a demonstration without a staffed support team. Here is where to find answers and how messages are handled.' }) %>
+            <section class="info-section" id="answers">
+                <h2>Find an answer fast</h2>
+                <div class="contact-cards">
+                    <a class="card card-interactive card-pad" href="/help"><span class="icon-tile icon-tile-sm"><%- icon('help') %></span><strong>Help center</strong><span class="secondary text-sm">Searchable answers about accounts, cards, payments, investing and security.</span></a>
+                    <a class="card card-interactive card-pad" href="/security-info"><span class="icon-tile icon-tile-sm"><%- icon('shield') %></span><strong>Security</strong><span class="secondary text-sm">Locked out, suspicious sign-in or a lost card.</span></a>
+                    <a class="card card-interactive card-pad" href="/demo"><span class="icon-tile icon-tile-sm"><%- icon('info') %></span><strong>About the demo</strong><span class="secondary text-sm">What is real, what is simulated and why.</span></a>
+                </div>
+            </section>
+            <section class="info-section" id="message">
+                <h2>Send a message</h2>
+                <p>The <a class="text-link" href="/help#contact">message form in the Help center</a> saves your note with a reference number so you can see how a support flow would work. Nobody monitors these messages and you will not receive a reply.</p>
+                <p>Never include real passwords, card numbers, identity documents or financial details.</p>
+            </section>
+            <section class="info-section" id="no-phone">
+                <h2>Phone, email and offices</h2>
+                <p>Willow has no phone line, support inbox or physical address. Earlier versions of this page showed illustrative contact details; they have been removed so they cannot be mistaken for a real service.</p>
+                <p>If you run your own copy of Willow, you are its operator. Questions about data stored in that instance belong with you or your hosting provider.</p>
+            </section>
+<%- include('../partials/info-end', { toc: [['answers', 'Find an answer'], ['message', 'Send a message'], ['no-phone', 'Phone and offices']] }) %>

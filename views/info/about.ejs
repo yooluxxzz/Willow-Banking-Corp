@@ -1,0 +1,25 @@
+<%- include('../partials/info-start', { crumb: 'Company', eyebrow: 'About Willow', heading: 'Your money. Moving forward.', intro: 'Willow is a fictional digital bank, built as a demonstration of what everyday banking, investing and planning can feel like when they live in one calm place.' }) %>
+            <section class="info-section" id="why">
+                <h2>Why Willow exists</h2>
+                <p>Most people manage money across a checking app, a savings account, a brokerage, a spreadsheet and a drawer of statements. Each one shows a fragment. Willow explores a different idea: one product where paying a friend, saving for a home, buying a share and checking your net worth all use the same language, the same design and the same numbers.</p>
+                <p>Willow Banking Corp. is not a real company and not a licensed bank. Everything here — accounts, cards, payments, portfolios — is a working software demonstration with simulated money.</p>
+            </section>
+            <section class="info-section" id="principles">
+                <h2>What we stand for</h2>
+                <ul>
+                    <li><strong>Clarity over cleverness.</strong> Balances, fees and estimates are labelled plainly. When something is simulated, the screen says so.</li>
+                    <li><strong>Calm by design.</strong> No confetti for trades, no countdown timers, no pressure to act. Markets go up and down; Willow shows both without drama.</li>
+                    <li><strong>Your whole picture.</strong> Cash, savings, investments, crypto and credit roll up into one view of where you stand.</li>
+                    <li><strong>Honest data.</strong> Market prices come from a market-data service. When it is unavailable, Willow says so instead of inventing numbers.</li>
+                </ul>
+            </section>
+            <section class="info-section" id="product">
+                <h2>What you can explore</h2>
+                <p>The demo covers personal accounts in five currencies, physical and virtual cards with real-time controls, payments and scheduled transfers, a stocks and crypto trading simulator with $100,000 in demo funds, savings goals, loan calculators, a small-business workspace and Willow Hub — a single view of your finances with an assistant that answers questions from your own data.</p>
+                <p><a class="text-link" href="/demo">See exactly what is real and what is simulated</a>.</p>
+            </section>
+            <section class="info-section" id="built">
+                <h2>How it is built</h2>
+                <p>Willow is a Node.js and Express application with server-rendered pages, a SQLite database and an optional Python service that retrieves delayed market data through the open-source yfinance library. Charts are drawn in the browser without third-party trackers or analytics.</p>
+            </section>
+<%- include('../partials/info-end', { toc: [['why', 'Why Willow exists'], ['principles', 'What we stand for'], ['product', 'What you can explore'], ['built', 'How it is built']] }) %>

@@ -1,0 +1,17 @@
+<%
+  const symbols = { USD: '$', EUR: '€', GBP: '£', ZAR: 'R', MZN: 'MT' };
+  const kindIcons = { checking: 'wallet', savings: 'savings', business: 'briefcase', currency: 'globe' };
+%><a class="account-tile is-<%= account.kind %><%= account.status !== 'active' ? ' is-muted' : '' %>" href="/accounts/<%= account.id %>">
+    <div class="account-tile-top">
+        <% if (account.kind === 'currency') { %><span class="currency-flag" aria-hidden="true"><%= symbols[account.currency] || account.currency %></span><% } else { %><span class="icon-tile icon-tile-sm"><%- icon(kindIcons[account.kind] || 'wallet') %></span><% } %>
+        <% if (account.status !== 'active') { %><span class="status-pill is-<%= account.status %>"><%= account.status %></span><% } else { %><span class="account-tile-currency"><%= account.currency %></span><% } %>
+    </div>
+    <div>
+        <span class="account-tile-name"><%= account.displayName %></span>
+        <span class="account-tile-sub"><%= account.productLabel %> · <%= account.maskedNumber %></span>
+    </div>
+    <div class="account-tile-balance">
+        <span class="figure" data-private><%= account.balanceFormatted %></span>
+        <% if (account.available_balance !== account.balance) { %><small class="account-tile-sub" data-private><%= account.availableBalanceFormatted %> available</small><% } %>
+    </div>
+</a>

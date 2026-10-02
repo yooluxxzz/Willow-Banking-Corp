@@ -1,0 +1,32 @@
+<%- include('../partials/info-start', { crumb: 'Legal', eyebrow: 'Disclosures', heading: 'Compliance and disclosures.', intro: 'Willow’s regulatory status, and what the labels you see throughout the app mean.', updated: 'October 2, 2026' }) %>
+            <section class="info-section" id="status">
+                <h2>Regulatory status</h2>
+                <p>Willow Banking Corp. is an educational software demonstration, not a licensed bank or a provider of real financial services. Creating a profile does not open a real account. The verification step at sign-up is simulated: no identity checks, credit checks, sanctions screening or anti-money-laundering reviews take place.</p>
+            </section>
+            <section class="info-section" id="protection">
+                <h2>Deposit and investor protection</h2>
+                <p>No deposit insurance, investor compensation or crypto-asset protection scheme applies, because there are no real deposits, securities or crypto-assets. Demo holdings are records of simulated trades valued at delayed market prices.</p>
+            </section>
+            <section class="info-section" id="certifications">
+                <h2>No certification claims</h2>
+                <p>No independent audit report or security certification exists for this demo. Willow does not claim SOC 2 attestation, PCI DSS compliance, ISO 27001 certification or approval from any financial regulator. The protections that are implemented are described on the <a class="text-link" href="/security-info">security page</a>.</p>
+            </section>
+            <section class="info-section" id="labels">
+                <h2>What the labels mean</h2>
+                <table class="info-table">
+                    <thead><tr><th scope="col">Label</th><th scope="col">Meaning</th></tr></thead>
+                    <tbody>
+                        <tr><td><strong>Demo</strong></td><td>A feature that behaves like a real product but uses simulated money.</td></tr>
+                        <tr><td><strong>Simulated</strong></td><td>An action — a payment, trade, conversion or verification — that only updates Willow’s own records.</td></tr>
+                        <tr><td><strong>Delayed data</strong></td><td>Third-party market prices, typically 15 minutes or more behind and occasionally unavailable.</td></tr>
+                        <tr><td><strong>Indicative</strong></td><td>An exchange rate or calculation for illustration, not a quote you could transact at.</td></tr>
+                        <tr><td><strong>Estimate</strong></td><td>A loan or savings figure from a calculator. It is not an offer or approval.</td></tr>
+                        <tr><td><strong>Illustrative</strong></td><td>Sample imagery or figures used to explain a feature on public pages.</td></tr>
+                    </tbody>
+                </table>
+            </section>
+            <section class="info-section" id="advice">
+                <h2>Not advice</h2>
+                <p>Insights, articles and Willow Hub answers are general information drawn from your own demo data. They are not financial, investment, tax or legal advice. Past performance, real or simulated, does not predict future results.</p>
+            </section>
+<%- include('../partials/info-end', { toc: [['status', 'Regulatory status'], ['protection', 'Deposit and investor protection'], ['certifications', 'No certification claims'], ['labels', 'What the labels mean'], ['advice', 'Not advice']] }) %>

@@ -1,0 +1,407 @@
+<%
+  const unsplash = (id, width) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${width}&q=72`;
+  const unsplashSet = id => [800, 1200, 1600, 2200].map(width => `${unsplash(id, width)} ${width}w`).join(', ');
+  const scenes = [
+    { key: 'everyday', tab: 'Everyday', caption: 'For everyday life.', local: 'willow-hero-customer', position: '40% 30%', tone: 'tone-a', flip: true },
+    { key: 'home', tab: 'Home', caption: 'For what you’re building.', unsplash: 'photo-1511895426328-dc8714191300', position: '50% 35%', tone: 'tone-b' },
+    { key: 'business', tab: 'Business', caption: 'For the work you love.', unsplash: 'photo-1441986300917-64674bd600d8', position: '50% 50%', tone: 'tone-c' },
+    { key: 'global', tab: 'Global', caption: 'For everywhere you go.', unsplash: 'photo-1476514525535-07fb3b4ae5f1', position: '50% 55%', tone: 'tone-d' },
+    { key: 'wealth', tab: 'Wealth', caption: 'For what’s next.', local: 'willow-hero-employee', position: '70% 30%', tone: 'tone-e' },
+  ];
+  const goals = [
+    { key: 'savings', icon: 'savings', label: 'Build savings', title: 'A cushion that grows quietly.', body: 'Separate savings accounts, goals that track your progress and scheduled transfers that move money on the days you choose.', products: [['Savings', '/money/savings'], ['Scheduled transfers', '/money/transfers'], ['Goals', '/money/savings']], cta: ['Explore savings', '/money/savings'], stat: ['Emergency fund', '72%'] },
+    { key: 'invest', icon: 'trend', label: 'Invest', title: 'Learn the markets with real data.', body: 'Explore stocks, ETFs, funds and crypto with delayed market data, then practice with $100,000 in simulated cash.', products: [['Stocks', '/invest/stocks'], ['ETFs', '/invest/etfs'], ['Portfolio', '/invest/portfolio']], cta: ['Explore investing', '/invest/stocks'], stat: ['Demo cash', '$100,000'] },
+    { key: 'home', icon: 'house', label: 'Buy a home', title: 'See the numbers before the keys.', body: 'Estimate a mortgage payment with taxes and insurance included, track your down payment goal and keep the plan in view.', products: [['Mortgage calculator', '/borrow/mortgages'], ['Savings', '/money/savings'], ['Education', '/learn/mortgage-basics']], cta: ['Estimate a mortgage', '/borrow/mortgages'], stat: ['Home deposit', '64%'] },
+    { key: 'business', icon: 'briefcase', label: 'Start a business', title: 'Banking that keeps up with the work.', body: 'Business checking, cards for your team, invoices and a clear view of cash flow — kept separate from personal money.', products: [['Business banking', '/business'], ['Business cards', '/business/cards'], ['Expenses', '/business/expenses']], cta: ['Explore business', '/business'], stat: ['Invoices paid', '12'] },
+    { key: 'everyday', icon: 'wallet', label: 'Manage everyday money', title: 'A calmer rhythm for daily spending.', body: 'Accounts, cards with instant controls, payments to friends and a spending view that sorts itself into categories.', products: [['Accounts', '/money/accounts'], ['Cards', '/money/cards'], ['Payments', '/money/payments']], cta: ['Explore accounts', '/money/accounts'], stat: ['Categories', '9'] },
+    { key: 'international', icon: 'globe', label: 'Go international', title: 'Hold and move money across borders.', body: 'Currency accounts in EUR, GBP, MZN and ZAR, indicative exchange rates and card controls for spending abroad.', products: [['International', '/money/international'], ['Transfers', '/money/transfers'], ['Cards abroad', '/money/cards']], cta: ['Explore international', '/money/international'], stat: ['Currencies', '5'] },
+  ];
+%><%- include('partials/head', { css: ['site', 'home'], bodyClass: 'home' }) %>
+<%- include('partials/site-header', { headerVariant: 'overlay' }) %>
+<main id="main">
+    <!-- ── Hero ─────────────────────────────────────────────────────── -->
+    <section class="hero" data-hero aria-label="Willow — your money, moving forward">
+        <div class="hero-media" aria-hidden="true">
+            <% scenes.forEach((scene, index) => { %>
+            <figure class="hero-scene <%= scene.tone %><%= scene.flip ? ' is-flipped' : '' %><%= index === 0 ? ' is-active' : '' %>" data-hero-scene="<%= index %>">
+                <% if (scene.local) { %>
+                <img src="/images/<%= scene.local %>.webp" srcset="/images/<%= scene.local %>-768.webp 768w, /images/<%= scene.local %>.webp 1536w" sizes="100vw" alt="" width="1536" height="1024" style="object-position: <%= scene.position %>" <%- index === 0 ? 'fetchpriority="high" decoding="async"' : 'decoding="async" loading="lazy"' %>>
+                <% } else { %>
+                <img data-src="<%= unsplash(scene.unsplash, 1600) %>" data-srcset="<%= unsplashSet(scene.unsplash) %>" sizes="100vw" alt="" width="1600" height="1067" style="object-position: <%= scene.position %>" decoding="async">
+                <% } %>
+            </figure>
+            <% }) %>
+        </div>
+        <div class="hero-scrim" aria-hidden="true"></div>
+        <div class="hero-inner container-wide">
+            <div class="hero-copy">
+                <p class="hero-caption">
+                    <% scenes.forEach((scene, index) => { %><span data-hero-caption="<%= index %>"<%- index === 0 ? ' class="is-active"' : ' aria-hidden="true"' %>><%= scene.caption %></span><% }) %>
+                </p>
+                <h1 class="hero-title">Your money.<br>Moving forward.</h1>
+                <p class="hero-lede">Banking, investing, and building wealth — brought together in one intelligent financial experience.</p>
+                <div class="hero-actions">
+                    <a href="/register" class="btn btn-light btn-lg">Open an account <%- icon('arrow-right', 'icon-arrow') %></a>
+                    <a href="/login" class="btn btn-outline-light btn-lg">Sign in</a>
+                </div>
+                <p class="hero-note"><span class="demo-badge">Demo</span> A fictional bank for exploring. No real money moves.</p>
+            </div>
+            <div class="hero-vignettes" aria-hidden="true">
+                <div class="vignette glass is-active" data-hero-vignette="0">
+                    <div class="vignette-head"><span class="vignette-icon is-copper"><%- icon('card') %></span><div><strong>Copper Kettle Café</strong><small>Willow Card ·· 4021 · Just now</small></div><span class="vignette-amount">−$4.80</span></div>
+                    <div class="vignette-row"><span>Spent this week</span><strong>$214.30</strong></div>
+                    <div class="vignette-bar"><span style="--w:62%"></span></div>
+                    <span class="illustrative-tag">Illustrative</span>
+                </div>
+                <div class="vignette glass" data-hero-vignette="1">
+                    <div class="vignette-head"><span class="vignette-icon"><%- icon('house') %></span><div><strong>Home deposit</strong><small>Goal · on track</small></div></div>
+                    <div class="vignette-figure">$38,400 <small>of $60,000</small></div>
+                    <div class="vignette-bar"><span style="--w:64%"></span></div>
+                    <span class="illustrative-tag">Illustrative</span>
+                </div>
+                <div class="vignette glass" data-hero-vignette="2">
+                    <div class="vignette-head"><span class="vignette-icon is-positive"><%- icon('invoice') %></span><div><strong>Invoice INV-1042 paid</strong><small>Kestrel Labs · Today</small></div><span class="vignette-amount is-positive">+$4,750</span></div>
+                    <div class="vignette-bars"><span style="--h:38%"></span><span style="--h:52%"></span><span style="--h:46%"></span><span style="--h:64%"></span><span style="--h:58%"></span><span style="--h:80%"></span></div>
+                    <span class="illustrative-tag">Illustrative</span>
+                </div>
+                <div class="vignette glass" data-hero-vignette="3">
+                    <div class="vignette-head"><span class="vignette-icon"><%- icon('globe') %></span><div><strong>Your currencies</strong><small>Hold, convert and spend</small></div></div>
+                    <ul class="vignette-currencies"><li><span>EUR</span><strong>€640.20</strong></li><li><span>USD</span><strong>$3,240.35</strong></li><li><span>GBP</span><strong>£210.00</strong></li></ul>
+                    <span class="illustrative-tag">Illustrative</span>
+                </div>
+                <div class="vignette glass" data-hero-vignette="4">
+                    <div class="vignette-head"><span class="vignette-icon"><%- icon('pie') %></span><div><strong>Demo portfolio</strong><small>Simulated investing</small></div></div>
+                    <div class="vignette-figure">$104,218 <small class="is-positive">+1.2% today</small></div>
+                    <svg class="vignette-spark" viewBox="0 0 200 48" preserveAspectRatio="none"><path d="M0 40 C18 38 26 30 44 32 S74 22 92 26 S124 12 142 16 S176 6 200 4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+                    <span class="illustrative-tag">Illustrative</span>
+                </div>
+            </div>
+        </div>
+        <div class="hero-controls container-wide">
+            <div class="hero-tabs" role="tablist" aria-label="Life with Willow">
+                <% scenes.forEach((scene, index) => { %>
+                <button type="button" role="tab" class="hero-tab" id="hero-tab-<%= index %>" aria-selected="<%= index === 0 %>" data-hero-tab="<%= index %>" aria-label="<%= scene.tab %>: <%= scene.caption %>">
+                    <span class="hero-tab-index num">0<%= index + 1 %></span>
+                    <span class="hero-tab-label"><%= scene.tab %></span>
+                    <span class="hero-tab-progress" aria-hidden="true"><span></span></span>
+                </button>
+                <% }) %>
+            </div>
+            <button type="button" class="hero-toggle" data-hero-toggle aria-pressed="false" aria-label="Pause scenes">
+                <%- icon('pause', 'icon-sm hero-toggle-pause') %><%- icon('play', 'icon-sm hero-toggle-play') %>
+            </button>
+        </div>
+    </section>
+
+    <!-- ── 01 Everyday banking ──────────────────────────────────────── -->
+    <section class="section home-everyday" id="everyday" aria-labelledby="everydayTitle">
+        <div class="container">
+            <div class="section-intro is-split reveal">
+                <div>
+                    <p class="eyebrow"><span class="section-number">01</span> Everyday banking</p>
+                    <h2 class="h2" id="everydayTitle">Everything you need for everyday money.</h2>
+                </div>
+                <p class="lede">Accounts, cards, payments, transfers and scheduled payments — designed to feel effortless, so the everyday stays simple.</p>
+            </div>
+            <div class="everyday-grid">
+                <a href="/money/accounts" class="everyday-tile everyday-tile-main reveal">
+                    <div class="everyday-tile-copy">
+                        <span class="icon-tile"><%- icon('wallet') %></span>
+                        <h3>Accounts that make sense at a glance</h3>
+                        <p>Checking, savings and currency accounts with clear balances, searchable activity and statements.</p>
+                        <span class="link-arrow">Explore accounts <%- icon('arrow-right') %></span>
+                    </div>
+                    <div class="phone" aria-hidden="true">
+                        <div class="phone-screen">
+                            <div class="phone-top"><span>Good morning, Alex</span><span class="illustrative-tag">Illustrative</span></div>
+                            <p class="phone-label">Available balance</p>
+                            <p class="phone-balance num">$4,820<span>.35</span></p>
+                            <div class="phone-actions"><span><%- icon('send') %>Send</span><span><%- icon('plus') %>Add</span><span><%- icon('swap') %>Convert</span><span><%- icon('trend') %>Invest</span></div>
+                            <ul class="phone-list">
+                                <li><span class="phone-dot is-grocery"><%- icon('store') %></span><span>Market Street Grocer<small>Today · Groceries</small></span><strong>−$42.80</strong></li>
+                                <li><span class="phone-dot is-income"><%- icon('arrow-down-left') %></span><span>Salary<small>Yesterday · Income</small></span><strong class="is-positive">+$2,475.00</strong></li>
+                                <li><span class="phone-dot"><%- icon('transfer') %></span><span>To Savings<small>Mon · Transfer</small></span><strong>−$500.00</strong></li>
+                            </ul>
+                        </div>
+                    </div>
+                </a>
+                <a href="/money/cards" class="everyday-tile everyday-tile-cards reveal">
+                    <div class="everyday-cards" aria-hidden="true">
+                        <div class="bank-card is-virtual"><div class="bank-card-top"><span class="bank-card-brand">Willow</span><span class="bank-card-kind">Virtual</span></div><div class="bank-card-bottom"><span class="bank-card-number">•••• 7316</span></div></div>
+                        <div class="bank-card"><div class="bank-card-top"><span class="bank-card-brand">Willow</span><span class="bank-card-kind">Debit</span></div><span class="bank-card-chip"></span><div class="bank-card-bottom"><span class="bank-card-number">•••• 4021</span><span class="bank-card-network"><span></span><span></span></span></div></div>
+                    </div>
+                    <div class="everyday-tile-copy">
+                        <span class="icon-tile"><%- icon('card') %></span>
+                        <h3>Cards with instant controls</h3>
+                        <p>Physical and virtual cards. Freeze, set limits and choose where they work — in a tap.</p>
+                        <span class="link-arrow">Explore cards <%- icon('arrow-right') %></span>
+                    </div>
+                </a>
+                <a href="/money/payments" class="everyday-tile reveal">
+                    <span class="icon-tile"><%- icon('send') %></span>
+                    <h3>Payments</h3>
+                    <p>Send money to friends and saved payees, with a clear review before anything moves.</p>
+                    <span class="link-arrow">Explore payments <%- icon('arrow-right') %></span>
+                </a>
+                <a href="/money/transfers" class="everyday-tile reveal">
+                    <span class="icon-tile"><%- icon('transfer') %></span>
+                    <h3>Transfers</h3>
+                    <p>Move money between your accounts instantly, or schedule it for the day you choose.</p>
+                    <span class="link-arrow">Explore transfers <%- icon('arrow-right') %></span>
+                </a>
+                <a href="/money/savings" class="everyday-tile reveal">
+                    <span class="icon-tile"><%- icon('calendar') %></span>
+                    <h3>Scheduled payments</h3>
+                    <p>Plan regular commitments ahead and see what’s coming up before it happens.</p>
+                    <span class="link-arrow">Explore savings <%- icon('arrow-right') %></span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── 02 Grow your money ───────────────────────────────────────── -->
+    <section class="section on-dark home-grow" id="grow" aria-labelledby="growTitle">
+        <div class="container">
+            <div class="grow-grid">
+                <div class="grow-copy reveal">
+                    <p class="eyebrow"><span class="section-number">02</span> Grow your money</p>
+                    <h2 class="h2" id="growTitle">Put what you have to work.</h2>
+                    <p class="lede">Save toward what matters, then explore investing with real market data and simulated money — stocks, ETFs, funds and crypto, side by side.</p>
+                    <div class="grow-tabs" role="tablist" aria-label="Ways to grow">
+                        <% [['savings','Savings','savings','Savings accounts and goals that keep your plans visible — separate from everyday spending.','/money/savings'],['stocks','Stocks','chart','Follow well-known companies with delayed quotes, interactive charts and key statistics.','/invest/stocks'],['etfs','ETFs','layers','Explore diversified funds that trade like stocks, from broad markets to bonds and gold.','/invest/etfs'],['funds','Funds','pie','Compare index mutual funds priced once a day at net asset value.','/invest/funds'],['crypto','Crypto','bitcoin','Understand digital assets with clear risk information and a simulated wallet.','/invest/crypto']].forEach(([key, label, iconName, body, href], index) => { %>
+                        <button type="button" role="tab" class="grow-tab" id="grow-tab-<%= key %>" aria-selected="<%= index === 0 %>" aria-controls="grow-panel-<%= key %>" data-grow-tab="<%= key %>"><%- icon(iconName, 'icon-sm') %><%= label %></button>
+                        <% }) %>
+                    </div>
+                    <% [['savings','Savings accounts and goals that keep your plans visible — separate from everyday spending.','/money/savings','Explore savings'],['stocks','Follow well-known companies with delayed quotes, interactive charts and key statistics.','/invest/stocks','Explore stocks'],['etfs','Explore diversified funds that trade like stocks, from broad markets to bonds and gold.','/invest/etfs','Explore ETFs'],['funds','Compare index mutual funds priced once a day at net asset value.','/invest/funds','Explore funds'],['crypto','Understand digital assets with clear risk information and a simulated wallet.','/invest/crypto','Explore crypto']].forEach(([key, body, href, label], index) => { %>
+                    <div class="grow-panel" role="tabpanel" id="grow-panel-<%= key %>" aria-labelledby="grow-tab-<%= key %>" <%= index ? 'hidden' : '' %>>
+                        <p><%= body %></p>
+                        <a class="link-arrow" href="<%= href %>"><%= label %> <%- icon('arrow-right') %></a>
+                    </div>
+                    <% }) %>
+                    <p class="grow-note"><%- icon('info', 'icon-sm') %> Simulated investing. No real securities or crypto are bought or sold, and nothing here is investment advice.</p>
+                </div>
+                <div class="market-panel reveal" data-market-panel aria-labelledby="marketPanelTitle">
+                    <div class="market-panel-head">
+                        <div><p class="label">Markets today</p><h3 id="marketPanelTitle">Indices &amp; popular stocks</h3></div>
+                        <span class="data-source" data-market-status><%- icon('clock') %> Delayed data</span>
+                    </div>
+                    <div class="market-indices" data-market-indices>
+                        <% for (let i = 0; i < 3; i++) { %><div class="market-index"><span class="skeleton skeleton-line w-60"></span><span class="skeleton skeleton-line w-80" style="height:1.4em"></span></div><% } %>
+                    </div>
+                    <ul class="market-list" data-market-list role="list">
+                        <% for (let i = 0; i < 5; i++) { %><li class="market-row"><span class="skeleton" style="width:40px;height:40px;border-radius:12px"></span><span class="market-row-main"><span class="skeleton skeleton-line w-60"></span><span class="skeleton skeleton-line w-40"></span></span><span class="skeleton skeleton-line" style="width:64px"></span></li><% } %>
+                    </ul>
+                    <a class="btn btn-light btn-block" href="/markets">See all markets <%- icon('arrow-right', 'icon-arrow') %></a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── 03 Goals & personalization ───────────────────────────────── -->
+    <section class="section home-goals" id="goals" aria-labelledby="goalsTitle">
+        <div class="container">
+            <div class="section-intro is-center reveal">
+                <p class="eyebrow"><span class="section-number">03</span> Built around your goals</p>
+                <h2 class="h2" id="goalsTitle">What are you working toward?</h2>
+                <p class="lede">Choose what matters most right now. Willow brings the right tools forward.</p>
+            </div>
+            <div class="goal-picker reveal" role="tablist" aria-label="Your goals">
+                <% goals.forEach((goal, index) => { %>
+                <button type="button" role="tab" class="goal-option" id="goal-tab-<%= goal.key %>" aria-selected="<%= index === 0 %>" aria-controls="goal-panel-<%= goal.key %>" data-goal-option="<%= goal.key %>">
+                    <span class="goal-option-icon"><%- icon(goal.icon) %></span>
+                    <span><%= goal.label %></span>
+                </button>
+                <% }) %>
+            </div>
+            <div class="goal-stage reveal">
+                <% goals.forEach((goal, index) => { %>
+                <div class="goal-panel" role="tabpanel" id="goal-panel-<%= goal.key %>" aria-labelledby="goal-tab-<%= goal.key %>" data-goal-panel="<%= goal.key %>" <%= index ? 'hidden' : '' %>>
+                    <div class="goal-panel-copy">
+                        <p class="eyebrow no-dot"><%= goal.label %></p>
+                        <h3 class="h3"><%= goal.title %></h3>
+                        <p class="secondary"><%= goal.body %></p>
+                        <ul class="goal-products" role="list">
+                            <% goal.products.forEach(([label, href]) => { %><li><a href="<%= href %>"><%= label %> <%- icon('arrow-up-right', 'icon-sm') %></a></li><% }) %>
+                        </ul>
+                        <a href="<%= goal.cta[1] %>" class="btn btn-primary"><%= goal.cta[0] %> <%- icon('arrow-right', 'icon-arrow') %></a>
+                    </div>
+                    <div class="goal-visual goal-visual-<%= goal.key %>" aria-hidden="true">
+                        <div class="goal-visual-card glass">
+                            <span class="icon-tile"><%- icon(goal.icon) %></span>
+                            <p class="label"><%= goal.stat[0] %></p>
+                            <p class="goal-visual-figure num"><%= goal.stat[1] %></p>
+                            <span class="illustrative-tag">Illustrative</span>
+                        </div>
+                    </div>
+                </div>
+                <% }) %>
+            </div>
+            <p class="goal-footnote">Examples are illustrative, not personalized advice. Sign in to save your own goals — progress is self-reported and never moves money.</p>
+        </div>
+    </section>
+
+    <!-- ── 04 Willow Hub ─────────────────────────────────────────────── -->
+    <section class="section section-muted home-hub" id="hub" aria-labelledby="hubTitle">
+        <div class="container">
+            <div class="section-intro is-split reveal">
+                <div>
+                    <p class="eyebrow"><span class="section-number">04</span> Willow Hub</p>
+                    <h2 class="h2" id="hubTitle">Your complete financial picture.</h2>
+                </div>
+                <p class="lede">Cash, savings, investments and crypto in one calm view — with insights that explain what changed, and an assistant that answers from your own data.</p>
+            </div>
+            <div class="hub-showcase reveal" aria-label="Illustrative Willow Hub dashboard">
+                <div class="hub-frame">
+                    <div class="hub-frame-bar"><span></span><span></span><span></span><p>Willow Hub</p><span class="illustrative-tag">Illustrative data</span></div>
+                    <div class="hub-frame-body">
+                        <div class="hub-card hub-networth">
+                            <p class="label">Net worth</p>
+                            <p class="figure figure-lg">$134,820<span class="cents">.40</span></p>
+                            <p class="delta is-up"><%- icon('trend') %> +$2,140 this month</p>
+                            <div class="hub-stack" role="img" aria-label="Composition: cash 18%, savings 15%, investments 54%, crypto 13%">
+                                <span style="--w:18%;--c:var(--chart-1)"></span><span style="--w:15%;--c:var(--chart-2)"></span><span style="--w:54%;--c:var(--chart-3)"></span><span style="--w:13%;--c:var(--chart-5)"></span>
+                            </div>
+                            <ul class="hub-legend">
+                                <li><i style="--c:var(--chart-1)"></i>Cash<strong>$24,300</strong></li>
+                                <li><i style="--c:var(--chart-2)"></i>Savings<strong>$19,800</strong></li>
+                                <li><i style="--c:var(--chart-3)"></i>Investments<strong>$73,480</strong></li>
+                                <li><i style="--c:var(--chart-5)"></i>Crypto<strong>$17,240</strong></li>
+                            </ul>
+                        </div>
+                        <div class="hub-card hub-movement">
+                            <p class="label">Money movement · this month</p>
+                            <div class="hub-columns" aria-hidden="true">
+                                <% [['Income',86,'var(--chart-1)','$8,420'],['Expenses',55,'var(--chart-3)','$5,360'],['Savings',20,'var(--chart-2)','$1,920'],['Investing',29,'var(--chart-5)','$2,840']].forEach(([label, height, color, value]) => { %>
+                                <div class="hub-column"><span class="hub-column-value"><%= value %></span><span class="hub-column-bar" style="--h:<%= height %>%;--c:<%= color %>"></span><span class="hub-column-label"><%= label %></span></div>
+                                <% }) %>
+                            </div>
+                        </div>
+                        <div class="hub-card hub-goals-card">
+                            <p class="label">Goals</p>
+                            <ul>
+                                <% [['Emergency fund',72],['Home',31],['Travel',58],['Investing',41]].forEach(([label, pct]) => { %>
+                                <li><span class="progress-ring" style="--value:<%= pct %>;--size:44px;--thickness:4px"><span><%= pct %></span></span><%= label %></li>
+                                <% }) %>
+                            </ul>
+                        </div>
+                        <div class="hub-card hub-insights-card">
+                            <p class="label">Insights</p>
+                            <ul>
+                                <li><%- icon('savings', 'icon-sm') %> You’ve saved 18% more this month.</li>
+                                <li><%- icon('pie', 'icon-sm') %> Your portfolio spans 7 assets.</li>
+                                <li><%- icon('calendar', 'icon-sm') %> 3 scheduled payments this week.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="ask-demo glass" aria-label="Example Ask Willow conversation">
+                    <div class="ask-demo-head"><span class="ask-orb"><%- icon('sparkle', 'icon-sm') %></span><strong>Ask Willow</strong><span class="illustrative-tag">Example</span></div>
+                    <p class="ask-demo-q">How much did I spend this month?</p>
+                    <div class="ask-demo-a">
+                        <p>You’ve spent <strong>$2,316.40</strong> this month — 12% less than last month. Groceries and dining are your largest categories.</p>
+                        <div class="ask-demo-bars"><span style="--w:78%">Groceries</span><span style="--w:54%">Dining</span><span style="--w:36%">Transport</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="hub-cta reveal">
+                <p>Willow Intelligence answers only from your own demo data — and never predicts markets or gives advice.</p>
+                <a href="/login?returnTo=%2Fhub" class="link-arrow">Sign in to see your picture <%- icon('arrow-right') %></a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── 05 International ─────────────────────────────────────────── -->
+    <section class="section home-global" id="international" aria-labelledby="globalTitle">
+        <div class="container global-grid">
+            <div class="reveal">
+                <p class="eyebrow"><span class="section-number">05</span> International</p>
+                <h2 class="h2" id="globalTitle">One account. Many currencies.</h2>
+                <p class="lede">Hold US dollars, euros, pounds, meticais and rand side by side. See indicative rates, estimate a conversion and keep your card ready for wherever you land.</p>
+                <a href="/money/international" class="btn btn-secondary mt-6">Explore international <%- icon('arrow-right', 'icon-arrow') %></a>
+            </div>
+            <div class="currency-board reveal" data-fx-board>
+                <div class="currency-board-head"><p class="label">Indicative rates · 1 USD</p><span class="data-source" data-fx-status><%- icon('clock') %> Loading</span></div>
+                <ul role="list">
+                    <% [['EUR','Euro','€'],['GBP','British pound','£'],['ZAR','South African rand','R'],['MZN','Mozambican metical','MT']].forEach(([code, name, symbol]) => { %>
+                    <li data-fx-row="<%= code %>"><span class="currency-flag"><%= code %></span><span class="currency-name"><strong><%= name %></strong><small><%= code %> · <%= symbol %></small></span><span class="currency-rate num" data-fx-rate><span class="skeleton skeleton-line" style="width:70px"></span></span></li>
+                    <% }) %>
+                </ul>
+                <p class="currency-board-note">Indicative mid-market rates for information only. Willow Demo never executes real currency exchange.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── 06 Business ──────────────────────────────────────────────── -->
+    <section class="section section-surface home-business" id="business" aria-labelledby="businessTitle">
+        <div class="container split-feature">
+            <div class="business-visual reveal" aria-hidden="true">
+                <img data-src="<%= unsplash('photo-1521737711867-e3b97375f902', 1200) %>" data-srcset="<%= [700, 1000, 1400].map(width => `${unsplash('photo-1521737711867-e3b97375f902', width)} ${width}w`).join(', ') %>" sizes="(max-width: 900px) 100vw, 50vw" alt="" width="1200" height="800" loading="lazy" decoding="async" data-lazy-image>
+                <div class="business-float glass">
+                    <p class="label">Cash flow · 6 months</p>
+                    <div class="vignette-bars"><span style="--h:42%"></span><span style="--h:58%"></span><span style="--h:50%"></span><span style="--h:72%"></span><span style="--h:66%"></span><span style="--h:88%"></span></div>
+                    <div class="business-float-row"><span>Revenue</span><strong>$18,450</strong></div>
+                    <div class="business-float-row"><span>Expenses</span><strong>$11,920</strong></div>
+                    <span class="illustrative-tag">Illustrative</span>
+                </div>
+            </div>
+            <div class="split-feature-copy reveal">
+                <p class="eyebrow"><span class="section-number">06</span> Willow Business</p>
+                <h2 class="h2" id="businessTitle">Built for the business you’re building.</h2>
+                <p class="lede">Business checking, cards for your team, invoices and expenses — with revenue, spending and upcoming payments in a single view.</p>
+                <ul class="check-list">
+                    <li>Separate business accounts and virtual cards</li>
+                    <li>Invoices that record payments when they’re settled</li>
+                    <li>Cash flow, categories and upcoming payments at a glance</li>
+                </ul>
+                <div class="cluster mt-4">
+                    <a href="/business" class="btn btn-primary">Explore business banking <%- icon('arrow-right', 'icon-arrow') %></a>
+                    <a href="/register?type=business" class="btn btn-ghost">Open business banking</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── 07 Security ──────────────────────────────────────────────── -->
+    <section class="section on-dark home-security" id="security" aria-labelledby="securityTitle">
+        <div class="container">
+            <div class="section-intro is-split reveal">
+                <div>
+                    <p class="eyebrow"><span class="section-number">07</span> Security</p>
+                    <h2 class="h2" id="securityTitle">Protection you can see — and control.</h2>
+                </div>
+                <p class="lede">Security at Willow isn’t hidden in a settings menu. It’s part of the product, with clear controls you can use in seconds.</p>
+            </div>
+            <div class="security-grid">
+                <% [['fingerprint','Two-step verification','Add a code from your authenticator app to every sign-in.'],['snowflake','Instant card freeze','Freeze one card — or all of them — the moment something feels wrong.'],['laptop','Devices & sessions','See where you’re signed in and sign out any session remotely.'],['bell','Alerts that matter','Choose notifications for payments, cards and security events.'],['eye-off','Privacy mode','Hide balances on screen when you’re somewhere public.'],['key','Backup recovery codes','Regain access with one-time codes you keep somewhere safe.']].forEach(([iconName, title, body], index) => { %>
+                <div class="security-item reveal" style="--reveal-delay: <%= index * 60 %>ms">
+                    <span class="icon-tile"><%- icon(iconName) %></span>
+                    <h3><%= title %></h3>
+                    <p><%= body %></p>
+                </div>
+                <% }) %>
+            </div>
+            <div class="security-honesty reveal">
+                <%- icon('shield-check', 'icon-lg') %>
+                <p><strong>Honest by design.</strong> Passwords are hashed with bcrypt and sessions can be revoked at any time. Willow is a demonstration — it isn’t a licensed bank and doesn’t claim deposit insurance or independent certification.</p>
+                <a href="/security-info" class="link-arrow">How Willow protects you <%- icon('arrow-right') %></a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── Final CTA ───────────────────────────────────────────────── -->
+    <section class="home-final" aria-labelledby="finalTitle">
+        <img class="home-final-image" data-src="<%= unsplash('photo-1476514525535-07fb3b4ae5f1', 2000) %>" data-srcset="<%= [900, 1400, 2000].map(width => `${unsplash('photo-1476514525535-07fb3b4ae5f1', width)} ${width}w`).join(', ') %>" sizes="100vw" alt="" width="2000" height="1333" loading="lazy" decoding="async" data-lazy-image>
+        <div class="home-final-inner container reveal">
+            <p class="eyebrow">Willow</p>
+            <h2 class="display" id="finalTitle">Where will your money take you?</h2>
+            <p class="lede">Open a Willow demo account in minutes — or step straight into a sample profile and explore everything.</p>
+            <div class="cluster">
+                <a href="/register" class="btn btn-light btn-lg">Join Willow <%- icon('arrow-right', 'icon-arrow') %></a>
+                <button type="button" class="btn btn-outline-light btn-lg" data-demo-start>Explore a demo profile</button>
+            </div>
+            <p class="home-final-note" data-demo-status role="status" aria-live="polite"></p>
+        </div>
+    </section>
+</main>
+<%- include('partials/site-footer') %>
+<%- include('partials/foot', { js: ['public-markets', 'home'] }) %>

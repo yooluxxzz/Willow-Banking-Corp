@@ -1,0 +1,86 @@
+<%
+  const calcKind = typeof kind !== 'undefined' ? kind : 'personal';
+  const allowSave = typeof canSave !== 'undefined' && canSave;
+  const id = 'calc-' + calcKind;
+%>
+<form class="calc" data-calc="<%= calcKind %>" id="<%= id %>" novalidate aria-describedby="<%= id %>-note">
+    <div class="calc-inputs">
+        <% if (calcKind === 'mortgage') { %>
+            <div class="field">
+                <label for="<%= id %>-price">Home price</label>
+                <div class="input-group has-prefix"><span class="input-prefix">$</span><input class="input num" id="<%= id %>-price" name="homePrice" type="number" inputmode="decimal" min="20000" max="10000000" step="1000" value="450000"></div>
+            </div>
+            <div class="field">
+                <label for="<%= id %>-down">Down payment <span class="optional" data-calc-down-pct>20%</span></label>
+                <div class="input-group has-prefix"><span class="input-prefix">$</span><input class="input num" id="<%= id %>-down" name="downPayment" type="number" inputmode="decimal" min="0" step="1000" value="90000"></div>
+                <input class="range" type="range" min="0" max="50" step="1" value="20" aria-label="Down payment percentage" data-calc-down-range>
+            </div>
+            <div class="field">
+                <label for="<%= id %>-term">Term</label>
+                <div class="segmented" role="group" aria-label="Mortgage term">
+                    <% [15, 20, 30].forEach(years => { %><button type="button" data-calc-term="<%= years * 12 %>" aria-pressed="<%= years === 30 %>"><%= years %> years</button><% }) %>
+                </div>
+                <input type="hidden" name="termMonths" value="360">
+            </div>
+            <div class="field">
+                <label for="<%= id %>-rate">Illustrative annual rate</label>
+                <div class="input-group has-suffix"><input class="input num" id="<%= id %>-rate" name="rate" type="number" inputmode="decimal" min="0" max="15" step="0.05" value="6.5"><span class="input-suffix">%</span></div>
+            </div>
+            <div class="calc-row">
+                <div class="field">
+                    <label for="<%= id %>-tax">Property tax <span class="optional">/ year</span></label>
+                    <div class="input-group has-prefix"><span class="input-prefix">$</span><input class="input num" id="<%= id %>-tax" name="propertyTax" type="number" inputmode="decimal" min="0" step="100" value="4200"></div>
+                </div>
+                <div class="field">
+                    <label for="<%= id %>-insurance">Insurance <span class="optional">/ year</span></label>
+                    <div class="input-group has-prefix"><span class="input-prefix">$</span><input class="input num" id="<%= id %>-insurance" name="insurance" type="number" inputmode="decimal" min="0" step="100" value="1500"></div>
+                </div>
+            </div>
+        <% } else if (calcKind === 'credit') { %>
+            <div class="field">
+                <label for="<%= id %>-balance">Card balance</label>
+                <div class="input-group has-prefix"><span class="input-prefix">$</span><input class="input num" id="<%= id %>-balance" name="balance" type="number" inputmode="decimal" min="100" max="100000" step="50" value="6400"></div>
+            </div>
+            <div class="field">
+                <label for="<%= id %>-rate">APR</label>
+                <div class="input-group has-suffix"><input class="input num" id="<%= id %>-rate" name="rate" type="number" inputmode="decimal" min="0" max="40" step="0.1" value="22.9"><span class="input-suffix">%</span></div>
+            </div>
+            <div class="field">
+                <label for="<%= id %>-payment">Monthly payment</label>
+                <div class="input-group has-prefix"><span class="input-prefix">$</span><input class="input num" id="<%= id %>-payment" name="payment" type="number" inputmode="decimal" min="1" step="10" value="300"></div>
+                <input class="range" type="range" min="25" max="2000" step="25" value="300" aria-label="Monthly payment" data-calc-payment-range>
+            </div>
+        <% } else { %>
+            <div class="field">
+                <label for="<%= id %>-amount"><%= calcKind === 'business' ? 'Loan amount' : 'How much would you like to borrow?' %></label>
+                <div class="input-group has-prefix"><span class="input-prefix">$</span><input class="input num" id="<%= id %>-amount" name="principal" type="number" inputmode="decimal" min="<%= calcKind === 'business' ? 5000 : 1000 %>" max="<%= calcKind === 'business' ? 500000 : 100000 %>" step="500" value="<%= calcKind === 'business' ? 75000 : 25000 %>"></div>
+                <input class="range" type="range" min="<%= calcKind === 'business' ? 5000 : 1000 %>" max="<%= calcKind === 'business' ? 500000 : 100000 %>" step="<%= calcKind === 'business' ? 5000 : 500 %>" value="<%= calcKind === 'business' ? 75000 : 25000 %>" aria-label="Loan amount" data-calc-amount-range>
+            </div>
+            <div class="field">
+                <label for="<%= id %>-term">Term <span class="optional" data-calc-term-label><%= calcKind === 'business' ? '60' : '36' %> months</span></label>
+                <input class="range" id="<%= id %>-term" name="termMonths" type="range" min="12" max="<%= calcKind === 'business' ? 120 : 84 %>" step="12" value="<%= calcKind === 'business' ? 60 : 36 %>">
+                <div class="calc-scale"><span>12 mo</span><span><%= calcKind === 'business' ? 120 : 84 %> mo</span></div>
+            </div>
+            <div class="field">
+                <label for="<%= id %>-rate">Illustrative annual rate</label>
+                <div class="input-group has-suffix"><input class="input num" id="<%= id %>-rate" name="rate" type="number" inputmode="decimal" min="0" max="<%= calcKind === 'business' ? 30 : 36 %>" step="0.1" value="<%= calcKind === 'business' ? 9.5 : 8.9 %>"><span class="input-suffix">%</span></div>
+            </div>
+        <% } %>
+    </div>
+    <div class="calc-result" aria-live="polite">
+        <p class="label" data-calc-result-label><%= calcKind === 'credit' ? 'Time to pay off' : 'Estimated monthly payment' %></p>
+        <p class="calc-figure num" data-calc-figure>—</p>
+        <p class="calc-sub" data-calc-sub></p>
+        <div class="calc-split" data-calc-split aria-hidden="true"><span class="calc-split-principal"></span><span class="calc-split-interest"></span></div>
+        <dl class="dl-rows calc-details" data-calc-details></dl>
+        <p class="field-error" data-calc-error role="alert" hidden></p>
+        <% if (allowSave) { %>
+        <div class="calc-save">
+            <label class="visually-hidden" for="<%= id %>-label">Estimate name</label>
+            <input class="input" id="<%= id %>-label" name="label" maxlength="60" placeholder="Name this estimate (optional)">
+            <button type="submit" class="btn btn-primary">Save estimate</button>
+        </div>
+        <% } %>
+        <p class="calc-note" id="<%= id %>-note"><%- icon('info', 'icon-sm') %> Estimate only — not a loan offer, approval or quote. Excludes fees, eligibility and credit checks; Willow Demo doesn’t lend.</p>
+    </div>
+</form>

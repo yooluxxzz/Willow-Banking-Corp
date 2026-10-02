@@ -1,0 +1,91 @@
+<%
+  const products = [
+    { value: 'checking', icon: 'wallet', title: 'Checking', text: 'An everyday account for spending, bills and payments. Add a card any time.' },
+    { value: 'savings', icon: 'savings', title: 'Savings', text: 'Keep money apart from everyday spending and move it back when you need it.' },
+    { value: 'currency', icon: 'globe', title: 'Currency account', text: 'Hold euros, pounds, meticais or rand. Convert between your accounts at indicative rates.' },
+    { value: 'business', icon: 'briefcase', title: 'Business checking', text: 'A separate operating account with invoices, expenses and a cash-flow dashboard.' },
+  ];
+  const foreign = Object.values(currencies).filter(item => item.code !== 'USD');
+  const atLimit = accountCount >= 10;
+%><%- include('../partials/app-start', { css: [] }) %>
+
+<a class="back-link" href="/accounts"><%- icon('arrow-left') %> Accounts</a>
+
+<div class="flow mt-6" data-open-account>
+    <div class="flow-head">
+        <p class="label">Open an account</p>
+        <h1 class="page-head-title mt-2">What would you like to open?</h1>
+        <ol class="stepper mt-6" aria-hidden="true"><li class="is-current" data-flow-dot="0"></li><li data-flow-dot="1"></li><li data-flow-dot="2"></li></ol>
+        <p class="flow-step-label"><span data-flow-label>Step 1 of 3 · Choose</span><span>Simulated</span></p>
+    </div>
+
+    <% if (atLimit) { %>
+    <div class="notice notice-warning"><%- icon('alert') %><div><strong>You’ve reached the demo account limit.</strong> Each Willow demo profile can hold up to 10 accounts. Close or reuse an existing account instead.</div></div>
+    <% } else { %>
+    <form id="openAccountForm" class="flow-card" novalidate>
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="requestKey" value="<%= requestKey %>">
+
+        <section class="flow-pane" data-flow-pane="0" aria-labelledby="chooseTitle">
+            <h2 id="chooseTitle">Choose an account</h2>
+            <p>Every new demo account starts at $0.00 — or zero in its own currency.</p>
+            <fieldset class="option-stack mt-6">
+                <legend class="visually-hidden">Account type</legend>
+                <% products.forEach(item => { %>
+                <label class="option-card">
+                    <input type="radio" name="product" value="<%= item.value %>"<%- product === item.value ? ' checked' : '' %>>
+                    <span class="icon-tile"><%- icon(item.icon) %></span>
+                    <span><strong><%= item.title %></strong><span class="option-desc"><%= item.text %></span></span>
+                    <span class="option-card-check" aria-hidden="true"></span>
+                </label>
+                <% }) %>
+            </fieldset>
+            <fieldset class="currency-picker mt-6" data-currency-picker<%= product === 'currency' ? '' : ' hidden' %>>
+                <legend class="field-label">Currency</legend>
+                <div class="segmented-grid">
+                    <% foreign.forEach(item => { %>
+                    <label class="currency-option">
+                        <input type="radio" name="currency" value="<%= item.code %>"<%- currency === item.code ? ' checked' : '' %>>
+                        <span class="currency-flag" aria-hidden="true"><%= item.symbol %></span>
+                        <span><strong><%= item.code %></strong><small><%= item.name %></small></span>
+                    </label>
+                    <% }) %>
+                </div>
+            </fieldset>
+            <div class="flow-actions"><button type="button" class="btn btn-primary btn-lg" data-flow-next>Continue</button></div>
+        </section>
+
+        <section class="flow-pane" data-flow-pane="1" aria-labelledby="nameTitle" hidden>
+            <h2 id="nameTitle">Name your account</h2>
+            <p>Optional. A name makes it easier to spot in lists and payments.</p>
+            <div class="field mt-6">
+                <label for="nickname">Account name <span class="optional">· optional</span></label>
+                <input class="input input-lg" id="nickname" name="nickname" maxlength="40" autocomplete="off" placeholder="e.g. Rainy day, Bills, Lisbon trip">
+                <p class="field-help">Up to 40 characters.</p>
+            </div>
+            <div class="name-suggestions cluster mt-4" data-name-suggestions></div>
+            <div class="flow-actions"><button type="button" class="btn btn-ghost" data-flow-back><%- icon('arrow-left', 'icon-sm') %> Back</button><button type="button" class="btn btn-primary btn-lg" data-flow-next>Review</button></div>
+        </section>
+
+        <section class="flow-pane" data-flow-pane="2" aria-labelledby="reviewTitle" hidden>
+            <h2 id="reviewTitle" tabindex="-1">Review and open</h2>
+            <p>Check the details below.</p>
+            <dl class="dl-rows mt-6">
+                <div><dt>Account</dt><dd data-review="product"></dd></div>
+                <div><dt>Name</dt><dd data-review="name"></dd></div>
+                <div><dt>Currency</dt><dd data-review="currency"></dd></div>
+                <div><dt>Opening balance</dt><dd data-review="balance"></dd></div>
+                <div><dt>Monthly fee</dt><dd>None — it’s a demo</dd></div>
+            </dl>
+            <label class="check-row mt-6">
+                <input type="checkbox" id="openingAcknowledged">
+                <span>I understand this is a simulated account. It can’t hold real money and isn’t covered by deposit insurance.</span>
+            </label>
+            <p class="field-error mt-3" id="openingFeedback" role="alert" tabindex="-1" hidden></p>
+            <div class="flow-actions"><button type="button" class="btn btn-ghost" data-flow-back><%- icon('arrow-left', 'icon-sm') %> Back</button><button type="submit" class="btn btn-primary btn-lg" id="confirmOpening">Open demo account</button></div>
+        </section>
+    </form>
+    <% } %>
+</div>
+
+<%- include('../partials/app-end', { js: ['open-account'] }) %>

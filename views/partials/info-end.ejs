@@ -1,0 +1,14 @@
+        </div>
+        <aside class="info-toc" aria-label="On this page">
+            <% if (typeof toc !== 'undefined' && toc.length) { %>
+            <p class="label">On this page</p>
+            <ul role="list">
+                <% toc.forEach(([id, label]) => { %><li><a href="#<%= id %>"><%= label %></a></li><% }) %>
+            </ul>
+            <% } %>
+            <div class="disclosure-note mt-6"><%- icon('info') %><p>Willow is a fictional demonstration platform. No real money, accounts or investments are involved.</p></div>
+        </aside>
+    </div>
+</main>
+<%- include('site-footer') %>
+<%- include('foot') %>

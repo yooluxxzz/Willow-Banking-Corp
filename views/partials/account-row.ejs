@@ -1,0 +1,15 @@
+<%
+  const rowSymbols = { USD: '$', EUR: '€', GBP: '£', ZAR: 'R', MZN: 'MT' };
+  const rowIcons = { checking: 'wallet', savings: 'savings', business: 'briefcase', currency: 'globe' };
+%><a class="account-row" href="/accounts/<%= account.id %>">
+    <% if (account.kind === 'currency') { %><span class="currency-flag" aria-hidden="true"><%= rowSymbols[account.currency] || account.currency %></span><% } else { %><span class="icon-tile icon-tile-sm"><%- icon(rowIcons[account.kind] || 'wallet') %></span><% } %>
+    <span class="account-row-main">
+        <strong><%= account.displayName %></strong>
+        <small><%= account.productLabel %> · <%= account.maskedNumber %><% if (account.status !== 'active') { %> · <span class="status-pill is-<%= account.status %>"><%= account.status %></span><% } %></small>
+    </span>
+    <span class="account-row-end">
+        <strong class="num" data-private><%= account.balanceFormatted %></strong>
+        <% if (account.available_balance !== account.balance) { %><small data-private><%= account.availableBalanceFormatted %> available</small><% } else { %><small><%= account.currency %></small><% } %>
+    </span>
+    <%- icon('chevron-right', 'account-row-arrow') %>
+</a>

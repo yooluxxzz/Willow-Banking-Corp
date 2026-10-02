@@ -2,7 +2,6 @@ const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
 const supertest = require('supertest');
 const { createTestApp, registerAgent } = require('./setup');
 
@@ -21,161 +20,111 @@ describe('Banking experience and transfer boundaries', () => {
     after(() => closeDatabase());
     const transfer = body => agent.post('/api/transfers').set('Accept', 'application/json').set('X-CSRF-Token', csrf).send(body);
     const balances = () => db.prepare('SELECT id, balance FROM accounts ORDER BY id').all();
-    it('renders public pages and clearly labels business as simulated', async () => {
-        for (const route of ['/', '/personal', '/business', '/contact', '/login', '/register', '/products/checking', '/products/savings', '/products/debit-cards', '/security-info', '/privacy', '/compliance', '/about']) {
+    it('renders public pages, redirects legacy URLs and clearly labels business as simulated', async () => {
+        for (const route of ['/', '/money/accounts', '/money/cards', '/money/savings', '/business', '/contact', '/login', '/register', '/security-info', '/privacy', '/compliance', '/about', '/demo', '/markets', '/insights', '/learn', '/help', '/help/cards']) {
             const response = await supertest(app).get(route);
             assert.equal(response.status, 200, route);
         }
-        assert.match((await supertest(app).get('/business')).text, /Business checking is a single-owner demo account/);
+        for (const [legacy, target] of [['/personal', '/money/accounts'], ['/products/checking', '/money/accounts'], ['/products/savings', '/money/savings'], ['/products/debit-cards', '/money/cards'], ['/trust', '/security-info']]) {
+            const response = await supertest(app).get(legacy);
+            assert.equal(response.status, 301, legacy);
+            assert.equal(response.headers.location, target, legacy);
+        }
+        assert.match((await supertest(app).get('/business')).text, /Willow Business is a demo/);
         const home = await supertest(app).get('/');
-        assert.match(home.text, /progress is self-reported and does not move money/);
-        assert.match(home.text, /Sign in to save a planning goal/);
-        assert.equal((home.text.match(/data-hero-photo=/g) || []).length, 5);
-        assert.equal((home.text.match(/data-hero-copy=/g) || []).length, 5);
+        assert.equal((home.text.match(/data-hero-scene=/g) || []).length, 5);
+        assert.match(home.text, /For everyday life\./);
+        assert.match(home.text, /For what’s next\./);
         assert.match(home.text, /data-hero-toggle/);
+        assert.match(home.text, /What are you working toward\?/);
+        assert.match(home.text, /Where will your money take you\?/);
+        assert.doesNotMatch(home.text, /lorem ipsum/i);
     });
-    it('crossfades five hero scenes, pauses on interaction, and disables autoplay for reduced motion', () => {
-        const createEnvironment = reducedMotion => {
-            const sceneIds = ['a', 'b', 'c', 'd', 'e'];
-            const windowHandlers = {};
-            const heroHandlers = {};
-            let intervalCallback = null;
-            let intervalId = 0;
-            const photos = sceneIds.map(id => ({
-                complete: true,
-                naturalWidth: 100,
-                dataset: { heroPhoto: id },
-                setAttribute(name, value) { this[name] = value; },
-                addEventListener() {},
-            }));
-            const copies = sceneIds.map(id => ({
-                dataset: { heroCopy: id, heroLabel: `Scene ${id}` },
-                setAttribute(name, value) { this[name] = value; },
-                inert: id !== 'a',
-            }));
-            const guide = { textContent: '' };
-            const toggle = {
-                disabled: false,
-                setAttribute(name, value) { this[name] = value; },
-                addEventListener(name, handler) { this.clickHandler = handler; },
-            };
-            const story = {
-                offsetHeight: 2900,
-                top: 0,
-                style: { setProperty() {} },
-                classList: { add() {} },
-                getBoundingClientRect() { return { top: this.top }; },
-            };
-            const hero = {
-                dataset: { activeImage: 'a' },
-                offsetHeight: 1000,
-                style: { setProperty() {} },
-                closest(selector) { return selector === '[data-hero-story]' ? story : null; },
-                querySelectorAll(selector) { return selector === '[data-hero-photo]' ? photos : copies; },
-                querySelector(selector) { return selector === '[data-hero-guide]' ? guide : toggle; },
-                addEventListener(name, handler) { heroHandlers[name] = handler; },
-            };
-            const window = {
-                matchMedia: () => ({ matches: reducedMotion }),
-                requestAnimationFrame(callback) { callback(); return 1; },
-                getComputedStyle: () => ({ getPropertyValue: () => '' }),
-                addEventListener(name, handler) { windowHandlers[name] = handler; },
-                setInterval(callback) { intervalCallback = callback; intervalId += 1; return intervalId; },
-                clearInterval() { intervalCallback = null; },
-            };
-            const document = {
-                addEventListener() {},
-                querySelector(selector) { return selector === '[data-hero-crossfade]' ? hero : null; },
-            };
-            const context = { document, window };
-            context.window = window;
-            vm.createContext(context);
-            vm.runInContext(fs.readFileSync(path.join(__dirname, '../public/js/app.js'), 'utf8'), context);
-            context.setupHeroCrossfade();
-            return { context, hero, story, toggle, guide, photos, copies, heroHandlers, windowHandlers, get intervalCallback() { return intervalCallback; } };
+    async function heroHarness(reduced) {
+        const { JSDOM } = require('jsdom');
+        const page = new JSDOM((await supertest(app).get('/')).text);
+        const heroHtml = page.window.document.querySelector('[data-hero]').outerHTML;
+        const goalsHtml = page.window.document.querySelector('.goal-picker').parentElement.outerHTML;
+        page.window.close();
+        const dom = new JSDOM('<!DOCTYPE html><body></body>', { url: 'http://localhost/', runScripts: 'outside-only' });
+        dom.window.eval(fs.readFileSync(path.join(__dirname, '../public/js/home.js'), 'utf8'));
+        dom.window.document.body.innerHTML = heroHtml + goalsHtml;
+        let tick = null;
+        const timers = { set: 0, cleared: 0 };
+        const fakeWindow = {
+            matchMedia: () => ({ matches: reduced }),
+            setInterval: callback => { tick = callback; timers.set += 1; return timers.set; },
+            clearInterval: () => { tick = null; timers.cleared += 1; },
         };
+        const hero = dom.window.document.querySelector('[data-hero]');
+        const controller = dom.window.WillowHome.setupHero(hero, { window: fakeWindow, interval: 1000 });
+        return { dom, hero, controller, timers, tick: () => tick && tick(), hasTimer: () => tick !== null };
+    }
+    it('crossfades five hero scenes, pauses on interaction, and disables autoplay for reduced motion', async () => {
+        const { dom, hero, controller, tick, hasTimer } = await heroHarness(false);
+        const scenes = [...hero.querySelectorAll('[data-hero-scene]')];
+        const captions = [...hero.querySelectorAll('[data-hero-caption]')];
+        assert.equal(scenes.length, 5);
+        assert.equal(controller.index, 0);
+        assert.ok(scenes[0].classList.contains('is-active'));
+        assert.equal(controller.playing, true);
+        tick();
+        assert.equal(controller.index, 1);
+        assert.deepEqual(scenes.map(scene => scene.classList.contains('is-active')), [false, true, false, false, false]);
+        assert.equal(captions.filter(caption => !caption.hasAttribute('aria-hidden')).length, 1);
+        assert.ok(scenes[2].querySelector('img').getAttribute('src'), 'the next scene is preloaded');
+        const copy = hero.querySelector('.hero-copy') || hero;
+        copy.dispatchEvent(new dom.window.Event('pointerenter'));
+        assert.equal(controller.playing, false);
+        assert.equal(hasTimer(), false);
+        copy.dispatchEvent(new dom.window.Event('pointerleave'));
+        assert.equal(controller.playing, true);
+        const toggle = hero.querySelector('[data-hero-toggle]');
+        toggle.click();
+        assert.equal(controller.playing, false);
+        assert.equal(toggle.getAttribute('aria-pressed'), 'true');
+        toggle.click();
+        assert.equal(controller.playing, true);
+        const tabs = [...hero.querySelectorAll('[data-hero-tab]')];
+        if (tabs.length) {
+            tabs[3].click();
+            assert.equal(controller.index, 3);
+            assert.equal(controller.playing, false);
+            assert.equal(tabs[3].getAttribute('aria-selected'), 'true');
+        }
+        for (let i = 0; i < 7; i += 1) controller.next();
+        assert.ok(controller.index >= 0 && controller.index < 5);
 
-        const environment = createEnvironment(false);
-        assert.equal(environment.intervalCallback !== null, true);
-        environment.intervalCallback();
-        assert.equal(environment.hero.dataset.activeImage, 'b');
-        assert.match(environment.guide.textContent, /02 \/ 05/);
-        environment.heroHandlers.pointerdown({ target: environment.hero });
-        assert.equal(environment.intervalCallback, null);
-        const travel = environment.story.offsetHeight - environment.hero.offsetHeight;
-        environment.story.top = -travel;
-        environment.windowHandlers.scroll();
-        assert.equal(environment.hero.dataset.activeImage, 'e');
-        assert.equal(environment.copies.find(copy => copy.dataset.heroCopy === 'e').inert, false);
-        environment.toggle.clickHandler();
-        assert.equal(environment.intervalCallback !== null, true);
-        environment.toggle.clickHandler();
-        assert.equal(environment.intervalCallback, null);
-
-        const reduced = createEnvironment(true);
-        assert.equal(reduced.intervalCallback, null);
-        assert.equal(reduced.toggle.disabled, true);
-        assert.match(reduced.toggle.textContent, /Motion reduced/);
+        const reduced = await heroHarness(true);
+        assert.equal(reduced.controller.reduced, true);
+        assert.equal(reduced.controller.playing, false);
+        assert.equal(reduced.timers.set, 0);
+        assert.equal(reduced.hero.querySelector('[data-hero-toggle]').disabled, true);
+        assert.ok(reduced.hero.querySelectorAll('[data-hero-scene]')[0].classList.contains('is-active'));
+        dom.window.close();
+        reduced.dom.window.close();
     });
-    it('updates the goal story content when a different personal finance goal is selected', () => {
-        const fields = {
-            goalTag: { textContent: '' },
-            goalStoryTitle: { textContent: '' },
-            goalStoryDescription: { textContent: '' },
-            goalStoryList: { innerHTML: '' },
-            goalStat1Label: { textContent: '' },
-            goalStat1Value: { textContent: '' },
-            goalStat1Note: { textContent: '' },
-            goalStat2Label: { textContent: '' },
-            goalStat2Value: { textContent: '' },
-            goalStat2Note: { textContent: '' },
-            goalStat3Label: { textContent: '' },
-            goalStat3Value: { textContent: '' },
-            goalStat3Note: { textContent: '' },
-            goalStat4Label: { textContent: '' },
-            goalStat4Value: { textContent: '' },
-            goalStat4Note: { textContent: '' },
-        };
-        const goals = ['savings', 'invest', 'home', 'business', 'money', 'travel'];
-        const pills = goals.map(goal => {
-            const pill = {
-                dataset: { goal },
-                isActive: false,
-                classList: { toggle: (_, active) => { pill.isActive = active; } },
-                addEventListener: (_, handler) => { pill.clickHandler = handler; },
-            };
-            return pill;
+    it('switches the goal story when a different goal is selected', async () => {
+        const { dom } = await heroHarness(true);
+        const doc = dom.window.document;
+        const picker = doc.querySelector('.goal-picker');
+        dom.window.WillowHome.setupTabs(picker, { tabSelector: '[data-goal-option]', panelFor: tab => doc.getElementById(tab.getAttribute('aria-controls')) });
+        const options = [...picker.querySelectorAll('[data-goal-option]')];
+        assert.equal(options.length, 6);
+        options.forEach(option => {
+            option.click();
+            const panel = doc.getElementById(option.getAttribute('aria-controls'));
+            assert.equal(option.getAttribute('aria-selected'), 'true');
+            assert.equal(panel.hidden, false);
+            assert.ok(panel.textContent.trim().length > 40);
+            assert.equal(options.filter(item => item.getAttribute('aria-selected') === 'true').length, 1);
+            assert.equal([...doc.querySelectorAll('[data-goal-panel]')].filter(item => !item.hidden).length, 1);
         });
-        const context = {
-            document: {
-                addEventListener: () => {},
-                querySelectorAll: (selector) => selector === '.goal-pill' ? pills : [],
-                getElementById: (id) => fields[id] || null,
-            },
-        };
-        context.window = context;
-        vm.createContext(context);
-        vm.runInContext(fs.readFileSync(path.join(__dirname, '../public/js/app.js'), 'utf8'), context);
-        context.setupGoalSelection();
-        const expectedTitles = {
-            savings: 'Build a stronger cushion.',
-            invest: 'Plan for compounding growth.',
-            home: 'Make the next move feel manageable.',
-            business: 'Keep momentum moving behind the work.',
-            money: 'Give your routine a clearer rhythm.',
-            travel: 'Build a plan for the next adventure.',
-        };
-        pills.forEach(pill => {
-            pill.clickHandler();
-            assert.equal(fields.goalStoryTitle.textContent, expectedTitles[pill.dataset.goal]);
-            assert.equal(pills.filter(button => button.isActive).length, 1);
-            assert.equal(pill.isActive, true);
-            assert.ok(fields.goalTag.textContent);
-            assert.ok(fields.goalStoryDescription.textContent);
-            assert.ok(fields.goalStoryList.innerHTML);
-            assert.ok(fields.goalStat1Value.textContent);
-            assert.ok(fields.goalStat4Value.textContent);
-        });
+        const first = options[0];
+        first.click();
+        first.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+        assert.equal(options[1].getAttribute('aria-selected'), 'true');
+        dom.window.close();
     });
     it('creates checking and savings destinations for new demo customers', () => {
         assert.deepEqual(accounts.map(a => a.account_type).sort(), ['checking', 'savings']);

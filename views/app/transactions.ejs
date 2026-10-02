@@ -1,0 +1,54 @@
+<%- include('../partials/app-start', { css: [] }) %>
+
+<header class="page-head">
+    <div class="page-head-copy">
+        <h1 class="page-head-title">Transactions</h1>
+        <p class="page-head-sub">Search, filter and review every movement on your accounts.</p>
+    </div>
+    <div class="page-head-actions">
+        <button type="button" class="btn btn-secondary" data-export-csv disabled><%- icon('download') %> Export CSV</button>
+        <a class="btn btn-secondary" href="/statements<%= selectedAccountId ? '?accountId=' + selectedAccountId : '' %>" data-statements-link><%- icon('file') %> Statements</a>
+    </div>
+</header>
+
+<% if (!accounts.length) { %>
+<div class="panel"><div class="empty"><div class="empty-art"><%- icon('wallet') %></div><h3>No accounts yet</h3><p>Open an account to see transactions here.</p><a class="btn btn-primary btn-sm" href="/accounts/new">Open an account</a></div></div>
+<% } else { %>
+<form id="transactionFilters" class="panel filters-panel" role="search" aria-label="Filter transactions">
+    <div class="filters">
+        <div class="field">
+            <label for="accountId">Account</label>
+            <select class="select" id="accountId" name="accountId">
+                <% accounts.forEach(account => { %><option value="<%= account.id %>"<%- account.id === selectedAccountId ? ' selected' : '' %>><%= account.displayName %> · <%= account.maskedNumber %> (<%= account.currency %>)</option><% }) %>
+            </select>
+        </div>
+        <div class="field search-field">
+            <label for="search">Search</label>
+            <div class="input-group"><%- icon('search') %><input class="input" type="search" id="search" name="search" maxlength="100" placeholder="Name, description or reference" autocomplete="off"></div>
+        </div>
+    </div>
+    <details class="filter-more" data-filter-more>
+        <summary><%- icon('sliders', 'icon-sm') %> More filters <span class="badge badge-brand" data-filter-count hidden></span></summary>
+        <div class="filters mt-4">
+            <div class="field"><label for="type">Type</label><select class="select" id="type" name="type"><option value="">All types</option><option value="deposit">Money added</option><option value="withdrawal">Withdrawals</option><option value="transfer">Transfers</option><option value="payment">Payments</option><option value="refund">Refunds</option><option value="adjustment">Adjustments</option></select></div>
+            <div class="field"><label for="status">Status</label><select class="select" id="status" name="status"><option value="">Any status</option><option value="completed">Completed</option><option value="pending">Pending</option><option value="failed">Failed</option></select></div>
+            <div class="field"><label for="dateFrom">From</label><input class="input" type="date" id="dateFrom" name="dateFrom"></div>
+            <div class="field"><label for="dateTo">To</label><input class="input" type="date" id="dateTo" name="dateTo"></div>
+            <div class="field"><label for="sort">Order</label><select class="select" id="sort" name="sort"><option value="desc">Newest first</option><option value="asc">Oldest first</option></select></div>
+        </div>
+    </details>
+    <div class="filters-actions">
+        <p class="text-sm muted" id="transactionStatus" role="status" aria-live="polite">Loading transactions…</p>
+        <div class="cluster"><button type="button" class="btn btn-ghost btn-sm" id="clearTransactionFilters">Clear filters</button><button type="submit" class="btn btn-primary btn-sm">Apply</button></div>
+    </div>
+</form>
+
+<section class="panel mt-5" aria-labelledby="resultsTitle">
+    <h2 class="visually-hidden" id="resultsTitle">Results</h2>
+    <div class="txn-summary" data-txn-summary hidden></div>
+    <div id="txnResults" aria-busy="true"></div>
+    <nav class="pagination" id="transactionPagination" aria-label="Transaction pages"></nav>
+</section>
+<% } %>
+
+<%- include('../partials/app-end', { js: ['transactions'] }) %>

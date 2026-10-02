@@ -1,0 +1,35 @@
+<%
+  // Slow-fading imagery for the sign-in and sign-up screens. Decorative only.
+  const unsplash = (id, width) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${width}&q=72`;
+  const library = {
+    everyday: { src: asset('/images/willow-hero-customer.webp'), flip: true, position: '60% 40%', tone: 'tone-a', caption: 'For everyday life.' },
+    home: { unsplash: 'photo-1511895426328-dc8714191300', position: '50% 35%', tone: 'tone-b', caption: 'For what you’re building.' },
+    business: { unsplash: 'photo-1441986300917-64674bd600d8', position: '50% 50%', tone: 'tone-c', caption: 'For the work you love.' },
+    global: { unsplash: 'photo-1476514525535-07fb3b4ae5f1', position: '50% 55%', tone: 'tone-d', caption: 'For everywhere you go.' },
+    wealth: { src: asset('/images/willow-hero-employee.webp'), position: '50% 35%', tone: 'tone-e', caption: 'For what’s next.' },
+  };
+  const visualScenes = (typeof scenes !== 'undefined' ? scenes : ['everyday', 'home', 'wealth']).map(key => library[key]);
+%><div class="auth-visual on-dark">
+    <div class="auth-scenes" data-auth-scenes aria-hidden="true">
+        <% visualScenes.forEach((scene, index) => { %>
+        <figure class="auth-scene <%= scene.tone %><%= scene.flip ? ' is-flipped' : '' %><%= index === 0 ? ' is-active' : '' %>" data-auth-scene>
+            <% if (scene.src) { %>
+            <img src="<%= scene.src %>" alt="" style="object-position: <%= scene.position %>" decoding="async"<%- index === 0 ? ' fetchpriority="high"' : ' loading="lazy"' %>>
+            <% } else { %>
+            <img data-src="<%= unsplash(scene.unsplash, 1400) %>" alt="" style="object-position: <%= scene.position %>" decoding="async">
+            <% } %>
+        </figure>
+        <% }) %>
+        <div class="auth-scrim"></div>
+    </div>
+    <div class="auth-visual-top">
+        <%- include('brand', { inverse: true, href: '/', label: 'Willow home' }) %>
+    </div>
+    <div class="auth-visual-copy" aria-hidden="true">
+        <p class="auth-visual-captions">
+            <% visualScenes.forEach((scene, index) => { %><span data-auth-caption<%- index === 0 ? ' class="is-active"' : '' %>><%= scene.caption %></span><% }) %>
+        </p>
+        <p class="auth-visual-tagline">Willow · Your money. Moving forward.</p>
+        <div class="auth-visual-dots"><% visualScenes.forEach((scene, index) => { %><span<%- index === 0 ? ' class="is-active"' : '' %>></span><% }) %></div>
+    </div>
+</div>

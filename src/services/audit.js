@@ -3,7 +3,7 @@
  */
 const { getDb } = require('../database');
 
-function logAudit({ actorId, actorEmail, action, targetType, targetId, metadata = {}, result = 'success' }) {
+function logAudit({ actorId = null, actorEmail = null, action, targetType, targetId, metadata = {}, result = 'success' }) {
     const db = getDb();
     db.prepare(`
     INSERT INTO audit_logs (actor_id, actor_email, action, target_type, target_id, metadata, result)

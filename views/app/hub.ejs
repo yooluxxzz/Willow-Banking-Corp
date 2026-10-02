@@ -1,0 +1,78 @@
+<%- include('../partials/app-start', { css: [] }) %>
+
+<header class="page-head">
+    <div class="page-head-copy">
+        <p class="label">Willow Hub</p>
+        <h1 class="page-head-title">Your financial picture</h1>
+        <p class="page-head-sub">Everything you hold with Willow — cash, savings, investments and crypto — in one view.</p>
+    </div>
+    <div class="page-head-actions"><button type="button" class="btn btn-secondary" data-ask-open><%- icon('sparkle') %> Ask Willow</button></div>
+</header>
+
+<section class="hub-hero" aria-labelledby="netWorthLabel" data-hub-hero>
+    <div class="hub-hero-figure">
+        <p class="label" id="netWorthLabel">Net worth · USD</p>
+        <p class="figure figure-xl" data-private data-net-worth><span class="skeleton skeleton-line" style="width:260px;height:1em"></span></p>
+        <p class="hub-hero-note" data-net-note>Calculating from your accounts and portfolio…</p>
+    </div>
+    <div class="hub-composition">
+        <div class="hub-donut" data-composition-chart aria-hidden="true"></div>
+        <ul class="hub-legend" role="list" data-composition-list></ul>
+    </div>
+</section>
+<div class="data-banner mt-4" data-fx-banner hidden><%- icon('alert') %><span>Currency accounts aren’t included in cash right now because exchange rates are temporarily unavailable.</span></div>
+
+<div class="layout-main-aside mt-6">
+    <div class="col-stack">
+        <section class="panel" aria-labelledby="flowTitle">
+            <div class="panel-head"><h2 id="flowTitle">Money movement</h2><span class="legend-inline"><span><i style="background:var(--chart-1)"></i>In</span><span><i style="background:var(--chart-3)"></i>Out</span></span></div>
+            <div class="month-stats mb-6" data-month-stats></div>
+            <div data-cashflow-chart><div class="skeleton skeleton-block" style="height:220px"></div></div>
+            <p class="text-xs muted mt-3">USD accounts, excluding transfers between your own accounts.</p>
+        </section>
+
+        <section class="panel" aria-labelledby="spendingTitle" id="spending">
+            <div class="panel-head"><h2 id="spendingTitle">Spending by category · this month</h2><a class="link-arrow" href="/transactions">Transactions <%- icon('arrow-right') %></a></div>
+            <div data-category-bars><div class="skeleton skeleton-block" style="height:160px"></div></div>
+        </section>
+
+        <section class="panel" aria-labelledby="investTitle">
+            <div class="panel-head"><h2 id="investTitle">Investments</h2><a class="link-arrow" href="/wealth">Portfolio <%- icon('arrow-right') %></a></div>
+            <div data-investments><div class="skeleton skeleton-block" style="height:120px"></div></div>
+        </section>
+    </div>
+
+    <aside class="col-stack">
+        <section class="panel hub-assistant" aria-labelledby="assistantTitle">
+            <div class="ask-orb"><%- icon('sparkle', 'icon-md') %></div>
+            <h2 id="assistantTitle">Ask about your money</h2>
+            <p class="text-sm secondary">Answers use only your Willow accounts, completed transactions and simulated investment records — no guesses, no predictions.</p>
+            <div class="ask-suggestions mt-4">
+                <% ['How much did I spend this month?', 'What are my biggest expenses?', 'How much do I have in savings?', 'What is my net worth?', 'Show me my investments', 'What payments are coming up?'].forEach(question => { %>
+                <button type="button" class="chip chip-sm" data-ask-open data-ask-question="<%= question %>"><%= question %></button>
+                <% }) %>
+            </div>
+        </section>
+
+        <section class="panel" aria-labelledby="insightTitle">
+            <div class="panel-head"><h2 id="insightTitle">Insights</h2></div>
+            <div data-insights><div class="skeleton skeleton-block" style="height:120px"></div></div>
+            <p class="text-xs muted mt-4">Informational only, calculated from your own data. Not financial advice.</p>
+        </section>
+
+        <section class="panel" aria-labelledby="goalTitle">
+            <div class="panel-head"><h2 id="goalTitle">Goals</h2><a class="link-arrow" href="/goals">All <%- icon('arrow-right') %></a></div>
+            <div data-goals></div>
+        </section>
+
+        <section class="panel" aria-labelledby="otherTitle">
+            <div class="panel-head"><h2 id="otherTitle">Not included</h2></div>
+            <ul class="list-plain is-wrap" role="list">
+                <li class="list-row"><span class="icon-tile icon-tile-sm"><%- icon('card') %></span><span class="list-row-main"><span class="list-row-title">Credit and loans</span><span class="list-row-sub">Willow Demo has no credit accounts</span></span><span class="status-pill">Not connected</span></li>
+                <li class="list-row"><span class="icon-tile icon-tile-sm"><%- icon('building') %></span><span class="list-row-main"><span class="list-row-title">Other banks</span><span class="list-row-sub">External accounts can’t be linked</span></span><span class="status-pill">Not connected</span></li>
+            </ul>
+        </section>
+    </aside>
+</div>
+
+<%- include('../partials/app-end', { js: ['hub'] }) %>

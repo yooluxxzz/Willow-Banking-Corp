@@ -54,7 +54,7 @@ describe('Simulated crypto wallet', () => {
     it('rejects self-sends, unsupported assets, invalid quantities and units the sender does not own', () => {
         const senderId = db.prepare('SELECT id FROM users WHERE email = ?').get('crypto-sender@example.test').id;
         assert.throws(() => walletService.sendDemoCrypto(senderId, { symbol: 'BTC', quantity: '0.1', recipientEmail: 'crypto-sender@example.test' }), /different Willow demo customer/);
-        assert.throws(() => walletService.sendDemoCrypto(senderId, { symbol: 'DOGE', quantity: '0.1', recipientEmail: 'crypto-receiver@example.test' }), /Choose BTC or ETH/);
+        assert.throws(() => walletService.sendDemoCrypto(senderId, { symbol: 'DOGE', quantity: '0.1', recipientEmail: 'crypto-receiver@example.test' }), /supported demo crypto asset/);
         assert.throws(() => walletService.sendDemoCrypto(senderId, { symbol: 'BTC', quantity: '0.500000001', recipientEmail: 'crypto-receiver@example.test' }), /valid quantity/);
         assert.throws(() => walletService.sendDemoCrypto(senderId, { symbol: 'BTC', quantity: '9', recipientEmail: 'crypto-receiver@example.test' }), /Not enough demo BTC/);
     });

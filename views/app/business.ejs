@@ -1,0 +1,191 @@
+<%
+  const hasAccount = dashboard.accounts.length > 0;
+  const profile = dashboard.profile;
+  const businessName = profile && profile.name ? profile.name : 'Your business';
+  const primary = dashboard.accounts.find(account => account.status === 'active');
+  const tabs = [['overview', 'Overview', '/business/dashboard'], ['invoices', 'Invoices', '/business/invoices'], ['team', 'Team', '/business/team']];
+  const roleText = { admin: 'Full control of accounts, cards and team', approver: 'Approves payments and invoices', cardholder: 'Uses a business card with limits', viewer: 'Read-only access to activity' };
+  const today = new Date().toISOString().slice(0, 10);
+  const in30 = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+  const chartData = { months: dashboard.months.map(item => ({ label: item.label, values: { revenue: item.revenueCents / 100, expenses: item.expensesCents / 100 } })), categories: dashboard.categories.slice(0, 6).map(item => ({ label: item.label, value: item.cents / 100, color: item.color })) };
+  const openInvoices = dashboard.invoices.filter(item => ['open', 'overdue'].includes(item.displayStatus));
+%><%- include('../partials/app-start', { css: [] }) %>
+
+<header class="page-head">
+    <div class="page-head-copy">
+        <p class="label">Business</p>
+        <h1 class="page-head-title" data-business-name><%= businessName %></h1>
+        <% if (profile && (profile.industry || profile.country)) { %><p class="page-head-sub"><%= [profile.industry, profile.country].filter(Boolean).join(' · ') %></p><% } %>
+    </div>
+    <% if (hasAccount) { %>
+    <div class="page-head-actions">
+        <button type="button" class="btn btn-secondary" data-edit-profile><%- icon('settings') %> Business details</button>
+        <button type="button" class="btn btn-primary" data-new-invoice><%- icon('invoice') %> New invoice</button>
+    </div>
+    <% } %>
+</header>
+
+<% if (!hasAccount) { %>
+<section class="panel business-empty">
+    <div class="empty">
+        <div class="empty-art"><%- icon('briefcase') %></div>
+        <h3>No business account yet</h3>
+        <p>Open business checking to unlock invoices, expense insights, team access and a cash-flow dashboard. It’s a simulated, single-owner account.</p>
+        <a class="btn btn-primary btn-sm" href="/accounts/new?type=business">Open business checking</a>
+    </div>
+</section>
+<% } else { %>
+<nav class="tabs mb-6" aria-label="Business sections">
+    <% tabs.forEach(([key, label, href]) => { %><a href="<%= href %>"<%- section === key ? ' aria-current="page"' : '' %>><%= label %><% if (key === 'invoices' && openInvoices.length) { %> <span class="badge badge-brand"><%= openInvoices.length %></span><% } %></a><% }) %>
+</nav>
+
+<% if (section === 'overview') { %>
+<div class="stat-row mb-6">
+    <div class="stat-tile"><span class="label"><%- icon('wallet', 'icon-sm') %> Available</span><span class="figure" data-private><%= money(dashboard.availableCents) %></span><small>USD business accounts</small></div>
+    <div class="stat-tile"><span class="label"><%- icon('arrow-down-left', 'icon-sm') %> Money in this month</span><span class="figure positive" data-private><%= money(dashboard.revenueCents) %></span><small>Payments and deposits received</small></div>
+    <div class="stat-tile"><span class="label"><%- icon('arrow-up-right', 'icon-sm') %> Money out this month</span><span class="figure" data-private><%= money(dashboard.expensesCents) %></span><small>Spending, excluding transfers</small></div>
+    <div class="stat-tile"><span class="label"><%- icon('activity', 'icon-sm') %> Net cash flow</span><span class="figure <%= dashboard.netCents >= 0 ? 'positive' : 'negative' %>" data-private><%= money(dashboard.netCents, 'USD', { sign: true }) %></span><small>This month so far</small></div>
+</div>
+
+<div class="layout-main-aside">
+    <div class="col-stack">
+        <section class="panel" aria-labelledby="cashflowTitle">
+            <div class="panel-head"><h2 id="cashflowTitle">Cash flow · six months</h2><span class="legend-inline"><span><i style="background:var(--chart-1)"></i>In</span><span><i style="background:var(--chart-3)"></i>Out</span></span></div>
+            <div data-business-chart></div>
+        </section>
+        <section class="panel" aria-labelledby="expensesTitle">
+            <div class="panel-head"><h2 id="expensesTitle">Where the money goes · last 3 months</h2></div>
+            <div data-business-categories><% if (!dashboard.categories.length) { %><p class="muted text-sm">No business spending recorded yet.</p><% } %></div>
+        </section>
+        <section class="panel" aria-labelledby="bizActivityTitle">
+            <div class="panel-head"><h2 id="bizActivityTitle">Recent activity</h2><% if (primary) { %><a class="link-arrow" href="/transactions?accountId=<%= primary.id %>">All <%- icon('arrow-right') %></a><% } %></div>
+            <% if (dashboard.activity.length) { %>
+            <ul class="txn-list" role="list">
+                <% dashboard.activity.forEach(txn => { %><%- include('../partials/txn-row', { txn, accountName: txn.account_nickname || 'Business' }) %><% }) %>
+            </ul>
+            <% } else { %><p class="muted text-sm">Activity on your business accounts will appear here.</p><% } %>
+        </section>
+    </div>
+    <aside class="col-stack">
+        <section class="panel" aria-labelledby="quickTitle">
+            <div class="panel-head"><h2 id="quickTitle">Quick actions</h2></div>
+            <div class="quick-actions is-light biz-actions">
+                <button type="button" class="quick-action is-primary" data-new-invoice><span class="quick-action-icon"><%- icon('invoice') %></span>Invoice</button>
+                <a class="quick-action" href="/transfers?from=<%= primary ? primary.id : '' %>"><span class="quick-action-icon"><%- icon('send') %></span>Pay</a>
+                <a class="quick-action" href="/cards"><span class="quick-action-icon"><%- icon('card') %></span>Cards</a>
+                <a class="quick-action" href="/business/team"><span class="quick-action-icon"><%- icon('users') %></span>Team</a>
+            </div>
+        </section>
+        <section class="panel" aria-labelledby="upcomingTitle">
+            <div class="panel-head"><h2 id="upcomingTitle">Upcoming</h2></div>
+            <% if (dashboard.upcoming.length) { %>
+            <ul class="list-plain" role="list">
+                <% dashboard.upcoming.slice(0, 6).forEach(item => { %>
+                <li class="list-row"><span class="icon-tile icon-tile-sm<%= item.direction === 'in' ? ' is-positive' : '' %>"><%- icon(item.kind === 'invoice' ? 'invoice' : 'calendar') %></span><span class="list-row-main"><span class="list-row-title"><%= item.label %></span><span class="list-row-sub"><%= item.direction === 'in' ? 'Due' : 'Scheduled' %> <%= formatDate(item.date) %><% if (item.overdue) { %> · <span class="status-pill is-overdue">Overdue</span><% } %></span></span><span class="list-row-end"><strong class="<%= item.direction === 'in' ? 'positive' : '' %>" data-private><%= item.direction === 'in' ? '+' : '−' %><%= money(item.amountCents, item.currency) %></strong></span></li>
+                <% }) %>
+            </ul>
+            <% } else { %><p class="muted text-sm">No invoices due or payments scheduled.</p><% } %>
+        </section>
+        <section class="panel" aria-labelledby="bizAccountsTitle">
+            <div class="panel-head"><h2 id="bizAccountsTitle">Business accounts</h2></div>
+            <ul class="account-rows" role="list">
+                <% dashboard.accounts.forEach(account => { %><li><%- include('../partials/account-row', { account }) %></li><% }) %>
+            </ul>
+            <a class="btn btn-ghost btn-sm mt-3" href="/accounts/new?type=business"><%- icon('plus', 'icon-sm') %> Another business account</a>
+        </section>
+    </aside>
+</div>
+<p class="disclosure-note mt-8"><%- icon('info') %> <span>Figures summarize simulated account activity — not accounting revenue or expense reports. Business banking in Willow Demo is single-owner and connects to no real payroll, tax or accounting service.</span></p>
+<% } %>
+
+<% if (section === 'invoices') { %>
+<section class="panel" aria-labelledby="invoiceListTitle">
+    <div class="panel-head"><h2 id="invoiceListTitle">Invoices</h2><button type="button" class="btn btn-primary btn-sm" data-new-invoice><%- icon('plus', 'icon-sm') %> New invoice</button></div>
+    <% if (dashboard.invoices.length) { %>
+    <div class="table-wrap">
+        <table class="table invoice-table">
+            <thead><tr><th scope="col">Invoice</th><th scope="col">Customer</th><th scope="col">Due</th><th scope="col">Status</th><th scope="col" class="text-right">Amount</th><th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
+            <tbody>
+                <% dashboard.invoices.forEach(invoice => { %>
+                <tr data-invoice-row="<%= invoice.id %>">
+                    <td><strong class="mono"><%= invoice.number %></strong><% if (invoice.description) { %><small class="muted block"><%= invoice.description %></small><% } %></td>
+                    <td><%= invoice.customer_name %><% if (invoice.customer_email) { %><small class="muted block"><%= invoice.customer_email %></small><% } %></td>
+                    <td class="nowrap"><%= formatDate(invoice.due_on) %></td>
+                    <td><span class="status-pill is-<%= invoice.displayStatus %>"><%= invoice.displayStatus %></span></td>
+                    <td class="num" data-private><%= invoice.amountFormatted %></td>
+                    <td class="nowrap text-right"><% if (invoice.status === 'open') { %><button type="button" class="btn btn-secondary btn-sm" data-invoice-pay="<%= invoice.id %>" data-invoice-number="<%= invoice.number %>">Mark paid</button> <button type="button" class="btn btn-ghost btn-sm" data-invoice-void="<%= invoice.id %>" data-invoice-number="<%= invoice.number %>">Void</button><% } %></td>
+                </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    </div>
+    <% } else { %>
+    <div class="empty is-compact"><div class="empty-art"><%- icon('invoice') %></div><h3>No invoices yet</h3><p>Create an invoice to track money your customers owe you.</p><button type="button" class="btn btn-primary btn-sm" data-new-invoice>New invoice</button></div>
+    <% } %>
+    <p class="text-xs muted mt-4">Invoices aren’t sent to anyone. Marking one paid records a simulated payment into your business account.</p>
+</section>
+<% } %>
+
+<% if (section === 'team') { %>
+<div class="layout-main-aside">
+    <section class="panel" aria-labelledby="teamTitle">
+        <div class="panel-head"><h2 id="teamTitle">Team</h2></div>
+        <ul class="list-plain" role="list">
+            <li class="list-row"><span class="avatar"><%= initials(user.full_name) %></span><span class="list-row-main"><span class="list-row-title"><%= user.full_name %> <span class="badge badge-brand">You</span></span><span class="list-row-sub"><%= user.email %></span></span><span class="list-row-end"><strong>Owner</strong></span></li>
+            <% dashboard.team.forEach(member => { %>
+            <li class="list-row"><span class="avatar"><%= initials(member.name) %></span><span class="list-row-main"><span class="list-row-title"><%= member.name %></span><span class="list-row-sub"><%= member.email %> · <%= (roles[member.role] || member.role) %></span></span><span class="status-pill is-pending">Invited</span><button type="button" class="btn btn-ghost btn-icon btn-sm" data-member-remove="<%= member.id %>" data-member-name="<%= member.name %>" aria-label="Remove <%= member.name %>"><%- icon('x') %></button></li>
+            <% }) %>
+        </ul>
+        <p class="text-xs muted mt-4">Invitations are recorded only. In this demo, invitees receive no email and no access.</p>
+    </section>
+    <aside>
+        <form class="panel" id="inviteForm" novalidate>
+            <div class="panel-head"><h2>Invite someone</h2></div>
+            <div class="field"><label for="memberName">Name</label><input class="input" id="memberName" name="name" required maxlength="80"></div>
+            <div class="field"><label for="memberEmail">Email</label><input class="input" id="memberEmail" name="email" type="email" required maxlength="255" autocapitalize="none"></div>
+            <fieldset class="option-stack role-options">
+                <legend class="field-label">Role</legend>
+                <% Object.entries(roles).forEach(([value, label], index) => { %>
+                <label class="option-card is-compact"><input type="radio" name="role" value="<%= value %>"<%= index === 3 ? ' checked' : '' %>><span><strong><%= label %></strong><span class="option-desc"><%= roleText[value] %></span></span><span class="option-card-check" aria-hidden="true"></span></label>
+                <% }) %>
+            </fieldset>
+            <p class="field-error mt-3" data-invite-error role="alert" hidden></p>
+            <div class="form-actions"><button type="submit" class="btn btn-primary">Record invitation</button></div>
+        </form>
+    </aside>
+</div>
+<% } %>
+<% } %>
+
+<dialog class="modal" id="invoiceDialog" aria-labelledby="invoiceDialogTitle">
+    <form id="invoiceForm" novalidate>
+        <div class="modal-head"><h2 id="invoiceDialogTitle">New invoice</h2><button type="button" class="btn btn-ghost btn-icon" data-dialog-close aria-label="Close"><%- icon('x', 'icon-md') %></button></div>
+        <div class="modal-body">
+            <div class="field"><label for="invCustomer">Customer name</label><input class="input" id="invCustomer" name="customerName" required maxlength="80"></div>
+            <div class="field"><label for="invEmail">Customer email <span class="optional">· optional</span></label><input class="input" id="invEmail" name="customerEmail" type="email" maxlength="255"></div>
+            <div class="field"><label for="invDescription">Description</label><input class="input" id="invDescription" name="description" maxlength="160" placeholder="e.g. Brand design — phase 1"></div>
+            <div class="field-grid">
+                <div class="field"><label for="invAmount">Amount (USD)</label><div class="input-group has-prefix"><span class="input-prefix">$</span><input class="input num" id="invAmount" name="amount" inputmode="decimal" required></div></div>
+                <div class="field"><label for="invDue">Due date</label><input class="input" id="invDue" name="dueOn" type="date" min="<%= today %>" value="<%= in30 %>" required></div>
+            </div>
+            <p class="field-error mt-3" data-invoice-error role="alert" hidden></p>
+        </div>
+        <div class="modal-foot"><button type="button" class="btn btn-secondary" data-dialog-close>Cancel</button><button type="submit" class="btn btn-primary">Create invoice</button></div>
+    </form>
+</dialog>
+
+<dialog class="modal" id="profileDialog" aria-labelledby="profileDialogTitle">
+    <form id="profileForm" novalidate>
+        <div class="modal-head"><h2 id="profileDialogTitle">Business details</h2><button type="button" class="btn btn-ghost btn-icon" data-dialog-close aria-label="Close"><%- icon('x', 'icon-md') %></button></div>
+        <div class="modal-body">
+            <div class="field"><label for="bizName">Business name</label><input class="input" id="bizName" name="name" required maxlength="80" value="<%= profile ? profile.name : '' %>"></div>
+            <div class="field"><label for="bizIndustry">Industry <span class="optional">· optional</span></label><input class="input" id="bizIndustry" name="industry" maxlength="60" value="<%= profile ? profile.industry : '' %>" placeholder="e.g. Design studio"></div>
+            <div class="field"><label for="bizCountry">Country <span class="optional">· optional</span></label><input class="input" id="bizCountry" name="country" maxlength="56" value="<%= profile ? profile.country : '' %>"></div>
+            <p class="field-error mt-3" data-profile-error role="alert" hidden></p>
+        </div>
+        <div class="modal-foot"><button type="button" class="btn btn-secondary" data-dialog-close>Cancel</button><button type="submit" class="btn btn-primary">Save</button></div>
+    </form>
+</dialog>
+
+<script type="application/json" id="businessData"><%- JSON.stringify(chartData).replace(/</g, '\\u003c') %></script>
+<%- include('../partials/app-end', { js: ['business'] }) %>
