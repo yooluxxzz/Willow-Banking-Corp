@@ -102,3 +102,10 @@ Each completed work session is recorded here and committed locally. Git history 
 - Replaced the binary scene threshold with scroll-progress-driven photo framing: the existing customer portrait begins in a tall, rounded right-side panel and expands to full bleed, while the two photos crossfade and the copy enters in sequenced beats. No Revolut assets or branding were copied.
 - Replaced the `decode()`-only enhancement gate with image completion/error handling, because the integrated browser reported loaded images whose decode promises never settled. Reduced-motion users keep the static first scene.
 - Validation: all 92 tests pass; JavaScript syntax and editor diagnostics are clean. The shared browser defaults to reduced motion, which leaves the first scene static; with `no-preference` emulated, computed samples at scroll positions 0, 250, 500, 800 and 1050 show the frame insets and image/copy opacity changing continuously from 0 to 1. Screenshot capture was attempted, but the tab was hidden and rendered as a blank/dim frame, so no visual screenshot verification is claimed. No schema or live-data changes.
+
+## Brand alignment and finish pass - 2026-10-02
+
+- Aligned the public-facing brand expression with the final upgrade brief by updating the hero headline and login-page slogan to the premium Willow positioning: "Your money. Moving forward."
+- Updated the public page metadata and project brand specification to match the same wording, keeping the digital banking experience consistent from the landing page through the demo sign-in flow.
+- Validation: the project test suite runs successfully with Node’s built-in runner (`node --test tests/*.test.js`), with all 92 tests passing and 0 failing. No schema or live account data changes were introduced in this final brand pass; only the public-facing brand copy and work log were updated.
+- Repository note: this change is recorded in the local Git history without modifying the live session or account database files, and the work log entry documents the final verification state for the current session.

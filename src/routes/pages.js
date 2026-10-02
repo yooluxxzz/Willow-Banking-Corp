@@ -18,7 +18,7 @@ router.get('/', (req, res) => {
         return res.redirect(req.session.userRole === 'admin' ? '/admin' : '/dashboard');
     }
     res.render('landing', {
-        title: "Steady for what's next | Willow Banking Corp.",
+        title: 'Your money. Moving forward. | Willow Banking Corp.',
         description: 'Everyday checking, savings, debit cards and transfers in a clear digital banking experience from Willow Banking Corp.',
     });
 });

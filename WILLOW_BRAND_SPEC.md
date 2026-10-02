@@ -4,7 +4,7 @@
 
 **Brand concept:** A steady, human banking partner for the routines and plans that shape a person's life. Willow suggests resilience and considered growth without turning the identity into a botanical theme.
 
-**Primary slogan:** Steady for what's next.
+**Primary slogan:** Your money. Moving forward.
 
 **Supporting statement:** Everyday accounts, cards, transfers and clear digital tools, brought together around the life you're building.
 
@@ -76,7 +76,7 @@ Do not use fabricated customer counts, ratings, uptime, rates, certifications, g
 
 **Eyebrow:** Willow Banking Corp. / Personal banking.
 
-**Headline:** Steady for what's next.
+**Headline:** Your money. Moving forward.
 
 **Supporting copy:** Everyday accounts, cards, transfers and clear digital tools, brought together around the life you're building.
 
