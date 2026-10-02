@@ -78,6 +78,8 @@ async function createTestApp() {
     app.use('/api/cards', require('../src/routes/cards'));
     app.use('/api/notifications', require('../src/routes/notifications'));
     app.use('/api/statements', require('../src/routes/statements'));
+    app.use('/api/wealth', require('../src/routes/wealth'));
+    app.use('/api/hub', require('../src/routes/hub'));
     app.use('/api/admin', require('../src/routes/admin'));
     app.use('/health', require('../src/routes/health'));
     app.use('/', require('../src/routes/pages'));

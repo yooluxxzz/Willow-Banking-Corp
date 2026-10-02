@@ -31,6 +31,21 @@ The application uses sql.js with its schema and startup migrations in `src/datab
 - Each opening writes a zero-balance account and an `account_opened` audit event in one transaction. Repeated identical requests return the existing account; mismatched reuses are rejected. The form key is omitted from formatted account responses.
 - Up to ten accounts are allowed per profile. No extra card or initial ledger credit is created, and no savings interest is accrued. The preview was backed up privately to `data/preview.before-optional-accounts.db` before migration and restarted successfully.
 
+## 2026-10-02: demo Wealth and financial Hub
+
+- Startup creates `demo_portfolios`, `demo_holdings`, `demo_watchlist`, and `demo_trades`. These tables are user-owned and cascade on user deletion; they are separate from `accounts`, `transactions`, and the banking ledger.
+- New demo portfolios start with 10,000,000 cents ($100,000) of simulated investment cash. Trades use server-retrieved prices, validate buy/sell quantities and available demo cash, and update only demo portfolio tables. Holdings record weighted-average acquisition price.
+- A server-side allowlisted Yahoo Finance chart adapter retrieves price/history/available quote statistics and indicative FX pairs, caches each symbol/range for five minutes, and marks fallback quotes stale after refresh errors. Stale quotes are visible but cannot be used to place simulated orders. No broker or money-transfer provider is integrated.
+- The Hub reads completed, owner-scoped ledger records. Spending summaries and expense rankings exclude transfers; portfolio amounts are at cost basis, not live market valuation. Debt, external accounts, scheduled payments, saved goals, FX execution, crypto send/receive and business team/invoice features are unavailable and are not represented as connected services.
+- This Node application has no Python/yfinance runtime. The Yahoo chart endpoint is a prototype market-data source, not a guaranteed or production-grade feed. No existing banking balances or records are backfilled or changed by this feature.
+
+## 2026-10-02: simulated Wealth workspace
+
+- Startup creates `demo_portfolios`, `demo_holdings`, `demo_watchlist`, and `demo_trades`. These user-owned tables cascade on user deletion and remain separate from `accounts`, `transactions`, and the banking ledger.
+- New demo portfolios start with 10,000,000 cents ($100,000) of simulated investment cash. Trade records contain a server-retrieved market price, quantity, side and total. Holdings use weighted-average acquisition price; sells cannot exceed owned demo units. Trade writes update only demo portfolio tables.
+- The market adapter retrieves a fixed allowlist of symbols from Yahoo Finance chart endpoints on the server, caches each supported historical range for five minutes, and marks expired cached data stale after refresh failures. Simulated orders reject stale data. This is a prototyping data source, not an execution service; this Node project has no Python/yfinance runtime, and no real orders are placed.
+- No existing account balance, banking transaction, or user record is backfilled or altered by the feature. The Hub reads completed owner-scoped ledger rows; spending totals and expense rankings exclude transfers. Investment summaries use recorded cost basis, not live valuation. Credit/debt, external accounts and scheduled payments are explicitly unavailable.
+
 ## Recovery delivery and backups
 
 No email delivery service is configured. Recovery therefore requires a code saved before losing account access. There is no public reset-link shortcut. If all codes are lost and the password is forgotten, self-service recovery is unavailable.

@@ -1,0 +1,14 @@
+<%- include('partials/header') %>
+<body class="account-overview-page wealth-page">
+<div class="app-layout"><%- include('partials/sidebar') %><main class="main-content wealth-main">
+    <header class="wealth-heading"><div><p class="wealth-kicker">WILLOW / INTERNATIONAL</p><h1>Money across borders.</h1><p>Review indicative currency rates and estimate a conversion before planning your next move.</p></div><span class="wealth-demo-label">DEMO · INDICATIVE RATES</span></header>
+    <div class="wealth-disclosure" role="note">Rates come from an external market-data provider and may be delayed or unavailable. This calculator is informational only. Willow does not maintain foreign-currency accounts or execute currency conversion.</div>
+    <div class="fx-layout"><section class="wealth-panel fx-converter" aria-labelledby="fxTitle"><p class="wealth-kicker">CONVERSION ESTIMATE</p><h2 id="fxTitle">USD and global currencies</h2>
+        <label for="fxAmount">Amount</label><input id="fxAmount" type="number" min="0.01" max="100000000" step="0.01" value="100" inputmode="decimal">
+        <div class="fx-direction"><label for="fxDirection">Direction</label><select id="fxDirection"><option value="usd-to">USD to foreign currency</option><option value="to-usd">Foreign currency to USD</option></select></div>
+        <label for="fxCurrency">Currency</label><select id="fxCurrency"><option value="EUR">EUR · Euro</option><option value="GBP">GBP · Pound sterling</option><option value="MZN">MZN · Mozambican metical</option><option value="ZAR">ZAR · South African rand</option></select>
+        <div class="fx-result"><span>Estimated converted amount</span><strong id="fxOutput">—</strong><small id="fxRateText" role="status" aria-live="polite">Loading indicative rate…</small></div>
+        <p class="wealth-risk">No conversion is booked. Final rates, fees and availability are not represented.</p>
+    </section><section class="wealth-panel fx-rates"><div class="wealth-panel-heading"><div><p class="wealth-kicker">SERVER-RETRIEVED DATA</p><h2>Indicative rates</h2></div><button type="button" id="fxRefresh" class="wealth-refresh">Refresh</button></div><div id="fxRateList"><p class="wealth-loading">Loading rates…</p></div><p id="fxError" class="wealth-error" role="status" hidden>Currency data temporarily unavailable.</p></section></div>
+    <p class="wealth-footnote">Rate display is not an offer to exchange money. International transfers, foreign-currency accounts and card settlement are not connected.</p>
+</main></div><script src="/js/international.js" defer></script><%- include('partials/footer') %>

@@ -52,6 +52,31 @@ router.get('/forgot-password', (req, res) => {
 // Public info pages
 router.get('/personal', (req, res) => res.render('banking-overview', { title: 'Personal banking — Willow Banking Corp.', business: false }));
 router.get('/business', (req, res) => res.render('banking-overview', { title: 'Business banking — Willow Banking Corp.', business: true }));
+router.get('/business/dashboard', requireAuth, (req, res) => {
+    const db = getDb();
+    const accounts = getUserAccounts(req.session.userId).filter(account => account.purpose === 'business');
+    const ids = accounts.map(account => account.id);
+    let activity = [], totals = { credits: 0, debits: 0 };
+    if (ids.length) {
+        const placeholders = ids.map(() => '?').join(',');
+        activity = db.prepare(`SELECT t.description, t.type, t.direction, t.amount, t.created_at, t.status, a.nickname
+            FROM transactions t JOIN accounts a ON a.id = t.account_id
+            WHERE t.account_id IN (${placeholders}) ORDER BY t.created_at DESC, t.id DESC LIMIT 8`).all(...ids);
+        totals = db.prepare(`SELECT COALESCE(SUM(CASE WHEN direction = 'credit' AND status = 'completed' THEN amount ELSE 0 END), 0) AS credits,
+                COALESCE(SUM(CASE WHEN direction = 'debit' AND status = 'completed' THEN amount ELSE 0 END), 0) AS debits
+            FROM transactions WHERE account_id IN (${placeholders}) AND created_at >= date('now', 'start of month')`).get(...ids);
+    }
+    res.set('Cache-Control', 'no-store');
+    res.render('business-dashboard', { title: 'Business workspace — Willow Banking Corp.', accounts, activity, totals,
+        available: accounts.reduce((sum, account) => sum + account.available_balance, 0),
+        balance: accounts.reduce((sum, account) => sum + account.balance, 0) });
+});
+router.get('/help', (req, res) => res.render('help', { title: 'Help center — Willow Banking Corp.' }));
+router.get('/loans', (req, res) => res.render('loans', { title: 'Loan estimates — Willow Banking Corp.' }));
+router.get('/international', requireAuth, (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    res.render('international', { title: 'International money — Willow Banking Corp.' });
+});
 router.get('/about', (req, res) => res.render('about', { title: 'About Us — Willow Banking Corp.' }));
 router.get('/careers', (req, res) => res.render('careers', { title: 'Careers — Willow Banking Corp.' }));
 router.get('/press', (req, res) => res.render('press', { title: 'Press — Willow Banking Corp.' }));
@@ -127,6 +152,16 @@ router.get('/statements', requireAuth, (req, res) => {
 router.get('/cards', requireAuth, (req, res) => {
     const notices = { frozen: 'Demo card frozen.', active: 'Demo card unfrozen.', reported: 'Demo card reported lost and made inactive.', replaced: 'Replacement demo card created. The previous card is cancelled. Nothing will be shipped.' };
     res.render('cards', { title: 'Cards — Willow Banking Corp.', cards: getUserCards(req.session.userId), notice: typeof req.query.notice === 'string' && Object.hasOwn(notices, req.query.notice) ? notices[req.query.notice] : '' });
+});
+
+router.get('/wealth', requireAuth, (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    res.render('wealth', { title: 'Wealth — Willow Banking Corp.' });
+});
+
+router.get('/hub', requireAuth, (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    res.render('hub', { title: 'Financial picture — Willow Banking Corp.' });
 });
 
 router.get('/notifications', requireAuth, (req, res) => {

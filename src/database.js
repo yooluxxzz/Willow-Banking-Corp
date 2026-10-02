@@ -63,6 +63,40 @@ async function initializeDatabase() {
       revoked_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+        CREATE TABLE IF NOT EXISTS demo_portfolios (
+            user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+            cash_cents INTEGER NOT NULL DEFAULT 10000000 CHECK(cash_cents >= 0),
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS demo_holdings (
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            symbol TEXT NOT NULL,
+            quantity REAL NOT NULL CHECK(quantity > 0),
+            average_price REAL NOT NULL CHECK(average_price > 0),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+            PRIMARY KEY (user_id, symbol)
+        );
+
+        CREATE TABLE IF NOT EXISTS demo_watchlist (
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            symbol TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            PRIMARY KEY (user_id, symbol)
+        );
+
+        CREATE TABLE IF NOT EXISTS demo_trades (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            symbol TEXT NOT NULL,
+            side TEXT NOT NULL CHECK(side IN ('buy', 'sell')),
+            quantity REAL NOT NULL CHECK(quantity > 0),
+            price REAL NOT NULL CHECK(price > 0),
+            total_cents INTEGER NOT NULL CHECK(total_cents > 0),
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
     CREATE TABLE IF NOT EXISTS accounts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -144,6 +178,7 @@ async function initializeDatabase() {
         'CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at)',
         'CREATE INDEX IF NOT EXISTS idx_audit_logs_actor_id ON audit_logs(actor_id)',
         'CREATE INDEX IF NOT EXISTS idx_cards_account_id ON cards(account_id)',
+        'CREATE INDEX IF NOT EXISTS idx_demo_trades_user_created ON demo_trades(user_id, created_at)',
         'CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)',
         'CREATE INDEX IF NOT EXISTS idx_users_customer_id ON users(customer_id)',
     ];

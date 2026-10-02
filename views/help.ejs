@@ -1,0 +1,15 @@
+<%- include('partials/header') %>
+<body class="account-overview-page wealth-page">
+<div class="app-layout"><%- include('partials/sidebar') %><main class="main-content wealth-main">
+    <header class="wealth-heading"><div><p class="wealth-kicker">WILLOW / SUPPORT</p><h1>How can we help?</h1><p>Clear answers about the Willow demo and the tools available here.</p></div><span class="wealth-demo-label">DEMO SUPPORT</span></header>
+    <section class="help-search-panel"><label for="helpSearch">Search help topics</label><input id="helpSearch" type="search" placeholder="Try “simulated transfers” or “account security”" autocomplete="off"><p id="helpSearchStatus" role="status" aria-live="polite">Browse the topics below.</p></section>
+    <div class="help-grid" id="helpTopics">
+        <section class="help-topic"><p class="wealth-kicker">ACCOUNTS</p><h2>Accounts and balances</h2><details><summary>Are the balances real?</summary><p>No. Willow is a fictional demo. Balances and ledger entries shown in this application are simulated and are not connected to a financial institution.</p></details><details><summary>Can I open more than one account?</summary><p>Signed-in demo customers can create checking, savings or single-owner business checking accounts. New accounts start at zero and do not receive a card automatically.</p></details></section>
+        <section class="help-topic"><p class="wealth-kicker">MOVING MONEY</p><h2>Transfers and cards</h2><details><summary>Do transfers move real money?</summary><p>No. Transfers update only the demo ledger inside this application. No external payments or bank rails are connected.</p></details><details><summary>Can a physical card be shipped?</summary><p>No. Card controls and replacement cards are simulations. Nothing is issued or shipped.</p></details></section>
+        <section class="help-topic"><p class="wealth-kicker">WEALTH</p><h2>Markets and investing</h2><details><summary>Are market quotes live?</summary><p>Quotes are fetched server-side from an external market-data source, may be delayed or unavailable, and are shown for demonstration only. No orders are sent to a broker.</p></details><details><summary>What happens when I place a demo order?</summary><p>The simulated portfolio and its separate activity record are updated using the available quote. It does not affect your banking balance and does not purchase real assets.</p></details></section>
+        <section class="help-topic"><p class="wealth-kicker">SECURITY</p><h2>Access and privacy</h2><details><summary>Where can I review sign-ins?</summary><p>Open Security from the signed-in navigation to review this browser session, sign-in history and other available sessions.</p></details><details><summary>Where can I get direct assistance?</summary><p>This fictional demo has no staffed support operation. The Contact page describes the available project/demo context.</p></details></section>
+    </div>
+    <p class="wealth-footnote">This is product guidance for a fictional demo, not financial, legal or security advice.</p>
+</main></div>
+<script src="/js/help.js" defer></script>
+<%- include('partials/footer') %>

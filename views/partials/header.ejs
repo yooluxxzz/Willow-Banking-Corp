@@ -22,6 +22,9 @@
   <% if (typeof currentPath !== 'undefined' && ['/dashboard','/accounts'].includes(currentPath)) { %>
   <link rel="stylesheet" href="/css/account-overview.css">
   <% } %>
+  <% if (typeof currentPath !== 'undefined' && ['/wealth','/loans','/help','/hub','/international','/business/dashboard'].includes(currentPath)) { %>
+  <link rel="stylesheet" href="/css/wealth.css">
+  <% } %>
   <% if (typeof currentPath !== 'undefined' && currentPath === '/') { %>
     <link rel="stylesheet" href="/css/hero-crossfade.css">
   <% } %>

@@ -19,9 +19,13 @@
             <div class="nav-links" id="homeNavLinks">
                 <a href="/personal">Personal</a>
                 <a href="/business">Business</a>
+                <a href="/login?returnTo=%2Fwealth">Wealth demo</a>
+                <a href="/login?returnTo=%2Finternational">International</a>
+                <a href="/login?returnTo=%2Fhub">Financial picture</a>
+                <a href="/login?returnTo=%2Floans">Loan estimates</a>
                 <a href="#experience">Digital experience</a>
                 <a href="#security">Trust and security</a>
-                <a href="#resources">Help</a>
+                <a href="/help">Help</a>
                 <button class="nav-theme-toggle" onclick="toggleTheme()" title="Toggle dark mode" aria-label="Toggle theme">
                     <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="5" />
@@ -298,7 +302,7 @@
                     <div class="hub-summary-card">
                         <div class="hub-summary-top">
                             <span class="hub-label">Net worth</span>
-                            <span class="hub-demo-badge">Demo</span>
+                            <span class="hub-demo-badge">Illustrative demo</span>
                         </div>
                         <strong>$134,820</strong>
                         <div class="hub-metric-row">
@@ -332,6 +336,7 @@
                         </div>
                     </div>
                 </div>
+                <p class="wealth-footnote">Illustrative sample figures only. These are not customer records, saved goals, forecasts, or financial recommendations.</p>
 
                 <div class="hub-goals-panel">
                     <div class="goal-card small-goal">
@@ -363,38 +368,38 @@
                 <div class="intelligence-copy">
                     <p class="home-eyebrow">Financial intelligence</p>
                     <h2 id="homeIntelligenceTitle">Ask Willow what matters most.</h2>
-                    <p>Demo answers surface the same account, transaction and portfolio signals you would use in a real financial dashboard.</p>
+                    <p>Sign in to ask questions answered from your own demo accounts, completed transactions, and simulated investment records.</p>
                     <div class="prompt-list" aria-label="Common finance questions">
-                        <button type="button" class="prompt-chip is-active" data-answer="How much did I spend this month?">How much did I spend this month?</button>
-                        <button type="button" class="prompt-chip" data-answer="Show me my investments.">Show me my investments.</button>
-                        <button type="button" class="prompt-chip" data-answer="What are my biggest expenses?">What are my biggest expenses?</button>
-                        <button type="button" class="prompt-chip" data-answer="How much do I have in savings?">How much do I have in savings?</button>
-                        <button type="button" class="prompt-chip" data-answer="What is my portfolio allocation?">What is my portfolio allocation?</button>
+                        <a class="prompt-chip is-active" href="/login?returnTo=%2Fhub">How much did I spend this month?</a>
+                        <a class="prompt-chip" href="/login?returnTo=%2Fhub">Show me my investments.</a>
+                        <a class="prompt-chip" href="/login?returnTo=%2Fhub">What are my biggest expenses?</a>
+                        <a class="prompt-chip" href="/login?returnTo=%2Fhub">How much do I have in savings?</a>
+                        <a class="prompt-chip" href="/login?returnTo=%2Fhub">What is my portfolio allocation?</a>
                     </div>
                 </div>
 
                 <div class="intelligence-panel" aria-live="polite">
                     <div class="panel-header">
                         <span class="panel-pill">Demo insight</span>
-                        <span class="panel-status">Connected data</span>
+                        <span class="panel-status">Sign-in required</span>
                     </div>
-                    <h3 id="intelligenceAnswer">How much did I spend this month?</h3>
-                    <p class="intelligence-answer">You spent $5,360 this month across everyday accounts and recurring payments. The largest categories were groceries, rent and recurring subscriptions.</p>
+                    <h3 id="intelligenceAnswer">Answers grounded in your records.</h3>
+                    <p class="intelligence-answer">Sign in to view account totals, completed transaction activity, savings balances, and simulated investment holdings. Unsupported data is identified rather than guessed.</p>
                     <div class="insight-tiles">
                         <div>
                             <span>Relevant accounts</span>
-                            <strong>3</strong>
+                            <strong>Owned</strong>
                         </div>
                         <div>
                             <span>Transactions</span>
-                            <strong>46</strong>
+                            <strong>Completed</strong>
                         </div>
                         <div>
                             <span>Portfolio</span>
-                            <strong>7 assets</strong>
+                            <strong>Simulated</strong>
                         </div>
                     </div>
-                    <a href="/dashboard" class="home-inline-link">View the dashboard <span aria-hidden="true">&#8594;</span></a>
+                    <a href="/login?returnTo=%2Fhub" class="home-inline-link">Sign in to your financial picture <span aria-hidden="true">&#8594;</span></a>
                 </div>
             </div>
         </section>
