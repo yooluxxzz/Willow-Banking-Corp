@@ -3840,6 +3840,15 @@ body.home-page .home-nav {
   border: 0;
   border-bottom: 1px solid var(--home-line);
   backdrop-filter: none;
+  transition: transform 220ms ease-out;
+}
+
+body.home-page .home-nav.is-hidden {
+  transform: translateY(-100%);
+}
+
+body.home-page .home-nav.is-hidden ~ #main-content .is-scroll-ready .home-hero-crossfade {
+  top: 0;
 }
 
 body.home-page .home-nav .nav-inner {

@@ -90,3 +90,9 @@ Each completed work session is recorded here and committed locally. Git history 
 - Added `100vh` fallbacks for the pinned hero stage and its scroll travel, with `100svh` enhancements where supported. Added the prefixed sticky-position declaration for Safari compatibility; retained the existing short-landscape fallback.
 - Reviewed Revolut's scroll behavior as a reference: its navigation leaves the viewport while scrolling down. Willow's existing pinned hero remains the focus, with the navigation-height offset preserved.
 - Validation: homepage experience tests pass (8/8). Local browser checks at 1440x900 and 390x844 confirm the hero stays pinned beneath the navigation while scrolling; captured the mobile viewport. No schema or live-data changes. Legacy engines without `svh` were not directly emulated.
+
+## Scroll direction and short viewports - 2026-10-02
+
+- The shared 654px-tall desktop viewport triggered the old short-height rule that disabled sticky positioning. The hero now scales to the available desktop height and stays pinned; very short and compact mobile-landscape viewports retain natural scrolling so controls remain reachable.
+- The homepage navigation now hides while scrolling down and returns while scrolling up, following the observed Revolut interaction. Opening the mobile menu forces the navigation visible; reduced-motion preferences disable the transition.
+- Validation: all 92 tests pass; JavaScript syntax, editor diagnostics and `git diff --check` are clean. Browser checks confirm pinning and direction-aware navigation at 1391x654, portrait layout at 390x844, and natural scrolling at 844x390. No schema or live-data changes.

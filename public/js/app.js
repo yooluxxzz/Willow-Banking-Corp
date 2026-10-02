@@ -87,6 +87,7 @@ function setupHeroCrossfade() {
 function setupHomeNavigation() {
     const toggle = document.getElementById('homeMenuToggle');
     const menu = document.getElementById('homeNavLinks');
+    const nav = document.querySelector('.home-nav');
     if (!toggle || !menu) return;
 
     const closeMenu = () => {
@@ -100,7 +101,18 @@ function setupHomeNavigation() {
         toggle.setAttribute('aria-expanded', String(!isOpen));
         toggle.setAttribute('aria-label', isOpen ? 'Open navigation menu' : 'Close navigation menu');
         menu.classList.toggle('is-open', !isOpen);
+        if (!isOpen) nav?.classList.remove('is-hidden');
     });
+
+    let previousScrollY = window.scrollY;
+    window.addEventListener('scroll', () => {
+        const currentScrollY = window.scrollY;
+        const direction = currentScrollY - previousScrollY;
+        if (Math.abs(direction) < 6) return;
+        previousScrollY = currentScrollY;
+        const menuOpen = toggle.getAttribute('aria-expanded') === 'true';
+        nav?.classList.toggle('is-hidden', currentScrollY > 96 && direction > 0 && !menuOpen);
+    }, { passive: true });
 
     menu.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeMenu));
     document.addEventListener('keydown', (event) => {
