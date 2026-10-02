@@ -129,3 +129,9 @@ Each completed work session is recorded here and committed locally. Git history 
 - This layer gives the homepage more product breadth and makes the brand feel like a serious financial institution rather than a generic fintech landing screen.
 - The section remains demo-oriented and is designed to match the broader Willow upgrade brief without changing existing user flows or backend logic.
 - Validation: the project regression suite remains green after the additional homepage layer (`node --test tests/*.test.js`), with 92 passing tests and 0 failures.
+
+## Scroll cue and next-move continuation - 2026-10-02
+
+- Restored the hero scroll cue and ensured the landing page keeps the “Scroll to discover” indicator in the live storefront experience.
+- Continued the product-story expansion with a “Built for the next move” section covering home, investing and business momentum, reinforcing the sense that Willow is a broader financial platform rather than a single-product landing page.
+- Validation: the app remains stable after the final continuation pass (`node --test tests/*.test.js`), with 92 passing tests and 0 failures.
