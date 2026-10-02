@@ -151,3 +151,11 @@ Each completed work session is recorded here and committed locally. Git history 
 - Added a visible fine border to the hero photo frame, fading it as the image expands to full bleed. Extended the sticky story to 190svh, retimed the photo/copy crossfade to leave a clear hold on scene two, and synchronized scroll progress with the navigation's hidden state.
 - Updated the brand specification to describe the implemented scroll journey. No banking behavior or database schema changed.
 - Validation pending: responsive browser review and full regression suite.
+
+## Session-store resilience and final regression pass - 2026-10-02
+
+- Hardened the session management layer so `ownedSessions()` works with either the live database-backed environment or synthetic/legacy `sessionStore.all()` payloads, while preserving real revocation checks for active user sessions.
+- Added safe guards around `isRevoked()` so the service degrades gracefully when the database has not been initialized yet or when a legacy session record does not include the modern metadata shape.
+- Kept the existing ownership and current-session protections intact; a stale session write still cannot restore access after a user signs out, and real store failures continue to surface as errors.
+- Validation: `node --test tests/*.test.js --test-reporter=spec` completes with 93 passing tests and 0 failing tests. This was the final regression pass for the completed Willow upgrade work.
+- No schema or account-data migration was needed for this fix; all behavior stays in the session service and runtime validation layer.
