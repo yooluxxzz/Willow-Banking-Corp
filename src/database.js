@@ -137,6 +137,17 @@ async function initializeDatabase() {
             CHECK(from_account_id != to_account_id)
         );
 
+        CREATE TABLE IF NOT EXISTS demo_crypto_transfers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            reference TEXT NOT NULL UNIQUE,
+            sender_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            recipient_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            symbol TEXT NOT NULL CHECK(symbol IN ('BTC', 'ETH')),
+            quantity REAL NOT NULL CHECK(quantity > 0),
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            CHECK(sender_user_id != recipient_user_id)
+        );
+
     CREATE TABLE IF NOT EXISTS transactions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       reference TEXT NOT NULL UNIQUE,
@@ -210,6 +221,8 @@ async function initializeDatabase() {
         'CREATE INDEX IF NOT EXISTS idx_demo_goals_user ON demo_goals(user_id, created_at)',
         'CREATE INDEX IF NOT EXISTS idx_scheduled_transfers_due ON scheduled_transfers(status, scheduled_for)',
         'CREATE INDEX IF NOT EXISTS idx_scheduled_transfers_user ON scheduled_transfers(user_id, created_at)',
+        'CREATE INDEX IF NOT EXISTS idx_demo_crypto_transfers_sender ON demo_crypto_transfers(sender_user_id, created_at)',
+        'CREATE INDEX IF NOT EXISTS idx_demo_crypto_transfers_recipient ON demo_crypto_transfers(recipient_user_id, created_at)',
         'CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)',
         'CREATE INDEX IF NOT EXISTS idx_users_customer_id ON users(customer_id)',
     ];

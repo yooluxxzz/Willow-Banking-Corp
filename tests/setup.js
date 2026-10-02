@@ -82,6 +82,7 @@ async function createTestApp() {
     app.use('/api/hub', require('../src/routes/hub'));
     app.use('/api/goals', require('../src/routes/goals'));
     app.use('/api/scheduled-transfers', require('../src/routes/scheduled-transfers'));
+    app.use('/api/crypto', require('../src/routes/crypto'));
     app.use('/api/admin', require('../src/routes/admin'));
     app.use('/health', require('../src/routes/health'));
     app.use('/', require('../src/routes/pages'));

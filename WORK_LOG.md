@@ -189,7 +189,13 @@ Each completed work session is recorded here and committed locally. Git history 
 - Added a signed-in schedule/review/list page for one-time transfers between the customer’s own active USD demo accounts. Schedules are dated in UTC, can be cancelled before due time, and are visible in the Hub and financial assistant.
 - The server checks due transfers every minute. Settlement revalidates account ownership/status, available funds, and daily limits; then posts paired transfer ledger entries and updates/audits the schedule atomically. Failed due transfers do not debit accounts; processing is idempotent. Scheduling itself never reserves or moves funds.
 - This does not connect external bill pay or recurring mandates. The UI discloses that scope and that insufficient funds or account state can cause a due demo transfer to fail.
-- Validation: focused coverage confirms authentication, CSRF, owner isolation, no early balance changes, cancellation, due settlement exactly once, paired ledger entries, Hub/assistant visibility and insufficient-funds failure. Full suite: 112 tests pass, 0 fail. Changed scripts pass Node syntax checks, editor diagnostics report no errors, and `git diff --check` is clean.
+- Validation: focused coverage confirms authentication, CSRF, owner isolation, no early balance changes, cancellation, due settlement exactly once, paired ledger entries, Hub/assistant visibility and insufficient-funds failure. The suite at this checkpoint had 112 passing tests.
+
+## Internal crypto wallet demo - 2026-10-02
+
+- Added a protected BTC/ETH demo wallet page with holdings, optional market estimates, activity history, an internal demo-handle receive flow, and review-before-send. Crypto sends only move simulated units to another active Willow demo profile; the interface explicitly rules out blockchain addresses, keys, external withdrawal or real asset movement.
+- Added `demo_crypto_transfers` as an isolated user-to-user record. Sends preserve weighted-average cost basis, normalize quantities to eight decimals, and never alter simulated cash, bank account balances, or the banking ledger.
+- Validation: focused tests cover protected rendering, CSRF, internal send/receive, ownership, cost basis, history, invalid assets/quantities, and separation from banking records. Full suite: 114 tests pass, 0 fail. Syntax checks, editor diagnostics and `git diff --check` are clean.
 
 ## Scroll reference and live hero review - 2026-10-02
 

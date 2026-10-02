@@ -171,6 +171,11 @@ router.get('/wealth', requireAuth, (req, res) => {
     res.render('wealth', { title: 'Wealth — Willow Banking Corp.' });
 });
 
+router.get('/crypto', requireAuth, (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    res.render('crypto', { title: 'Crypto wallet — Willow Banking Corp.' });
+});
+
 router.get('/hub', requireAuth, (req, res) => {
     res.set('Cache-Control', 'no-store');
     res.render('hub', { title: 'Financial picture — Willow Banking Corp.' });

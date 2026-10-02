@@ -58,6 +58,11 @@ The application uses sql.js with its schema and startup migrations in `src/datab
 - The server checks due records every minute. Each settlement runs in a database transaction, rechecks ownership/status/funds/account state/daily transfer limit, debits and credits the paired accounts, writes both ledger entries, updates schedule status and audit event. Reprocessing cannot replay completed or cancelled rows. Insufficient funds/inactive accounts mark the schedule failed without posting a debit.
 - This is a one-time internal demo transfer, not external bill pay, a recurring payment mandate, or a real-money instruction. Dates are interpreted in UTC.
 
+## 2026-10-02: internal demo crypto wallet
+
+- Startup creates `demo_crypto_transfers` with sender/recipient profile IDs, BTC/ETH symbol, quantity, reference and timestamp. It records internal simulated wallet movements only; there are no public wallet addresses, private keys, network fees, blockchain transactions or withdrawals.
+- A send atomically reduces the sender’s existing simulated holding, adds units to an active recipient’s holding with weighted-average cost basis, writes an internal transfer record and audit event. The amount is normalized to eight decimal places. Bank balances, simulated cash and the banking transaction ledger remain unchanged.
+
 ## Recovery delivery and backups
 
 No email delivery service is configured. Recovery therefore requires a code saved before losing account access. There is no public reset-link shortcut. If all codes are lost and the password is forgotten, self-service recovery is unavailable.
