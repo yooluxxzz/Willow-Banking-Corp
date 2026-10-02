@@ -362,4 +362,34 @@ async function createGuestProfile() {
     return user;
 }
 
-module.exports = { loadSampleData, createGuestProfile, ensureCommunity, COMMUNITY };
+/**
+ * Removes guest profiles that nobody has used for `days` days, with all of their
+ * simulated records. Other customers keep their own ledger rows; links to the
+ * removed accounts are cleared. Claimed guests (is_guest = 0) are never touched.
+ */
+function purgeStaleGuests({ days = 7, now = new Date() } = {}) {
+    const db = getDb();
+    const cutoff = new Date(now.getTime() - days * 86400000).toISOString().replace('T', ' ').slice(0, 19);
+    const stale = db.prepare(`SELECT u.id, u.email FROM users u
+        WHERE u.is_guest = 1 AND u.role = 'customer' AND u.created_at < ?
+          AND COALESCE((SELECT MAX(created_at) FROM audit_logs WHERE actor_id = u.id), u.created_at) < ?`).all(cutoff, cutoff);
+    let purged = 0;
+    for (const guest of stale) {
+        db.transaction(() => {
+            const ids = db.prepare('SELECT id FROM accounts WHERE user_id = ?').all(guest.id).map(row => row.id);
+            if (ids.length) {
+                const list = ids.map(() => '?').join(',');
+                db.prepare(`UPDATE transactions SET related_account_id = NULL WHERE related_account_id IN (${list}) AND account_id NOT IN (${list})`).run(...ids, ...ids);
+                db.prepare(`UPDATE business_invoices SET paid_account_id = NULL WHERE paid_account_id IN (${list}) AND user_id != ?`).run(...ids, guest.id);
+                db.prepare(`DELETE FROM scheduled_transfers WHERE from_account_id IN (${list}) OR to_account_id IN (${list})`).run(...ids, ...ids);
+                db.prepare(`DELETE FROM transactions WHERE account_id IN (${list})`).run(...ids);
+            }
+            db.prepare('DELETE FROM users WHERE id = ? AND is_guest = 1').run(guest.id);
+            logAudit({ actorId: null, actorEmail: 'system', action: 'guest_profile_purged', targetType: 'user', targetId: String(guest.id), metadata: { inactiveDays: days } });
+        })();
+        purged += 1;
+    }
+    return { purged };
+}
+
+module.exports = { loadSampleData, createGuestProfile, ensureCommunity, purgeStaleGuests, COMMUNITY };

@@ -25,7 +25,7 @@
             </section>
             <section class="info-section" id="retention">
                 <h2>Storage and retention</h2>
-                <p>Account and activity records live in the app’s SQLite database; sessions live in a separate session store. Records persist across restarts and can be included in the operator’s backups. No automatic retention period is configured, and guest demo profiles are kept like any other profile. HTTPS depends on how the app is hosted; a local preview over plain HTTP is not encrypted.</p>
+                <p>Account and activity records live in the app’s SQLite database; sessions live in a separate session store. Records persist across restarts and can be included in the operator’s backups. No automatic retention period is configured for regular profiles.<% if (guestRetentionDays) { %> Guest demo profiles that go unused for <%= guestRetentionDays %> days are deleted automatically, together with their simulated records.<% } else { %> Guest demo profiles are kept like any other profile.<% } %> HTTPS depends on how the app is hosted; a local preview over plain HTTP is not encrypted.</p>
             </section>
             <section class="info-section" id="controls">
                 <h2>Your controls</h2>

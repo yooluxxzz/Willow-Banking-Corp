@@ -304,6 +304,17 @@ html.is-private [data-private-chart] .chart-tooltip strong {
     width: calc(100% + var(--s-4));
 }
 
+.wl-list-more {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-3);
+    margin-top: var(--s-4);
+    padding-top: var(--s-4);
+    border-top: 1px solid var(--border);
+}
+
 .wl-table th:first-child,
 .wl-table td:first-child {
     padding-left: var(--s-2);
@@ -1112,28 +1123,6 @@ a.wl-popular-card:hover {
 .wl-risk-banner .badge {
     margin-right: 4px;
     vertical-align: 1px;
-}
-
-/* Single-column asset layout: bring the position panel up under the chart. */
-@media (max-width: 1180px) {
-    .wl-asset-layout {
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        gap: var(--s-5);
-    }
-
-    .wl-asset-layout > .col-stack {
-        display: contents;
-    }
-
-    .wl-asset-layout .wl-quote-panel { order: 1; }
-    .wl-asset-layout .wl-position { order: 2; }
-    .wl-asset-layout .wl-risk { order: 3; }
-    .wl-asset-layout .wl-o-stats { order: 4; }
-    .wl-asset-layout .wl-o-about { order: 5; }
-    .wl-asset-layout .wl-o-news { order: 6; }
-    .wl-asset-layout .wl-o-sim { order: 7; }
 }
 
 /* ── Trade & send dialogs ───────────────────────────────────────────── */

@@ -287,3 +287,49 @@ The user asked for Willow to be upgraded into one premium digital bank, investin
 - Real-time data depends on running `npm run market-service` with internet access.
 - Guest profiles are not deleted automatically.
 - There is no self-service account deletion; operators can delete accounts from the admin console.
+
+## Platform polish round 2 — 2026-10-02
+
+**Behavior**
+- **Guest clean-up.** Guest demo profiles are now deleted automatically after `GUEST_RETENTION_DAYS` (default 7; `0` keeps them).
+  - A guest qualifies when its newest audit-log entry (or its creation date, if there is none) is older than the cutoff.
+  - The server runs the clean-up at startup and then hourly; each removal is audited as `guest_profile_purged`.
+  - Other customers’ ledger rows and balances are never changed.
+  - The dashboard notice, Settings → Keep this profile, the privacy notice, “About the demo”, README and `.env.example` now state the retention period.
+  - This resolves the earlier known limitation that guest profiles were never deleted.
+- **Admin console copy.** The delete confirmation now says what actually happens: the profile is marked deleted (soft delete) and its records stay for the audit trail. It no longer claims data is removed.
+- **Product pages when signed in.** The calls to action now go straight to the feature (“Go to Cards”) plus “Open another account”. On Business pages the second action is “Open business checking”. Signed-out visitors still see “Open an account” and “Sign in to …”.
+- **Asset detail layout.** At 1180px and narrower, the “Your position” and risk panels now sit directly under the quote, both visually and in DOM order. This keeps screen-reader and keyboard order matching what is on screen. Previously only CSS `order` moved them.
+- **Markets paging.** The markets list shows 20 assets at a time, with “Showing 20 of 42” and a “Show 20 more” button.
+  - Focus moves to the first newly shown asset.
+  - Changing the filter, search or sort starts again from the first page.
+- **Ask Willow** was re-checked in the browser:
+  - spending and expense questions answer with charts;
+  - “Should I buy Tesla?” is declined;
+  - there were no console errors.
+
+**Database / schema**
+- No schema change. The clean-up deletes guest rows in one transaction per profile:
+  1. clears `transactions.related_account_id` on other customers’ rows that pointed at the guest’s accounts;
+  2. clears `business_invoices.paid_account_id` on other customers’ invoices that pointed at the guest’s accounts;
+  3. deletes `scheduled_transfers` to or from the guest’s accounts;
+  4. deletes the guest’s own `transactions`;
+  5. deletes the `users` row. This cascades to the guest’s own records, plus other customers’ saved-payee entries and internal crypto-transfer records that name the guest.
+- See `docs/DATABASE_CHANGES.md`.
+
+**Checks run**
+- `npm test`: 125 tests pass. New tests:
+  - guest clean-up removes only the stale guest, keeps a fresh guest and a claimed profile, leaves other customers’ rows and balances unchanged, and ends the stale guest’s session;
+  - signed-in and signed-out product calls to action;
+  - markets paging, run in jsdom against the real `wealth-markets.js`. It was confirmed to fail against the previous script.
+- `python3 -m unittest`: 41 tests pass.
+- All 61 EJS templates compile, all 32 browser scripts parse, and `git diff --check` is clean. The dev server restarted cleanly with the clean-up job.
+- Playwright:
+  - markets paging at 1440px and 390px;
+  - asset-page DOM order at 390px and 1440px;
+  - the Ask Willow panel;
+  - tablet layouts.
+
+**Known limitations**
+- Real-time data still depends on running `npm run market-service` with internet access.
+- There is no self-service account deletion. Admin deletion is a soft delete.

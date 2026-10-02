@@ -87,3 +87,27 @@ All changes are additive and applied in place at startup by `src/database.js`. E
 - **Ledger semantics:** currency conversions write a debit/credit pair (`CNV-…` / `CNV-…-C`) in each account’s own currency at an indicative rate, blocked when rates are stale or unavailable. Invoice “mark paid” writes one credit (`INV-PAY-…`). Simulated portfolio, watchlist and trades remain in the separate `demo_*` tables.
 - **Sample data:** `src/services/demo-data.js` creates five `@community.willow.test` customers on startup and, on request, months of consistent sample activity per profile. `npm run seed` uses the same generator.
 - This session ran the app only against scratch databases outside the repository; no local `data/` database was migrated or backed up. Databases, session stores and backups remain ignored by Git.
+
+## 2026-10-02: guest profile clean-up
+
+No table or column changes. `purgeStaleGuests` in `src/services/demo-data.js` runs at startup and then hourly when `GUEST_RETENTION_DAYS` is above 0 (the default is 7).
+
+**Which profiles are removed.** A profile qualifies when all of these hold:
+- `is_guest = 1` and `role = 'customer'`;
+- it was created before the cutoff;
+- its newest `audit_logs` entry is also older than the cutoff.
+
+Profiles whose owners saved their own email and password have `is_guest = 0` and are never touched.
+
+**How each profile is removed.** One transaction per profile:
+1. Null `transactions.related_account_id` on other customers’ rows that point at the guest’s accounts. Those rows and their balances are kept.
+2. Null `business_invoices.paid_account_id` on other customers’ invoices that point at the guest’s accounts.
+3. Delete `scheduled_transfers` to or from the guest’s accounts.
+4. Delete the guest’s own `transactions`.
+5. Delete the `users` row. This cascades to:
+   - the guest’s accounts, cards, payees, preferences, notifications, goals, two-factor settings, business records and `demo_*` portfolio, watchlist and trade rows;
+   - rows that name the guest on other customers’ profiles: saved-payee entries and internal `demo_crypto_transfers` records.
+
+   `support_requests.user_id` is set to NULL.
+
+Each removal writes a `guest_profile_purged` audit event with the actor `system`. Other customers’ `transactions` rows and balances are never deleted or re-balanced.

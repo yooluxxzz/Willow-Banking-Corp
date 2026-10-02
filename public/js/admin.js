@@ -108,7 +108,7 @@
         const error = doc.querySelector('[data-status-error]');
         if (status !== 'active' && !reason) { error.textContent = 'Enter a reason first.'; error.hidden = false; return; }
         const titles = { suspended: 'Suspend this customer?', active: 'Reactivate this customer?', deleted: deletionType === 'instant' ? 'Delete this customer now?' : 'Schedule deletion?' };
-        const text = deletionType === 'instant' ? 'Their profile and data are removed immediately. This can’t be undone.' : deletionType === 'scheduled' ? 'Their profile is suspended now and deleted after a 3-day grace period.' : status === 'suspended' ? 'They’ll be signed out and unable to sign in.' : 'They’ll be able to sign in again.';
+        const text = deletionType === 'instant' ? 'The profile is marked deleted now and can no longer sign in. Its records stay in the database for the audit trail.' : deletionType === 'scheduled' ? 'The profile is suspended now and marked deleted after a 3-day grace period. Records stay in the database for the audit trail.' : status === 'suspended' ? 'They’ll be signed out and unable to sign in.' : 'They’ll be able to sign in again.';
         const ok = await W.showConfirm(text, titles[status], { confirmLabel: 'Confirm', danger: status === 'deleted' });
         if (!ok) return;
         try {

@@ -151,6 +151,43 @@ describe('Platform: navigation, sessions and new flows', () => {
         assert.ok((await signedIn.agent.get('/api/accounts')).body.accounts.length >= 2);
     });
 
+    it('removes guest profiles unused for a week without touching anyone else', async () => {
+        const start = async () => {
+            const agent = supertest.agent(app);
+            const csrf = csrfFrom((await agent.get('/login')).text);
+            assert.equal((await agent.post('/auth/demo').set('X-CSRF-Token', csrf).set('Accept', 'application/json').send({})).status, 200);
+            return { agent, id: db.prepare("SELECT id FROM users WHERE is_guest = 1 ORDER BY id DESC LIMIT 1").get().id };
+        };
+        const stale = await start();
+        const fresh = await start();
+        const staleAccounts = db.prepare('SELECT id FROM accounts WHERE user_id = ?').all(stale.id).map(row => row.id);
+        const linked = db.prepare(`SELECT COUNT(*) AS n FROM transactions WHERE related_account_id IN (${staleAccounts.join(',')}) AND account_id NOT IN (${staleAccounts.join(',')})`).get().n;
+        assert.ok(linked > 0, 'the guest paid other customers');
+        const communityBefore = db.prepare("SELECT SUM(balance) AS total FROM accounts a JOIN users u ON u.id = a.user_id WHERE u.email LIKE '%@community.willow.test'").get().total;
+        const otherRowsBefore = db.prepare('SELECT COUNT(*) AS n FROM transactions WHERE account_id NOT IN (SELECT id FROM accounts WHERE user_id = ?)').get(stale.id).n;
+        db.prepare("UPDATE users SET created_at = datetime('now', '-10 days') WHERE id = ?").run(stale.id);
+        db.prepare("UPDATE audit_logs SET created_at = datetime('now', '-9 days') WHERE actor_id = ?").run(stale.id);
+        const { purgeStaleGuests } = require('../src/services/demo-data');
+        assert.equal(purgeStaleGuests({ days: 7 }).purged, 1);
+        assert.equal(db.prepare('SELECT COUNT(*) AS n FROM users WHERE id = ?').get(stale.id).n, 0);
+        assert.equal(db.prepare('SELECT COUNT(*) AS n FROM accounts WHERE user_id = ?').get(stale.id).n, 0);
+        assert.equal(db.prepare(`SELECT COUNT(*) AS n FROM transactions WHERE account_id IN (${staleAccounts.join(',')}) OR related_account_id IN (${staleAccounts.join(',')})`).get().n, 0);
+        assert.equal(db.prepare('SELECT COUNT(*) AS n FROM transactions WHERE account_id NOT IN (SELECT id FROM accounts WHERE user_id = ?)').get(stale.id).n, otherRowsBefore);
+        assert.equal(db.prepare("SELECT SUM(balance) AS total FROM accounts a JOIN users u ON u.id = a.user_id WHERE u.email LIKE '%@community.willow.test'").get().total, communityBefore);
+        assert.equal(db.prepare('SELECT COUNT(*) AS n FROM users WHERE id = ?').get(fresh.id).n, 1);
+        assert.ok(db.prepare("SELECT COUNT(*) AS n FROM users WHERE email = 'kept@example.test' AND is_guest = 0").get().n === 1);
+        assert.equal((await stale.agent.get('/dashboard')).status, 302);
+        assert.equal(purgeStaleGuests({ days: 7 }).purged, 0);
+    });
+
+    it('sends signed-in visitors on product pages straight to the feature', async () => {
+        const cards = await owner.agent.get('/money/cards');
+        assert.match(cards.text, /href="\/cards" class="btn btn-primary btn-lg">Go to Cards/);
+        assert.match(cards.text, /href="\/accounts\/new" class="btn btn-secondary btn-lg">Open another account/);
+        assert.match((await owner.agent.get('/business')).text, /Open business checking/);
+        assert.match((await supertest(app).get('/money/cards')).text, /Sign in to Cards/);
+    });
+
     it('sends anonymous visitors from /loans to the public loans page', async () => {
         const response = await supertest(app).get('/loans');
         assert.equal(response.status, 302);

@@ -636,6 +636,29 @@
         if (!WW.isPriced(state.quote)) W.showToast(WW.UNAVAILABLE, 'warning');
     }
 
+    // One column on narrower screens: move "Your position" (and the risk note) up
+    // under the price in the DOM itself, so keyboard order matches what's shown.
+    (function arrangeForWidth() {
+        const layout = $('.wl-asset-layout');
+        const quote = $('.wl-quote-panel');
+        const position = $('.wl-position');
+        if (!layout || !quote || !position || !global.matchMedia) return;
+        const aside = position.parentElement;
+        const risk = $('.wl-risk');
+        const query = global.matchMedia('(max-width: 1180px)');
+        const place = () => {
+            if (query.matches) {
+                quote.after(position);
+                if (risk) position.after(risk);
+            } else {
+                aside.prepend(position);
+                if (risk) position.after(risk);
+            }
+        };
+        place();
+        if (query.addEventListener) query.addEventListener('change', place);
+    })();
+
     WW.radioGroup($('[data-range-group]'), range => loadChart(range));
     $('[data-retry]').addEventListener('click', retryAll);
 

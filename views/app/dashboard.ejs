@@ -30,7 +30,7 @@
 </div>
 <% } %>
 <% if (isGuest && !welcome) { %>
-<div class="notice notice-demo mb-6"><%- icon('info') %><div><strong>You’re using a guest profile.</strong> It works like any other profile. To keep it, <a class="text-link" href="/settings#keep">save your own email and password</a>.</div></div>
+<div class="notice notice-demo mb-6"><%- icon('info') %><div><strong>You’re using a guest profile.</strong> It works like any other profile. To keep it, <a class="text-link" href="/settings#keep">save your own email and password</a><%= guestRetentionDays ? ` — otherwise it’s deleted after ${guestRetentionDays} days without use` : '' %>.</div></div>
 <% } %>
 
 <div class="layout-main-aside">

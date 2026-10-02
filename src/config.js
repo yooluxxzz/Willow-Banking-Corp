@@ -10,6 +10,8 @@ const config = {
     secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     // Signed-in sessions end after this long without a request (0 disables).
+    // Guest demo profiles unused for this many days are removed (0 keeps them).
+    guestRetentionDays: process.env.GUEST_RETENTION_DAYS === undefined ? 7 : Math.max(0, parseInt(process.env.GUEST_RETENTION_DAYS, 10) || 0),
     idleTimeoutMs: (process.env.SESSION_IDLE_MINUTES === undefined ? 30 : Math.max(0, parseInt(process.env.SESSION_IDLE_MINUTES, 10) || 0)) * 60 * 1000,
   },
 

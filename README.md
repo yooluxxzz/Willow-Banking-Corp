@@ -88,6 +88,7 @@ All settings are environment variables; see [`.env.example`](.env.example) for t
 | `SESSION_SECRET` | Signs session cookies. Required in production. |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Admin account created on first start. |
 | `SESSION_IDLE_MINUTES` | Idle sign-out (default 30; `0` disables). |
+| `GUEST_RETENTION_DAYS` | Unused guest profiles are deleted after this many days (default 7; `0` keeps them). |
 | `TWO_FACTOR_KEY` | Key for encrypting authenticator secrets (defaults to the session secret). |
 | `MARKET_DATA_PROVIDER` | `auto` (default), `service` or `yahoo-chart`. |
 | `MARKET_DATA_SERVICE_URL`, `MARKET_DATA_TOKEN` | Where the Python service runs and the shared secret it expects. |
@@ -95,7 +96,7 @@ All settings are environment variables; see [`.env.example`](.env.example) for t
 
 ## Demo profiles
 
-- **Guest profile:** on the sign-in page choose *Use another sign-in method → Explore as a guest*, or use the homepage call to action. Guests get sample activity and can keep the profile by adding their own email and password in Settings.
+- **Guest profile:** on the sign-in page choose *Use another sign-in method → Explore as a guest*, or use the homepage call to action. Guests get sample activity and can keep the profile by adding their own email and password in Settings; unused guest profiles are deleted after 7 days.
 - **Seeded customer:** `npm run seed` creates `demo@willow.test` (password printed once, or set `SEED_DEMO_PASSWORD`).
 - **Admin:** the account from `ADMIN_EMAIL` / `ADMIN_PASSWORD` opens the admin console at `/admin`.
 - Five demo customers (for example `maria.silva@community.willow.test`) exist so payments have someone to go to.

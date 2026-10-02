@@ -13,12 +13,14 @@
     const POPULAR = ['AAPL', 'MSFT', 'NVDA', 'AMZN', 'TSLA', 'GOOGL', 'META'];
     const FILTERS = ['all', 'stock', 'etf', 'fund', 'crypto', 'watchlist'];
     const FILTER_NOUNS = { all: ['asset', 'assets'], stock: ['stock', 'stocks'], etf: ['ETF', 'ETFs'], fund: ['fund', 'funds'], crypto: ['coin', 'coins'] };
+    const PAGE_SIZE = 20;
     const state = {
         instruments: [],
         quotes: new Map(),
         filter: FILTERS.includes(root.dataset.initialFilter) ? root.dataset.initialFilter : 'all',
         query: (root.dataset.initialQuery || '').slice(0, 40),
         sort: 'featured',
+        limit: PAGE_SIZE,
         marketsFailed: false,
         loaded: false,
     };
@@ -168,8 +170,25 @@
                 el('th', { scope: 'col', className: 'num wl-hide-sm', text: 'Today' }),
                 el('th', { scope: 'col', className: 'num wl-hide-md', text: 'Market cap' }),
                 el('th', { scope: 'col', className: 'wl-col-star' }, el('span', { className: 'visually-hidden', text: 'Watchlist' })))),
-            el('tbody', null, items.map(marketRow)));
-        list.replaceChildren(el('div', { className: 'table-wrap wl-table-wrap' }, table));
+            el('tbody', null, items.slice(0, state.limit).map(marketRow)));
+        const wrap = el('div', { className: 'table-wrap wl-table-wrap' }, table);
+        if (items.length <= state.limit) {
+            list.replaceChildren(wrap);
+            return;
+        }
+        const shown = state.limit;
+        const next = Math.min(PAGE_SIZE, items.length - shown);
+        list.replaceChildren(wrap, el('div', { className: 'wl-list-more' },
+            el('p', { className: 'muted text-sm', text: `Showing ${shown} of ${items.length}` }),
+            el('button', { type: 'button', className: 'btn btn-secondary btn-sm', text: `Show ${next} more`, onClick: () => showMore(shown) })));
+    }
+
+    function showMore(shown) {
+        state.limit += PAGE_SIZE;
+        render();
+        // Move focus to the first newly shown asset so keyboard users continue from there.
+        const link = list.querySelectorAll('tbody tr .wl-row-link')[shown];
+        if (link) link.focus();
     }
 
     // ── Indices & popular ─────────────────────────────────────────────
@@ -230,6 +249,7 @@
     // ── Controls ───────────────────────────────────────────────────────
     function setFilter(filter, focusTab = false) {
         state.filter = FILTERS.includes(filter) ? filter : 'all';
+        state.limit = PAGE_SIZE;
         root.querySelectorAll('[data-filter]').forEach(tab => {
             const on = tab.dataset.filter === state.filter;
             tab.setAttribute('aria-selected', String(on));
@@ -242,6 +262,7 @@
 
     function setQuery(value) {
         state.query = String(value || '').slice(0, 40);
+        state.limit = PAGE_SIZE;
         syncUrl();
         render();
     }
@@ -273,7 +294,7 @@
     search.addEventListener('keydown', event => {
         if (event.key === 'Escape' && search.value) { search.value = ''; setQuery(''); }
     });
-    sortSelect.addEventListener('change', () => { state.sort = sortSelect.value; render(); });
+    sortSelect.addEventListener('change', () => { state.sort = sortSelect.value; state.limit = PAGE_SIZE; render(); });
 
     WW.onWatchlistChange(() => {
         if (state.filter !== 'watchlist' || !state.loaded) return;

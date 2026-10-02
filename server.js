@@ -35,6 +35,19 @@ async function start() {
         processScheduledTransfers();
         const scheduledTransferTimer = setInterval(processScheduledTransfers, 60 * 1000);
 
+        // Background task: remove guest demo profiles nobody has used for a while
+        const purgeGuests = () => {
+            if (!config.session.guestRetentionDays) return;
+            try {
+                const { purged } = require('./src/services/demo-data').purgeStaleGuests({ days: config.session.guestRetentionDays });
+                if (purged) console.log(`[Server] Removed ${purged} inactive guest profile(s).`);
+            } catch (error) {
+                console.error('[Server] Guest cleanup failed:', error.message);
+            }
+        };
+        purgeGuests();
+        setInterval(purgeGuests, 60 * 60 * 1000).unref();
+
         // Background task: process scheduled deletions every hour
         setInterval(() => {
             try {

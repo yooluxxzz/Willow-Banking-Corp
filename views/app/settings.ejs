@@ -41,7 +41,7 @@
 
     <% if (isGuest) { %>
     <section class="settings-section" id="keep" aria-labelledby="keepTitle">
-        <div class="settings-section-intro"><h2 id="keepTitle">Keep this profile</h2><p>You’re using a guest profile. Add your own email and password to sign back in later.</p></div>
+        <div class="settings-section-intro"><h2 id="keepTitle">Keep this profile</h2><p>You’re using a guest profile. Add your own email and password to sign back in later.<% if (guestRetentionDays) { %> Guest profiles are deleted after <%= guestRetentionDays %> days without use.<% } %></p></div>
         <form data-settings-form="claim" novalidate>
             <div class="field"><label for="claimEmail">Email</label><input class="input" id="claimEmail" name="email" type="email" required maxlength="255" autocomplete="email" autocapitalize="none"></div>
             <div class="field"><label for="claimPassword">Password</label><input class="input" id="claimPassword" name="newPassword" type="password" required minlength="8" maxlength="72" autocomplete="new-password"><p class="field-help">At least 8 characters, with an uppercase letter, a lowercase letter and a number.</p></div>

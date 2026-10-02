@@ -1,5 +1,13 @@
 <%
   const calculatorFor = { 'personal-loans': 'personal', credit: 'credit', mortgages: 'mortgage' };
+  // Signed-in visitors go straight to the feature instead of being asked to sign in or register.
+  const [primaryCta, secondaryCta] = (() => {
+    if (!user) return [product.primaryCta, product.secondaryCta];
+    const destination = decodeURIComponent(product.secondaryCta.href.split('returnTo=')[1] || '%2Fdashboard');
+    const feature = product.secondaryCta.label.replace(/^Sign in to /, '');
+    const opening = product.primaryCta.href.includes('type=business') ? { label: 'Open business checking', href: '/accounts/new?type=business' } : { label: 'Open another account', href: '/accounts/new' };
+    return [{ label: `Go to ${feature}`, href: destination }, opening];
+  })();
   const liveLists = {
     stocks: { title: 'Popular stocks', symbols: 'AAPL,MSFT,NVDA,AMZN,GOOGL,META,TSLA,JPM', href: '/wealth/markets?type=stock' },
     etfs: { title: 'Curated ETFs', symbols: 'SPY,QQQ,VTI,VXUS,VWO,BND,GLD', href: '/wealth/markets?type=etf' },
@@ -21,8 +29,8 @@
                 <h1 class="h1"><%= product.headline %></h1>
                 <p class="lede"><%= product.lede %></p>
                 <div class="page-hero-actions">
-                    <a href="<%= product.primaryCta.href %>" class="btn btn-primary btn-lg"><%= product.primaryCta.label %> <%- icon('arrow-right', 'icon-arrow') %></a>
-                    <a href="<%= product.secondaryCta.href %>" class="btn btn-secondary btn-lg"><%= product.secondaryCta.label %></a>
+                    <a href="<%= primaryCta.href %>" class="btn btn-primary btn-lg"><%= primaryCta.label %> <%- icon('arrow-right', 'icon-arrow') %></a>
+                    <a href="<%= secondaryCta.href %>" class="btn btn-secondary btn-lg"><%= secondaryCta.label %></a>
                 </div>
                 <p class="page-hero-note"><%- icon('info') %><span><%= product.disclosure %></span></p>
             </div>
@@ -151,7 +159,7 @@
                         <p><%= isBusiness ? 'Open a business demo profile and explore accounts, cards, invoices and cash flow in minutes.' : 'Open a Willow demo account in minutes and explore everything with simulated money.' %></p>
                     </div>
                     <div class="cta-band-actions">
-                        <a href="<%= product.primaryCta.href %>" class="btn btn-light btn-lg"><%= product.primaryCta.label %> <%- icon('arrow-right', 'icon-arrow') %></a>
+                        <a href="<%= primaryCta.href %>" class="btn btn-light btn-lg"><%= primaryCta.label %> <%- icon('arrow-right', 'icon-arrow') %></a>
                         <a href="/demo" class="btn btn-outline-light btn-lg">How the demo works</a>
                     </div>
                 </div>
