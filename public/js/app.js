@@ -211,8 +211,7 @@ function setupPromptAnswers() {
 
 function setupGoalSelection() {
     const pills = document.querySelectorAll('.goal-pill');
-    const panels = document.querySelectorAll('[data-goal-panel]');
-    if (!pills.length || !panels.length) return;
+    if (!pills.length) return;
 
     const goalContent = {
         savings: {
@@ -315,7 +314,6 @@ function setupGoalSelection() {
         pill.addEventListener('click', () => {
             const selectedGoal = pill.dataset.goal;
             pills.forEach((button) => button.classList.toggle('is-active', button === pill));
-            panels.forEach((panel) => panel.classList.toggle('is-active', panel.dataset.goalPanel === selectedGoal));
             updateGoalContent(selectedGoal);
         });
     });

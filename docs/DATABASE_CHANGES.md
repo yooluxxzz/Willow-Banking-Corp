@@ -46,6 +46,11 @@ The application uses sql.js with its schema and startup migrations in `src/datab
 - The market adapter retrieves a fixed allowlist of symbols from Yahoo Finance chart endpoints on the server, caches each supported historical range for five minutes, and marks expired cached data stale after refresh failures. Simulated orders reject stale data. This is a prototyping data source, not an execution service; this Node project has no Python/yfinance runtime, and no real orders are placed.
 - No existing account balance, banking transaction, or user record is backfilled or altered by the feature. The Hub reads completed owner-scoped ledger rows; spending totals and expense rankings exclude transfers. Investment summaries use recorded cost basis, not live valuation. Credit/debt, external accounts and scheduled payments are explicitly unavailable.
 
+## 2026-10-02: personal planning goals
+
+- Startup creates `demo_goals(id, user_id, name, category, target_cents, current_cents, created_at, updated_at)`. Rows are owned by a single user, cascade on account deletion, restrict categories and enforce positive targets with progress between zero and the target.
+- Goal amounts are self-reported planning values only. Creating or updating a goal does not move money or modify account balances, savings balances, or ledger transactions. The Hub shows these saved goals with the same planning-only disclosure.
+
 ## Recovery delivery and backups
 
 No email delivery service is configured. Recovery therefore requires a code saved before losing account access. There is no public reset-link shortcut. If all codes are lost and the password is forgotten, self-service recovery is unavailable.

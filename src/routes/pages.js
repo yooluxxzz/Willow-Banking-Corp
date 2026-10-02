@@ -164,6 +164,11 @@ router.get('/hub', requireAuth, (req, res) => {
     res.render('hub', { title: 'Financial picture — Willow Banking Corp.' });
 });
 
+router.get('/goals', requireAuth, (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    res.render('goals', { title: 'Planning goals — Willow Banking Corp.' });
+});
+
 router.get('/notifications', requireAuth, (req, res) => {
     res.render('notifications', { title: 'Notifications — Willow Banking Corp.' });
 });

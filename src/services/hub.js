@@ -1,5 +1,6 @@
 const { getDb } = require('../database');
 const demoPortfolio = require('./demo-portfolio');
+const goalService = require('./goals');
 
 function getSummary(userId) {
     const db = getDb();
@@ -36,6 +37,7 @@ function getSummary(userId) {
         demoInvestmentsAtCostCents: investmentsAtCostCents,
         demoPortfolioCashCents: portfolio.cashCents,
         transactionCount: activity.length,
+        goals: goalService.listGoals(userId),
     };
 }
 

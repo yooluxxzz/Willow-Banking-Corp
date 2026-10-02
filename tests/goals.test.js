@@ -1,0 +1,54 @@
+const { describe, it, before, after } = require('node:test');
+const assert = require('node:assert/strict');
+const supertest = require('supertest');
+const { createTestApp, registerAgent } = require('./setup');
+
+describe('Personal planning goals', () => {
+    let app, db, close, owner, other;
+    before(async () => {
+        const env = await createTestApp(); app = env.app; db = env.getDb(); close = env.closeDatabase;
+        owner = await registerAgent(supertest, app, { email: 'goal-owner@example.test', password: 'GoalDemo123', fullName: 'Goal Owner' });
+        other = await registerAgent(supertest, app, { email: 'goal-other@example.test', password: 'GoalDemo123', fullName: 'Goal Other' });
+    });
+    after(() => close());
+
+    it('creates, updates and deletes a user-owned plan without moving account money', async () => {
+        assert.equal((await supertest(app).get('/goals')).status, 302);
+        const ownerId = db.prepare('SELECT id FROM users WHERE email = ?').get('goal-owner@example.test').id;
+        const balanceBefore = db.prepare('SELECT SUM(balance) AS total FROM accounts WHERE user_id = ?').get(ownerId).total;
+        const page = await owner.agent.get('/goals');
+        assert.equal(page.status, 200);
+        assert.match(page.text, /not bank balances/);
+
+        const denied = await owner.agent.post('/api/goals').send({ name: 'Home', category: 'home', targetAmount: '5000' });
+        assert.equal(denied.status, 403);
+        const created = await owner.agent.post('/api/goals').set('X-CSRF-Token', owner.csrfToken)
+            .send({ name: 'Home deposit', category: 'home', targetAmount: '5000', currentAmount: '125.50' });
+        assert.equal(created.status, 201);
+        assert.equal(created.body.goal.current_cents, 12550);
+
+        const otherList = await other.agent.get('/api/goals');
+        assert.deepEqual(otherList.body.goals, []);
+        const foreignUpdate = await other.agent.patch(`/api/goals/${created.body.goal.id}`).set('X-CSRF-Token', other.csrfToken).send({ currentAmount: '200' });
+        assert.equal(foreignUpdate.status, 404);
+
+        const updated = await owner.agent.patch(`/api/goals/${created.body.goal.id}`).set('X-CSRF-Token', owner.csrfToken).send({ currentAmount: '750' });
+        assert.equal(updated.status, 200);
+        assert.equal(updated.body.goal.current_cents, 75000);
+        assert.equal(db.prepare('SELECT SUM(balance) AS total FROM accounts WHERE user_id = ?').get(ownerId).total, balanceBefore);
+
+        const invalid = await owner.agent.patch(`/api/goals/${created.body.goal.id}`).set('X-CSRF-Token', owner.csrfToken).send({ targetAmount: '500' });
+        assert.equal(invalid.status, 400);
+        const removed = await owner.agent.delete(`/api/goals/${created.body.goal.id}`).set('X-CSRF-Token', owner.csrfToken);
+        assert.equal(removed.status, 200);
+        assert.deepEqual((await owner.agent.get('/api/goals')).body.goals, []);
+    });
+
+    it('rejects unsafe names, unknown categories, malformed currency values and excess progress', async () => {
+        const post = value => owner.agent.post('/api/goals').set('X-CSRF-Token', owner.csrfToken).send(value);
+        assert.equal((await post({ name: '<b>Bad</b>', category: 'home', targetAmount: '500' })).status, 400);
+        assert.equal((await post({ name: 'Test goal', category: 'stocks', targetAmount: '500' })).status, 400);
+        assert.equal((await post({ name: 'Test goal', category: 'home', targetAmount: '10.001' })).status, 400);
+        assert.equal((await post({ name: 'Test goal', category: 'home', targetAmount: '10', currentAmount: '11' })).status, 400);
+    });
+});

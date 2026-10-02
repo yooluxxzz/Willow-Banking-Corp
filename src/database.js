@@ -109,6 +109,18 @@ async function initializeDatabase() {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+        CREATE TABLE IF NOT EXISTS demo_goals (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            name TEXT NOT NULL,
+            category TEXT NOT NULL CHECK(category IN ('savings', 'home', 'travel', 'business', 'investing', 'other')),
+            target_cents INTEGER NOT NULL CHECK(target_cents > 0),
+            current_cents INTEGER NOT NULL DEFAULT 0 CHECK(current_cents >= 0),
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+            CHECK(current_cents <= target_cents)
+        );
+
     CREATE TABLE IF NOT EXISTS transactions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       reference TEXT NOT NULL UNIQUE,
@@ -179,6 +191,7 @@ async function initializeDatabase() {
         'CREATE INDEX IF NOT EXISTS idx_audit_logs_actor_id ON audit_logs(actor_id)',
         'CREATE INDEX IF NOT EXISTS idx_cards_account_id ON cards(account_id)',
         'CREATE INDEX IF NOT EXISTS idx_demo_trades_user_created ON demo_trades(user_id, created_at)',
+        'CREATE INDEX IF NOT EXISTS idx_demo_goals_user ON demo_goals(user_id, created_at)',
         'CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)',
         'CREATE INDEX IF NOT EXISTS idx_users_customer_id ON users(customer_id)',
     ];

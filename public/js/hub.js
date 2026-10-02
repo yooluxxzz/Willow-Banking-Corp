@@ -32,6 +32,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         summary.topExpenses.forEach(item => {
             const row = document.createElement('div'); row.className = 'hub-expense-row'; row.append(text('span', item.description), text('strong', format(item.amountCents))); expenses.append(row);
         });
+        const goals = byId('hubGoals'); goals.replaceChildren();
+        if (!summary.goals.length) {
+            const empty = text('p', 'No planning goals saved yet. Add a goal to track your own target and progress.', 'wealth-empty');
+            const link = text('a', 'Create a goal ↗'); link.href = '/goals'; goals.append(empty, link);
+        }
+        summary.goals.slice(0, 4).forEach(goal => {
+            const row = document.createElement('div'); row.className = 'hub-saved-goal';
+            const label = document.createElement('div'); label.append(text('strong', goal.name), text('small', `${format(goal.current_cents)} of ${format(goal.target_cents)} · planning only`));
+            const progress = document.createElement('progress'); progress.max = goal.target_cents; progress.value = goal.current_cents; progress.setAttribute('aria-label', `${goal.name} self-reported goal progress`);
+            row.append(label, progress); goals.append(row);
+        });
         root.setAttribute('aria-busy', 'false');
     } catch (error) {
         byId('hubError').hidden = false; byId('hubError').textContent = error.message; root.setAttribute('aria-busy', 'false');
