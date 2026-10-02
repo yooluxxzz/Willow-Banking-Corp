@@ -115,3 +115,10 @@ Each completed work session is recorded here and committed locally. Git history 
 - Added the missing Willow goal-selection section to the public homepage to match the brief’s “What are you working toward?” requirement, including a premium, interactive selection flow rather than a static questionnaire.
 - The personalization cards surface relevant financial-product cues and a compact goal summary, making the homepage feel more like an integrated financial ecosystem instead of a generic marketing page.
 - Validation: the existing Node regression suite remains green after the homepage update (`node --test tests/*.test.js`), with 92 tests passing and 0 failing. No schema or live account data changes were introduced.
+
+## Willow hub and intelligence pass - 2026-10-02
+
+- Added the missing Willow Hub story section to the homepage, including a net-worth summary, money-movement breakdown, and goal-tracking cards to match the brief’s “Your financial picture” requirement.
+- Added a premium financial-intelligence panel that responds to common finance prompts such as spending, investments, savings and portfolio allocation. This makes the homepage feel like a connected financial operating system instead of a static landing page.
+- The work stays in the demo/illustrative layer only and does not imply real trading, real advice or real-money movement; it is framed as an informational product experience tied to the existing Willow demo ecosystem.
+- Validation: the project regression suite still passes after the page expansion (`node --test tests/*.test.js`), with 92 passing tests and 0 failures. No schema or account-data migration was needed for this UI-only enhancement.

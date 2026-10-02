@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupHeroCrossfade();
     setupHomeReveals();
     setupGoalSelection();
+    setupPromptAnswers();
 });
 
 function setupHeroCrossfade() {
@@ -173,6 +174,30 @@ function setupHomeReveals() {
 
     sections.forEach((section) => observer.observe(section));
     document.body.classList.add('home-reveals-enabled');
+}
+
+function setupPromptAnswers() {
+    const chips = document.querySelectorAll('.prompt-chip');
+    const answerHeading = document.getElementById('intelligenceAnswer');
+    const answerText = document.querySelector('.intelligence-answer');
+    if (!chips.length || !answerHeading || !answerText) return;
+
+    const answers = {
+        'How much did I spend this month?': 'You spent $5,360 this month across everyday accounts and recurring payments. The largest categories were groceries, rent and recurring subscriptions.',
+        'Show me my investments.': 'Your investment portfolio is spread across seven demo assets, with the strongest weight in large-cap equities and a smaller allocation in crypto.',
+        'What are my biggest expenses?': 'Your biggest recurring expenses are housing, groceries and transport, with the largest and most recent variation coming from monthly utility spending.',
+        'How much do I have in savings?': 'You have $19,800 in active savings across your primary and goal-based accounts, with $3,200 earmarked for travel and $1,920 added this month.',
+        'What is my portfolio allocation?': 'Your portfolio is split roughly 58% equities, 24% cash, 12% crypto and 6% alternative holdings, keeping risk balanced across the current demo mix.'
+    };
+
+    chips.forEach((chip) => {
+        chip.addEventListener('click', () => {
+            chips.forEach((button) => button.classList.toggle('is-active', button === chip));
+            const text = chip.dataset.answer || chip.textContent.trim();
+            answerHeading.textContent = text;
+            answerText.textContent = answers[text] || 'This demo insight is based on the current connected Willow data view.';
+        });
+    });
 }
 
 function setupGoalSelection() {
