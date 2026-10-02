@@ -96,3 +96,9 @@ Each completed work session is recorded here and committed locally. Git history 
 - The shared 654px-tall desktop viewport triggered the old short-height rule that disabled sticky positioning. The hero now scales to the available desktop height and stays pinned; very short and compact mobile-landscape viewports retain natural scrolling so controls remain reachable.
 - The homepage navigation now hides while scrolling down and returns while scrolling up, following the observed Revolut interaction. Opening the mobile menu forces the navigation visible; reduced-motion preferences disable the transition.
 - Validation: all 92 tests pass; JavaScript syntax, editor diagnostics and `git diff --check` are clean. Browser checks confirm pinning and direction-aware navigation at 1391x654, portrait layout at 390x844, and natural scrolling at 844x390. No schema or live-data changes.
+
+## Scroll-driven hero transformation - 2026-10-02
+
+- Replaced the binary scene threshold with scroll-progress-driven photo framing: the existing customer portrait begins in a tall, rounded right-side panel and expands to full bleed, while the two photos crossfade and the copy enters in sequenced beats. No Revolut assets or branding were copied.
+- Replaced the `decode()`-only enhancement gate with image completion/error handling, because the integrated browser reported loaded images whose decode promises never settled. Reduced-motion users keep the static first scene.
+- Validation: all 92 tests pass; JavaScript syntax and editor diagnostics are clean. Browser-computed samples at scroll positions 0, 250, 500, 800 and 1050 show the frame insets and image/copy opacity changing continuously from 0 to 1. Screenshot capture was attempted, but the shared preview tab was hidden and rendered as a blank/dim frame, so no visual screenshot verification is claimed. No schema or live-data changes.

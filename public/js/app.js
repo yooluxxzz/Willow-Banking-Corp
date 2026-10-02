@@ -40,6 +40,7 @@ function setupHeroCrossfade() {
     if (photos.some(photo => !photo)) return;
 
     let frame = null;
+    let photoFrame = { top: 8, right: 4, bottom: 8, left: 62, radius: 20 };
     const show = (scene) => {
         if (hero.dataset.activeImage === scene) return;
         hero.dataset.activeImage = scene;
@@ -60,20 +61,42 @@ function setupHeroCrossfade() {
         const bounds = story.getBoundingClientRect();
         const travel = Math.max(1, story.offsetHeight - hero.offsetHeight);
         const progress = Math.min(1, Math.max(0, (top - bounds.top) / travel));
+        const photoProgress = Math.min(1, progress / 0.82);
+        const easedPhotoProgress = photoProgress * photoProgress * (3 - 2 * photoProgress);
+        const sceneProgress = Math.min(1, Math.max(0, (progress - 0.42) / 0.4));
+        const copyAOpacity = 1 - Math.min(1, Math.max(0, (progress - 0.24) / 0.26));
+        const copyBOpacity = Math.min(1, Math.max(0, (progress - 0.52) / 0.2));
+        hero.style.setProperty('--hero-photo-inset-top', `${photoFrame.top * (1 - easedPhotoProgress)}%`);
+        hero.style.setProperty('--hero-photo-inset-right', `${photoFrame.right * (1 - easedPhotoProgress)}%`);
+        hero.style.setProperty('--hero-photo-inset-bottom', `${photoFrame.bottom * (1 - easedPhotoProgress)}%`);
+        hero.style.setProperty('--hero-photo-inset-left', `${photoFrame.left * (1 - easedPhotoProgress)}%`);
+        hero.style.setProperty('--hero-photo-radius', `${photoFrame.radius * (1 - easedPhotoProgress)}px`);
+        hero.style.setProperty('--hero-scene-progress', sceneProgress);
+        hero.style.setProperty('--hero-copy-a-opacity', copyAOpacity);
+        hero.style.setProperty('--hero-copy-b-opacity', copyBOpacity);
         hero.style.setProperty('--story-progress', progress);
-        // Hold the second scene on screen before the sticky stage releases.
-        show(progress >= 0.3 ? 'b' : 'a');
+        show(progress >= 0.52 ? 'b' : 'a');
     };
     const schedule = () => {
         if (frame === null) frame = window.requestAnimationFrame(updateFromScroll);
     };
     const resize = () => {
         story.style.setProperty('--hero-nav-height', `${nav ? nav.getBoundingClientRect().height : 0}px`);
-        schedule();
+        const styles = window.getComputedStyle(story);
+        photoFrame = {
+            top: Number.parseFloat(styles.getPropertyValue('--hero-photo-start-top')) || 0,
+            right: Number.parseFloat(styles.getPropertyValue('--hero-photo-start-right')) || 0,
+            bottom: Number.parseFloat(styles.getPropertyValue('--hero-photo-start-bottom')) || 0,
+            left: Number.parseFloat(styles.getPropertyValue('--hero-photo-start-left')) || 0,
+            radius: Number.parseFloat(styles.getPropertyValue('--hero-photo-start-radius')) || 0
+        };
+        updateFromScroll();
     };
-    Promise.all(photos.map(photo => photo.decode().then(() => true).catch(() => false))).then(loaded => {
+    const enableScrollStory = () => {
+        const loaded = photos.map(photo => photo.complete && photo.naturalWidth > 0);
         if (!loaded[0] && loaded[1]) show('b');
         if (!loaded.every(Boolean)) return;
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
         // Enhance only after both photos load; the first scene works without JS.
         story.classList.add('is-scroll-ready');
         resize();
@@ -81,7 +104,16 @@ function setupHeroCrossfade() {
         window.addEventListener('resize', resize, { passive: true });
         window.addEventListener('pageshow', resize);
         if ('ResizeObserver' in window && nav) new ResizeObserver(resize).observe(nav);
-    });
+    };
+    if (photos.every(photo => photo.complete)) {
+        enableScrollStory();
+    } else {
+        Promise.all(photos.map(photo => new Promise(resolve => {
+            if (photo.complete) return resolve();
+            photo.addEventListener('load', resolve, { once: true });
+            photo.addEventListener('error', resolve, { once: true });
+        }))).then(enableScrollStory);
+    }
 }
 
 function setupHomeNavigation() {
