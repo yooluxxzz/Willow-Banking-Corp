@@ -84,3 +84,9 @@ Each completed work session is recorded here and committed locally. Git history 
 - Existing registrations still receive their starter personal accounts. Business accounts do not implement shared ownership, company verification, payroll, lending or merchant processing; savings do not accrue interest.
 - Validation: all 92 tests across 24 suites pass, including seven new tests for all products, zero balances, legacy defaults, cross-user isolation, retries/concurrency, malformed input, CSRF, audit rollback, profile limits and business transfers/statements. All 38 templates compile and all 56 scripts pass syntax checks; whitespace checks pass.
 - Private preview backup created before migration; server restarted successfully. Browser interaction/layout review remains unverified after the prior browser-policy block. Live data, backups and secrets remain ignored. Completed code, schema, tests and documentation committed and synced as requested.
+
+## Cross-browser hero scrolling - 2026-10-02
+
+- Added `100vh` fallbacks for the pinned hero stage and its scroll travel, with `100svh` enhancements where supported. Added the prefixed sticky-position declaration for Safari compatibility; retained the existing short-landscape fallback.
+- Reviewed Revolut's scroll behavior as a reference: its navigation leaves the viewport while scrolling down. Willow's existing pinned hero remains the focus, with the navigation-height offset preserved.
+- Validation: homepage experience tests pass (8/8). Local browser checks at 1440x900 and 390x844 confirm the hero stays pinned beneath the navigation while scrolling; captured the mobile viewport. No schema or live-data changes. Legacy engines without `svh` were not directly emulated.

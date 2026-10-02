@@ -1,9 +1,17 @@
 /* Two scenes share one sticky stage, then release into the page categories. */
 .home-hero-story {
   --hero-nav-height: 73px;
-  --hero-stage-height: max(600px, calc(100svh - var(--hero-nav-height)));
+  --hero-viewport-height: 100vh;
+  --hero-scroll-travel: 110vh;
+  --hero-stage-height: max(600px, calc(var(--hero-viewport-height) - var(--hero-nav-height)));
 }
-.home-hero-story.is-scroll-ready { height: calc(var(--hero-stage-height) + 110svh); }
+@supports (height: 100svh) {
+  .home-hero-story {
+    --hero-viewport-height: 100svh;
+    --hero-scroll-travel: 110svh;
+  }
+}
+.home-hero-story.is-scroll-ready { height: calc(var(--hero-stage-height) + var(--hero-scroll-travel)); }
 .home-hero.home-hero-crossfade {
   height: var(--hero-stage-height);
   min-height: 0;
@@ -13,7 +21,7 @@
   overflow: hidden;
   isolation: isolate;
 }
-.is-scroll-ready .home-hero-crossfade { position: sticky; top: var(--hero-nav-height); }
+.is-scroll-ready .home-hero-crossfade { position: -webkit-sticky; position: sticky; top: var(--hero-nav-height); }
 .home-hero-photos { position: absolute; inset: 0; z-index: -2; overflow: hidden; isolation: isolate; }
 .home-hero-photo {
   position: absolute;
@@ -70,7 +78,7 @@ body.home-page .home-hero-crossfade .home-text-link:hover { color: #fff; }
 .hero-story-track { display: block; width: 140px; height: 2px; background: #ffffff40; }
 .hero-story-track > span { display: block; height: 100%; background: #f0e2d4; transform: scaleX(var(--story-progress,0)); transform-origin: left; }
 @media (max-width: 760px) {
-  .home-hero-story { --hero-stage-height: max(650px, calc(100svh - var(--hero-nav-height))); }
+  .home-hero-story { --hero-stage-height: max(650px, calc(var(--hero-viewport-height) - var(--hero-nav-height))); }
   .home-hero-photos { height: 48%; bottom: auto; }
   .home-hero-photo { object-position: 50% 35%; }
   .home-hero-crossfade .home-hero-shade { background: linear-gradient(0deg,#18342e 48%,transparent 70%); }
