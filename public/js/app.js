@@ -25,9 +25,64 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupLandingCalculator();
     setupHomeNavigation();
-    setupHeroCarousel();
+    setupHeroCrossfade();
     setupHomeReveals();
 });
+
+function setupHeroCrossfade() {
+    const hero = document.querySelector('[data-hero-crossfade]');
+    const story = hero?.closest('[data-hero-story]');
+    if (!hero || !story) return;
+    const photos = [hero.querySelector('.home-hero-photo-a'), hero.querySelector('.home-hero-photo-b')];
+    const copies = Array.from(hero.querySelectorAll('[data-hero-copy]'));
+    const guide = hero.querySelector('[data-hero-guide]');
+    const nav = document.querySelector('.home-nav');
+    if (photos.some(photo => !photo)) return;
+
+    let frame = null;
+    const show = (scene) => {
+        if (hero.dataset.activeImage === scene) return;
+        hero.dataset.activeImage = scene;
+        photos[0].setAttribute('aria-hidden', String(scene !== 'a'));
+        photos[1].setAttribute('aria-hidden', String(scene !== 'b'));
+        copies.forEach(copy => {
+            const inactive = copy.dataset.heroCopy !== scene;
+            copy.inert = inactive;
+            copy.setAttribute('aria-hidden', String(inactive));
+        });
+        if (guide) guide.textContent = scene === 'a'
+            ? '01 / 02  Scroll to discover'
+            : '02 / 02  Keep scrolling to explore';
+    };
+    const updateFromScroll = () => {
+        frame = null;
+        const top = nav ? nav.getBoundingClientRect().height : 0;
+        const bounds = story.getBoundingClientRect();
+        const travel = Math.max(1, story.offsetHeight - hero.offsetHeight);
+        const progress = Math.min(1, Math.max(0, (top - bounds.top) / travel));
+        hero.style.setProperty('--story-progress', progress);
+        // Hold the second scene on screen before the sticky stage releases.
+        show(progress >= 0.3 ? 'b' : 'a');
+    };
+    const schedule = () => {
+        if (frame === null) frame = window.requestAnimationFrame(updateFromScroll);
+    };
+    const resize = () => {
+        story.style.setProperty('--hero-nav-height', `${nav ? nav.getBoundingClientRect().height : 0}px`);
+        schedule();
+    };
+    Promise.all(photos.map(photo => photo.decode().then(() => true).catch(() => false))).then(loaded => {
+        if (!loaded[0] && loaded[1]) show('b');
+        if (!loaded.every(Boolean)) return;
+        // Enhance only after both photos load; the first scene works without JS.
+        story.classList.add('is-scroll-ready');
+        resize();
+        window.addEventListener('scroll', schedule, { passive: true });
+        window.addEventListener('resize', resize, { passive: true });
+        window.addEventListener('pageshow', resize);
+        if ('ResizeObserver' in window && nav) new ResizeObserver(resize).observe(nav);
+    });
+}
 
 function setupHomeNavigation() {
     const toggle = document.getElementById('homeMenuToggle');
@@ -52,100 +107,8 @@ function setupHomeNavigation() {
         if (event.key === 'Escape') closeMenu();
     });
     window.addEventListener('resize', () => {
-        if (window.innerWidth > 760) closeMenu();
+        if (window.innerWidth > 900) closeMenu();
     }, { passive: true });
-}
-
-function setupHeroCarousel() {
-    const stage = document.querySelector('[data-hero-stage]');
-    const slides = Array.from(document.querySelectorAll('[data-hero-slide]'));
-    const controls = document.querySelector('.home-carousel-controls');
-    const pauseButton = document.querySelector('[data-carousel-toggle]');
-    const dots = Array.from(document.querySelectorAll('[data-slide-to]'));
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    if (!stage || slides.length < 2 || !controls || !pauseButton) return;
-
-    const sceneLabels = [
-        'A customer reviewing a payment at home',
-        'A customer making an everyday card payment',
-        'A quiet moment for planning and saving',
-    ];
-    let activeIndex = 0;
-    let timer = null;
-    let manuallyPaused = false;
-    let interactionPaused = false;
-    let isVisible = true;
-
-    const clearTimer = () => {
-        window.clearTimeout(timer);
-        timer = null;
-    };
-    const scheduleNext = () => {
-        clearTimer();
-        if (reduceMotion || manuallyPaused || interactionPaused || !isVisible || document.hidden) return;
-        timer = window.setTimeout(() => {
-            activateSlide((activeIndex + 1) % slides.length);
-            scheduleNext();
-        }, 5200);
-    };
-    const activateSlide = (index) => {
-        activeIndex = index;
-        slides.forEach((slide, slideIndex) => slide.classList.toggle('is-active', slideIndex === activeIndex));
-        dots.forEach((dot, dotIndex) => {
-            const isActive = dotIndex === activeIndex;
-            dot.classList.toggle('is-active', isActive);
-            dot.setAttribute('aria-pressed', String(isActive));
-        });
-        stage.setAttribute('aria-label', sceneLabels[activeIndex]);
-        slides[(activeIndex + 1) % slides.length].loading = 'eager';
-    };
-
-    slides[1].loading = 'eager';
-    dots.forEach((dot) => {
-        dot.addEventListener('click', () => {
-            activateSlide(Number(dot.dataset.slideTo));
-            scheduleNext();
-        });
-    });
-    pauseButton.addEventListener('click', () => {
-        manuallyPaused = !manuallyPaused;
-        pauseButton.setAttribute('aria-pressed', String(manuallyPaused));
-        pauseButton.setAttribute('aria-label', manuallyPaused ? 'Resume image rotation' : 'Pause image rotation');
-        pauseButton.title = manuallyPaused ? 'Resume image rotation' : 'Pause image rotation';
-        pauseButton.classList.toggle('is-paused', manuallyPaused);
-        scheduleNext();
-    });
-
-    controls.addEventListener('mouseenter', () => {
-        interactionPaused = true;
-        clearTimer();
-    });
-    controls.addEventListener('mouseleave', () => {
-        interactionPaused = false;
-        scheduleNext();
-    });
-    controls.addEventListener('focusin', () => {
-        interactionPaused = true;
-        clearTimer();
-    });
-    controls.addEventListener('focusout', (event) => {
-        if (!controls.contains(event.relatedTarget)) {
-            interactionPaused = false;
-            scheduleNext();
-        }
-    });
-    document.addEventListener('visibilitychange', scheduleNext);
-
-    if ('IntersectionObserver' in window) {
-        const observer = new IntersectionObserver(([entry]) => {
-            isVisible = entry.isIntersecting;
-            scheduleNext();
-        }, { threshold: 0.1 });
-        observer.observe(stage);
-    }
-
-    scheduleNext();
 }
 
 function setupHomeReveals() {
@@ -227,25 +190,26 @@ async function handleLogin(e) {
 
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span> Signing in...';
-    errBox.classList.add('hidden');
+    errBox.hidden = true;
 
     try {
         const form = document.getElementById('loginForm');
         const csrf = form.querySelector('[name="_csrf"]').value;
         const res = await fetch('/auth/login', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, Accept: 'application/json' },
             body: JSON.stringify({
                 email: document.getElementById('email').value,
                 password: document.getElementById('password').value,
+                returnTo: form.elements.returnTo.value,
             }),
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Login failed.');
-        window.location.href = '/dashboard';
+        const data = await res.json().catch(() => ({ error: 'Sign-in is temporarily unavailable. Please try again.' }));
+        if (!res.ok || !data.success) throw new Error(data.error || 'Login failed.');
+        window.location.href = data.redirect || '/dashboard';
     } catch (err) {
-        errBox.classList.remove('hidden');
-        errText.textContent = err.message || 'Invalid email or password.';
+        errBox.hidden = false; errBox.focus();
+        errText.textContent = err instanceof TypeError ? 'Could not connect. Check your connection and try again.' : (err.message || 'Invalid email or password.');
         btn.disabled = false;
         btn.textContent = 'Sign In';
     }
@@ -260,21 +224,21 @@ async function handleRegister(e) {
     const password = document.getElementById('password').value;
     const confirm = document.getElementById('confirmPassword').value;
     if (password !== confirm) {
-        errBox.classList.remove('hidden');
+        errBox.hidden = false; errBox.focus();
         errText.textContent = 'Passwords do not match.';
         return;
     }
 
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span> Creating account...';
-    errBox.classList.add('hidden');
+    errBox.hidden = true;
 
     try {
         const form = document.getElementById('registerForm');
         const csrf = form.querySelector('[name="_csrf"]').value;
         const res = await fetch('/auth/register', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, Accept: 'application/json' },
             body: JSON.stringify({
                 fullName: document.getElementById('fullName').value,
                 email: document.getElementById('email').value,
@@ -284,25 +248,33 @@ async function handleRegister(e) {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Registration failed.');
-        window.location.href = '/dashboard';
+        window.location.href = data.redirect || '/dashboard';
     } catch (err) {
-        errBox.classList.remove('hidden');
+        errBox.hidden = false; errBox.focus();
         errText.textContent = err.message || 'Could not create account. Please try again.';
         btn.disabled = false;
         btn.textContent = 'Create Account';
     }
 }
 
+let logoutPending = false;
 async function handleLogout() {
+    if (logoutPending) return;
+    logoutPending = true;
     try {
         const csrfMeta = document.querySelector('meta[name="csrf-token"]');
         const csrf = csrfMeta ? csrfMeta.getAttribute('content') : '';
-        await fetch('/auth/logout', {
+        const response = await fetch('/auth/logout', {
             method: 'POST',
-            headers: { 'X-CSRF-Token': csrf },
+            headers: { 'X-CSRF-Token': csrf, Accept: 'application/json' },
         });
-    } catch (e) { /* ignore */ }
-    window.location.href = '/login';
+        const data = await response.json().catch(() => ({}));
+        if (response.status === 401) { window.location.href = '/login?error=session_expired'; return; }
+        if (!response.ok || !data.success) throw new Error(data.error || 'Sign-out could not be completed. Please try again.');
+        window.location.href = '/login?signedOut=success';
+    } catch (error) {
+        showToast(error.message || 'Could not connect. Please try signing out again.', 'error');
+    } finally { logoutPending = false; }
 }
 
 // ── Theme Toggle ─────────────────────────────────────────
@@ -363,8 +335,10 @@ function toggleTheme() {
         const toast = document.createElement('div');
         toast.style.cssText = 'pointer-events:auto;display:flex;align-items:flex-start;gap:12px;padding:14px 18px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.12);border:1px solid ' + t.border + ';background:' + t.bg + ';color:' + t.text + ';font-size:0.9rem;line-height:1.5;transform:translateX(110%);transition:transform 0.35s cubic-bezier(0.22,1,0.36,1),opacity 0.3s;opacity:0;';
         toast.innerHTML = '<div style="flex-shrink:0;color:' + t.icon + ';margin-top:1px;">' + (icons[type] || icons.info) + '</div>'
-            + '<div style="flex:1;font-weight:500;">' + message + '</div>'
+            + '<div data-toast-message style="flex:1;font-weight:500;"></div>'
             + '<button onclick="this.parentElement.remove()" style="flex-shrink:0;background:none;border:none;cursor:pointer;color:' + t.text + ';opacity:0.5;font-size:1.2rem;line-height:1;padding:0;">&times;</button>';
+        toast.querySelector('[data-toast-message]').textContent = message;
+        toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
         c.appendChild(toast);
         requestAnimationFrame(function () {
             toast.style.transform = 'translateX(0)';
@@ -411,3 +385,49 @@ function toggleTheme() {
         });
     };
 })();
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-password-toggle]').forEach(button => {
+        button.addEventListener('click', () => {
+            const input = document.getElementById(button.getAttribute('aria-controls'));
+            const visible = input.type === 'password';
+            input.type = visible ? 'text' : 'password';
+            button.setAttribute('aria-pressed', String(visible));
+            button.setAttribute('aria-label', visible ? 'Hide password' : 'Show password');
+        });
+    });
+    const form = document.getElementById('registerForm');
+    if (!form) return;
+    const steps = Array.from(form.querySelectorAll('[data-register-step]'));
+    const setStep = index => {
+        steps.forEach((step, i) => {
+            step.hidden = i !== index;
+            step.querySelectorAll('input').forEach(input => { input.disabled = i !== index; });
+        });
+        document.getElementById('registerStepLabel').textContent = 'Step ' + (index + 1) + ' of 2';
+        document.getElementById('registerStepName').textContent = index ? 'Account security' : 'Personal details';
+        document.getElementById('registerProgress').style.width = index ? '100%' : '50%';
+        document.querySelector('.auth-progress-track').setAttribute('aria-valuenow', String(index + 1));
+        steps[index].querySelector('input').focus();
+    };
+    document.getElementById('registerNext').addEventListener('click', () => {
+        if (Array.from(steps[0].querySelectorAll('input')).every(input => input.reportValidity())) setStep(1);
+    });
+    document.getElementById('registerBack').addEventListener('click', () => setStep(0));
+    steps[1].querySelectorAll('input').forEach(input => { input.disabled = true; });
+    const password = document.getElementById('password');
+    password.addEventListener('input', () => {
+        const value = password.value;
+        const rules = { length: value.length >= 8 && value.length <= 128, upper: /[A-Z]/.test(value), lower: /[a-z]/.test(value), number: /[0-9]/.test(value) };
+        Object.entries(rules).forEach(([rule, valid]) => document.querySelector('[data-password-rule="' + rule + '"]').classList.toggle('is-valid', valid));
+        const met = Object.values(rules).filter(Boolean).length;
+        document.getElementById('passwordStrengthBar').style.width = met * 25 + '%';
+        document.getElementById('passwordStrengthText').textContent = met === 4 ? 'Password meets the requirements' : 'Meet all four password requirements';
+        password.setCustomValidity(met === 4 || !value ? '' : 'Use 8–128 characters with uppercase, lowercase and a number.');
+    });
+    document.getElementById('confirmPassword').addEventListener('input', event => {
+        const matches = event.target.value === password.value;
+        document.getElementById('confirmPasswordError').hidden = matches;
+        event.target.setCustomValidity(matches ? '' : 'Passwords must match.');
+    });
+});

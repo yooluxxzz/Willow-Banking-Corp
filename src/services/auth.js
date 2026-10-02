@@ -23,7 +23,7 @@ function generateAccountNumber() {
 async function registerUser({ email, password, fullName, phone }) {
     const db = getDb();
 
-    email = email?.trim().toLowerCase();
+    email = typeof email === 'string' ? email.trim().toLowerCase() : '';
     fullName = sanitizeString(fullName);
     phone = sanitizeString(phone || '');
 
@@ -71,6 +71,8 @@ async function registerUser({ email, password, fullName, phone }) {
         const userId = result.lastInsertRowid;
         const accountResult = insertAccount.run(userId, accountNumber);
         const accountId = accountResult.lastInsertRowid;
+        // Give newly registered demo customers a savings destination as well.
+        db.prepare("INSERT INTO accounts (user_id, account_number, account_type, balance, available_balance) VALUES (?, ?, 'savings', 0, 0)").run(userId, generateAccountNumber());
         insertNotification.run(userId);
 
         // Generate a demo debit card
@@ -118,8 +120,8 @@ function clearAttempts(email) {
 async function loginUser({ email, password }) {
     const db = getDb();
 
-    email = email?.trim().toLowerCase();
-    if (!email || !password) {
+    email = typeof email === 'string' ? email.trim().toLowerCase() : '';
+    if (!email || typeof password !== 'string' || !password || password.length > 128) {
         return { error: 'Email and password are required.' };
     }
 
@@ -161,6 +163,7 @@ async function loginUser({ email, password }) {
             fullName: user.full_name,
             role: user.role,
             customerId: user.customer_id,
+            authVersion: user.auth_version,
         },
     };
 }
@@ -169,7 +172,7 @@ async function initializeAdmin() {
     const db = getDb();
     const { email, password } = config.admin;
 
-    if (!email || !password) {
+    if (!email || typeof password !== 'string' || !password || password.length > 128) {
         console.log('[Admin] No ADMIN_EMAIL/ADMIN_PASSWORD set — skipping admin initialization.');
         return;
     }
@@ -197,4 +200,4 @@ async function initializeAdmin() {
     console.log(`[Admin] Admin account created: ${email}`);
 }
 
-module.exports = { registerUser, loginUser, initializeAdmin, generateAccountNumber };
+module.exports = { registerUser, loginUser, initializeAdmin, generateAccountNumber, clearAttempts };

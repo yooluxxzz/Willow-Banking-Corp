@@ -162,7 +162,9 @@ async function start() {
             const os = require('os');
             const url = `http://localhost:${config.port}`;
             const cmd = os.platform() === 'win32' ? `start "" "${url}"` : (os.platform() === 'darwin' ? `open ${url}` : `xdg-open ${url}`);
-            exec(cmd).on('error', e => console.log('[Server] Failed to auto-open browser:', e.message));
+            if (process.env.OPEN_BROWSER === 'true') {
+                exec(cmd).on('error', e => console.log('[Server] Failed to auto-open browser:', e.message));
+            }
         });
 
         // Graceful shutdown

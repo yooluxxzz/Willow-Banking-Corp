@@ -1,0 +1,82 @@
+.banking-workspace { --workspace-paper:#f5f5ef; --workspace-card:#fff; --workspace-ink:#18342e; --workspace-muted:#64736b; --workspace-line:#dce3da; background:var(--workspace-paper); }
+.workspace-main { color:var(--workspace-ink); max-width:1640px; padding:42px clamp(20px,4vw,64px); }
+.workspace-eyebrow { font-size:10px; letter-spacing:.16em; font-weight:700; margin:0 0 16px; color:var(--workspace-muted); }
+.workspace-main .page-header { margin-bottom:32px; }
+.workspace-main .page-header h1 { font-family:'Newsreader',Georgia,serif; font-weight:400; font-size:clamp(32px,3.5vw,48px); line-height:1.15; margin-bottom:12px; overflow-wrap:anywhere; color:var(--workspace-ink); }
+.workspace-main .page-header p { color:var(--workspace-muted); font-size:14px; line-height:1.7; max-width:720px; }
+.workspace-main .page-header>a { display:inline-block; padding:8px 0 16px; font-size:12px; color:var(--workspace-muted); }
+.workspace-main .card { border:1px solid var(--workspace-line); background:var(--workspace-card); border-radius:17px; box-shadow:0 5px 20px #19372c04; overflow:hidden; }
+.workspace-main .card-header { padding:22px 26px; border-bottom:1px solid var(--workspace-line); gap:16px; flex-wrap:wrap; }
+.workspace-main .card-header h2,.workspace-main .card-header h3 { font-size:19px; font-weight:500; color:var(--workspace-ink); }
+.workspace-main .card-header a { color:var(--workspace-ink); font-size:12px; min-height:40px; display:inline-flex; align-items:center; }
+.workspace-main .card-body { padding:26px; }
+.workspace-main .form-group { margin-bottom:24px; min-width:0; }
+.workspace-main label { font-size:12px; font-weight:600; color:var(--workspace-ink); margin-bottom:9px; }
+.workspace-main .form-control { border:1px solid var(--workspace-line); background:var(--workspace-paper); color:var(--workspace-ink); border-radius:9px; min-height:48px; font-size:13px; padding:12px 14px; max-width:100%; }
+.workspace-main select.form-control { padding-right:32px; text-overflow:ellipsis; }
+.workspace-main .form-control:focus { border-color:#748b64; box-shadow:0 0 0 3px #8ea77922; }
+.workspace-main .form-control[readonly] { opacity:.75; }
+.workspace-main .form-hint,.workspace-main .form-help { color:var(--workspace-muted); font-size:12px; line-height:1.7; margin-top:8px; }
+.workspace-main .btn { min-height:44px; border-radius:8px; font-size:13px; padding:12px 18px; }
+.workspace-main .btn-primary { background:#224b38; color:#f6f7ed; border-color:#224b38; }
+.workspace-main .btn-secondary { background:var(--workspace-card); color:var(--workspace-ink); border:1px solid var(--workspace-line); }
+.workspace-main .btn:disabled { opacity:.55; cursor:not-allowed; }
+.workspace-main a:focus-visible,.workspace-main button:focus-visible,.workspace-main summary:focus-visible { outline:3px solid #b58e50; outline-offset:4px; }
+.workspace-main .text-muted { color:var(--workspace-muted); }
+.workspace-main table { font-size:13px; }
+.workspace-main th { background:var(--workspace-paper); color:var(--workspace-muted); font-size:10px; letter-spacing:.06em; padding:15px 20px; }
+.workspace-main td { padding:18px 20px; border-color:var(--workspace-line); color:var(--workspace-ink); }
+.workspace-main td.amount-credit { color:#3d794f; }
+.workspace-main .empty-state { padding:46px 24px; color:var(--workspace-muted); }
+.workspace-main .settings-grid { max-width:none; gap:24px; }
+.workspace-main .settings-feedback { line-height:1.7; border:1px solid #d5e2cf; }
+.workspace-main .settings-feedback[data-error='true'] { border-color:#efd3cb; }
+.workspace-main .session-row { border-color:var(--workspace-line); padding:22px 0; }
+.money-workspace { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(260px,.85fr); gap:28px; align-items:start; max-width:1160px; }
+.money-form-card { width:100%; max-width:none; }
+.money-form-card .card-body { padding:32px; }
+.money-form-card input[type=number] { min-height:66px; font-family:'Newsreader',Georgia,serif; font-size:32px; letter-spacing:-.02em; }
+.money-form-card .demo-notice { background:var(--workspace-paper); color:var(--workspace-muted); border:1px solid var(--workspace-line); padding:14px 16px; border-radius:10px; font-size:12px; line-height:1.7; margin-bottom:24px; }
+.money-guide { background:#e9eedf; border-radius:17px; padding:32px; color:#18342e; }
+.money-guide .workspace-eyebrow { color:#61725c; }
+.money-guide h2 { font-family:'Newsreader',Georgia,serif; font-size:clamp(28px,3vw,38px); font-weight:400; line-height:1.13; margin:0 0 18px; }
+.money-guide>p:not(.workspace-eyebrow) { font-size:13px; line-height:1.9; color:#536657; }
+.money-guide-note { margin:28px 0 16px; padding:20px 0; border-top:1px solid #cbd6c2; border-bottom:1px solid #cbd6c2; display:flex; gap:14px; align-items:start; }
+.money-guide-note span { font-size:24px; }
+.money-guide-note p { font-size:12px; line-height:1.8; }
+.money-guide>a { display:flex; align-items:center; justify-content:space-between; gap:14px; min-height:48px; color:#18342e; font-size:12px; font-weight:600; }
+.workspace-main .account-detail-balance { background:linear-gradient(120deg,#173b30,#274f3b); color:#f5f7ed; }
+.workspace-main .account-detail-balance .card-header { border-color:#cddbcc33; }
+.workspace-main .account-detail-balance .card-header h2,.workspace-main .account-detail-balance a { color:#f5f7ed; }
+.workspace-main .account-detail-balance .text-muted { color:#cddbcc; }
+.workspace-main .account-detail-balance .account-balance { font-family:'Newsreader',Georgia,serif; font-size:clamp(36px,4vw,58px); margin:12px 0 20px; overflow-wrap:anywhere; }
+.workspace-main .account-detail-balance summary { cursor:pointer; padding:12px 0; font-size:13px; }
+.workspace-main .transfer-summary { border-radius:12px; background:var(--workspace-paper); padding:18px; margin:22px 0; }
+.workspace-main .transfer-summary dd { overflow-wrap:anywhere; }
+.workspace-main #reviewTitle { font-family:'Newsreader',Georgia,serif; font-size:30px; font-weight:400; }
+.workspace-main #transactionFilters .filters-bar { gap:16px; }
+.workspace-main #transactionFilters .form-group { margin-bottom:8px; }
+.workspace-main #transactionFilters .settings-actions { margin-top:20px; }
+.workspace-main .pagination { padding:18px; gap:10px; }
+.workspace-main .pagination button { min-height:44px; border-radius:8px; }
+.workspace-main .card-management-details h2 { font-family:'Newsreader',Georgia,serif; font-size:28px; font-weight:400; }
+.workspace-main .card-review { color:var(--workspace-ink); background:var(--workspace-card); border:1px solid var(--workspace-line); }
+.workspace-main .statement-summary { padding:20px; border-radius:12px; background:var(--workspace-paper); font-size:12px; color:var(--workspace-muted); }
+.workspace-main .statement-summary strong { font-size:22px; font-weight:500; color:var(--workspace-ink); overflow-wrap:anywhere; }
+[data-theme='dark'] .banking-workspace { --workspace-paper:#101e19; --workspace-card:#1b2b24; --workspace-ink:#e4eddf; --workspace-muted:#b0c0b4; --workspace-line:#36473c; }
+[data-theme='dark'] .workspace-main td.amount-credit { color:#a3d4a6; }
+@media(max-width:1100px) { .money-workspace { grid-template-columns:1fr; max-width:760px; } .workspace-main .statement-summary { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:650px) { .workspace-main { padding:80px 18px 28px; } .workspace-main .card-body,.money-form-card .card-body { padding:22px; } .workspace-main .card-header { padding:20px 22px; } .money-guide { padding:26px; } .workspace-main .page-header.flex-between { align-items:flex-start; gap:16px; flex-wrap:wrap; } .workspace-main .settings-actions { gap:10px; } .workspace-main .transfer-actions { flex-wrap:wrap; } .workspace-main .statement-summary { padding:16px; gap:20px 12px; } .workspace-main .statement-summary strong { font-size:19px; } }
+
+.account-product-options { border:0; padding:0; margin:0 0 28px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; }
+.account-product-options legend { font-size:20px; font-weight:500; margin-bottom:18px; }
+.workspace-main .account-product { display:flex; align-items:flex-start; gap:12px; padding:24px; background:var(--workspace-card); border:1px solid var(--workspace-line); border-radius:16px; cursor:pointer; min-width:0; }
+.account-product:has(input:checked) { outline:2px solid #72936c; outline-offset:2px; }
+.account-product input { margin-top:6px; accent-color:#294c35; flex-shrink:0; }
+.account-product strong { display:block; font-size:23px; font-family:'Newsreader',Georgia,serif; font-weight:500; }
+.account-product span>span { display:block; font-size:12px; color:var(--workspace-muted); line-height:1.8; font-weight:400; margin-top:12px; }
+.account-product .account-product-subtitle { color:var(--workspace-ink); font-weight:600; }
+.opening-acknowledgement { display:flex; gap:12px; align-items:flex-start; margin:24px 0; line-height:1.8; }
+.opening-acknowledgement input { margin-top:5px; }
+#openAccountForm[hidden],#accountOpeningReview[hidden] { display:none; }
+@media(max-width:950px) { .account-product-options { grid-template-columns:1fr; } }

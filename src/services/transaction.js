@@ -42,7 +42,7 @@ function getTransactions(accountId, { page = 1, limit = 20, type, status, search
     FROM transactions t
     LEFT JOIN accounts ra ON t.related_account_id = ra.id
     WHERE ${where}
-    ORDER BY t.created_at ${orderDir}
+    ORDER BY t.created_at ${orderDir}, t.id ${orderDir}
     LIMIT ? OFFSET ?
   `).all(...params, limit, offset);
 
@@ -75,7 +75,7 @@ function getRecentTransactions(accountIds, limit = 5) {
     FROM transactions t
     LEFT JOIN accounts ra ON t.related_account_id = ra.id
     WHERE t.account_id IN (${placeholders})
-    ORDER BY t.created_at DESC
+    ORDER BY t.created_at DESC, t.id DESC
     LIMIT ?
   `).all(...accountIds, limit);
     return rows.map(formatTransaction);
@@ -113,7 +113,7 @@ function getAllTransactions({ page = 1, limit = 20, type, status, search, dateFr
     JOIN users u ON a.user_id = u.id
     LEFT JOIN accounts ra ON t.related_account_id = ra.id
     WHERE ${where}
-    ORDER BY t.created_at ${orderDir}
+    ORDER BY t.created_at ${orderDir}, t.id ${orderDir}
     LIMIT ? OFFSET ?
   `).all(...params, limit, offset);
 

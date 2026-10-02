@@ -5,7 +5,7 @@
 
     <div class="home-utility">
         <div class="home-utility-inner">
-            <span>Personal banking from Willow</span>
+            <span>Willow demo · No real money or banking services</span>
             <a href="/contact">Help and support</a>
         </div>
     </div>
@@ -17,7 +17,8 @@
                 Willow Banking Corp.
             </a>
             <div class="nav-links" id="homeNavLinks">
-                <a href="#banking">Banking</a>
+                <a href="/personal">Personal</a>
+                <a href="/business">Business</a>
                 <a href="#experience">Digital experience</a>
                 <a href="#security">Trust and security</a>
                 <a href="#resources">Help</a>
@@ -52,15 +53,15 @@
     </nav>
 
     <main id="main-content">
-        <section class="home-hero" id="home" aria-labelledby="homeHeroTitle">
-            <div class="home-hero-media" data-hero-stage role="img" aria-label="A customer reviewing a payment at home">
-                <img class="home-hero-slide is-active" data-hero-slide src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&amp;fit=crop&amp;w=1600&amp;q=82" srcset="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&amp;fit=crop&amp;w=720&amp;q=74 720w, https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&amp;fit=crop&amp;w=1200&amp;q=80 1200w, https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&amp;fit=crop&amp;w=1800&amp;q=82 1800w" sizes="100vw" alt="" aria-hidden="true" fetchpriority="high" decoding="async">
-                <img class="home-hero-slide" data-hero-slide src="https://images.unsplash.com/photo-1556742502-ec7c0e9f34b1?auto=format&amp;fit=crop&amp;w=1600&amp;q=82" srcset="https://images.unsplash.com/photo-1556742502-ec7c0e9f34b1?auto=format&amp;fit=crop&amp;w=720&amp;q=74 720w, https://images.unsplash.com/photo-1556742502-ec7c0e9f34b1?auto=format&amp;fit=crop&amp;w=1200&amp;q=80 1200w, https://images.unsplash.com/photo-1556742502-ec7c0e9f34b1?auto=format&amp;fit=crop&amp;w=1800&amp;q=82 1800w" sizes="100vw" alt="" aria-hidden="true" loading="lazy" fetchpriority="low" decoding="async">
-                <img class="home-hero-slide" data-hero-slide src="https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&amp;fit=crop&amp;w=1600&amp;q=82" srcset="https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&amp;fit=crop&amp;w=720&amp;q=74 720w, https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&amp;fit=crop&amp;w=1200&amp;q=80 1200w, https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&amp;fit=crop&amp;w=1800&amp;q=82 1800w" sizes="100vw" alt="" aria-hidden="true" loading="lazy" fetchpriority="low" decoding="async">
+        <div class="home-hero-story" data-hero-story>
+        <section class="home-hero home-hero-crossfade" id="home" aria-labelledby="homeHeroTitle" data-hero-crossfade data-active-image="a">
+            <div class="home-hero-photos">
+                <img class="home-hero-photo home-hero-photo-b" src="/images/willow-hero-employee.webp" srcset="/images/willow-hero-employee-768.webp 768w, /images/willow-hero-employee.webp 1536w" sizes="100vw" alt="A bank employee listening attentively across a service counter" aria-hidden="true" width="1536" height="1024" decoding="async">
+                <img class="home-hero-photo home-hero-photo-a" src="/images/willow-hero-customer.webp" srcset="/images/willow-hero-customer-768.webp 768w, /images/willow-hero-customer.webp 1536w" sizes="100vw" alt="A banking customer speaking with an employee at a service counter" width="1536" height="1024" fetchpriority="high" decoding="async">
             </div>
             <div class="home-hero-shade" aria-hidden="true"></div>
             <div class="home-hero-content">
-                <div class="home-hero-copy">
+                <div class="home-hero-copy hero-scene-copy" data-hero-copy="a">
                     <p class="home-eyebrow">Willow Banking Corp. <span>Personal banking</span></p>
                     <h1 id="homeHeroTitle">Steady for what's next.</h1>
                     <p>Everyday accounts, cards, transfers and clear digital tools, brought together around the life you're building.</p>
@@ -69,19 +70,27 @@
                         <a href="#banking" class="home-text-link">Explore banking <span aria-hidden="true">&#8594;</span></a>
                     </div>
                 </div>
-                <div class="home-carousel-controls" aria-label="Hero image controls">
-                    <div class="home-carousel-dots" role="group" aria-label="Choose a campaign image">
-                        <button class="is-active" type="button" data-slide-to="0" aria-label="Show everyday banking scene" aria-pressed="true"></button>
-                        <button type="button" data-slide-to="1" aria-label="Show contactless payment scene" aria-pressed="false"></button>
-                        <button type="button" data-slide-to="2" aria-label="Show long-term planning scene" aria-pressed="false"></button>
+                <div class="home-hero-copy hero-scene-copy" data-hero-copy="b" aria-hidden="true" inert>
+                    <p class="home-eyebrow">Your next chapter <span>With Willow</span></p>
+                    <h2>More clarity.<br>More possibility.</h2>
+                    <p>A place for everyday spending, the goals ahead, and a clearer view of your money.</p>
+                    <ul class="hero-scene-details" aria-label="Explore Willow banking">
+                        <li>Everyday accounts</li>
+                        <li>Savings goals</li>
+                        <li>Digital tools</li>
+                    </ul>
+                    <div class="home-hero-actions">
+                        <a href="#banking" class="home-button home-button-light">Explore the accounts</a>
+                        <a href="/personal" class="home-text-link">Personal banking <span aria-hidden="true">&#8594;</span></a>
                     </div>
-                    <button class="home-carousel-toggle" type="button" data-carousel-toggle aria-label="Pause image rotation" title="Pause image rotation" aria-pressed="false">
-                        <svg class="pause-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 5v14M16 5v14" /></svg>
-                        <svg class="play-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m7 4 13 8-13 8z" /></svg>
-                    </button>
                 </div>
             </div>
+            <div class="hero-story-guide" aria-hidden="true">
+                <span data-hero-guide>01 / 02 &nbsp; Scroll to discover</span>
+                <span class="hero-story-track"><span></span></span>
+            </div>
         </section>
+        </div>
 
         <section class="home-intro home-reveal" aria-labelledby="homeIntroTitle">
             <div class="section-inner home-intro-grid">
@@ -135,6 +144,29 @@
                         <h3>Transfers</h3>
                         <p>Move money between accounts with a clear activity history.</p>
                         <span class="home-product-link">Explore transfers <span aria-hidden="true">&#8594;</span></span>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section class="home-life home-reveal" aria-labelledby="homeLifeTitle">
+            <div class="section-inner">
+                <div class="home-section-heading">
+                    <div><p class="home-eyebrow">For the life you're building</p><h2 id="homeLifeTitle">Your everyday. Your next chapter.</h2></div>
+                    <p>Simple tools for the moments that matter, with room for the plans still taking shape.</p>
+                </div>
+                <div class="life-card-grid">
+                    <a class="life-card" href="/personal">
+                        <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&amp;fit=crop&amp;w=800&amp;q=85" alt="A customer making an everyday payment" loading="lazy" width="800" height="1000">
+                        <div class="life-card-copy"><span>01 / Personal banking</span><h3>Made for your kind of day.</h3><p>Accounts, cards and a clearer view of everyday money.</p><span class="life-card-link">Explore personal <span aria-hidden="true">↗</span></span></div>
+                    </a>
+                    <a class="life-card life-card-business" href="/business">
+                        <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&amp;fit=crop&amp;w=800&amp;q=85" alt="A small clothing shop with carefully arranged displays" loading="lazy" width="800" height="1000">
+                        <div class="life-card-copy"><span>02 / Business banking</span><h3>Space for your ambition.</h3><p>Explore the tools a working day could need.</p><span class="life-card-link">Explore business <span aria-hidden="true">↗</span></span></div>
+                    </a>
+                    <a class="life-card" href="/products/savings">
+                        <img src="https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&amp;fit=crop&amp;w=800&amp;q=85" alt="A peaceful lake and mountain landscape" loading="lazy" width="800" height="1000">
+                        <div class="life-card-copy"><span>03 / Savings &amp; goals</span><h3>A little closer to what's next.</h3><p>Set funds aside and watch your plan take shape.</p><span class="life-card-link">Explore savings <span aria-hidden="true">↗</span></span></div>
                     </a>
                 </div>
             </div>
@@ -214,14 +246,14 @@
             <div class="section-inner home-trust-grid">
                 <div class="home-trust-copy">
                     <p class="home-eyebrow">Trust begins with transparency</p>
-                    <h2 id="homeTrustTitle">Clear about what is known, and what still needs to be verified.</h2>
-                    <p>Willow is a fictional demonstration platform. Before any real-world launch, regulatory status, deposit protection and independent security details must be confirmed and published.</p>
+                    <h2 id="homeTrustTitle">A clear picture of how Willow works.</h2>
+                    <p>Explore the banking experience with simulated accounts and funds. Here is what that means for your money, your information and your access.</p>
                 </div>
                 <dl class="home-disclosures">
-                    <div><dt>Regulatory information</dt><dd>[To be confirmed before production use]</dd></div>
-                    <div><dt>Deposit protection information</dt><dd>[To be confirmed before production use]</dd></div>
-                    <div><dt>Privacy and data use</dt><dd>[To be confirmed before production use]</dd></div>
-                    <div><dt>Security certification</dt><dd>[To be confirmed before production use]</dd></div>
+                    <div><dt>Regulatory information</dt><dd>Willow is a fictional banking demo, not a licensed bank. It does not provide real financial services. <a href="/compliance#regulatory-status">About this demo</a></dd></div>
+                    <div><dt>Deposit protection information</dt><dd>Balances and deposits are simulated. No real money is held and no deposit insurance applies. <a href="/compliance#deposit-protection">About simulated funds</a></dd></div>
+                    <div><dt>Privacy and data use</dt><dd>Profile details, demo activity and sign-in records are stored to run your account. Use fictional details when exploring. <a href="/privacy">Read the privacy notice</a></dd></div>
+                    <div><dt>Security certification</dt><dd>No independent security certification is claimed. Password hashing, session controls and one-time recovery codes are implemented. <a href="/security-info">Explore security features</a></dd></div>
                 </dl>
             </div>
         </section>

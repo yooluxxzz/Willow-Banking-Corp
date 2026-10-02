@@ -24,15 +24,16 @@ A full-stack demonstration banking platform built with **Node.js**, **Express**,
 
 ### Customer Portal
 - **Dashboard** — Overview of all accounts, balances, and recent transactions
-- **Accounts** — View checking and savings account details
-- **Transfers** — Send money between accounts or to other customers (daily limit: $25,000)
+- **Accounts** — Name checking and savings accounts, view balances and recent activity, and open account-specific transaction history
+- **Transfers** — Send money between accounts or to other customers (daily limit: $25,000; includes own-account transfers with review and confirmation)
 - **Deposits & Withdrawals** — Manage account funds with daily limits and optional descriptions
-- **Transaction History** — Filterable, paginated list of all transactions
+- **Transaction History** — Filter by account, date, type, status, description or reference; sort and paginate with shareable filter URLs
 - **Statements** — Generate and download PDF account statements by date range
 - **Card Management** — View, freeze/unfreeze, and report debit cards
 - **Notifications** — Real-time alerts for account activity
 - **Profile Editing** — Update your full name and phone number from Settings
 - **Security Center** — View recent login history and active sessions; change password
+- **Session Controls** — Recognize browser/device labels, identify the current session, and sign out an individual other session
 - **Dark / Light Mode** — Fully themed UI with persistent theme preference
 
 ### Admin Dashboard
@@ -117,7 +118,7 @@ PORT=3000
 # Optional: override daily transaction limits (values in cents)
 # DAILY_WITHDRAWAL_LIMIT_CENTS=1000000   # $10,000 (default)
 # DAILY_TRANSFER_LIMIT_CENTS=2500000     # $25,000 (default)
-# DAILY_DEPOSIT_LIMIT_CENTS=5000000      # $50,000 (default)
+# Deposits currently use a fixed $10,000 daily cap in src/routes/deposits.js
 ```
 
 | Variable | Description | Default |
@@ -185,6 +186,10 @@ Tests run against an **in-memory database** — no test data touches your real d
 | `tests/auth.test.js` | Registration, login, logout, account lockout, password change |
 | `tests/financial.test.js` | Deposits, withdrawals, transfers, daily limit enforcement |
 | `tests/admin.test.js` | Admin-only route protection, user management, stats endpoint |
+| `tests/accounts.test.js` | Account names, owned detail pages, filter validation and stable pagination |
+| `tests/sessions.test.js` | Individual session revocation, ownership, CSRF, replay and session metadata |
+| `tests/sign-in.test.js`, `tests/auth-client.test.js` | Safe return destinations, expired sessions, sign-out failures and client retries |
+| `tests/cards-statements.test.js` | Card transitions, replacement rollback/replay, statement balances, date validation and PDF output |
 
 Each test creates a fresh isolated database and handles CSRF tokens automatically.
 
@@ -304,3 +309,190 @@ This application implements the following security measures:
 ## 📄 License
 
 This project is provided for educational and demonstration purposes.
+
+
+## Updated Willow experience
+
+The original Express/EJS/sql.js architecture and existing ledger, cards, statements,
+admin and authentication routes are preserved. Public navigation now includes
+/personal and /business. Business checking is available as a single-owner demo
+account. Payroll, lending, merchant processing and company verification are not implemented.
+
+The homepage opens with the customer photograph and original headline. A sticky,
+viewport-height hero holds its position while the user scrolls. At 30% of its
+scroll sequence, the employee photograph takes over with a new headline,
+account details and category links. Both photos and content panels crossfade
+over 800ms using cubic-bezier(0.35, 0, 0, 1). Further scrolling holds scene two,
+then releases the hero into the rest of the page. Scrolling up reverses it.
+There is no timer, wheel interception or playback UI. Inactive copy is inert
+and hidden from assistive technology. Reduced motion disables transitions;
+short viewports use normal scrolling so all controls remain reachable.
+Phones keep the photos above the copy within the same stage.
+Both hero photos are local WebP assets with responsive variants, about 132 KiB
+combined at full size. HERO_PHOTO_PROMPTS.md contains the two prompts and asset
+manifest. Selected feature cards and the account preview have soft shadows and
+a gentle CSS perspective hover on fine pointers only; touch and reduced-motion
+layouts stay stable. Account and balance cards receive static soft shadows.
+Sign-in and two-step registration share the forest/ivory identity, a vector willow
+tree emblem, accessible password toggles and visible error feedback. New demo
+registrations receive zero-balance checking and savings accounts. Existing users
+retain their accounts; startup schema migrations preserve existing accounts and balances.
+
+Transfers support either another demo customer by email or an owned destination
+account ID. The UI snapshots details for review before confirmation; the server
+validates ownership, status, amounts, available funds and daily transfer caps.
+Success is displayed only after the atomic simulated ledger write succeeds.
+Reload the transfer page before starting another transfer to refresh balances.
+
+All funds, cards, deposits, withdrawals and transfers are simulated. This app has
+no connection to a real bank or payment network. Do not enter real personal or
+financial details. The contact form validates locally; it does not send or store
+messages. The contact details are illustrative. Password recovery uses one-time backup codes generated in account settings.
+No email recovery service is connected; save codes before losing account access.
+
+### Local setup
+
+Run npm ci (Node 18+), then npm start, and open http://localhost:3000.
+Set SESSION_SECRET to a long random value. ADMIN_EMAIL and ADMIN_PASSWORD are
+optional for local customer exploration; configure both if an admin is needed.
+DATABASE_PATH defaults to ./data/willow.db, PORT to 3000 and NODE_ENV to development.
+Production cookies require HTTPS when NODE_ENV=production. This educational app
+still requires a production security review before any real financial use.
+
+OPEN_BROWSER=true optionally opens the system browser on startup; the default
+leaves browser navigation to you. DATABASE_PATH=:memory: creates a temporary
+database without writing ledger data to disk. The application session store still
+uses data/sessions.db; automated tests use a separate in-memory session store.
+
+Deposits currently enforce a fixed $10,000 cap; the existing deposit configuration
+variable is not wired into that route. Transfers use DAILY_TRANSFER_LIMIT_CENTS
+(default 2500000). Do not assume unused environment variables change route behavior.
+
+### Verification
+
+npm test runs the original suite plus ownership, ledger consistency, malformed
+request, CSRF and public page tests. There is no build, lint or type-check script
+in this JavaScript/EJS project. Run node --check on changed JavaScript, and
+git diff --check for patch whitespace. Tests use an in-memory ledger, without
+attempting invalid :memory: filenames on Windows. The auth functional test
+fixture raises its login limit to avoid exhausting the limiter across many tests;
+the running application's rate limit is unchanged.
+
+### Visual Prompts for Nano Banana
+
+See [Visual Prompts for Nano Banana](VISUAL_PROMPTS.md) for seven detailed prompts,
+expected filenames/dimensions, current photo mappings and responsive export notes.
+Nano Banana is not connected. The hero pair was generated with the built-in image
+tool; supporting photography still uses interim Unsplash assets.
+Their availability depends on that external host. The tree logo is editable SVG,
+and all interface text, balances and gradients are built in code.
+
+
+## Account recovery and settings
+
+In Settings, update your name and phone, change your password, generate eight
+one-time backup codes, or sign out all other sessions. Save recovery codes before
+you need them. Generating a replacement set invalidates all previous codes.
+Use your email and one unused code at /forgot-password to set a new password.
+Recovery ends all existing sessions; password changes retain the current session.
+Passwords support 8–72 UTF-8 bytes with uppercase, lowercase and a number.
+
+Recovery endpoints are CSRF protected and rate limited. Plaintext codes are shown
+once and are never stored in the database or audit log. A lost password with no
+saved code cannot be recovered through this demo's self-service flow.
+
+See [database changes](docs/DATABASE_CHANGES.md) for migration and session-version
+details, and [the work log](WORK_LOG.md) for the Git record of completed sessions.
+
+## Account names and activity
+
+Open Accounts and select an account to see its available balance, account-number
+disclosure and five most recent transactions. Give it a name of up to 40 characters,
+or save a blank name to restore its default. Names appear on the dashboard and in
+transfer, deposit, withdrawal and activity selectors. Renaming does not change the
+account number, ownership or balances and is recorded in the audit log.
+
+Activity links preselect that account. Apply filters or clear them while retaining
+the selected account. Successful searches keep the filters and page in the URL
+for reloading or bookmarking; viewing the link still requires the owner's login.
+
+## Session management and public disclosures
+
+The Security page identifies the current session, shows approximate browser/device
+labels and UTC sign-in times, and lets you sign out a specific other session.
+Older sessions show a clear fallback when metadata is unavailable. Session listing
+errors are distinguished from an empty list. The UI never receives raw session IDs.
+Individual revocation writes a durable hash to the account database before removing
+the session from its store, so a stale store write cannot restore access. This does
+not cancel a request already executing when sign-out is requested.
+
+Homepage trust disclosures and the linked privacy, compliance and security pages
+describe the fictional demo, simulated funds, stored data and implemented controls.
+They do not claim a banking license, deposit insurance or independent certification.
+
+## Sign-in navigation
+
+Opening a protected page while signed out preserves its path and filters through
+sign-in. Return destinations are restricted to known Willow pages and checked
+again after authentication; account ownership and admin permissions still apply.
+No financial action is replayed. Expired or revoked sessions keep their page
+destination when redirecting back to sign-in. API authentication failures return JSON.
+
+Sign-out displays a success message only after the server confirms completion.
+Network or session-store failures show an error and allow a retry without navigating
+away. Duplicate sign-out clicks do not send overlapping requests. Sign-in and
+sign-out screens use explicit status messages, and error toasts render text safely.
+
+## Cards and statements
+
+Cards show their linked account name and current status with a review dialog for
+freeze, unfreeze, report-lost and replacement actions. Reporting a card makes it
+inactive immediately. Replacement atomically cancels a frozen/reported card and
+creates one active demo card; retrying a cancelled card cannot create another.
+Unfreeze and replacement require an active linked account. No physical cards are
+shipped, and the displayed daily-limit setting does not enable live card spending.
+
+Statements support this month, last month, this year and custom UTC date ranges,
+up to 366 days and 5,000 completed transactions per statement. Account detail pages
+link directly to the selected account's statements. Opening balances are rebuilt
+from the current posted balance by reversing completed movements since the start
+date, preserving any initial demo balance. Pending and failed entries are excluded.
+These calculations assume the account balance matches the recorded completed ledger.
+
+The preview shows money in/out and running balances using safely rendered text.
+PDF downloads handle errors without opening an error-only tab. PDF rows wrap long
+descriptions and references, repeat headers across pages, include page numbers and
+label each page as simulated. The built-in PDF fonts suit Latin-script demo content;
+broader script coverage would require embedding a suitable font.
+
+## Account overview design
+
+The signed-in dashboard and accounts overview share responsive account tiles with
+real owned-account balances, nicknames, statuses and links to details, activity and
+statements. A prominent available-balance panel prioritizes transfers and everyday
+actions. Recent activity uses a compact list that wraps on phones; empty states
+explain how to explore with simulated funds. Styling is scoped to these two pages,
+with dark-theme colors and keyboard focus states. No chart or growth data is fabricated.
+
+The remaining customer pages use a matching scoped workspace theme: account details,
+transfers, deposits, withdrawals, activity, statements, cards, settings, security and
+notifications. Money forms pair with explanatory guidance panels that stack on small
+screens. Existing controls, confirmation steps and server validation remain intact.
+
+## Optional account opening
+
+From Accounts, choose **Open another account**, select Checking, Savings or Business
+checking, optionally name it, and review the choice before confirming the demo
+acknowledgement. New accounts start at $0.00 USD and belong to the signed-in profile.
+Existing accounts are preserved; registration still includes the starter checking
+and savings accounts. Up to ten accounts are supported per profile. Additional
+accounts do not automatically issue debit cards or accrue savings interest.
+
+Business checking uses the existing checking ledger with a separate business
+purpose label. It is a single-owner simulated account, with no real business
+verification, shared users, payroll, merchant services, credit or real bank link.
+Public business links lead to the account chooser after sign-in.
+
+Opening requests use a unique per-form key: retrying the same request returns the
+created account rather than creating a duplicate. Account creation and its audit
+event are atomic. Schema changes preserve existing account numbers and balances.

@@ -1,72 +1,10 @@
 <%- include('partials/header') %>
-
-    <body class="public-page">
-        <%- include('partials/public-nav') %>
-
-            <main class="info-page">
-                <div class="info-inner info-legal">
-                    <h1>Security at Willow Banking</h1>
-                    <p class="info-sub">Your security is our top priority. Here's how we protect your accounts and data.
-                    </p>
-
-                    <section class="info-section">
-                        <h2>How We Protect You</h2>
-                        <div class="info-grid">
-                            <div class="info-card">
-                                <h3>Encrypted Passwords</h3>
-                                <p>All passwords are hashed with bcrypt using industry-standard salt rounds. We never
-                                    store passwords in plaintext.</p>
-                            </div>
-                            <div class="info-card">
-                                <h3>CSRF Protection</h3>
-                                <p>Every state-changing request is protected by anti-forgery tokens, preventing
-                                    unauthorized actions on your account.</p>
-                            </div>
-                            <div class="info-card">
-                                <h3>Rate Limiting</h3>
-                                <p>Login attempts and sensitive operations are rate-limited to prevent brute-force
-                                    attacks and abuse.</p>
-                            </div>
-                            <div class="info-card">
-                                <h3>Secure Sessions</h3>
-                                <p>Sessions are managed server-side with secure, HTTP-only cookies that are resistant to
-                                    client-side tampering.</p>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section class="info-section">
-                        <h2>Transaction Security</h2>
-                        <ul>
-                            <li>All financial transactions are validated server-side</li>
-                            <li>Atomic database operations prevent partial transaction failures</li>
-                            <li>Comprehensive audit logging tracks every administrative action</li>
-                            <li>Real-time notifications alert you to account activity</li>
-                            <li>Daily spending limits on card transactions</li>
-                        </ul>
-                    </section>
-
-                    <section class="info-section">
-                        <h2>Best Practices for Account Safety</h2>
-                        <ul>
-                            <li>Use a strong, unique password of at least 8 characters</li>
-                            <li>Never share your login credentials with anyone</li>
-                            <li>Log out of your account when using shared devices</li>
-                            <li>Review your transaction history regularly for unauthorized activity</li>
-                            <li>Contact us immediately if you suspect unauthorized access</li>
-                        </ul>
-                    </section>
-
-                    <section class="info-section">
-                        <h2>Report a Security Concern</h2>
-                        <p>If you discover a security vulnerability or suspect your account has been compromised,
-                            contact our security team at <strong>security@willowbank.com</strong> or call <strong>+1
-                                (555) 012-3456</strong>.</p>
-                    </section>
-                </div>
-            </main>
-
-            <%- include('partials/public-footer') %>
-    </body>
-
-    </html>
+<body class="public-page"><%- include('partials/public-nav') %>
+<main class="info-page"><div class="info-inner info-legal">
+<h1>Security in the demo</h1><p class="info-sub">Account protections you can use, and their limits.</p>
+<section class="info-section" id="access"><h2>Password and account access</h2><p>Passwords are hashed with bcrypt. Sign-in attempts are rate limited and repeated incorrect passwords trigger an account lockout. Sessions use HTTP-only cookies and sign-in replaces the session identifier. Secure-cookie settings require an HTTPS production deployment.</p></section>
+<section class="info-section" id="recovery"><h2>Recovery and session controls</h2><p>Generate eight one-time backup codes in Settings and save them privately. A password reset requires one unused code and signs out existing sessions. Changing your password or choosing “sign out other sessions” preserves the current session. You can also end an individual other session from the Security page. No email password-reset service is connected.</p></section>
+<section class="info-section" id="request-protection"><h2>Application protections</h2><p>State-changing forms and requests use anti-forgery tokens. Account actions check ownership on the server, and simulated transfers use atomic ledger updates. Account and administrative actions are recorded in an audit log.</p></section>
+<section class="info-section" id="certification"><h2>Review and certification status</h2><p>No independent security certification or audit report is provided. These implemented features are not a guarantee of security. Willow remains a fictional demonstration with simulated funds, and has not been presented as suitable for real banking or sensitive personal data.</p></section>
+<section class="info-section" id="account-safety"><h2>Keep your demo access private</h2><p>Use a unique demo password and fictional profile details. Save recovery codes privately and sign out on shared devices. Review sessions you do not recognize and change your password if needed. Report software issues privately to the operator of your instance; illustrative email addresses on sample pages are not a monitored support channel.</p></section>
+</div></main><%- include('partials/public-footer') %></body></html>

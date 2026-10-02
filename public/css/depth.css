@@ -1,0 +1,42 @@
+/* Restrained depth; all labels, balances and controls remain live HTML. */
+.life-card,
+.feature-card {
+  box-shadow: 0 10px 26px rgba(18, 42, 33, .1), 0 2px 5px rgba(18, 42, 33, .06);
+}
+.home-sample-window {
+  box-shadow: 0 24px 52px rgba(18, 42, 33, .14), 0 3px 10px rgba(18, 42, 33, .06);
+}
+.account-card,
+.stat-card {
+  box-shadow: 0 7px 20px rgba(18, 42, 33, .07), 0 1px 3px rgba(18, 42, 33, .04);
+}
+.home-experience {
+  position: relative;
+  box-shadow: inset 0 1px 0 rgba(32, 63, 54, .06), inset 0 -1px 0 rgba(32, 63, 54, .06);
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .life-card,
+  .feature-card,
+  .home-sample-window {
+    transition: transform 240ms ease, box-shadow 240ms ease;
+  }
+  .life-card:hover,
+  .feature-card:hover,
+  .home-sample-window:hover {
+    transform: perspective(1400px) translateY(-4px) rotateX(1deg) rotateY(-1deg);
+    box-shadow: 0 22px 44px rgba(18, 42, 33, .15), 0 4px 9px rgba(18, 42, 33, .06);
+  }
+}
+@media (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .resource-card,
+  .balance-card,
+  .mini-card,
+  .dashboard-preview,
+  .calculator-card,
+  .life-card,
+  .feature-card,
+  .home-sample-window {
+    transform: none !important;
+    transition: none !important;
+  }
+}

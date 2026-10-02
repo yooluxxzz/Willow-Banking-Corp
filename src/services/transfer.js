@@ -68,14 +68,14 @@ function executeTransfer({ fromAccountId, toAccountNumber, amount, description, 
     // Atomic transaction
     const transfer = db.transaction(() => {
         // Debit sender
-        db.prepare(`
+        const debit = db.prepare(`
       UPDATE accounts SET balance = balance - ?, available_balance = available_balance - ?
       WHERE id = ? AND available_balance >= ?
     `).run(amountCents, amountCents, fromAccount.id, amountCents);
 
         // Verify debit happened (race condition check)
         const updated = db.prepare('SELECT available_balance FROM accounts WHERE id = ?').get(fromAccount.id);
-        if (updated.available_balance < 0) {
+        if (debit.changes !== 1 || updated.available_balance < 0) {
             throw new Error('Insufficient funds');
         }
 

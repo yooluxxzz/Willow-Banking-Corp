@@ -3,10 +3,15 @@
  */
 const express = require('express');
 const { requireAuth } = require('../middleware/auth');
-const { getUserAccounts } = require('../services/account');
 const { getStatement, generateStatementPDF } = require('../services/statement');
 
 const router = express.Router();
+router.use(requireAuth);
+router.use((req, res, next) => {
+    res.set('Cache-Control', 'no-store');
+    if (typeof req.query.accountId !== 'string' || !/^[1-9]\d*$/.test(req.query.accountId)) return res.status(400).json({ error: 'Choose an account and a valid date range.' });
+    next();
+});
 
 router.get('/', requireAuth, (req, res) => {
     try {
@@ -16,7 +21,7 @@ router.get('/', requireAuth, (req, res) => {
             return res.json({ statement: null, message: 'Select an account and date range to view your statement.' });
         }
 
-        const result = getStatement(parseInt(accountId), req.session.userId, { dateFrom, dateTo });
+        const result = getStatement(Number(accountId), req.session.userId, { dateFrom, dateTo });
         if (result.error) {
             return res.status(400).json({ error: result.error });
         }
@@ -36,7 +41,7 @@ router.get('/download', requireAuth, async (req, res) => {
             return res.status(400).json({ error: 'Account and date range are required.' });
         }
 
-        const statementData = getStatement(parseInt(accountId), req.session.userId, { dateFrom, dateTo });
+        const statementData = getStatement(Number(accountId), req.session.userId, { dateFrom, dateTo });
         if (statementData.error) {
             return res.status(400).json({ error: statementData.error });
         }

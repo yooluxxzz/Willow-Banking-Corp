@@ -1,131 +1,68 @@
 <%- include('partials/header') %>
-
-    <body>
-        <div class="app-layout">
-            <%- include('partials/sidebar') %>
-                <main class="main-content">
-                    <div class="page-header">
-                        <h1>Settings</h1>
-                        <p>Manage your profile and preferences</p>
+<body class="banking-workspace">
+<div class="app-layout">
+    <%- include('partials/sidebar') %>
+    <main class="main-content workspace-main"><p class="workspace-eyebrow">YOUR WILLOW / YOUR PROFILE</p>
+        <div class="page-header"><h1>Account settings</h1><p>Keep your details current and your account within reach.</p></div>
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div class="settings-grid">
+            <section class="card" aria-labelledby="profileTitle">
+                <div class="card-header"><h2 id="profileTitle">Your profile</h2></div>
+                <div class="card-body">
+                    <form id="profileForm" data-settings-form="profile">
+                        <div class="form-group"><label for="fullName">Full name</label><input class="form-control" id="fullName" name="fullName" value="<%= user.full_name %>" required minlength="2" maxlength="100" autocomplete="name"></div>
+                        <div class="form-group"><label for="phone">Phone number <span class="text-muted">(optional)</span></label><input class="form-control" type="tel" id="phone" name="phone" value="<%= user.phone || '' %>" maxlength="40" autocomplete="tel" aria-describedby="phoneHelp"><p id="phoneHelp" class="form-hint">Include your country code. Use 7–15 digits.</p></div>
+                        <div class="form-group"><label for="profileEmail">Email address</label><input class="form-control" id="profileEmail" value="<%= user.email %>" readonly><p class="form-hint">Your sign-in email cannot be changed here.</p></div>
+                        <p class="text-sm text-muted">Customer ID: <span class="font-mono"><%= user.customer_id %></span></p>
+                        <p class="settings-feedback" role="status" tabindex="-1" hidden></p>
+                        <button class="btn btn-primary" type="submit">Save profile</button>
+                    </form>
+                </div>
+            </section>
+            <section class="card" aria-labelledby="passwordTitle">
+                <div class="card-header"><h2 id="passwordTitle">Change password</h2></div>
+                <div class="card-body">
+                    <p class="text-sm text-muted mb-4">Other sessions will be signed out after your password changes.</p>
+                    <form data-settings-form="password">
+                        <div class="form-group"><label for="currentPassword">Current password</label><input class="form-control" type="password" id="currentPassword" name="currentPassword" autocomplete="current-password" required></div>
+                        <div class="form-group"><label for="newPassword">New password</label><input class="form-control" type="password" id="newPassword" name="newPassword" autocomplete="new-password" minlength="8" maxlength="72" required aria-describedby="passwordHelp"><p class="form-hint" id="passwordHelp">At least 8 characters, including uppercase, lowercase and a number.</p></div>
+                        <div class="form-group"><label for="confirmPassword">Confirm new password</label><input class="form-control" type="password" id="confirmPassword" name="confirmPassword" autocomplete="new-password" minlength="8" maxlength="72" required></div>
+                        <p class="settings-feedback" role="status" tabindex="-1" hidden></p>
+                        <button class="btn btn-primary" type="submit">Update password</button>
+                    </form>
+                </div>
+            </section>
+            <section class="card" aria-labelledby="recoveryTitle" id="recovery">
+                <div class="card-header"><h2 id="recoveryTitle">Backup recovery codes</h2></div>
+                <div class="card-body">
+                    <p class="text-sm mb-3">Use a saved code to reset your password if you cannot sign in. Each code works once.</p>
+                    <p class="text-sm text-muted mb-4"><strong id="recoveryCount"><%= recoveryCount %></strong> unused codes. Generating a new set replaces every previous code. Save the new set somewhere private; it is shown only once.</p>
+                    <form data-settings-form="recovery">
+                        <div class="form-group"><label for="recoveryPassword">Confirm current password</label><input class="form-control" type="password" id="recoveryPassword" name="currentPassword" autocomplete="current-password" required></div>
+                        <p class="settings-feedback" role="status" tabindex="-1" hidden></p>
+                        <button class="btn btn-primary" type="submit">Generate 8 recovery codes</button>
+                    </form>
+                    <div id="recoveryResults" class="recovery-results" hidden>
+                        <h3>Save these codes now</h3><p class="text-sm">Keep them separate from your password. Anyone with a code and your email can reset your password.</p>
+                        <pre id="recoveryCodeList" aria-label="Your one-time recovery codes"></pre>
+                        <div class="settings-actions"><button type="button" class="btn btn-primary" id="downloadRecoveryCodes">Download codes</button><button type="button" class="btn btn-secondary" id="hideRecoveryCodes">I saved them — hide codes</button></div>
                     </div>
-                    <div class="card max-w-560">
-                        <div class="card-header">
-                            <h3>Profile Information</h3>
-                        </div>
-                        <div class="card-body">
-                            <form id="updateProfileForm" onsubmit="handleProfileUpdate(event)">
-                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                                <div class="form-group">
-                                    <label for="fullName">Full Name</label>
-                                    <input type="text" id="fullName" name="fullName" class="form-control"
-                                        value="<%= user ? user.full_name : '' %>" required minlength="2">
-                                </div>
-                                <div class="form-group">
-                                    <label for="phone">Phone Number</label>
-                                    <input type="tel" id="phone" name="phone" class="form-control"
-                                        value="<%= user && user.phone ? user.phone : '' %>" placeholder="Optional">
-                                </div>
-                                <div class="form-group">
-                                    <label>Email Address</label>
-                                    <input type="email" class="form-control" value="<%= user ? user.email : '' %>"
-                                        disabled>
-                                </div>
-                                <div class="form-group">
-                                    <label>Customer ID</label>
-                                    <input type="text" class="form-control font-mono"
-                                        value="<%= user ? user.customer_id : '' %>" disabled>
-                                </div>
-                                <button type="submit" class="btn btn-primary" id="profileBtn">Save Changes</button>
-                            </form>
-                        </div>
-                        <script>
-                            async function handleProfileUpdate(e) {
-                                e.preventDefault();
-                                const btn = document.getElementById('profileBtn');
-                                btn.disabled = true;
-                                btn.textContent = 'Saving...';
-                                try {
-                                    const res = await fetch('/auth/update-profile', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': '<%= csrfToken %>' },
-                                        body: JSON.stringify({
-                                            fullName: document.getElementById('fullName').value,
-                                            phone: document.getElementById('phone').value
-                                        })
-                                    });
-                                    const d = await res.json();
-                                    if (!res.ok) throw new Error(d.error);
-                                    showToast(d.message, 'success');
-                                } catch (err) {
-                                    showToast(err.message || 'Failed to update profile.', 'error');
-                                } finally {
-                                    btn.disabled = false;
-                                    btn.textContent = 'Save Changes';
-                                }
-                            }
-                        </script>
-                    </div>
-
-                    <div class="card max-w-560 mt-5">
-                        <div class="card-header">
-                            <h3>Change Password</h3>
-                        </div>
-                        <div class="card-body">
-                            <form id="changePasswordForm" onsubmit="handlePasswordChange(event)">
-                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                                <div class="form-group">
-                                    <label for="currentPassword">Current Password</label>
-                                    <input type="password" id="currentPassword" class="form-control" required
-                                        autocomplete="current-password">
-                                </div>
-                                <div class="form-group">
-                                    <label for="newPassword">New Password</label>
-                                    <input type="password" id="newPassword" class="form-control" required
-                                        autocomplete="new-password"
-                                        placeholder="Min 8 chars, uppercase, lowercase, and number">
-                                </div>
-                                <div class="form-group">
-                                    <label for="confirmPassword">Confirm New Password</label>
-                                    <input type="password" id="confirmPassword" class="form-control" required
-                                        autocomplete="new-password">
-                                </div>
-                                <button type="submit" class="btn btn-primary" id="pwBtn">Update Password</button>
-                            </form>
-                        </div>
-                    </div>
-                </main>
+                </div>
+            </section>
+            <section class="card" aria-labelledby="sessionsTitle">
+                <div class="card-header"><h2 id="sessionsTitle">Signed-in sessions</h2></div>
+                <div class="card-body">
+                    <p class="text-sm mb-4">Finished using Willow on another device? Sign out every other session while keeping this one active.</p>
+                    <form data-settings-form="sessions">
+                        <div class="form-group"><label for="sessionPassword">Confirm current password</label><input class="form-control" type="password" id="sessionPassword" name="currentPassword" autocomplete="current-password" required></div>
+                        <p class="settings-feedback" role="status" tabindex="-1" hidden></p>
+                        <button class="btn btn-primary" type="submit">Sign out other sessions</button>
+                    </form>
+                    <p class="mt-4"><a href="/security">Review recent sign-ins →</a></p>
+                </div>
+            </section>
         </div>
-        <script>
-            async function handlePasswordChange(e) {
-                e.preventDefault();
-                const newPassword = document.getElementById('newPassword').value;
-                const confirmPassword = document.getElementById('confirmPassword').value;
-                if (newPassword !== confirmPassword) {
-                    showToast('Passwords do not match.', 'error');
-                    return;
-                }
-                const btn = document.getElementById('pwBtn');
-                btn.disabled = true;
-                btn.textContent = 'Updating...';
-                try {
-                    const res = await fetch('/auth/change-password', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': '<%= csrfToken %>' },
-                        body: JSON.stringify({
-                            currentPassword: document.getElementById('currentPassword').value,
-                            newPassword
-                        })
-                    });
-                    const d = await res.json();
-                    if (!res.ok) throw new Error(d.error);
-                    showToast(d.message, 'success');
-                    document.getElementById('changePasswordForm').reset();
-                } catch (err) {
-                    showToast(err.message || 'Failed to change password.', 'error');
-                } finally {
-                    btn.disabled = false;
-                    btn.textContent = 'Update Password';
-                }
-            }
-        </script>
-        <%- include('partials/footer') %>
+    </main>
+</div>
+<script src="/js/account-settings.js" defer></script>
+<%- include('partials/footer') %>

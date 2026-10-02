@@ -6,12 +6,12 @@
         <aside class="auth-visual" aria-label="Willow banking campaign">
             <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&amp;fit=crop&amp;w=1200&amp;q=80" alt="" aria-hidden="true" fetchpriority="high" decoding="async">
             <div class="auth-visual-shade" aria-hidden="true"></div>
-            <div class="auth-visual-copy">
+            <a class="auth-campaign-brand" href="/"><img src="/images/logo.svg" alt=""><span>Willow<span>Banking Corp.</span></span></a><div class="auth-visual-copy">
                 <p class="auth-visual-kicker">Willow Banking Corp. <span>Personal banking</span></p>
                 <p class="auth-visual-slogan">Steady for what's next.</p>
                 <p>A considered place for everyday money and the plans you're building.</p>
             </div>
-        </aside>
+        <div class="auth-visual-foot"><span>Clarity for today. Room for tomorrow.</span><span>Willow / Demo experience</span></div></aside>
 
         <main class="auth-main" id="authMain">
             <div class="auth-topline">
@@ -23,7 +23,7 @@
             </div>
 
             <section class="auth-form-wrapper" aria-labelledby="loginTitle">
-                <p class="auth-eyebrow">Personal banking</p>
+                <p class="auth-eyebrow">Your everyday, connected</p>
                 <h1 id="loginTitle">Welcome back</h1>
                 <p class="auth-sub">Sign in to continue to your Willow account.</p>
 
@@ -34,6 +34,7 @@
 
                 <form id="loginForm" onsubmit="handleLogin(event)">
                     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <input type="hidden" name="returnTo" value="<%= returnTo %>">
                     <div class="auth-field">
                         <label for="email">Email address</label>
                         <input type="email" id="email" name="email" class="form-control" placeholder="you@example.com" required autocomplete="email" autocapitalize="none" spellcheck="false">
@@ -68,7 +69,20 @@
 
     <script>
         (function () {
-            if (new URLSearchParams(window.location.search).get('error') !== 'account_suspended') return;
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('signedOut') === 'success') {
+                const status = document.getElementById('loginStatus');
+                status.textContent = 'You are signed out.'; status.hidden = false;
+            }
+            if (params.get('reset') === 'success') {
+                const status = document.getElementById('loginStatus');
+                status.textContent = 'Password reset. Sign in with your new password.'; status.hidden = false;
+            }
+            if (params.get('error') === 'session_expired') {
+                document.getElementById('loginErrorText').textContent = 'Your session ended. Please sign in again.';
+                document.getElementById('loginError').hidden = false;
+            }
+            if (params.get('error') !== 'account_suspended') return;
             const errorBox = document.getElementById('loginError');
             document.getElementById('loginErrorText').textContent = 'We can’t sign you in right now. Please contact support.';
             errorBox.hidden = false;

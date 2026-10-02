@@ -10,6 +10,8 @@ const path = require('path');
 process.env.DATABASE_PATH = ':memory:';
 process.env.SESSION_SECRET = 'test-secret-key-for-testing';
 process.env.NODE_ENV = 'test';
+// Functional tests exercise many logins from one IP; rate limits are tested separately.
+process.env.AUTH_RATE_LIMIT_MAX = '100';
 process.env.ADMIN_EMAIL = 'admin@willow.test';
 process.env.ADMIN_PASSWORD = 'Admin123Test';
 
@@ -45,7 +47,9 @@ async function createTestApp() {
     app.use(securityHeaders);
 
     // In-memory session store for tests
+    const sessionStore = new session.MemoryStore();
     app.use(session({
+        store: sessionStore,
         secret: 'test-secret',
         resave: false,
         saveUninitialized: false,
@@ -83,7 +87,7 @@ async function createTestApp() {
         res.status(500).json({ error: 'Internal test error' });
     });
 
-    return { app, getDb, closeDatabase };
+    return { app, getDb, closeDatabase, sessionStore };
 }
 
 /**
@@ -126,7 +130,9 @@ async function registerAgent(supertest, app, userData) {
         .set('X-CSRF-Token', csrfToken)
         .send(userData);
 
-    return { agent, csrfToken, regRes };
+    const settings = regRes.status === 200 ? await agent.get('/settings') : null;
+    const newCsrf = settings?.text.match(/name="_csrf"\s+value="([^"]+)"/)?.[1] || csrfToken;
+    return { agent, csrfToken: newCsrf, regRes };
 }
 
 module.exports = { createTestApp, loginAgent, registerAgent };

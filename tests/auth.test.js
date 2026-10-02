@@ -103,12 +103,13 @@ describe('Auth', () => {
         });
     });
 
-    describe('Password Recovery Support', () => {
-        it('should show a support-based recovery page for password issues', async () => {
+    describe('Password Recovery', () => {
+        it('should show the backup-code recovery form', async () => {
             const res = await supertest(app).get('/forgot-password');
 
             assert.equal(res.status, 200);
-            assert.match(res.text, /Reset access|support|password/i);
+            assert.match(res.text, /id="recoveryForm"/);
+            assert.match(res.text, /name="recoveryCode"/);
         });
     });
 

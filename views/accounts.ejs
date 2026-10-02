@@ -1,47 +1,9 @@
 <%- include('partials/header') %>
-
-    <body>
-        <div class="app-layout">
-            <%- include('partials/sidebar') %>
-                <main class="main-content">
-                    <div class="page-header">
-                        <h1>Your Accounts</h1>
-                        <p>View and manage your bank accounts</p>
-                    </div>
-                    <div id="accountsContainer" class="loading-overlay">
-                        <div class="spinner"></div>
-                    </div>
-                </main>
-        </div>
-        <script>
-            const csrfToken = '<%= csrfToken %>';
-            document.addEventListener('DOMContentLoaded', async () => {
-                try {
-                    const res = await fetch('/api/accounts', { headers: { 'Accept': 'application/json' } });
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.error);
-                    const c = document.getElementById('accountsContainer');
-                    if (!data.accounts.length) {
-                        c.innerHTML = '<div class="empty-state"><h3>No accounts</h3><p>You don\'t have any accounts yet.</p></div>';
-                        return;
-                    }
-                    let html = '<div class="stats-grid">';
-                    data.accounts.forEach(a => {
-                        html += `<div class="card account-card"><div class="card-body">
-          <div class="account-type">${a.account_type}</div>
-          <div class="account-number font-mono">${a.maskedNumber}</div>
-          <div class="account-balance">${a.balanceFormatted}</div>
-          <div class="account-available">Available: ${a.availableBalanceFormatted}</div>
-          <div style="margin-top:var(--space-3);font-size:0.75rem;color:var(--gray-500);">
-            Account #: ${a.account_number} &bull; Status: <span class="badge badge-${a.status === 'active' ? 'success' : 'warning'}">${a.status}</span>
-          </div>
-        </div></div>`;
-                    });
-                    html += '</div>';
-                    c.innerHTML = html;
-                } catch (e) {
-                    document.getElementById('accountsContainer').innerHTML = '<div class="alert alert-danger">' + (e.message || 'Failed to load accounts.') + '</div>';
-                }
-            });
-        </script>
-        <%- include('partials/footer') %>
+<body class="account-overview-page"><div class="app-layout"><%- include('partials/sidebar') %><main class="main-content overview-main">
+<header class="overview-heading"><div><p class="overview-eyebrow">YOUR WILLOW / ACCOUNTS</p><h1>A place for every plan.</h1><p class="overview-muted">Everyday spending and future plans, clearly connected.</p></div><a class="overview-utility" href="/dashboard">Back to overview ↗</a></header>
+<section class="overview-balance overview-balance-compact" aria-labelledby="accountsBalance"><div><p id="accountsBalance" class="overview-eyebrow">AVAILABLE ACROSS ACTIVE ACCOUNTS</p><p class="overview-total"><%= totals.availableFormatted %></p><p>Total balance <%= totals.totalFormatted %> · USD</p></div><div class="overview-balance-aside"><span class="overview-demo">DEMO · SIMULATED FUNDS</span><div class="overview-balance-actions"><a href="/transfers">Move money ↗</a></div></div></section>
+<div class="overview-section-heading"><h2>Your accounts <span class="overview-count"><%= accounts.length %></span></h2><a href="/accounts/new">Open another account +</a></div>
+<%- include('partials/account-tiles', { accounts }) %>
+<section class="overview-account-tip"><div><p class="overview-eyebrow">MAKE IT YOURS</p><h2>Small details. A clearer picture.</h2><p>Name your accounts for what matters to you, then find their activity and statements in one place.</p></div><a href="/statements">Explore statements ↗</a></section>
+<p class="overview-footnote">Account totals include active accounts only. No real funds are held or transferred.</p>
+</main></div><%- include('partials/footer') %>

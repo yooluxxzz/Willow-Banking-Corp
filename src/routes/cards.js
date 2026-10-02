@@ -3,11 +3,15 @@
  */
 const express = require('express');
 const { requireAuth } = require('../middleware/auth');
-const { getUserCards, getCardById, updateCardStatus, requestReplacement } = require('../services/card');
+const { getUserCards, updateCardStatus, requestReplacement } = require('../services/card');
 const { createNotification } = require('../services/notification');
 const { logAudit } = require('../services/audit');
 
 const router = express.Router();
+router.param('id', (req, res, next, id) => {
+    if (!/^[1-9]\d*$/.test(id) || !Number.isSafeInteger(Number(id))) return res.status(400).json({ error: 'Invalid card ID.' });
+    next();
+});
 
 router.get('/', requireAuth, (req, res) => {
     try {
@@ -26,7 +30,7 @@ router.post('/:id/status', requireAuth, (req, res) => {
             return res.status(400).json({ error: 'Invalid status.' });
         }
 
-        const result = updateCardStatus(parseInt(req.params.id), req.session.userId, status);
+        const result = updateCardStatus(Number(req.params.id), req.session.userId, status);
         if (result.error) {
             return res.status(400).json({ error: result.error });
         }
@@ -34,7 +38,7 @@ router.post('/:id/status', requireAuth, (req, res) => {
         const statusMessages = {
             frozen: 'Your card has been frozen.',
             active: 'Your card has been unfrozen.',
-            reported: 'Your card has been reported. It will be deactivated.',
+            reported: 'Your demo card is reported lost and is now inactive.',
             cancelled: 'Your card has been cancelled.',
         };
 
@@ -60,7 +64,7 @@ router.post('/:id/status', requireAuth, (req, res) => {
 
 router.post('/:id/replace', requireAuth, (req, res) => {
     try {
-        const result = requestReplacement(parseInt(req.params.id), req.session.userId);
+        const result = requestReplacement(Number(req.params.id), req.session.userId);
         if (result.error) {
             return res.status(400).json({ error: result.error });
         }
@@ -69,7 +73,7 @@ router.post('/:id/replace', requireAuth, (req, res) => {
             createNotification(req.session.userId, 'card', 'Replacement Card Requested', result.message);
         } catch (e) { /* non-critical */ }
 
-        res.json({ success: true, message: result.message });
+        res.json({ success: true, message: result.message, card: result.card, simulated: true });
 
         logAudit({
             actorId: req.session.userId,

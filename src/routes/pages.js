@@ -3,9 +3,12 @@
  */
 const express = require('express');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
-const { getUserAccounts, getTotalBalance } = require('../services/account');
-const { getRecentTransactions } = require('../services/transaction');
+const { getUserAccounts, getTotalBalance, getAccountById } = require('../services/account');
+const { getRecentTransactions, getTransactions } = require('../services/transaction');
 const { getDb } = require('../database');
+const { ownedSessions, deviceLabel } = require('../services/sessions');
+const { safeReturnTo } = require('../services/sign-in');
+const { getUserCards } = require('../services/card');
 
 const router = express.Router();
 
@@ -21,10 +24,11 @@ router.get('/', (req, res) => {
 });
 
 router.get('/login', (req, res) => {
+    res.set('Cache-Control', 'no-store');
     if (req.session?.userId) {
-        return res.redirect(req.session.userRole === 'admin' ? '/admin' : '/dashboard');
+        return res.redirect(safeReturnTo(req.query.returnTo, req.session.userRole) || (req.session.userRole === 'admin' ? '/admin' : '/dashboard'));
     }
-    res.render('login', { title: 'Sign In — Willow Banking Corp.', error: req.query.error });
+    res.render('login', { title: 'Sign In — Willow Banking Corp.', error: req.query.error, returnTo: safeReturnTo(req.query.returnTo) });
 });
 
 router.get('/register', (req, res) => {
@@ -35,6 +39,7 @@ router.get('/register', (req, res) => {
 });
 
 router.get('/forgot-password', (req, res) => {
+    res.set('Cache-Control', 'no-store');
     if (req.session?.userId) {
         return res.redirect('/dashboard');
     }
@@ -45,6 +50,8 @@ router.get('/forgot-password', (req, res) => {
 });
 
 // Public info pages
+router.get('/personal', (req, res) => res.render('banking-overview', { title: 'Personal banking — Willow Banking Corp.', business: false }));
+router.get('/business', (req, res) => res.render('banking-overview', { title: 'Business banking — Willow Banking Corp.', business: true }));
 router.get('/about', (req, res) => res.render('about', { title: 'About Us — Willow Banking Corp.' }));
 router.get('/careers', (req, res) => res.render('careers', { title: 'Careers — Willow Banking Corp.' }));
 router.get('/press', (req, res) => res.render('press', { title: 'Press — Willow Banking Corp.' }));
@@ -71,7 +78,19 @@ router.get('/dashboard', requireAuth, (req, res) => {
 });
 
 router.get('/accounts', requireAuth, (req, res) => {
-    res.render('accounts', { title: 'Accounts — Willow Banking Corp.' });
+    res.render('accounts', { title: 'Accounts — Willow Banking Corp.', accounts: getUserAccounts(req.session.userId), totals: getTotalBalance(req.session.userId) });
+});
+
+router.get('/accounts/new', requireAuth, (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    res.render('open-account', { title: 'Choose an account — Willow Banking Corp.', product: ['checking','savings','business'].includes(req.query.type) ? req.query.type : 'checking', requestKey: require('crypto').randomUUID(), accountCount: getUserAccounts(req.session.userId).length });
+});
+
+router.get('/accounts/:id', requireAuth, (req, res) => {
+    const account = /^[1-9]\d*$/.test(req.params.id) && Number.isSafeInteger(Number(req.params.id)) ? getAccountById(Number(req.params.id), req.session.userId) : null;
+    if (!account) return res.status(404).render('error', { title: 'Account not found', message: 'This account is unavailable.' });
+    const recent = getTransactions(account.id, { limit: 5 });
+    res.render('account-detail', { title: `${account.displayName} — Willow Banking Corp.`, account, recent });
 });
 
 router.get('/transfers', requireAuth, (req, res) => {
@@ -91,16 +110,23 @@ router.get('/withdrawals', requireAuth, (req, res) => {
 
 router.get('/transactions', requireAuth, (req, res) => {
     const accounts = getUserAccounts(req.session.userId);
-    res.render('transactions', { title: 'Transactions — Willow Banking Corp.', accounts });
+    const selectedAccountId = req.query.accountId === undefined ? accounts[0]?.id : Number(req.query.accountId);
+    if (req.query.accountId !== undefined && (typeof req.query.accountId !== 'string' || !/^[1-9]\d*$/.test(req.query.accountId) || !accounts.some(a => a.id === selectedAccountId))) {
+        return res.status(404).render('error', { title: 'Account not found', message: 'This account is unavailable.' });
+    }
+    res.render('transactions', { title: 'Transactions — Willow Banking Corp.', accounts, selectedAccountId });
 });
 
 router.get('/statements', requireAuth, (req, res) => {
     const accounts = getUserAccounts(req.session.userId);
-    res.render('statements', { title: 'Statements — Willow Banking Corp.', accounts });
+    const selectedAccountId = req.query.accountId === undefined ? accounts[0]?.id : Number(req.query.accountId);
+    if (req.query.accountId !== undefined && (typeof req.query.accountId !== 'string' || !/^[1-9]\d*$/.test(req.query.accountId) || !accounts.some(a => a.id === selectedAccountId))) return res.status(404).render('error', { title: 'Account not found', message: 'This account is unavailable.' });
+    res.render('statements', { title: 'Statements — Willow Banking Corp.', accounts, selectedAccountId });
 });
 
 router.get('/cards', requireAuth, (req, res) => {
-    res.render('cards', { title: 'Cards — Willow Banking Corp.' });
+    const notices = { frozen: 'Demo card frozen.', active: 'Demo card unfrozen.', reported: 'Demo card reported lost and made inactive.', replaced: 'Replacement demo card created. The previous card is cancelled. Nothing will be shipped.' };
+    res.render('cards', { title: 'Cards — Willow Banking Corp.', cards: getUserCards(req.session.userId), notice: typeof req.query.notice === 'string' && Object.hasOwn(notices, req.query.notice) ? notices[req.query.notice] : '' });
 });
 
 router.get('/notifications', requireAuth, (req, res) => {
@@ -123,26 +149,23 @@ router.get('/security', requireAuth, async (req, res) => {
         console.error('[Security] Error fetching login history:', e);
     }
 
-    let activeSessions = [];
-    if (req.sessionStore && req.sessionStore.all) {
-        try {
-            activeSessions = await new Promise((resolve) => {
-                req.sessionStore.all((err, sessions) => {
-                    if (err || !sessions) return resolve([]);
-                    const sessionArray = Array.isArray(sessions) ? sessions : Object.values(sessions);
-                    resolve(sessionArray.filter(s => s.userId === req.session.userId));
-                });
-            });
-        } catch (e) {
-            console.error('[Security] Error fetching active sessions:', e);
-        }
-    }
-
-    res.render('security', { title: 'Security — Willow Banking Corp.', loginHistory, activeSessions });
+    let activeSessions = [], sessionsUnavailable = false;
+    try {
+        activeSessions = (await ownedSessions(req, res.locals.user.auth_version)).map(({ sid, ...publicSession }) => publicSession);
+        activeSessions.sort((a, b) => Number(b.current) - Number(a.current));
+    } catch (err) { sessionsUnavailable = true; }
+    loginHistory = loginHistory.map(log => {
+        let metadata = {};
+        try { metadata = JSON.parse(log.metadata) || {}; } catch (err) { /* legacy record */ }
+        return { created_at: log.created_at, device: deviceLabel(metadata.userAgent) };
+    });
+    res.render('security', { title: 'Security — Willow Banking Corp.', loginHistory, activeSessions, sessionsUnavailable });
 });
 
 router.get('/settings', requireAuth, (req, res) => {
-    res.render('settings', { title: 'Settings — Willow Banking Corp.' });
+    const recoveryCount = getDb().prepare('SELECT COUNT(*) AS count FROM recovery_codes WHERE user_id = ?').get(req.session.userId).count;
+    res.set('Cache-Control', 'no-store');
+    res.render('settings', { title: 'Settings — Willow Banking Corp.', recoveryCount });
 });
 
 // Admin pages

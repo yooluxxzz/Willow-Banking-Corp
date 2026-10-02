@@ -16,14 +16,14 @@ let saveTimer = null;
  */
 async function initializeDatabase() {
     const SQL = await initSqlJs();
-    dbPath = path.resolve(config.paths.root, config.database.path);
-    const dir = path.dirname(dbPath);
+    dbPath = config.database.path === ':memory:' ? null : path.resolve(config.paths.root, config.database.path);
+    const dir = dbPath ? path.dirname(dbPath) : config.paths.data;
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
     }
 
     // Load existing database or create new
-    if (fs.existsSync(dbPath)) {
+    if (dbPath && fs.existsSync(dbPath)) {
         const buffer = fs.readFileSync(dbPath);
         db = new SQL.Database(buffer);
     } else {
@@ -48,6 +48,19 @@ async function initializeDatabase() {
       scheduled_deletion_at TEXT DEFAULT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS recovery_codes (
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      code_hash TEXT NOT NULL UNIQUE,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (user_id, code_hash)
+    );
+
+    CREATE TABLE IF NOT EXISTS revoked_sessions (
+      session_hash TEXT PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      revoked_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
     CREATE TABLE IF NOT EXISTS accounts (
@@ -138,10 +151,15 @@ async function initializeDatabase() {
 
     // Migrations for existing databases
     const migrations = [
+        "ALTER TABLE accounts ADD COLUMN purpose TEXT NOT NULL DEFAULT 'personal' CHECK(purpose IN ('personal','business'))",
+        "ALTER TABLE accounts ADD COLUMN opening_key TEXT DEFAULT NULL",
+        "ALTER TABLE accounts ADD COLUMN nickname TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE users ADD COLUMN auth_version INTEGER NOT NULL DEFAULT 0",
         "ALTER TABLE users ADD COLUMN status_reason TEXT DEFAULT NULL",
         "ALTER TABLE users ADD COLUMN scheduled_deletion_at TEXT DEFAULT NULL",
     ];
     migrations.forEach(m => { try { db.run(m); } catch (e) { /* column already exists */ } });
+    db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_opening_key ON accounts(user_id, opening_key)');
 
     // Auto-save to disk every 5 seconds
     saveTimer = setInterval(() => saveToDisk(), 5000);

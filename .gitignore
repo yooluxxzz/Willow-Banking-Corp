@@ -5,3 +5,9 @@ data/
 *.db-journal
 *.db-wal
 *.db-shm
+
+.env.*
+!.env.example
+*.sqlite
+*.sqlite3
+*recovery-codes*.txt

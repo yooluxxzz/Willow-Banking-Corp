@@ -6,9 +6,11 @@ const rateLimit = require('express-rate-limit');
 const bcrypt = require('bcryptjs');
 const { registerUser, loginUser } = require('../services/auth');
 const { logAudit } = require('../services/audit');
-const { validatePassword } = require('../middleware/validation');
+const { validatePassword, validatePhone } = require('../middleware/validation');
 const { getDb } = require('../database');
 const config = require('../config');
+const { sessionMetadata } = require('../services/sessions');
+const { safeReturnTo } = require('../services/sign-in');
 
 const router = express.Router();
 
@@ -29,8 +31,10 @@ router.post('/register', authLimiter, async (req, res) => {
             return res.status(400).json({ error: result.error });
         }
 
+        await new Promise((resolve, reject) => req.session.regenerate(err => err ? reject(err) : resolve()));
         req.session.userId = result.userId;
         req.session.userRole = 'customer';
+        req.session.device = sessionMetadata(req);
 
         logAudit({
             actorId: result.userId,
@@ -44,6 +48,7 @@ router.post('/register', authLimiter, async (req, res) => {
         req.session.save((err) => {
             if (err) {
                 console.error('[Auth] Session save error after registration:', err.message);
+                return res.status(500).json({ error: 'Account created, but sign-in failed. Please sign in.' });
             }
             res.json({ success: true, redirect: '/dashboard' });
         });
@@ -72,6 +77,8 @@ router.post('/login', authLimiter, async (req, res) => {
 
             req.session.userId = user.id;
             req.session.userRole = user.role;
+            req.session.authVersion = user.authVersion;
+            req.session.device = sessionMetadata(req);
 
             logAudit({
                 actorId: user.id,
@@ -85,10 +92,11 @@ router.post('/login', authLimiter, async (req, res) => {
                 },
             });
 
-            const redirect = user.role === 'admin' ? '/admin' : '/dashboard';
+            const redirect = safeReturnTo(req.body.returnTo, user.role) || (user.role === 'admin' ? '/admin' : '/dashboard');
             req.session.save((saveErr) => {
                 if (saveErr) {
                     console.error('[Auth] Session save error after login:', saveErr.message);
+                    return res.status(500).json({ error: 'Could not save your session. Please sign in again.' });
                 }
                 res.json({ success: true, redirect });
             });
@@ -100,19 +108,23 @@ router.post('/login', authLimiter, async (req, res) => {
 });
 
 router.post('/logout', (req, res) => {
-    const userId = req.session?.userId;
     req.session.destroy((err) => {
-        if (err) console.error('[Auth] Logout error:', err);
-        res.json({ success: true, redirect: '/' });
+        if (err) {
+            console.error('[Auth] Logout error:', err.message);
+            return res.status(500).json({ error: 'Sign-out could not be completed. Please try again.' });
+        }
+        res.clearCookie('willow.sid');
+        res.set('Cache-Control', 'no-store');
+        res.json({ success: true, redirect: '/login?signedOut=success' });
     });
 });
-router.post('/change-password', async (req, res) => {
+router.post('/change-password', authLimiter, async (req, res) => {
     if (!req.session?.userId) {
         return res.status(401).json({ error: 'Authentication required.' });
     }
     try {
         const { currentPassword, newPassword } = req.body;
-        if (!currentPassword || !newPassword) {
+        if (typeof currentPassword !== 'string' || currentPassword.length > 128 || !currentPassword || !newPassword) {
             return res.status(400).json({ error: 'Current and new password are required.' });
         }
         if (!validatePassword(newPassword)) {
@@ -126,7 +138,9 @@ router.post('/change-password', async (req, res) => {
         if (!valid) return res.status(400).json({ error: 'Current password is incorrect.' });
 
         const newHash = await bcrypt.hash(newPassword, config.bcryptRounds);
-        db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(newHash, req.session.userId);
+        const updated = db.prepare("UPDATE users SET password_hash = ?, auth_version = auth_version + 1 WHERE id = ? AND password_hash = ? AND status = 'active'").run(newHash, req.session.userId, user.password_hash);
+        if (!updated.changes) return res.status(409).json({ error: 'Account changed. Please sign in again.' });
+        req.session.authVersion = db.prepare('SELECT auth_version FROM users WHERE id = ?').get(req.session.userId).auth_version;
 
         logAudit({
             actorId: req.session.userId,
@@ -136,7 +150,7 @@ router.post('/change-password', async (req, res) => {
             targetId: String(req.session.userId),
         });
 
-        res.json({ success: true, message: 'Password changed successfully.' });
+        res.json({ success: true, message: 'Password updated. All other sessions have been signed out.' });
     } catch (err) {
         console.error('[Auth] Password change error:', err.message);
         res.status(500).json({ error: 'Failed to change password.' });
@@ -149,14 +163,17 @@ router.post('/update-profile', async (req, res) => {
     }
     try {
         const { fullName, phone } = req.body;
-        if (!fullName || fullName.trim().length < 2) {
-            return res.status(400).json({ error: 'Full name must be at least 2 characters.' });
+        if (typeof fullName !== 'string' || fullName.trim().length < 2 || fullName.trim().length > 100 || /[<>\x00-\x1f]/.test(fullName)) {
+            return res.status(400).json({ error: 'Enter a full name of 2–100 characters without markup.' });
         }
 
         const db = getDb();
         const user = db.prepare('SELECT email FROM users WHERE id = ?').get(req.session.userId);
         if (!user) return res.status(404).json({ error: 'User not found.' });
 
+        if (phone !== undefined && (typeof phone !== 'string' || phone.length > 40 || !validatePhone(phone))) {
+            return res.status(400).json({ error: 'Enter a valid phone number with 7–15 digits, or leave it blank.' });
+        }
         const phoneVal = (phone || '').trim();
         db.prepare('UPDATE users SET full_name = ?, phone = ? WHERE id = ?').run(
             fullName.trim(),
@@ -179,5 +196,8 @@ router.post('/update-profile', async (req, res) => {
         res.status(500).json({ error: 'Failed to update profile.' });
     }
 });
+
+router.use(require('./sessions'));
+router.use(require('./recovery'));
 
 module.exports = router;
