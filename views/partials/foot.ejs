@@ -1,0 +1,7 @@
+<% const pageScripts = typeof js !== 'undefined' ? js : []; %>
+<div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="false"></div>
+<script src="<%= asset('/js/app.js') %>"></script>
+<% pageScripts.forEach(name => { %><script src="<%= asset('/js/' + name + '.js') %>" defer></script>
+<% }) %>
+</body>
+</html>

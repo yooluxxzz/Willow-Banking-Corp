@@ -1,0 +1,16 @@
+<%- include('head', { css: ['site'], bodyClass: 'info-page' }) %>
+<%- include('site-header') %>
+<main id="main">
+    <section class="page-hero">
+        <div class="container">
+            <nav aria-label="Breadcrumb"><ol class="breadcrumbs"><li><a href="/">Willow</a></li><li><%= crumb %></li><li aria-current="page"><%= title %></li></ol></nav>
+            <div class="section-intro mt-6" style="margin-bottom:0">
+                <p class="eyebrow"><%= eyebrow %></p>
+                <h1 class="h1"><%= heading %></h1>
+                <p class="lede"><%= intro %></p>
+                <% if (typeof updated !== 'undefined') { %><p class="text-sm muted">Updated <%= updated %> · Describes the current demonstration app.</p><% } %>
+            </div>
+        </div>
+    </section>
+    <div class="container info-layout">
+        <div class="prose">

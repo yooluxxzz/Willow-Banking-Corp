@@ -1,0 +1,95 @@
+<%
+  const kind = typeof visual !== 'undefined' ? visual : 'accounts';
+  const tag = '<span class="illustrative-tag">Illustrative</span>';
+%>
+<% if (kind === 'accounts') { %>
+<div class="pv pv-accounts" aria-hidden="true">
+    <div class="pv-account glass"><span class="pv-account-icon"><%- icon('wallet') %></span><div><strong>Everyday checking</strong><small>USD · ••••4021</small></div><span class="pv-amount">$3,240.35</span></div>
+    <div class="pv-account glass"><span class="pv-account-icon is-sage"><%- icon('savings') %></span><div><strong>Savings</strong><small>USD · ••••7718</small></div><span class="pv-amount">$7,450.00</span></div>
+    <div class="pv-account glass"><span class="pv-account-icon is-copper"><%- icon('globe') %></span><div><strong>Travel euros</strong><small>EUR · ••••5530</small></div><span class="pv-amount">€640.20</span></div>
+    <%- tag %>
+</div>
+<% } else if (kind === 'cards' || kind === 'business-cards') { %>
+<div class="pv pv-cards" aria-hidden="true">
+    <div class="bank-card <%= kind === 'business-cards' ? 'is-business' : 'is-virtual' %> pv-card-back"><div class="bank-card-top"><span class="bank-card-brand">Willow</span><span class="bank-card-kind"><%= kind === 'business-cards' ? 'Business · Virtual' : 'Virtual' %></span></div><div class="bank-card-bottom"><span class="bank-card-number">•••• 7316</span></div></div>
+    <div class="bank-card <%= kind === 'business-cards' ? 'is-copper' : '' %> pv-card-front"><div class="bank-card-top"><span class="bank-card-brand">Willow</span><span class="bank-card-kind"><%= kind === 'business-cards' ? 'Business' : 'Debit' %></span></div><span class="bank-card-chip"></span><div class="bank-card-bottom"><div class="bank-card-meta">Card holder<strong><%= kind === 'business-cards' ? 'Studio Team' : 'Alex Morgan' %></strong></div><span class="bank-card-number">•••• 4021</span></div></div>
+    <div class="pv-controls glass">
+        <div class="pv-control"><span><%- icon('snowflake', 'icon-sm') %> Freeze card</span><span class="pv-switch"></span></div>
+        <div class="pv-control"><span><%- icon('globe', 'icon-sm') %> International</span><span class="pv-switch is-on"></span></div>
+        <div class="pv-control"><span><%- icon('contactless', 'icon-sm') %> Contactless</span><span class="pv-switch is-on"></span></div>
+    </div>
+</div>
+<% } else if (kind === 'payments' || kind === 'business-payments') { %>
+<div class="pv pv-payments" aria-hidden="true">
+    <div class="pv-send glass">
+        <p class="label">Send to</p>
+        <div class="pv-people"><span class="avatar">MS</span><span class="avatar is-alt">DO</span><span class="avatar is-alt2">PR</span><span class="avatar is-add"><%- icon('plus', 'icon-sm') %></span></div>
+        <p class="pv-send-amount num"><%= kind === 'business-payments' ? '$1,850.00' : '€450.00' %></p>
+        <p class="pv-send-to">To <strong><%= kind === 'business-payments' ? 'Ines Duarte · Contractor' : 'Maria Silva' %></strong></p>
+        <span class="btn btn-primary btn-sm">Review payment</span>
+    </div>
+    <div class="pv-receipt glass"><span class="success-mark-sm"><%- icon('check') %></span><div><strong>Money sent</strong><small>Today · 10:42 · Simulated</small></div></div>
+    <%- tag %>
+</div>
+<% } else if (kind === 'transfers') { %>
+<div class="pv pv-transfers" aria-hidden="true">
+    <div class="pv-account glass"><span class="pv-account-icon"><%- icon('wallet') %></span><div><strong>Checking</strong><small>From</small></div><span class="pv-amount">$3,240.35</span></div>
+    <div class="pv-arrow"><%- icon('arrow-down', 'icon-md') %><span class="num">$500.00</span></div>
+    <div class="pv-account glass"><span class="pv-account-icon is-sage"><%- icon('savings') %></span><div><strong>Savings</strong><small>To</small></div><span class="pv-amount">$7,450.00</span></div>
+    <div class="pv-chip glass"><%- icon('calendar', 'icon-sm') %> Repeats on the 1st · scheduled</div>
+    <%- tag %>
+</div>
+<% } else if (kind === 'savings') { %>
+<div class="pv pv-savings" aria-hidden="true">
+    <div class="pv-goals glass">
+        <% [['Emergency fund', 72, 'var(--chart-1)'], ['Home deposit', 31, 'var(--chart-3)'], ['Lisbon in spring', 58, 'var(--chart-5)']].forEach(([label, pct, color]) => { %>
+        <div class="pv-goal"><span class="progress-ring" style="--value:<%= pct %>;--ring-color:<%= color %>;--size:58px"><span><%= pct %>%</span></span><div><strong><%= label %></strong><small>Self-reported progress</small></div></div>
+        <% }) %>
+    </div>
+    <%- tag %>
+</div>
+<% } else if (['stocks', 'etfs', 'funds', 'crypto', 'portfolio'].includes(kind)) { %>
+<div class="pv pv-market" aria-hidden="true">
+    <div class="pv-chart glass">
+        <div class="pv-chart-head"><span class="asset-mark"><%= { stocks: 'AAPL', etfs: 'SPY', funds: 'VTSAX'.slice(0, 4), crypto: 'BTC', portfolio: 'W' }[kind] %></span><div><strong><%= { stocks: 'Apple', etfs: 'SPDR S&P 500 ETF', funds: 'Total Market Index', crypto: 'Bitcoin', portfolio: 'Demo portfolio' }[kind] %></strong><small><%= kind === 'portfolio' ? 'Simulated cash $100,000' : 'Delayed market data' %></small></div></div>
+        <svg viewBox="0 0 320 120" preserveAspectRatio="none" class="pv-line"><defs><linearGradient id="pvfill-<%= kind %>" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3A9C6E" stop-opacity=".28"/><stop offset="1" stop-color="#3A9C6E" stop-opacity="0"/></linearGradient></defs><path d="M0 96 C30 90 42 70 70 74 S112 58 140 62 S184 34 212 40 S262 18 290 22 L320 12 L320 120 L0 120Z" fill="url(#pvfill-<%= kind %>)"/><path d="M0 96 C30 90 42 70 70 74 S112 58 140 62 S184 34 212 40 S262 18 290 22 L320 12" fill="none" stroke="#2F8A60" stroke-width="2.5" stroke-linecap="round"/></svg>
+        <div class="pv-ranges"><span>1D</span><span>1W</span><span>1M</span><span class="is-active">1Y</span><span>5Y</span></div>
+    </div>
+    <div class="pv-order glass"><strong>Simulated order</strong><small>No real securities are bought</small><span class="btn btn-primary btn-sm">Buy</span></div>
+    <%- tag %>
+</div>
+<% } else if (['personal-loans', 'credit', 'mortgages'].includes(kind)) { %>
+<div class="pv pv-loan" aria-hidden="true">
+    <div class="pv-loan-card glass">
+        <p class="label"><%= kind === 'mortgages' ? 'Estimated monthly payment' : kind === 'credit' ? 'Debt-free in' : 'Estimated monthly payment' %></p>
+        <p class="pv-loan-figure num"><%= kind === 'mortgages' ? '$2,318' : kind === 'credit' ? '27 months' : '$793' %></p>
+        <div class="pv-loan-bar"><span style="--w:<%= kind === 'credit' ? 64 : 78 %>%"></span></div>
+        <div class="pv-loan-rows"><span>Principal</span><strong><%= kind === 'mortgages' ? '$360,000' : kind === 'credit' ? '$6,400' : '$25,000' %></strong></div>
+        <div class="pv-loan-rows"><span><%= kind === 'credit' ? 'Total interest' : 'Term' %></span><strong><%= kind === 'mortgages' ? '30 years' : kind === 'credit' ? '$1,412' : '36 months' %></strong></div>
+    </div>
+    <%- tag %>
+</div>
+<% } else if (kind === 'international') { %>
+<div class="pv pv-currencies" aria-hidden="true">
+    <% [['USD', '$3,240.35', 'US dollar'], ['EUR', '€640.20', 'Euro'], ['GBP', '£210.00', 'British pound'], ['ZAR', 'R1,850.00', 'South African rand'], ['MZN', 'MT 9,400.00', 'Mozambican metical']].forEach(([code, amount, name], index) => { %>
+    <div class="pv-currency glass" style="--i:<%= index %>"><span class="currency-flag"><%= code %></span><div><strong><%= name %></strong><small><%= code %> account</small></div><span class="pv-amount"><%= amount %></span></div>
+    <% }) %>
+    <%- tag %>
+</div>
+<% } else if (kind === 'business' || kind === 'expenses') { %>
+<div class="pv pv-business" aria-hidden="true">
+    <div class="pv-biz glass">
+        <p class="label"><%= kind === 'expenses' ? 'Spending by category · this quarter' : 'Cash flow · 6 months' %></p>
+        <% if (kind === 'expenses') { %>
+            <% [['Contractors', 82, 'var(--chart-1)', '$7,200'], ['Studio rent', 62, 'var(--chart-3)', '$5,400'], ['Supplies', 28, 'var(--chart-2)', '$1,158'], ['Software', 12, 'var(--chart-5)', '$387']].forEach(([label, w, color, value]) => { %>
+            <div class="bar-row"><span class="bar-row-label"><%= label %></span><span class="bar-row-value"><%= value %></span><span class="bar-row-track"><span style="--value:<%= w %>%;--bar-color:<%= color %>"></span></span></div>
+            <% }) %>
+        <% } else { %>
+            <div class="vignette-bars pv-bars"><span style="--h:42%"></span><span style="--h:58%"></span><span style="--h:50%"></span><span style="--h:72%"></span><span style="--h:66%"></span><span style="--h:88%"></span></div>
+            <div class="pv-loan-rows"><span>Revenue this month</span><strong>$18,450</strong></div>
+            <div class="pv-loan-rows"><span>Open invoices</span><strong>3 · $9,730</strong></div>
+        <% } %>
+    </div>
+    <%- tag %>
+</div>
+<% } %>

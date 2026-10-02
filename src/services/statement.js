@@ -47,10 +47,10 @@ function getStatement(accountId, userId, { dateFrom, dateTo }) {
         }
         return {
             ...t,
-            amountFormatted: formatCurrency(t.amount),
+            amountFormatted: formatCurrency(t.amount, account.currency || 'USD'),
             amountDollars: fromCents(t.amount),
             runningBalance,
-            runningBalanceFormatted: formatCurrency(runningBalance),
+            runningBalanceFormatted: formatCurrency(runningBalance, account.currency || 'USD'),
         };
     });
 
@@ -59,16 +59,14 @@ function getStatement(accountId, userId, { dateFrom, dateTo }) {
     return {
         account: {
             ...require('./account').formatAccount(account),
-            displayName: account.nickname || (account.purpose === 'business' ? 'Business checking' : account.account_type === 'savings' ? 'Savings account' : 'Checking account'),
-            maskedNumber: '••••' + account.account_number.slice(-4),
         },
         period: { from: dateFrom, to: dateTo },
-        totalCreditsFormatted: formatCurrency(transactions.filter(t => t.direction === 'credit').reduce((sum,t) => sum + t.amount, 0)),
-        totalDebitsFormatted: formatCurrency(transactions.filter(t => t.direction === 'debit').reduce((sum,t) => sum + t.amount, 0)),
+        totalCreditsFormatted: formatCurrency(transactions.filter(t => t.direction === 'credit').reduce((sum,t) => sum + t.amount, 0), account.currency || 'USD'),
+        totalDebitsFormatted: formatCurrency(transactions.filter(t => t.direction === 'debit').reduce((sum,t) => sum + t.amount, 0), account.currency || 'USD'),
         openingBalance,
-        openingBalanceFormatted: formatCurrency(openingBalance),
+        openingBalanceFormatted: formatCurrency(openingBalance, account.currency || 'USD'),
         closingBalance,
-        closingBalanceFormatted: formatCurrency(closingBalance),
+        closingBalanceFormatted: formatCurrency(closingBalance, account.currency || 'USD'),
         transactions: formattedTxns,
     };
 }
@@ -80,12 +78,12 @@ function generateStatementPDF(statementData) {
         doc.on('data', chunk => chunks.push(chunk));
         doc.on('end', () => resolve(Buffer.concat(chunks)));
         doc.on('error', reject);
-        const green = '#18342E', ink = '#20342F';
+        const green = '#163729', ink = '#0E1B16';
         const { account, period } = statementData;
         const header = () => {
             doc.rect(0, 0, doc.page.width, 78).fill(green);
-            doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(20).text('Willow Banking Corp.', 50, 22);
-            doc.font('Helvetica').fontSize(9).text('DEMO ACCOUNT STATEMENT - SIMULATED FUNDS', 50, 51);
+            doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(20).text('Willow', 50, 22);
+            doc.font('Helvetica').fontSize(9).text('DEMO ACCOUNT STATEMENT - SIMULATED FUNDS - YOUR MONEY. MOVING FORWARD.', 50, 51);
             doc.fillColor(ink);
         };
         const columns = [{name:'Date',x:55,width:62}, {name:'Reference',x:121,width:100}, {name:'Description',x:225,width:145}, {name:'Amount',x:374,width:77,align:'right'}, {name:'Balance',x:455,width:85,align:'right'}];
@@ -98,7 +96,7 @@ function generateStatementPDF(statementData) {
         };
         header();
         doc.font('Helvetica').fontSize(10).text(`Account holder: ${account.full_name}`, 50, 100, {width: 495});
-        doc.text(`Account: ${account.displayName} (${account.maskedNumber})`, {width:495});
+        doc.text(`Account: ${account.displayName} (${account.maskedNumber}) - ${account.currency}`, {width:495});
         doc.text(`Period: ${period.from} to ${period.to} (UTC)`, {width:495});
         doc.moveDown(0.8);
         doc.font('Helvetica-Bold').text(`Opening balance: ${statementData.openingBalanceFormatted}    Closing balance: ${statementData.closingBalanceFormatted}`);

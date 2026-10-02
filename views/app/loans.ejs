@@ -1,0 +1,42 @@
+<%
+  const tabs = [['personal', 'Personal loan', 'wallet', '/borrow/personal-loans'], ['mortgage', 'Mortgage', 'house', '/borrow/mortgages'], ['business', 'Business loan', 'briefcase', '/business'], ['credit', 'Card payoff', 'card', '/borrow/credit']];
+%><%- include('../partials/app-start', { css: ['product'] }) %>
+
+<header class="page-head">
+    <div class="page-head-copy">
+        <h1 class="page-head-title">Loans &amp; calculators</h1>
+        <p class="page-head-sub">Work out what borrowing could cost before you commit. Every figure here is an estimate — Willow Demo doesn’t lend.</p>
+    </div>
+</header>
+
+<div class="tabs mb-6" role="tablist" aria-label="Calculators" data-calc-tabs>
+    <% tabs.forEach(([key, label, iconName], index) => { %>
+    <button type="button" role="tab" id="tab-<%= key %>" aria-controls="panel-<%= key %>" aria-selected="<%= index === 0 %>" tabindex="<%= index === 0 ? 0 : -1 %>"><%- icon(iconName, 'icon-sm') %> <%= label %></button>
+    <% }) %>
+</div>
+
+<div class="layout-main-aside">
+    <div>
+        <% tabs.forEach(([key, label, iconName, href], index) => { %>
+        <section class="panel calc-panel" role="tabpanel" id="panel-<%= key %>" aria-labelledby="tab-<%= key %>"<%= index === 0 ? '' : ' hidden' %>>
+            <div class="panel-head"><h2><%= label %> calculator</h2><a class="link-arrow" href="<%= href %>">About <%= label.toLowerCase() %>s <%- icon('arrow-right') %></a></div>
+            <%- include('../partials/loan-calculator', { kind: key, canSave: true }) %>
+        </section>
+        <% }) %>
+    </div>
+    <aside class="col-stack">
+        <section class="panel" aria-labelledby="savedTitle">
+            <div class="panel-head"><h2 id="savedTitle">Saved estimates</h2></div>
+            <div data-estimates aria-live="polite"><p class="muted text-sm">Loading…</p></div>
+        </section>
+        <section class="panel" aria-labelledby="learnTitle">
+            <div class="panel-head"><h2 id="learnTitle">Before you borrow</h2></div>
+            <ul class="list-plain" role="list">
+                <li><a class="list-row" href="/learn/how-loan-payments-are-calculated"><span class="icon-tile icon-tile-sm"><%- icon('calculator') %></span><span class="list-row-main"><span class="list-row-title">How loan payments are calculated</span><span class="list-row-sub">Guide · 5 min</span></span></a></li>
+                <li><a class="list-row" href="/learn/mortgage-basics"><span class="icon-tile icon-tile-sm"><%- icon('house') %></span><span class="list-row-main"><span class="list-row-title">Mortgage basics</span><span class="list-row-sub">Guide · 6 min</span></span></a></li>
+            </ul>
+        </section>
+    </aside>
+</div>
+
+<%- include('../partials/app-end', { js: ['calculators', 'loans'] }) %>

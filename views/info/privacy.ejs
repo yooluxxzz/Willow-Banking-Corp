@@ -1,0 +1,40 @@
+<%- include('../partials/info-start', { crumb: 'Legal', eyebrow: 'Privacy', heading: 'Privacy notice.', intro: 'What the Willow demo stores about you, why it stores it, and the controls you have.', updated: 'October 2, 2026' }) %>
+            <section class="info-section" id="stores">
+                <h2>What the app stores</h2>
+                <p>Registration stores your name, email, optional phone number and country, plus a bcrypt hash of your password — never the password itself. The app also stores the simulated records you create: accounts, nicknames, transactions, cards and their controls, payees, scheduled transfers, savings goals, demo trades and watchlists, loan estimates, business invoices and team invitations, notifications, and messages you send through the Help center.</p>
+                <p>Recovery codes are stored as hashes; their readable values are shown once, when generated. If you turn on two-step verification, the authenticator secret is encrypted before it is saved.</p>
+            </section>
+            <section class="info-section" id="sign-in">
+                <h2>Sign-in records and browser storage</h2>
+                <p>A session cookie keeps you signed in. Server-side session records include the sign-in time and browser and device details. Successful sign-ins record the request IP address and browser in an audit log, which also records account actions such as transfers, card changes and data exports.</p>
+                <p>Your browser’s local storage keeps two display preferences: light or dark theme, and whether balances are hidden. They never leave your device.</p>
+            </section>
+            <section class="info-section" id="use">
+                <h2>How the information is used</h2>
+                <p>These records exist to run the demo: signing you in, showing balances and activity, generating statements, answering questions in Willow Hub, and letting you review your security. Insights and assistant answers are calculated from your own stored records. You can switch off personalized insights in Settings.</p>
+                <p>Willow does not sell data, show advertising, or load analytics or tracking scripts. Whoever operates a Willow instance can access its database and administrative tools, so enter fictional details only.</p>
+            </section>
+            <section class="info-section" id="external">
+                <h2>External services</h2>
+                <ul>
+                    <li><strong>Fonts.</strong> Typefaces are served by the app itself.</li>
+                    <li><strong>Photography.</strong> Some homepage images load from Unsplash. Your browser contacts Unsplash when showing them, which shares your IP address and standard request headers.</li>
+                    <li><strong>Market data.</strong> Quotes, charts, company profiles and news are requested by Willow’s server — not your browser — from Yahoo Finance through the yfinance library. No personal information is included in those requests.</li>
+                </ul>
+                <p>No email, SMS, identity-verification or payment service is connected.</p>
+            </section>
+            <section class="info-section" id="retention">
+                <h2>Storage and retention</h2>
+                <p>Account and activity records live in the app’s SQLite database; sessions live in a separate session store. Records persist across restarts and can be included in the operator’s backups. No automatic retention period is configured, and guest demo profiles are kept like any other profile. HTTPS depends on how the app is hosted; a local preview over plain HTTP is not encrypted.</p>
+            </section>
+            <section class="info-section" id="controls">
+                <h2>Your controls</h2>
+                <ul>
+                    <li>Edit your name and phone, change your password and replace recovery codes in Settings.</li>
+                    <li>Review sign-ins, end other sessions and turn on two-step verification in the Security center.</li>
+                    <li>Download a copy of your profile, accounts, transactions and audit events as a JSON file from the Security center.</li>
+                    <li>Hide balances on screen with privacy mode, and turn personalized insights off.</li>
+                </ul>
+                <p>There is no self-service account deletion. Ask the operator of your instance if you want your records removed.</p>
+            </section>
+<%- include('../partials/info-end', { toc: [['stores', 'What the app stores'], ['sign-in', 'Sign-in records'], ['use', 'How it is used'], ['external', 'External services'], ['retention', 'Storage and retention'], ['controls', 'Your controls']] }) %>

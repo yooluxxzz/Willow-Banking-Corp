@@ -1,0 +1,30 @@
+<%- include('../partials/info-start', { crumb: 'Company', eyebrow: 'Press', heading: 'Writing about Willow.', intro: 'Facts, brand guidance and context for anyone describing the Willow demonstration platform.' }) %>
+            <section class="info-section" id="facts">
+                <h2>Quick facts</h2>
+                <dl class="info-facts">
+                    <div><dt>What it is</dt><dd>A fictional digital bank and investment platform built as a software demonstration.</dd></div>
+                    <div><dt>Status</dt><dd>Not a licensed bank, broker or payment provider. No real money is held or moved.</dd></div>
+                    <div><dt>Tagline</dt><dd>Your money. Moving forward.</dd></div>
+                    <div><dt>Market data</dt><dd>Delayed quotes retrieved through the open-source yfinance library, labelled as delayed and never used for real orders.</dd></div>
+                </dl>
+            </section>
+            <section class="info-section" id="brand">
+                <h2>Brand basics</h2>
+                <p>Willow’s visual identity pairs deep forest greens with warm copper and ivory. The wordmark uses the Mona Sans typeface; numbers always use tabular figures so balances line up.</p>
+                <div class="cluster mt-4" style="gap:12px">
+                    <span class="press-swatch" style="--swatch:var(--forest-900)">Forest 900</span>
+                    <span class="press-swatch" style="--swatch:var(--forest-600)">Forest 600</span>
+                    <span class="press-swatch" style="--swatch:var(--copper-500)">Copper 500</span>
+                    <span class="press-swatch is-light" style="--swatch:var(--ivory-100)">Ivory 100</span>
+                </div>
+                <p class="mt-6">Please describe Willow as a demonstration or concept, and avoid presenting screenshots as a real banking service.</p>
+            </section>
+            <section class="info-section" id="no-coverage">
+                <h2>Coverage and awards</h2>
+                <p>Willow has not received press coverage, awards or industry certifications, and this site does not quote any. Any such claim you see elsewhere is not from this project.</p>
+            </section>
+            <section class="info-section" id="contact">
+                <h2>Contact</h2>
+                <p>There is no press office. Questions about a specific deployment should go to whoever operates that instance. You can also leave a message through the <a class="text-link" href="/help#contact">Help center</a>; it is stored with a reference but not answered.</p>
+            </section>
+<%- include('../partials/info-end', { toc: [['facts', 'Quick facts'], ['brand', 'Brand basics'], ['no-coverage', 'Coverage and awards'], ['contact', 'Contact']] }) %>

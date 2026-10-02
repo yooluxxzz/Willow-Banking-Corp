@@ -1,0 +1,221 @@
+<%
+  const coins = [
+    { symbol: 'BTC', name: 'Bitcoin', tone: 1 },
+    { symbol: 'ETH', name: 'Ethereum', tone: 2 },
+    { symbol: 'SOL', name: 'Solana', tone: 3 },
+    { symbol: 'XRP', name: 'XRP', tone: 6 },
+    { symbol: 'ADA', name: 'Cardano', tone: 4 },
+    { symbol: 'LTC', name: 'Litecoin', tone: 0 },
+  ];
+%><%- include('../partials/app-start', { css: ['wealth-app'] }) %>
+
+<header class="page-head">
+    <div class="page-head-copy">
+        <p class="label">Wealth · <span class="wl-label-sim">Simulated</span></p>
+        <h1 class="page-head-title">Crypto</h1>
+        <p class="page-head-sub">Follow major cryptocurrencies with delayed prices and practice with simulated holdings from your demo portfolio.</p>
+    </div>
+    <div class="page-head-actions">
+        <button type="button" class="btn btn-secondary" data-receive-open><%- icon('qr') %> Receive</button>
+        <button type="button" class="btn btn-primary" data-send-open><%- icon('send') %> Send crypto</button>
+    </div>
+</header>
+
+<div class="wl-page" data-wealth-page="crypto">
+    <div class="notice notice-warning wl-risk-banner mb-6" role="note">
+        <%- icon('alert') %>
+        <div>
+            <p><span class="badge badge-warning">Higher risk</span> <strong>Crypto is volatile.</strong> Prices can move sharply in minutes and can fall to zero. This is a simulation: there are no public wallet addresses, private keys or blockchain transactions, and nothing here is investment advice.</p>
+        </div>
+    </div>
+
+    <div class="data-banner mb-6" data-market-banner role="alert" hidden>
+        <%- icon('alert') %>
+        <span><strong>Market data temporarily unavailable.</strong> Values are shown at cost until prices can be retrieved.</span>
+        <button type="button" class="btn btn-secondary btn-sm" data-retry><%- icon('refresh', 'icon-sm') %> Retry</button>
+    </div>
+
+    <div class="layout-main-aside">
+        <div class="col-stack">
+            <section class="panel wl-hero wl-crypto-hero" aria-labelledby="cryptoValueLabel">
+                <div class="wl-hero-top">
+                    <div class="wl-hero-copy">
+                        <div class="wl-hero-label">
+                            <p class="label" id="cryptoValueLabel">Your crypto · Simulated</p>
+                        </div>
+                        <p class="figure figure-lg wl-hero-value" data-private data-crypto-total><span class="skeleton skeleton-figure" style="width:5ch"></span></p>
+                        <p class="wl-hero-change" data-crypto-day><span class="skeleton skeleton-line" style="width:160px"></span></p>
+                    </div>
+                    <p class="wl-updated" data-updated></p>
+                </div>
+                <div data-crypto-holdings class="mt-4" aria-busy="true">
+                    <% for (let i = 0; i < 2; i++) { %><div class="wl-skel-row" aria-hidden="true"><span class="skeleton wl-skel-mark"></span><span class="wl-skel-main"><span class="skeleton skeleton-line w-60"></span><span class="skeleton skeleton-line w-40"></span></span><span class="skeleton skeleton-line wl-skel-end"></span></div><% } %>
+                </div>
+            </section>
+
+            <section class="panel" aria-labelledby="coinsTitle">
+                <div class="panel-head">
+                    <h2 id="coinsTitle">Supported coins</h2>
+                    <span class="text-xs muted" data-coins-status><%- icon('clock', 'icon-sm') %> Delayed prices</span>
+                </div>
+                <div class="table-wrap wl-table-wrap">
+                    <table class="table wl-table wl-coin-table">
+                        <caption class="visually-hidden">Supported cryptocurrencies with delayed prices</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Coin</th>
+                                <th scope="col" class="num">Price</th>
+                                <th scope="col" class="num wl-hide-sm">Today</th>
+                                <th scope="col" class="wl-hide-sm"><span class="visually-hidden">Past week trend</span><span aria-hidden="true">7 days</span></th>
+                                <th scope="col" class="wl-col-star"><span class="visually-hidden">Watchlist</span></th>
+                            </tr>
+                        </thead>
+                        <tbody data-coins>
+                            <% coins.forEach(coin => { %>
+                            <tr data-coin="<%= coin.symbol %>">
+                                <td class="wl-col-asset">
+                                    <a class="wl-asset-cell wl-row-link" href="/crypto/<%= coin.symbol %>">
+                                        <span class="asset-mark is-round wl-tone-<%= coin.tone %>" aria-hidden="true"><%= coin.symbol %></span>
+                                        <span class="wl-asset-text"><span class="wl-asset-name"><%= coin.name %></span><span class="wl-asset-sub"><%= coin.symbol %></span></span>
+                                    </a>
+                                </td>
+                                <td class="num" data-cell="price"><span class="skeleton skeleton-line" style="width:84px;margin-left:auto"></span></td>
+                                <td class="num wl-hide-sm" data-cell="change"><span class="skeleton skeleton-line" style="width:56px;margin-left:auto"></span></td>
+                                <td class="wl-hide-sm" data-cell="spark"><div class="wl-coin-spark" aria-hidden="true"></div></td>
+                                <td class="wl-col-star" data-cell="star"></td>
+                            </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-xs muted mt-4">Prices are delayed and in US dollars. Today’s change is measured from the previous daily close (UTC).</p>
+            </section>
+        </div>
+
+        <aside class="col-stack" aria-label="Demo wallet">
+            <section class="panel wl-wallet" id="wallet" aria-labelledby="walletTitle">
+                <div class="panel-head"><h2 id="walletTitle">Demo wallet</h2><span class="sim-tag"><%- icon('info') %> Simulated</span></div>
+                <p class="text-sm secondary">Move simulated coins to another Willow profile. Transfers stay inside Willow’s demo ledger — there are no public wallet addresses and nothing reaches a blockchain.</p>
+                <div class="wl-wallet-actions">
+                    <button type="button" class="wl-wallet-action" data-send-open>
+                        <span class="icon-tile"><%- icon('send') %></span>
+                        <span><strong>Send crypto</strong><small>To a Willow profile’s email</small></span>
+                        <%- icon('chevron-right', 'wl-wallet-chevron') %>
+                    </button>
+                    <button type="button" class="wl-wallet-action" data-receive-open>
+                        <span class="icon-tile is-neutral"><%- icon('qr') %></span>
+                        <span><strong>Receive</strong><small>Share your profile email</small></span>
+                        <%- icon('chevron-right', 'wl-wallet-chevron') %>
+                    </button>
+                </div>
+            </section>
+
+            <section class="panel" aria-labelledby="walletActivityTitle">
+                <div class="panel-head"><h2 id="walletActivityTitle">Wallet activity</h2></div>
+                <div data-wallet-history aria-busy="true">
+                    <% for (let i = 0; i < 2; i++) { %><div class="wl-skel-row is-compact" aria-hidden="true"><span class="skeleton wl-skel-mark"></span><span class="wl-skel-main"><span class="skeleton skeleton-line w-60"></span><span class="skeleton skeleton-line w-40"></span></span><span class="skeleton skeleton-line wl-skel-end"></span></div><% } %>
+                </div>
+            </section>
+
+            <section class="panel wl-about" aria-labelledby="cryptoLearnTitle">
+                <div class="panel-head"><h2 id="cryptoLearnTitle">Before you buy</h2></div>
+                <ul class="wl-points" role="list">
+                    <li><span class="icon-tile icon-tile-sm is-accent"><%- icon('activity') %></span><span>Crypto trades around the clock, and prices can swing far more than stocks or funds.</span></li>
+                    <li><span class="icon-tile icon-tile-sm"><%- icon('pie') %></span><span>Coins you buy here come from the same $100,000 of simulated cash as your demo portfolio.</span></li>
+                    <li><span class="icon-tile icon-tile-sm"><%- icon('shield-check') %></span><span>Every buy, sell or send is simulated. No real crypto is purchased, and your bank balances are never touched.</span></li>
+                </ul>
+            </section>
+        </aside>
+    </div>
+</div>
+
+<dialog class="modal wl-modal wl-send" id="sendDialog" aria-labelledby="sendTitle" data-send-dialog>
+    <div class="modal-head">
+        <div class="wl-trade-headcopy">
+            <p class="label">Demo wallet</p>
+            <h2 id="sendTitle">Send crypto</h2>
+        </div>
+        <button type="button" class="btn btn-ghost btn-icon" data-dialog-close aria-label="Close"><%- icon('x', 'icon-md') %></button>
+    </div>
+
+    <form class="wl-trade-step" data-step="form" novalidate>
+        <div class="modal-body">
+            <div data-send-empty hidden></div>
+            <div data-send-fields>
+                <div class="field">
+                    <label for="sendAsset">Coin</label>
+                    <select id="sendAsset" class="select" name="symbol" data-send-asset></select>
+                </div>
+                <div class="field">
+                    <label for="sendRecipient">Recipient’s Willow email</label>
+                    <input id="sendRecipient" class="input" type="email" name="recipientEmail" autocomplete="off" spellcheck="false" maxlength="255" placeholder="name@example.com" aria-describedby="sendRecipientHelp sendRecipientError" data-send-recipient>
+                    <p class="field-help" id="sendRecipientHelp">The email they use to sign in to Willow. Only active Willow profiles can receive.</p>
+                    <p class="field-error" id="sendRecipientError" role="alert" hidden data-recipient-error></p>
+                </div>
+                <div class="field">
+                    <label for="sendQuantity">Amount</label>
+                    <div class="input-group has-suffix wl-qty-group">
+                        <input id="sendQuantity" class="input num" type="text" inputmode="decimal" name="quantity" autocomplete="off" placeholder="0.00000000" aria-describedby="sendQuantityHelp sendQuantityError" data-send-quantity>
+                        <span class="input-suffix" data-send-unit>BTC</span>
+                    </div>
+                    <div class="wl-qty-help">
+                        <p class="field-help" id="sendQuantityHelp" data-send-available>Available: —</p>
+                        <button type="button" class="btn btn-ghost btn-sm" data-send-max>Send all</button>
+                    </div>
+                    <p class="field-error" id="sendQuantityError" role="alert" hidden data-quantity-error></p>
+                </div>
+                <p class="notice notice-demo mt-4"><%- icon('info') %><span>Sends move simulated units between Willow profiles only. There are no public wallet addresses, network fees or blockchain confirmations.</span></p>
+            </div>
+        </div>
+        <div class="modal-foot" data-send-foot>
+            <button type="submit" class="btn btn-primary btn-lg btn-block" data-send-review>Review send</button>
+        </div>
+    </form>
+
+    <section class="wl-trade-step" data-step="review" aria-labelledby="sendReviewTitle" hidden>
+        <div class="modal-body">
+            <h3 class="wl-step-title" id="sendReviewTitle" tabindex="-1">Review your demo send</h3>
+            <div data-send-review-rows></div>
+            <p class="field-error mt-4" role="alert" hidden data-send-confirm-error></p>
+            <p class="notice notice-demo mt-4"><%- icon('info') %><span>This is a simulated transfer between Willow demo profiles. No real crypto moves and it can’t be reversed in the demo.</span></p>
+        </div>
+        <div class="modal-foot">
+            <button type="button" class="btn btn-secondary" data-send-back><%- icon('arrow-left') %> Edit</button>
+            <button type="button" class="btn btn-primary" data-send-confirm>Confirm send</button>
+        </div>
+    </section>
+
+    <section class="wl-trade-step" data-step="receipt" aria-labelledby="sendReceiptTitle" hidden>
+        <div class="modal-body"><div class="receipt" data-send-receipt></div></div>
+        <div class="modal-foot">
+            <button type="button" class="btn btn-primary btn-block" data-dialog-close>Done</button>
+        </div>
+    </section>
+</dialog>
+
+<dialog class="modal wl-modal" id="receiveDialog" aria-labelledby="receiveTitle" data-receive-dialog>
+    <div class="modal-head">
+        <div class="wl-trade-headcopy">
+            <p class="label">Demo wallet</p>
+            <h2 id="receiveTitle">Receive crypto</h2>
+        </div>
+        <button type="button" class="btn btn-ghost btn-icon" data-dialog-close aria-label="Close"><%- icon('x', 'icon-md') %></button>
+    </div>
+    <div class="modal-body">
+        <p class="secondary">Willow’s demo wallet has no public wallet addresses. To receive, another Willow customer sends coins to the email on your profile.</p>
+        <div class="wl-handle mt-4">
+            <span class="wl-handle-label">Your Willow profile email</span>
+            <code class="wl-handle-value" data-handle><%= user ? user.email : '' %></code>
+            <button type="button" class="btn btn-secondary btn-sm" data-copy-handle><%- icon('copy', 'icon-sm') %> Copy</button>
+        </div>
+        <p class="text-xs muted mt-2" role="status" aria-live="polite" data-copy-status></p>
+        <ul class="wl-points mt-4" role="list">
+            <li><span class="icon-tile icon-tile-sm"><%- icon('users') %></span><span>Only signed-in Willow demo profiles can send to you.</span></li>
+            <li><span class="icon-tile icon-tile-sm"><%- icon('bell') %></span><span>You’ll get a notification when demo coins arrive.</span></li>
+            <li><span class="icon-tile icon-tile-sm"><%- icon('lock') %></span><span>Coins can’t be withdrawn to an external wallet or exchange.</span></li>
+        </ul>
+    </div>
+    <div class="modal-foot"><button type="button" class="btn btn-primary btn-block" data-dialog-close>Done</button></div>
+</dialog>
+
+<%- include('../partials/app-end', { js: ['wealth-app', 'wealth-crypto'] }) %>

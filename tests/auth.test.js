@@ -30,7 +30,8 @@ describe('Auth', () => {
             });
             assert.equal(regRes.status, 200);
             assert.equal(regRes.body.success, true);
-            assert.equal(regRes.body.redirect, '/dashboard');
+            assert.equal(regRes.body.redirect, '/dashboard?welcome=1');
+            assert.match(regRes.body.customerId, /^WB[A-Z0-9]+$/);
         });
 
         it('should reject duplicate email', async () => {

@@ -1,0 +1,119 @@
+<%
+  const symbols = { USD: '$', EUR: '€', GBP: '£', ZAR: 'R', MZN: 'MT' };
+  const kindIcons = { checking: 'wallet', savings: 'savings', business: 'briefcase', currency: 'globe' };
+  const isActive = account.status === 'active';
+%><%- include('../partials/app-start', { css: [] }) %>
+
+<a class="back-link" href="/accounts"><%- icon('arrow-left') %> Accounts</a>
+<header class="page-head mt-4">
+    <div class="page-head-copy account-head">
+        <% if (account.kind === 'currency') { %><span class="currency-flag is-lg" aria-hidden="true"><%= symbols[account.currency] || account.currency %></span><% } else { %><span class="icon-tile"><%- icon(kindIcons[account.kind] || 'wallet') %></span><% } %>
+        <div>
+            <h1 class="page-head-title" id="accountName"><%= account.displayName %></h1>
+            <p class="page-head-sub"><%= account.productLabel %> · <%= account.maskedNumber %> · <%= account.currencyName %><% if (!isActive) { %> · <span class="status-pill is-<%= account.status %>"><%= account.status %></span><% } %></p>
+        </div>
+    </div>
+    <% if (isActive) { %>
+    <div class="page-head-actions">
+        <a class="btn btn-secondary" href="/deposits?accountId=<%= account.id %>"><%- icon('plus') %> Add money</a>
+        <a class="btn btn-secondary" href="/transfers?from=<%= account.id %>"><%- icon('send') %> Send</a>
+        <a class="btn btn-secondary" href="/statements?accountId=<%= account.id %>"><%- icon('file') %> Statements</a>
+    </div>
+    <% } %>
+</header>
+
+<div class="layout-main-aside">
+    <div class="col-stack">
+        <section class="balance-hero is-compact" aria-labelledby="balanceLabel">
+            <div class="balance-hero-top">
+                <div>
+                    <p class="label" id="balanceLabel">Balance · <%= account.currency %></p>
+                    <p class="figure figure-xl mt-2" data-private><%= account.balanceFormatted %></p>
+                    <div class="balance-hero-meta">
+                        <span data-private><%= account.availableBalanceFormatted %> available</span>
+                        <span>This month: <span data-private>+<%= money(flows.moneyIn, account.currency) %></span> in · <span data-private>−<%= money(flows.moneyOut, account.currency) %></span> out</span>
+                    </div>
+                </div>
+                <span class="demo-badge">Demo</span>
+            </div>
+            <% if (isActive) { %>
+            <nav class="quick-actions" aria-label="Account actions">
+                <a class="quick-action is-primary" href="/transfers?from=<%= account.id %>"><span class="quick-action-icon"><%- icon('send') %></span>Send</a>
+                <a class="quick-action" href="/deposits?accountId=<%= account.id %>"><span class="quick-action-icon"><%- icon('plus') %></span>Add</a>
+                <a class="quick-action" href="/withdrawals?accountId=<%= account.id %>"><span class="quick-action-icon"><%- icon('banknote') %></span>Withdraw</a>
+                <a class="quick-action" href="/transfers?mode=own&amp;from=<%= account.id %>"><span class="quick-action-icon"><%- icon('transfer') %></span>Move</a>
+                <% if (account.kind === 'currency') { %><a class="quick-action" href="/international"><span class="quick-action-icon"><%- icon('swap') %></span>Convert</a><% } %>
+            </nav>
+            <% } %>
+        </section>
+
+        <section class="panel" aria-labelledby="recentTitle">
+            <div class="panel-head">
+                <h2 id="recentTitle">Recent transactions</h2>
+                <a class="link-arrow" href="/transactions?accountId=<%= account.id %>">See all <%- icon('arrow-right') %></a>
+            </div>
+            <% if (recent.transactions.length) { %>
+            <ul class="txn-list" role="list">
+                <% recent.transactions.forEach(txn => { %><%- include('../partials/txn-row', { txn, accountName: account.displayName }) %><% }) %>
+            </ul>
+            <% } else { %>
+            <div class="empty is-compact"><div class="empty-art"><%- icon('activity') %></div><h3>No transactions yet</h3><p>Every new demo account starts empty. Add money to get going.</p><% if (isActive) { %><a class="btn btn-primary btn-sm" href="/deposits?accountId=<%= account.id %>">Add money</a><% } %></div>
+            <% } %>
+        </section>
+
+        <% if (scheduled.length) { %>
+        <section class="panel" aria-labelledby="scheduledTitle">
+            <div class="panel-head"><h2 id="scheduledTitle">Scheduled</h2><a class="link-arrow" href="/scheduled-transfers">Manage <%- icon('arrow-right') %></a></div>
+            <ul class="list-plain" role="list">
+                <% scheduled.forEach(item => { const outgoing = item.from_account_id === account.id; %>
+                <li class="list-row"><span class="icon-tile icon-tile-sm"><%- icon('calendar') %></span><span class="list-row-main"><span class="list-row-title"><%= item.description || 'Scheduled transfer' %></span><span class="list-row-sub"><%= formatDate(item.scheduled_for) %> · <%= outgoing ? 'to' : 'from' %> <%= outgoing ? (item.to_nickname || '••' + item.to_last_four) : (item.from_nickname || '••' + item.from_last_four) %></span></span><span class="list-row-end"><strong data-private><%= outgoing ? '−' : '+' %><%= money(item.amount, account.currency) %></strong></span></li>
+                <% }) %>
+            </ul>
+        </section>
+        <% } %>
+    </div>
+
+    <aside class="col-stack" aria-label="Account details">
+        <section class="panel" aria-labelledby="detailsTitle">
+            <div class="panel-head"><h2 id="detailsTitle">Account details</h2><span class="sim-tag">Simulated</span></div>
+            <dl class="dl-rows">
+                <div><dt>Account holder</dt><dd><%= user.full_name %></dd></div>
+                <div><dt>Account number</dt><dd><span class="num" data-account-number data-full="<%= account.account_number %>" data-private><%= account.maskedNumber %></span> <button type="button" class="btn btn-ghost btn-sm reveal-btn" data-reveal-number aria-pressed="false">Show</button></dd></div>
+                <div><dt>Type</dt><dd><%= account.productLabel %></dd></div>
+                <div><dt>Currency</dt><dd><%= account.currencyName %> (<%= account.currency %>)</dd></div>
+                <div><dt>Opened</dt><dd><%= formatDate(account.created_at) %></dd></div>
+                <div><dt>Status</dt><dd><span class="status-pill is-<%= account.status %>"><%= account.status %></span></dd></div>
+            </dl>
+            <p class="text-xs muted mt-4">Demo account numbers can only receive payments from other Willow demo profiles. There’s no routing number or IBAN because no real bank is behind them.</p>
+        </section>
+
+        <section class="panel" aria-labelledby="renameTitle">
+            <div class="panel-head"><h2 id="renameTitle">Account name</h2></div>
+            <form id="accountNameForm" data-account-id="<%= account.id %>" novalidate>
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <div class="field">
+                    <label for="nickname">Name shown in Willow</label>
+                    <input class="input" id="nickname" name="nickname" maxlength="40" value="<%= account.nickname || '' %>" placeholder="<%= account.productLabel %>">
+                    <p class="field-help">Up to 40 characters. Leave blank to use “<%= account.productLabel %>”.</p>
+                </div>
+                <div class="form-actions"><button type="submit" class="btn btn-secondary btn-sm">Save name</button><p class="form-status" id="accountNameStatus" role="status" tabindex="-1" hidden></p></div>
+            </form>
+        </section>
+
+        <section class="panel" aria-labelledby="cardsTitle">
+            <div class="panel-head"><h2 id="cardsTitle">Cards on this account</h2><a class="link-arrow" href="/cards">Cards <%- icon('arrow-right') %></a></div>
+            <% if (cards.length) { %>
+            <ul class="list-plain" role="list">
+                <% cards.forEach(card => { %>
+                <li><a class="list-row" href="/cards?card=<%= card.id %>"><span class="icon-tile icon-tile-sm"><%- icon(card.form === 'virtual' ? 'smartphone' : 'card') %></span><span class="list-row-main"><span class="list-row-title"><%= card.displayName %></span><span class="list-row-sub">•••• <%= card.last_four %> · <%= card.form === 'virtual' ? 'Virtual' : 'Physical' %></span></span><span class="status-pill is-<%= card.status %>"><%= card.statusLabel %></span></a></li>
+                <% }) %>
+            </ul>
+            <% } else { %>
+            <p class="muted text-sm">No cards are linked to this account.</p>
+            <% if (isActive && account.currency === 'USD') { %><a class="btn btn-secondary btn-sm mt-3" href="/cards">Add a card</a><% } %>
+            <% } %>
+        </section>
+    </aside>
+</div>
+
+<%- include('../partials/app-end', { js: ['account-detail'] }) %>

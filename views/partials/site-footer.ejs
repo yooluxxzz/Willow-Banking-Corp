@@ -1,0 +1,44 @@
+<footer class="site-footer">
+    <div class="container-wide">
+        <div class="site-footer-top">
+            <div class="site-footer-brand">
+                <%- include('brand', { href: '/', inverse: true, label: 'Willow home' }) %>
+                <p class="site-footer-slogan">Your money. Moving forward.</p>
+                <p class="site-footer-note">Banking, investing and building wealth — brought together in one intelligent financial experience.</p>
+            </div>
+            <div class="site-footer-links">
+                <% siteNavigation.forEach(section => { %>
+                <div>
+                    <h2><%= section.label %></h2>
+                    <ul role="list">
+                        <% section.items.forEach(item => { %><li><a href="<%= item.href %>"><%= item.label %></a></li><% }) %>
+                    </ul>
+                </div>
+                <% }) %>
+                <div>
+                    <h2>Company</h2>
+                    <ul role="list">
+                        <li><a href="/about">About Willow</a></li>
+                        <li><a href="/careers">Careers</a></li>
+                        <li><a href="/press">Press</a></li>
+                        <li><a href="/contact">Contact</a></li>
+                        <li><a href="/demo">About this demo</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="site-footer-disclosure">
+            <p><strong>Willow is a fictional demonstration platform.</strong> It is not a bank, broker, lender or payment institution and is not licensed or regulated. Balances, cards, transfers, loans, investments and crypto are simulated. Market data is retrieved from third-party sources for prototyping, may be delayed or unavailable, and is not investment advice.</p>
+        </div>
+        <div class="site-footer-bottom">
+            <p>© <%= new Date().getUTCFullYear() %> Willow Banking Corp. (fictional)</p>
+            <ul role="list">
+                <li><a href="/privacy">Privacy</a></li>
+                <li><a href="/terms">Terms</a></li>
+                <li><a href="/compliance">Compliance</a></li>
+                <li><a href="/security-info">Security</a></li>
+            </ul>
+            <button type="button" class="site-footer-theme" data-theme-toggle aria-label="Switch to dark theme"><%- icon('moon', 'icon-sm theme-icon-dark') %><%- icon('sun', 'icon-sm theme-icon-light') %><span class="theme-toggle-label">Dark theme</span></button>
+        </div>
+    </div>
+</footer>

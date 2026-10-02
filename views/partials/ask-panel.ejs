@@ -1,0 +1,28 @@
+<dialog class="ask-panel" id="askPanel" aria-labelledby="askTitle" data-ask-panel>
+    <div class="ask-panel-head">
+        <div class="ask-panel-title">
+            <span class="ask-orb" aria-hidden="true"><%- icon('sparkle', 'icon-md') %></span>
+            <div>
+                <h2 id="askTitle">Ask Willow</h2>
+                <p>Answers come only from your own Willow demo data.</p>
+            </div>
+        </div>
+        <button type="button" class="btn btn-ghost btn-icon" data-ask-close aria-label="Close Ask Willow"><%- icon('x', 'icon-md') %></button>
+    </div>
+    <div class="ask-thread" data-ask-thread aria-live="polite">
+        <div class="ask-welcome" data-ask-welcome>
+            <p class="ask-welcome-title">What would you like to know?</p>
+            <div class="ask-suggestions" role="list">
+                <% ['How much did I spend this month?', 'What are my biggest expenses?', 'How much do I have in savings?', 'Show me my investments.', 'What is my portfolio allocation?', 'Do I have scheduled payments?', 'How are my goals doing?', 'What is my net worth?'].forEach(prompt => { %>
+                <button type="button" class="chip" role="listitem" data-ask-prompt="<%= prompt %>"><%= prompt %></button>
+                <% }) %>
+            </div>
+        </div>
+    </div>
+    <form class="ask-form" data-ask-form>
+        <label for="askInput" class="visually-hidden">Ask a question about your money</label>
+        <input id="askInput" name="question" class="ask-input" placeholder="Ask about spending, savings, investments…" maxlength="200" autocomplete="off" required>
+        <button type="submit" class="btn btn-primary btn-icon" aria-label="Ask"><%- icon('arrow-up', 'icon-md') %></button>
+    </form>
+    <p class="ask-disclaimer">Informational only — not financial advice. Willow Intelligence never predicts returns or recommends trades.</p>
+</dialog>

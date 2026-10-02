@@ -46,11 +46,12 @@ describe('Grounded financial Hub', () => {
     it('answers only from the requesting user’s financial records and rejects missing CSRF', async () => {
         const ownerId = db.prepare('SELECT id FROM users WHERE email = ?').get('hub-owner@example.test').id;
         const otherId = db.prepare('SELECT id FROM users WHERE email = ?').get('hub-other@example.test').id;
-        assert.match(hub.answerQuestion(ownerId, 'How much did I spend this month?').answer, /\$12\.34/);
-        assert.match(hub.answerQuestion(otherId, 'How much did I spend this month?').answer, /\$0\.00/);
+        assert.match((await hub.answerQuestion(ownerId, 'How much did I spend this month?')).answer, /\$12\.34/);
+        assert.match((await hub.answerQuestion(otherId, 'How much did I spend this month?')).answer, /\$0\.00/);
         const response = await owner.agent.post('/api/hub/ask').send({ question: 'How much did I spend this month?' });
         assert.equal(response.status, 403);
-        const unsupported = hub.answerQuestion(ownerId, 'What will my stocks return?');
-        assert.match(unsupported.answer, /cannot predict investment performance/);
+        const unsupported = await hub.answerQuestion(ownerId, 'What will my stocks return?');
+        assert.match(unsupported.answer, /can’t predict investment performance/);
+        assert.equal(unsupported.kind, 'refusal');
     });
 });

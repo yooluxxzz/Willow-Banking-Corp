@@ -3,7 +3,7 @@
  */
 const { v4: uuidv4 } = require('uuid');
 const { getDb } = require('../database');
-const { toCents, validateAmount } = require('../middleware/validation');
+const { toCents, validateAmount, formatCurrency } = require('../middleware/validation');
 const { createNotification } = require('./notification');
 const { logAudit } = require('./audit');
 
@@ -22,7 +22,7 @@ function executeTransfer({ fromAccountId, toAccountNumber, amount, description, 
 
     // Get sender account
     const fromAccount = db.prepare(`
-    SELECT a.*, u.id as owner_id FROM accounts a
+    SELECT a.*, u.id as owner_id, u.full_name as owner_name FROM accounts a
     JOIN users u ON a.user_id = u.id
     WHERE a.id = ? AND a.user_id = ?
   `).get(fromAccountId, userId);
@@ -56,6 +56,10 @@ function executeTransfer({ fromAccountId, toAccountNumber, amount, description, 
     if (fromAccount.id === toAccount.id) {
         return { error: 'Cannot transfer to the same account.' };
     }
+    if ((fromAccount.currency || 'USD') !== (toAccount.currency || 'USD')) {
+        return { error: `These accounts use different currencies (${fromAccount.currency} and ${toAccount.currency}). Use Convert in International to move money between currencies.` };
+    }
+    const currency = fromAccount.currency || 'USD';
 
     // Check balance
     if (fromAccount.available_balance < amountCents) {
@@ -63,7 +67,9 @@ function executeTransfer({ fromAccountId, toAccountNumber, amount, description, 
     }
 
     const reference = `TRF-${uuidv4().slice(0, 8).toUpperCase()}`;
-    const desc = description?.trim() || `Transfer to ${toAccount.owner_name}`;
+    const desc = description?.trim() || (toAccount.owner_id === fromAccount.owner_id ? `Transfer to ${toAccount.nickname || (toAccount.account_type === 'savings' ? 'Savings' : 'Checking')} ••••${toAccount.account_number.slice(-4)}` : `Transfer to ${toAccount.owner_name}`);
+    const counterpartyOut = toAccount.owner_id === fromAccount.owner_id ? null : toAccount.owner_name;
+    const counterpartyIn = toAccount.owner_id === fromAccount.owner_id ? null : fromAccount.owner_name;
 
     // Atomic transaction
     const transfer = db.transaction(() => {
@@ -87,16 +93,16 @@ function executeTransfer({ fromAccountId, toAccountNumber, amount, description, 
 
         // Record debit transaction
         db.prepare(`
-      INSERT INTO transactions (reference, account_id, related_account_id, type, amount, currency, direction, status, description)
-      VALUES (?, ?, ?, 'transfer', ?, 'USD', 'debit', 'completed', ?)
-    `).run(reference, fromAccount.id, toAccount.id, amountCents, desc);
+      INSERT INTO transactions (reference, account_id, related_account_id, type, amount, currency, direction, status, description, counterparty)
+      VALUES (?, ?, ?, 'transfer', ?, ?, 'debit', 'completed', ?, ?)
+    `).run(reference, fromAccount.id, toAccount.id, amountCents, currency, desc, counterpartyOut);
 
         // Record credit transaction
         const creditRef = `${reference}-C`;
         db.prepare(`
-      INSERT INTO transactions (reference, account_id, related_account_id, type, amount, currency, direction, status, description)
-      VALUES (?, ?, ?, 'transfer', ?, 'USD', 'credit', 'completed', ?)
-    `).run(creditRef, toAccount.id, fromAccount.id, amountCents, `Transfer from account ••••${fromAccount.account_number.slice(-4)}`);
+      INSERT INTO transactions (reference, account_id, related_account_id, type, amount, currency, direction, status, description, counterparty)
+      VALUES (?, ?, ?, 'transfer', ?, ?, 'credit', 'completed', ?, ?)
+    `).run(creditRef, toAccount.id, fromAccount.id, amountCents, currency, counterpartyIn ? `Transfer from ${counterpartyIn}` : `Transfer from account ••••${fromAccount.account_number.slice(-4)}`, counterpartyIn);
 
         return { reference };
     });
@@ -106,13 +112,16 @@ function executeTransfer({ fromAccountId, toAccountNumber, amount, description, 
 
         // Notifications (outside transaction — non-critical)
         try {
-            createNotification(userId, 'transfer', 'Transfer Sent',
-                `You sent $${amount} to ${toAccount.owner_name} (Ref: ${result.reference})`);
-            createNotification(toAccount.owner_id, 'transfer', 'Transfer Received',
-                `You received $${amount} from account ••••${fromAccount.account_number.slice(-4)} (Ref: ${result.reference})`);
+            const formatted = formatCurrency(amountCents, currency);
+            createNotification(userId, 'transfer', 'Demo transfer sent',
+                `You sent ${formatted} to ${toAccount.owner_id === fromAccount.owner_id ? 'your account ••••' + toAccount.account_number.slice(-4) : toAccount.owner_name} (Ref: ${result.reference}). Simulated — no real money moved.`);
+            if (toAccount.owner_id !== fromAccount.owner_id) {
+                createNotification(toAccount.owner_id, 'transfer', 'Demo transfer received',
+                    `You received ${formatted} from ${fromAccount.owner_name} (Ref: ${result.reference}). Simulated — no real money moved.`);
+            }
         } catch (e) { /* notification failure shouldn't fail the transfer */ }
 
-        return { success: true, reference: result.reference };
+        return { success: true, reference: result.reference, amountCents, currency, recipientName: toAccount.owner_id === fromAccount.owner_id ? null : toAccount.owner_name, toAccountId: toAccount.id };
     } catch (err) {
         if (err.message === 'Insufficient funds') {
             return { error: 'Insufficient funds for this transfer.' };

@@ -1,335 +1,77 @@
-<%- include('../partials/header') %>
+<%- include('../partials/app-start', { css: [] }) %>
 
-    <body>
-        <div class="app-layout">
-            <%- include('../partials/sidebar') %>
-                <main class="main-content">
-                    <div class="page-header">
-                        <h1>Admin Dashboard</h1>
-                        <p>System overview and management</p>
-                    </div>
+<header class="page-head">
+    <div class="page-head-copy">
+        <p class="label">Administration</p>
+        <h1 class="page-head-title">Admin overview</h1>
+        <p class="page-head-sub">Customers, balances and the audit trail for this Willow demo instance. Every action here is logged.</p>
+    </div>
+</header>
 
-                    <div class="stats-grid">
-                        <div class="stat-card primary">
-                            <div class="stat-label">Total Users</div>
-                            <div class="stat-value" id="statUsers">-</div>
-                            <div class="stat-sub">Registered accounts</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Total Accounts</div>
-                            <div class="stat-value" id="statAccounts">-</div>
-                            <div class="stat-sub">Bank accounts</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Total Deposits</div>
-                            <div class="stat-value" id="statDeposits">-</div>
-                            <div class="stat-sub">System-wide</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Total Transactions</div>
-                            <div class="stat-value" id="statTxns">-</div>
-                            <div class="stat-sub">All time</div>
-                        </div>
-                    </div>
+<div class="stat-row mb-6" data-admin-stats>
+    <div class="stat-tile"><span class="label"><%- icon('users', 'icon-sm') %> Customers</span><span class="figure" data-stat="totalCustomers">—</span><small data-stat-sub="suspendedAccounts">Registered profiles</small></div>
+    <div class="stat-tile"><span class="label"><%- icon('wallet', 'icon-sm') %> Accounts</span><span class="figure" data-stat="totalAccounts">—</span><small>All currencies</small></div>
+    <div class="stat-tile"><span class="label"><%- icon('banknote', 'icon-sm') %> Simulated balances</span><span class="figure" data-stat="totalBalanceFormatted">—</span><small>Active accounts, mixed currencies at face value</small></div>
+    <div class="stat-tile"><span class="label"><%- icon('activity', 'icon-sm') %> Transactions</span><span class="figure" data-stat="totalTransactions">—</span><small data-stat-sub="failedTransactions">All time</small></div>
+</div>
 
-                    <!-- User Management -->
-                    <div class="card mb-6">
-                        <div class="card-header">
-                            <h3>User Management</h3>
-                            <div class="flex gap-2"><input type="text" id="userSearch" class="form-control"
-                                    style="width:200px;font-size:0.8125rem;" placeholder="Search users..."
-                                    onkeydown="if(event.key==='Enter')loadUsers()"><button
-                                    class="btn btn-secondary btn-sm" onclick="loadUsers()">Search</button></div>
-                        </div>
-                        <div id="usersTable" style="min-height:100px;">
-                            <div class="loading-overlay">
-                                <div class="spinner"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Recent Audit Logs -->
-                    <div class="card mb-6">
-                        <div class="card-header">
-                            <h3>Audit Log</h3>
-                            <div class="flex gap-2"><select id="auditAction" class="form-control"
-                                    style="width:auto;font-size:0.8125rem;" onchange="loadAuditLog()">
-                                    <option value="">All Actions</option>
-                                    <option value="admin_balance_adjustment">Balance Adjustment</option>
-                                    <option value="login">Login</option>
-                                    <option value="logout">Logout</option>
-                                    <option value="register">Register</option>
-                                </select></div>
-                        </div>
-                        <div id="auditTable" style="min-height:100px;">
-                            <div class="loading-overlay">
-                                <div class="spinner"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Balance Adjustment -->
-                    <div class="card max-w-560">
-                        <div class="card-header">
-                            <h3>Adjust User Balance</h3>
-                        </div>
-                        <div class="card-body">
-                            <div id="adjustAlert" class="hidden"></div>
-                            <form id="adjustForm" onsubmit="handleAdjust(event)">
-                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                                <div class="form-group">
-                                    <label>User Email</label>
-                                    <input type="email" id="adjEmail" class="form-control"
-                                        placeholder="user@example.com" required>
-                                </div>
-                                <div class="form-group">
-                                    <label>Account ID or Number</label>
-                                    <input type="text" id="adjAccountId" class="form-control"
-                                        placeholder="e.g. 1 or 42008598205512" required>
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label>Amount (USD)</label>
-                                        <input type="number" id="adjAmount" class="form-control" step="0.01"
-                                            placeholder="0.00" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Action</label>
-                                        <select id="adjAction" class="form-control">
-                                            <option value="credit">Credit (add)</option>
-                                            <option value="debit">Debit (subtract)</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label>Reason</label>
-                                    <input type="text" id="adjReason" class="form-control"
-                                        placeholder="Reason for adjustment" required maxlength="200">
-                                </div>
-                                <button type="submit" class="btn btn-primary" id="adjBtn">Submit Adjustment</button>
-                            </form>
-                        </div>
-                    </div>
-                </main>
-        </div>
-
-        <!-- User Detail Modal -->
-        <div id="userModal"
-            style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
-            <div
-                style="background:var(--white); color:var(--charcoal); padding:24px; border-radius:12px; width:100%; max-width:600px; max-height:90vh; overflow-y:auto; position:relative; box-shadow:0 25px 50px rgba(0,0,0,0.25); border:1px solid var(--border-color);">
-                <button onclick="document.getElementById('userModal').style.display='none'"
-                    style="position:absolute; right:16px; top:16px; background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--charcoal);">&times;</button>
-                <h2 style="margin-bottom:16px; color:var(--gray-900);">User Details</h2>
-                <div id="userModalBody">
-                    <div style="text-align:center; padding:40px;">
-                        <div class="spinner"></div>
-                    </div>
-                </div>
+<div class="layout-main-aside">
+    <div class="col-stack">
+        <section class="panel" aria-labelledby="usersTitle">
+            <div class="panel-head">
+                <h2 id="usersTitle">Customers</h2>
+                <form class="admin-search" data-user-search role="search">
+                    <label class="visually-hidden" for="userSearch">Search customers</label>
+                    <input class="input input-sm" id="userSearch" type="search" placeholder="Name, email or customer ID" maxlength="100">
+                    <select class="select select-sm" id="userStatus" aria-label="Status"><option value="">Any status</option><option value="active">Active</option><option value="suspended">Suspended</option><option value="deleted">Deleted</option></select>
+                </form>
             </div>
-        </div>
-        <script>
-            const csrfToken = '<%= csrfToken %>';
-            async function loadStats() {
-                try {
-                    const res = await fetch('/api/admin/stats', { headers: { 'Accept': 'application/json' } });
-                    const d = await res.json();
-                    if (!res.ok) throw new Error(d.error);
-                    document.getElementById('statUsers').textContent = d.totalCustomers || 0;
-                    document.getElementById('statAccounts').textContent = d.totalAccounts || 0;
-                    document.getElementById('statDeposits').textContent = d.totalBalanceFormatted || '$0.00';
-                    document.getElementById('statTxns').textContent = d.totalTransactions || 0;
-                } catch (e) { console.error('Failed to load stats:', e); }
-            }
-            let currentUserPage = 1;
-            async function loadUsers(page) {
-                if (page) currentUserPage = page;
-                const c = document.getElementById('usersTable');
-                c.innerHTML = '<div class="loading-overlay"><div class="spinner"></div></div>';
-                const search = document.getElementById('userSearch').value;
-                try {
-                    const res = await fetch('/api/admin/users?search=' + encodeURIComponent(search) + '&page=' + currentUserPage + '&limit=20', { headers: { 'Accept': 'application/json' } });
-                    const d = await res.json();
-                    if (!res.ok) throw new Error(d.error);
-                    if (!d.users.length) { c.innerHTML = '<p class="text-center text-muted" style="padding:var(--space-5);">No users found.</p>'; return; }
-                    let html = '<div class="table-responsive"><div class="table-container"><table aria-label="User list"><thead><tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Customer ID</th><th scope="col">Role</th><th scope="col">Status</th><th scope="col">Actions</th></tr></thead><tbody>';
-                    d.users.forEach(u => {
-                        html += '<tr><td class="text-sm">' + escHtml(u.full_name) + '</td><td class="text-sm">' + escHtml(u.email) + '</td><td class="font-mono text-xs">' + u.customer_id + '</td><td><span class="badge badge-' + (u.role === 'admin' ? 'info' : 'neutral') + '">' + u.role + '</span></td>';
-                        html += '<td><span class="badge badge-' + (u.status === 'active' ? 'success' : (u.status === 'suspended' ? 'warning' : 'danger')) + '">' + u.status + '</span></td>';
-                        html += '<td><button class="btn btn-ghost btn-sm" onclick="viewUserDetails(' + u.id + ')" title="Manage user">Manage</button></td></tr>';
-                    });
-                    html += '</tbody></table></div></div>';;
-                    // Pagination controls
-                    if (d.totalPages > 1) {
-                        html += '<div class="pagination-bar">';;
-                        html += '<button class="btn btn-ghost btn-sm" onclick="loadUsers(' + (currentUserPage - 1) + ')"' + (currentUserPage <= 1 ? ' disabled' : '') + '>← Prev</button>';
-                        html += '<span class="text-sm text-muted">Page ' + d.page + ' of ' + d.totalPages + ' (' + d.total + ' users)</span>';
-                        html += '<button class="btn btn-ghost btn-sm" onclick="loadUsers(' + (currentUserPage + 1) + ')"' + (currentUserPage >= d.totalPages ? ' disabled' : '') + '>Next →</button>';
-                        html += '</div>';
-                    }
-                    c.innerHTML = html;
-                } catch (e) { c.innerHTML = '<div class="alert alert-danger" style="margin:var(--space-3);">' + (e.message || 'Failed.') + '</div>'; }
-            }
-            function closeUserModal() {
-                document.getElementById('userModal').style.display = 'none';
-            }
-            async function viewUserDetails(id) {
-                const modal = document.getElementById('userModal');
-                const body = document.getElementById('userModalBody');
-                modal.style.display = 'flex';
-                body.innerHTML = '<div style="text-align:center;padding:40px;"><div class="spinner"></div></div>';
-                try {
-                    const res = await fetch('/api/admin/users/' + id);
-                    const d = await res.json();
-                    if (!res.ok) throw new Error(d.error);
+            <div data-users aria-live="polite"></div>
+            <nav class="pagination" data-users-pages aria-label="Customer pages"></nav>
+        </section>
 
-                    let html = '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-6); padding: var(--space-4); background: var(--gray-100); border-radius: var(--radius-md); border: 1px solid var(--border-color);">';
-                    html += '<div><span class="text-xs text-muted">Customer Name</span><p class="font-medium" style="margin-top:4px;">' + escHtml(d.user.full_name) + '</p></div>';
-                    html += '<div><span class="text-xs text-muted">Email Address</span><p class="font-medium" style="margin-top:4px;">' + escHtml(d.user.email) + '</p></div>';
-                    html += '<div><span class="text-xs text-muted">Customer ID</span><p class="font-mono text-sm" style="margin-top:4px;">' + d.user.customer_id + '</p></div>';
-                    html += '<div><span class="text-xs text-muted">Current Status</span><p style="margin-top:4px;"><span class="badge badge-' + (d.user.status === 'active' ? 'success' : (d.user.status === 'suspended' ? 'warning' : 'danger')) + '">' + d.user.status.toUpperCase() + '</span></p></div>';
-                    html += '</div>';
+        <section class="panel" aria-labelledby="auditTitle">
+            <div class="panel-head">
+                <h2 id="auditTitle">Audit log</h2>
+                <select class="select select-sm" id="auditAction" aria-label="Filter by action">
+                    <option value="">All actions</option>
+                    <option value="login">Sign-ins</option>
+                    <option value="register">Registrations</option>
+                    <option value="transfer">Transfers</option>
+                    <option value="admin_balance_adjustment">Balance adjustments</option>
+                    <option value="user_status_change">Status changes</option>
+                    <option value="password_changed">Password changes</option>
+                    <option value="two_factor_enabled">Two-step enabled</option>
+                    <option value="data_exported">Data exports</option>
+                </select>
+            </div>
+            <div data-audit aria-live="polite"></div>
+        </section>
+    </div>
 
-                    html += '<h3 style="font-size:1.1rem; margin-bottom:var(--space-3);">Linked Accounts</h3>';
-                    if (d.accounts && d.accounts.length > 0) {
-                        html += '<div style="display:flex; flex-direction:column; gap:var(--space-3); margin-bottom:var(--space-6);">';
-                        d.accounts.forEach(a => {
-                            html += '<div class="card" style="padding:var(--space-4); display:flex; justify-content:space-between; align-items:center;">';
-                            html += '<div><div class="text-xs text-muted" style="text-transform:uppercase; margin-bottom: 2px;">' + a.account_type + ' ACCOUNT</div><div class="font-mono text-sm">' + a.account_number + '</div><div class="text-xs text-muted" style="margin-top:4px;">Account ID: <strong>' + a.id + '</strong></div></div>';
-                            html += '<div class="text-right"><div class="text-xs text-muted" style="margin-bottom: 2px;">BALANCE</div><div class="font-bold text-lg" style="color:var(--charcoal);">' + a.balanceFormatted + '</div></div>';
-                            html += '</div>';
-                        });
-                        html += '</div>';
-                    } else {
-                        html += '<p class="text-muted text-sm mb-5">No linked accounts found.</p>';
-                    }
+    <aside class="col-stack">
+        <form class="panel" id="adjustForm" novalidate>
+            <div class="panel-head"><h2>Adjust a balance</h2><span class="sim-tag">Simulated</span></div>
+            <div class="field"><label for="adjAccountId">Account ID or number</label><input class="input" id="adjAccountId" name="accountId" required placeholder="e.g. 12 or 4200…"></div>
+            <div class="field-grid">
+                <div class="field"><label for="adjAmount">Amount</label><input class="input num" id="adjAmount" name="amount" inputmode="decimal" required placeholder="0.00"></div>
+                <div class="field"><label for="adjType">Action</label><select class="select" id="adjType" name="type"><option value="credit">Credit</option><option value="debit">Debit</option></select></div>
+            </div>
+            <div class="field"><label for="adjReason">Reason</label><input class="input" id="adjReason" name="reason" required maxlength="200" placeholder="Shown in the audit log"></div>
+            <p class="form-status mt-3" data-adjust-status role="status" hidden></p>
+            <div class="form-actions"><button type="submit" class="btn btn-primary">Review adjustment</button></div>
+        </form>
 
-                    html += '<h3 style="font-size:1.1rem; margin-bottom:var(--space-3);">Actions</h3>';
-                    html += '<div class="mb-4">';
-                    html += '<label style="display:block; font-size:0.85rem; font-weight:500; margin-bottom:6px;">Reason <span style="color:var(--red-500);">*</span></label>';
-                    html += '<textarea id="statusReason" rows="2" style="width:100%;padding:8px 12px;border:1px solid var(--border-color);border-radius:var(--radius-md);font-family:inherit;font-size:0.875rem;resize:vertical;background:var(--white);color:var(--charcoal);" placeholder="Provide a reason for this action..."></textarea>';
-                    html += '</div>';
+        <section class="panel" aria-labelledby="recentTitle">
+            <div class="panel-head"><h2 id="recentTitle">Latest transactions</h2></div>
+            <div data-recent></div>
+        </section>
+    </aside>
+</div>
 
-                    if (d.user.scheduled_deletion_at) {
-                        html += '<div style="padding:12px 16px;background:var(--red-100,#fee2e2);border:1px solid var(--red-300,#fca5a5);border-radius:var(--radius-md);margin-bottom:var(--space-3);display:flex;align-items:center;justify-content:space-between;">';
-                        html += '<span style="color:var(--red-700,#b91c1c);font-weight:600;">⏳ Pending Deletion: ' + new Date(d.user.scheduled_deletion_at).toLocaleDateString() + '</span>';
-                        html += '<button class="btn btn-success btn-sm" onclick="changeUserStatus(' + d.user.id + ', \'active\')">Cancel Deletion</button>';
-                        html += '</div>';
-                    }
-                    html += '<div style="display:flex; flex-direction:column; gap:10px; border-top:1px solid var(--gray-200); padding-top:var(--space-4);">';
-                    if (d.user.status === 'active') {
-                        html += '<button class="btn btn-warning" style="width:100%;" onclick="changeUserStatus(' + d.user.id + ', \'suspended\')">Suspend Account</button>';
-                    } else if (d.user.status === 'suspended' && !d.user.scheduled_deletion_at) {
-                        html += '<button class="btn btn-success" style="width:100%;" onclick="changeUserStatus(' + d.user.id + ', \'active\')">Reactivate Account</button>';
-                    }
-                    if (d.user.status !== 'deleted') {
-                        html += '<div style="display:flex;gap:10px;">';
-                        html += '<button class="btn btn-warning" style="flex:1;background:#d97706;color:#fff;" onclick="changeUserStatus(' + d.user.id + ', \'deleted\', \'scheduled\')">Delete (3-day grace)</button>';
-                        html += '<button class="btn btn-danger" style="flex:1;" onclick="changeUserStatus(' + d.user.id + ', \'deleted\', \'instant\')">Delete Instantly</button>';
-                        html += '</div>';
-                    }
-                    html += '</div>';
+<dialog class="modal is-wide" id="userDialog" aria-labelledby="userDialogTitle">
+    <div class="modal-head"><h2 id="userDialogTitle">Customer</h2><button type="button" class="btn btn-ghost btn-icon" data-dialog-close aria-label="Close"><%- icon('x', 'icon-md') %></button></div>
+    <div class="modal-body" data-user-body></div>
+</dialog>
 
-                    body.innerHTML = html;
-                } catch (e) {
-                    body.innerHTML = '<div class="alert alert-danger">' + (e.message || 'Failed to load details.') + '</div>';
-                }
-            }
-
-            async function changeUserStatus(id, newStatus, deletionType) {
-                const reasonEl = document.getElementById('statusReason');
-                const reason = reasonEl ? reasonEl.value.trim() : '';
-
-                if ((newStatus === 'suspended' || newStatus === 'deleted') && !reason) {
-                    showToast('Please provide a reason for this action.', 'warning');
-                    if (reasonEl) reasonEl.focus();
-                    return;
-                }
-
-                let confirmMsg = 'Are you sure you want to change this user\'s status?';
-                let confirmTitle = 'Confirm Action';
-                if (newStatus === 'deleted' && deletionType === 'instant') {
-                    confirmMsg = 'Are you sure you want to <strong>permanently delete</strong> this user immediately? This cannot be undone.';
-                    confirmTitle = '⚠️ Permanent Deletion';
-                } else if (newStatus === 'deleted' && deletionType === 'scheduled') {
-                    confirmMsg = 'Schedule this account for deletion in 3 days? The user will be suspended in the meantime.';
-                    confirmTitle = 'Schedule Deletion';
-                } else if (newStatus === 'suspended') {
-                    confirmMsg = 'Are you sure you want to suspend this user\'s account?';
-                    confirmTitle = 'Suspend Account';
-                }
-                const confirmed = await showConfirm(confirmMsg, confirmTitle);
-                if (!confirmed) return;
-
-                try {
-                    // Disable all action buttons during the API call
-                    const actionBtns = document.querySelectorAll('#userModalBody .btn');
-                    actionBtns.forEach(b => { b.disabled = true; b.style.opacity = '0.6'; });
-
-                    const body = { status: newStatus, reason };
-                    if (deletionType) body.deletionType = deletionType;
-                    const res = await fetch('/api/admin/users/' + id + '/status', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
-                        body: JSON.stringify(body)
-                    });
-                    const d = await res.json();
-                    if (!res.ok) throw new Error(d.error);
-                    showToast(d.message, 'success');
-                    viewUserDetails(id);
-                    loadUsers();
-                    loadAuditLog();
-                } catch (e) {
-                    showToast(e.message || 'An error occurred.', 'error');
-                    // Re-enable buttons on error
-                    const actionBtns = document.querySelectorAll('#userModalBody .btn');
-                    actionBtns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
-                }
-            }
-            async function loadAuditLog() {
-                const c = document.getElementById('auditTable');
-                c.innerHTML = '<div class="loading-overlay"><div class="spinner"></div></div>';
-                const action = document.getElementById('auditAction').value;
-                try {
-                    const res = await fetch('/api/admin/audit-log?action=' + encodeURIComponent(action) + '&limit=20', { headers: { 'Accept': 'application/json' } });
-                    const d = await res.json();
-                    if (!res.ok) throw new Error(d.error);
-                    if (!d.logs.length) { c.innerHTML = '<p class="text-center text-muted" style="padding:var(--space-5);">No audit logs found.</p>'; return; }
-                    let html = '<div class="table-responsive"><div class="table-container"><table aria-label="Audit log"><thead><tr><th scope="col">Date</th><th scope="col">User</th><th scope="col">Action</th><th scope="col">Details</th></tr></thead><tbody>';
-                    d.logs.forEach(l => {
-                        const time = new Date(l.created_at + 'Z').toLocaleString();
-                        let details = '';
-                        if (l.metadata && typeof l.metadata === 'object') { details = Object.entries(l.metadata).map(([k, v]) => k + ': ' + v).join(', '); }
-                        html += '<tr><td class="text-sm">' + time + '</td><td class="text-sm">' + (l.actor_email || 'system') + '</td><td><span class="badge badge-neutral">' + l.action + '</span></td><td class="text-sm" style="max-width:300px;overflow:hidden;text-overflow:ellipsis;">' + escHtml(details) + '</td></tr>';
-                    });
-                    html += '</tbody></table></div></div>';
-                    c.innerHTML = html;
-                } catch (e) { c.innerHTML = '<div class="alert alert-danger" style="margin:var(--space-3);">' + (e.message || 'Failed.') + '</div>'; }
-            }
-            async function handleAdjust(e) {
-                e.preventDefault();
-                const btn = document.getElementById('adjBtn');
-                const al = document.getElementById('adjustAlert');
-                btn.disabled = true; al.className = 'hidden';
-                try {
-                    const res = await fetch('/api/admin/balance-adjustment', {
-                        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
-                        body: JSON.stringify({ email: document.getElementById('adjEmail').value, accountId: document.getElementById('adjAccountId').value, amount: document.getElementById('adjAmount').value, type: document.getElementById('adjAction').value, reason: document.getElementById('adjReason').value }),
-                    });
-                    const d = await res.json();
-                    if (!res.ok) throw new Error(d.error);
-                    al.className = 'hidden';
-                    showToast('Balance adjustment applied. Reference: ' + d.reference, 'success', 6000);
-                    document.getElementById('adjustForm').reset();
-                    loadStats();
-                    loadAuditLog();
-                } catch (err) {
-                    al.className = 'alert alert-danger';
-                    al.innerHTML = '<span>' + (err.message || 'Failed.') + '</span>';
-                    showToast(err.message || 'Balance adjustment failed.', 'error');
-                } finally { btn.disabled = false; }
-            }
-            function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
-            document.addEventListener('DOMContentLoaded', () => { loadStats(); loadUsers(); loadAuditLog(); });
-        </script>
-        <%- include('../partials/footer') %>
+<%- include('../partials/app-end', { js: ['admin'] }) %>

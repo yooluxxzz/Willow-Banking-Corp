@@ -1,134 +1,90 @@
-# Willow Banking Corp. Brand and UX Specification
+# Willow — Brand, Design System and Experience Specification
 
-## Brand
+Willow is a fictional digital bank, investment platform and financial-intelligence app built as a software demonstration. This document describes the brand, the design system in `public/css/willow.css`, and the rules every screen follows. Nothing in Willow moves real money; the interface says so wherever it matters.
 
-**Brand concept:** A steady, human banking partner for the routines and plans that shape a person's life. Willow suggests resilience and considered growth without turning the identity into a botanical theme.
+## 1. Brand
 
-**Primary slogan:** Your money. Moving forward.
+| | |
+| --- | --- |
+| **Name** | Willow (legal-style name in disclosures: Willow Banking Corp., fictional) |
+| **Tagline** | Your money. Moving forward. |
+| **Positioning** | Banking, investing and building wealth — brought together in one intelligent financial experience. |
+| **Personality** | Calm, intelligent, human, confident, modern. Never loud, never hype. |
+| **Feeling** | Trust, clarity, progress and control. |
+| **Closing line** | Willow — your money, moving forward. |
 
-**Supporting statement:** Everyday accounts, cards, transfers and clear digital tools, brought together around the life you're building.
+**Voice.** Plain words, short sentences, active voice. Say what happens and what doesn’t (“Simulated — no real money moved.”). Numbers are exact or clearly labelled as estimates. No exclamation marks in product copy, no urgency tricks, no unverifiable claims (no awards, certifications, insurance, regulators or “bank-grade” language).
 
-**Short brand message:** A clear place for money, through every kind of day.
+**Honesty labels** used everywhere:
 
-**Personality:** Calm, capable, warm, clear, grounded and quietly contemporary. Willow is direct about what it offers and candid about what still needs to be verified.
+| Label | Meaning |
+| --- | --- |
+| `Demo` badge | A feature that behaves like a real product but uses simulated money. |
+| `Simulated` tag | An action (payment, trade, conversion, verification) that only updates Willow’s records. |
+| Delayed / Cached | Third-party market data; prices are never invented. |
+| Indicative | Exchange rates and illustrations, not executable quotes. |
+| Estimate | Loan and savings calculator outputs — not offers. |
+| Illustrative | Sample imagery or figures on public pages. |
 
-**Brand promise:** Help people see and manage everyday money with more context, while keeping the experience straightforward and human.
+## 2. Color
 
-**Keywords:** Steady, considered, clear, human, capable, connected, growing.
+All colors are CSS custom properties on `:root`, with a full dark theme under `[data-theme="dark"]` (set from the saved preference or `prefers-color-scheme`). Components use **semantic roles** (`--bg`, `--surface`, `--text`, `--text-secondary`, `--text-muted`, `--border`, `--brand`, `--accent`, `--link`, `--focus`), never raw palette values.
 
-## Visual Identity
-
-### Color
-
-| Role | Color | Use |
+| Palette | Key values | Use |
 | --- | --- | --- |
-| Primary forest | `#203F36` | Brand actions, links and headings |
-| Deep forest | `#18342E` | Utility bar, trust band and image overlay |
-| Soft sage | `#78897B` | Supporting accents and secondary surfaces |
-| Pale sage | `#E7ECE5` | Product icon fields and experience section |
-| Paper | `#F4F5F0` | Page background and editorial bands |
-| Surface | `#FFFFFF` | Product grid and interface mockup |
-| Primary text | `#202B27` | Headlines and body copy |
-| Secondary text | `#5F6B65` | Supporting copy and labels |
-| Border | `#DCE2DB` | Dividers and control outlines |
-| Copper accent | `#B96345` | Small emphasis and active states |
-| Success | `#41765A` | Positive status |
-| Warning | `#9B6B2A` | Caution status |
-| Error | `#A74B43` | Error status |
+| Forest | `#0D2219` (900) · `#1D4836` (700) · `#275E48` (600) | Brand, primary actions, balance hero, navigation |
+| Sage | `#A8C7B2` (300) · `#E5EFE8` (100) · `#F1F6F2` (50) | Soft fills, selected states, icon tiles |
+| Copper | `#B9653E` (500) · `#D2875F` (400) · `#F6E7DD` (100) | The single accent: progress, current step, highlights, demo badge |
+| Ivory | `#F5F3ED` (100, page) · `#FBFAF7` (50) · `#FFFFFF` (surface) | Backgrounds and surfaces |
+| Ink | `#0E1B16` → `#5F6C66` | Text hierarchy |
+| Status | positive `#13744A`, negative `#B3322C`, warning `#8F5B00`, info `#2C5A80` (each with a soft tint) | Gains/losses, alerts, states |
+| Charts | eight-step palette `--chart-1…8` starting forest, sage, copper | Data visualisation; colorblind-safe pairings for in/out |
 
-The palette balances forest green with mineral sage, paper neutrals and a restrained copper accent. Use the dark theme tokens as documented in the page stylesheet; do not turn every surface green.
+Rules: one accent per view; gains are green and losses red **and** carry a sign (+/−) so color is never the only signal; text meets WCAG AA contrast in both themes.
 
-### Typography
+## 3. Typography
 
-| Style | Typeface | Size and weight | Line height |
-| --- | --- | --- | --- |
-| Display | Newsreader | H1 68px/500 desktop, 42px/500 small mobile; H2 46px/500 desktop, 38px/500 mobile | 1.02-1.12 |
-| Interface and body | DM Sans | Body 16px/400; lead 18px/400; H3 25px/500; small 12-14px/400-600 | 1.5-1.75 |
-| Data | JetBrains Mono | 12-14px/400-500 when numeric alignment matters | 1.4 |
-| Buttons and navigation | DM Sans | 14-15px/600-700 | 1.3 |
+* **Typeface:** Mona Sans (variable, self-hosted WOFF2 in `public/fonts/`, Latin + Latin Extended subsets, SIL OFL). Width axis is used sparingly: display text slightly condensed (`--stretch-display: 92%`), headings 96%.
+* **Numbers:** always tabular (`.num`, `.figure`) so balances align; currency symbols are part of the figure; minus is the true minus sign “−”.
+* **Scale:** `--fs-2xs` 11px → `--fs-6xl` (fluid, ~108px). Body 16px, line height 1.55–1.75 for prose.
+* **Hierarchy:** eyebrow label (uppercase, tracked, 11–12px) → headline (tight tracking −0.035em) → lede (secondary color) → body.
 
-Keep letter spacing at 0. Change type size at responsive breakpoints rather than scaling it continuously with viewport width.
+## 4. Space, shape and depth
 
-### Spacing and Surface
+* Spacing tokens `--s-1` (4px) … `--s-12` (48px) plus fluid section padding.
+* Radius scale: `--r-sm` 10 · `--r-md` 14 · `--r-lg` 20 · `--r-xl` 28 · `--r-2xl` 36 · pills.
+* Elevation: three soft shadows (`--shadow-sm/md/lg`) tinted with forest; dark theme uses deeper shadows plus hairline borders.
+* Iconography: a single stroke icon set (`public/images/icons.svg`, 1.75px strokes, rounded caps) referenced with `<use>`; icon tiles hold icons on sage.
 
-Use a 4px base rhythm with common steps at 8, 12, 16, 24, 32, 48, 64 and 96px. Use 4px radii for controls and repeated items, up to 8px for a single product-interface frame. Use soft shadows selectively on account cards, feature panels and the illustrative banking interface. Full-width bands and whitespace define the sections.
+## 5. Components (in `willow.css` and `app.css`)
 
-### Photography and Willow Motif
+Buttons (primary, secondary, ghost, light/outline-light on dark, danger; small/large/icon/block; loading state), badges and the demo badge, chips, deltas, cards and panels, form fields (labels, help, errors, input groups, amount input), switches, segmented controls, ranges, option cards, notices (info/success/warning/error/demo), disclosure notes, list rows, definition rows, tables, tabs, steppers and progress (bar and ring), skeletons, empty states, avatars, asset marks, currency flags, toasts, modal dialogs and bottom sheets (mobile), menus, bank-card mockups (forest/sage/copper/ivory/graphite, physical/virtual, frozen/inactive), charts (line, sparkline, donut, bars, columns — in-house SVG), privacy mode (`html.is-private [data-private]` blurs amounts).
 
-Use editorial everyday-life photography with natural light, human subjects and room for copy. The homepage hero tells five parts of the Willow story: everyday banking, home and family plans, small business, travel and long-term wealth. Its first scene uses the locally served banking-customer photograph; four responsive photographs currently load from the Unsplash CDN. A dark forest overlay supports white copy. The willow emblem has a curved canopy, hanging fronds and a clear trunk.
+## 6. Layout and navigation
 
-## Homepage Story
+* **Public site:** demo strip → header with mega menus (Money, Wealth, Borrow, Business, Explore) and Sign in / Open an account; full-screen mobile navigation with grouped disclosure sections; editorial footer with disclosures.
+* **Signed-in app:** left sidebar (Home, Your picture, Money, Wealth, Plan & borrow, Business, Security/Settings/Help) on desktop; top bar with “Ask Willow” (⌘K), privacy toggle, theme, notifications and profile menu; on tablet/mobile a bottom tab bar (Home, Money, Pay, Wealth, More sheet).
+* Grids: `layout-main-aside`, `layout-halves`, `layout-thirds`; content max width 1240px; 16–24px mobile gutters; no horizontal page scroll.
 
-1. Utility bar: identify personal banking and provide a direct support path.
-2. Navigation: Banking, Digital experience, Trust and security, Help, Sign in and Open an account.
-3. Hero: explain what Willow is, who it serves and the next action, with five photographs and scene-matched copy crossfading in one fixed container.
-4. Brand proposition: connect everyday clarity, room to grow and a people-first experience.
-5. Products: checking, savings, debit cards and transfers link to their existing product pages.
-6. Digital experience: show a clearly labeled illustrative account view and the practical account tasks it represents.
-7. Financial wellbeing: describe how everyday activity can sit alongside longer-term plans without implying a return or outcome.
-8. Support: offer existing Contact and About destinations.
-9. Trust: state the demo status and leave regulatory, deposit-protection, privacy and certification details as explicit launch placeholders.
-10. Closing action and footer: invite account exploration and retain the fictional-demo disclosure.
+## 7. Motion
 
-Do not use fabricated customer counts, ratings, uptime, rates, certifications, guarantees, awards or testimonials. Sample balances and transactions must remain visibly labeled as illustrative.
+* Durations `--dur-1…4` (120–560ms) and a cinematic 1.8s crossfade for hero imagery; easing `--ease-out` for entrances.
+* Micro-interactions: button press, card hover lift, count-up balances, success check drawing, flow-step fades, shake on invalid sign-in.
+* `prefers-reduced-motion` removes autoplay, drift, count-ups and transitions (instant state changes); the hero shows a still scene and its play button is disabled.
 
-## Hero and Navigation
+## 8. Imagery
 
-**Eyebrow:** Willow Banking Corp. / Personal banking.
+Warm, natural-light photography of real-life moments (everyday life, home, a small business, travel, planning for the future), always under a forest-tinted scrim for legible white type. Two portraits are served locally; others load from Unsplash with gradient fallbacks so the layout never breaks if images are blocked. Interface “vignettes” over photos are labelled **Illustrative**.
 
-**Headline:** Your money. Moving forward.
+## 9. Key experiences
 
-**Supporting copy:** Everyday accounts, cards, transfers and clear digital tools, brought together around the life you're building.
+* **Homepage:** five-scene crossfading hero (“For everyday life.” → “For what you’re building.” → “For what’s next.”), autoplay with pause on hover/focus/interaction and when hidden, scene tabs, then Everyday banking, Grow your money (live delayed market panel), “What are you working toward?” goal picker, Willow Hub, Security, and “Where will your money take you?”.
+* **Sign in:** split screen with fading imagery; Email or customer ID; states for loading, incorrect password (with attempts left), paused (locked), suspended, session timeout, signed out and password reset; other methods (guest profile, recovery code, customer ID); two-step verification.
+* **Sign up:** six steps with progress — Welcome, About you, Account, Security, Verify (clearly **simulated** identity check), Done (customer ID and next steps).
+* **Payments:** recipient → amount → account → review → confirm → success (“Money sent · $45.00 · To Lucas Moreau · Today · 2:50 PM”), with confirmation of payee and saved payees.
+* **Wealth:** portfolio dashboard, markets, stock/crypto detail with 1D–MAX charts, simulated buy/sell with receipts stating “This is a simulated transaction. No real securities are purchased.”
+* **Willow Hub:** net worth and composition, money movement, categories, investments, goals, insights and an assistant that answers only from the customer’s own records.
 
-**Primary action:** Open an account.
+## 10. Accessibility and quality bar
 
-**Secondary action:** Explore banking.
-
-The hero stacks five photographs in the same full-size container and crossfades them over 800ms with cubic-bezier(0.35, 0, 0, 1). Copy, links and the decorative photograph advance together. The first photo is a local WebP; the four later scenes use Unsplash image URLs with 768px/1536px `srcset` candidates. Replace external sources with controlled, locally optimized AVIF/WebP assets before production use. Text and lower shading remain separate HTML/CSS above the images.
-
-On phones, keep the overlapping photographs in the upper 48% of the stage and the copy below them on forest green. Both scenes retain the same dimensions.
-
-Navigation stays flat; the current product set does not need dropdowns. On compact screens, links move into a keyboard-operable menu with an exposed expanded state and Escape-to-close behavior.
-
-## Components
-
-**Buttons:** Forest primary action, high-contrast light hero action, and underlined text links for secondary navigation. Use clear labels and visible focus rings.
-
-**Product links:** Four unframed, numbered items with a small icon field, concise description and direct route. Hover states are subtle and do not alter layout dimensions.
-
-**Digital preview:** One framed, clearly illustrative sample experience, with a soft layered shadow. Keep balances and labels as live HTML.
-
-**Depth:** Selected photo/feature cards and the digital preview lift by 4px and tilt by 1 degree on desktop hover. Account and balance cards have static soft shadows. Hover motion requires a fine pointer, hover support and no reduced-motion preference. Touchscreens and reduced-motion settings disable these transforms and transitions. The hero stays a flat photographic composition.
-
-**Trust content:** A plain-language disclosure section with `[To be confirmed before production use]` placeholders for regulatory, deposit-protection, privacy and security-certification information until verified details exist.
-
-**Forms:** Keep the existing accessible labels and validation patterns in the application. Apply the Willow type, text, border and focus tokens when those forms are rebranded.
-
-**Footer:** Keep product, company and legal destinations visible, and retain the demo-platform notice.
-
-## Animation
-
-After the first local photo is ready, enhance the hero into a sticky stage beneath the navigation. The stage fills the available viewport and has 190svh of scroll travel. Five scene states are selected across that travel; the framed photograph expands while scene-matched copy fades between states, then the stage releases into the page. Upward scrolling reverses the sequence. Before user interaction, scenes also crossfade every ten seconds. Pointer, focus, keyboard, wheel and touch interaction pause autoplay; the visible pause/resume control can restart it. Inactive copy is inert and aria-hidden. A progress line and changing scene cue explain the sequence. Short viewports fall back to normal flow to keep controls reachable. Section copy reveals once as it enters the viewport. Avoid continuous number counters, parallax and large moving shapes.
-
-For `prefers-reduced-motion: reduce`, disable autoplay and sticky scroll changes, retain the first static scene, and remove entrance/reveal movement.
-
-## Responsive Behavior
-
-**Desktop:** Five-scene sticky editorial hero, four-column product row, two-column digital preview, and wide trust band.
-
-**Tablet:** Keep both image layers identically aligned; change product links to two columns and stack experience and trust layouts where needed.
-
-**Mobile:** Crossfade in a compact fixed photo area with identical cover crops, followed by readable scene copy and calls to action. Keep the scene cue and pause control reachable above the lower edge. Use a 44px hero heading, expose navigation through the menu button, and collapse product links to one column. Keep the dashboard sample narrow and wrap its account rows without horizontal scrolling.
-
-## Accessibility and Performance
-
-Use semantic sections and heading order, keep decorative hero photos hidden from assistive technology, expose active scene copy and an accessible pause/resume control, and retain expanded states, Escape-to-close navigation and visible focus. Ensure the first scene remains available without JavaScript.
-
-Responsive hero images use `srcset`, `sizes`, asynchronous decoding and lazy loading after the first scene; the first local image has `fetchpriority="high"`. Production must replace external CDN images with a controlled asset host in AVIF/WebP at correct dimensions. Keep images separate and animate only opacity. The first image remains visible without JavaScript, and inactive images/copy are hidden from the accessibility tree.
-
-## Production Readiness
-
-Willow is currently a fictional demonstration platform. Before presenting it as a real financial institution, replace every regulatory, deposit-protection, privacy and security placeholder with independently verified, jurisdiction-appropriate information and have the product and claims reviewed.
-## Authentication and emblem update
-
-Sign-in and two-step registration use a forest campaign panel and warm ivory form surface, Newsreader headings and DM Sans labels. At phone widths the form takes the full width. All form controls have labels, visible focus, password visibility controls and explicit errors. The SVG emblem shows a curved willow canopy, hanging fronds and a trunk in an evergreen circle with a subtle copper ground line. No rasterized text or generated logo is used.
+Semantic landmarks and headings, skip link, visible focus rings (`--ring`), labelled controls, roving tabindex for tabs and segmented controls, `aria-live` for asynchronous results, dialogs with focus management, 44px touch targets, color never the sole signal, privacy mode for shared screens, and an automated crawl that fails on broken internal links or placeholder output.

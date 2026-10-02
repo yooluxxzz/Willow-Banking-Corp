@@ -1,0 +1,64 @@
+<%
+  const basePath = kind === 'guide' ? '/learn' : '/insights';
+  const [featured, ...rest] = list;
+%><%- include('partials/head', { css: ['site'], bodyClass: 'articles-page' }) %>
+<%- include('partials/site-header') %>
+<main id="main">
+    <section class="page-hero">
+        <div class="container">
+            <nav aria-label="Breadcrumb"><ol class="breadcrumbs"><li><a href="/">Willow</a></li><li>Explore</li><li aria-current="page"><%= title %></li></ol></nav>
+            <div class="section-intro is-split mt-6" style="margin-bottom:0">
+                <div>
+                    <p class="eyebrow"><%= kind === 'guide' ? 'Willow Education' : 'Willow Insights' %></p>
+                    <h1 class="h1"><%= heading %></h1>
+                </div>
+                <div class="stack">
+                    <p class="lede"><%= intro %></p>
+                    <a class="link-arrow" href="<%= other.href %>">Browse <%= other.label.toLowerCase() %> <%- icon('arrow-right') %></a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <% if (featured) { %>
+    <section class="section-tight">
+        <div class="container">
+            <a class="article-feature card-interactive reveal" href="<%= basePath %>/<%= featured.slug %>">
+                <div class="article-card-art art-tone-1"><%- icon(featured.icon) %></div>
+                <div class="article-feature-body">
+                    <p class="article-meta"><span><%= featured.category %></span><span class="dot"></span><span><%= featured.readingMinutes %> min read</span><% if (featured.level) { %><span class="dot"></span><span><%= featured.level %></span><% } %></p>
+                    <h2 class="h3"><%= featured.title %></h2>
+                    <p class="secondary"><%= featured.dek %></p>
+                    <span class="link-arrow">Read <%= kind === 'guide' ? 'the guide' : 'the article' %> <%- icon('arrow-right') %></span>
+                </div>
+            </a>
+        </div>
+    </section>
+    <% } %>
+
+    <section class="section-tight">
+        <div class="container">
+            <div class="article-grid">
+                <% rest.forEach((article, index) => { %>
+                <a class="article-card card-interactive reveal" href="<%= basePath %>/<%= article.slug %>" style="--reveal-delay: <%= (index % 3) * 70 %>ms">
+                    <div class="article-card-art art-tone-<%= (index % 5) + 2 %>"><%- icon(article.icon) %></div>
+                    <div class="article-card-body">
+                        <p class="article-meta"><span><%= article.category %></span><span class="dot"></span><span><%= article.readingMinutes %> min</span><% if (article.level) { %><span class="dot"></span><span><%= article.level %></span><% } %></p>
+                        <h3><%= article.title %></h3>
+                        <p><%= article.dek %></p>
+                        <span class="article-card-foot link-arrow">Read <%- icon('arrow-right') %></span>
+                    </div>
+                </a>
+                <% }) %>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <div class="disclosure-note"><%- icon('info') %><p>Willow Insights and Education are general information, not financial, investment, tax or legal advice. Willow is a fictional demonstration platform.</p></div>
+        </div>
+    </section>
+</main>
+<%- include('partials/site-footer') %>
+<%- include('partials/foot') %>

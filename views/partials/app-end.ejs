@@ -1,0 +1,51 @@
+<% const isAdminEnd = user && user.role === 'admin'; %>
+            <footer class="app-footnote">
+                <p><span class="demo-badge">Demo</span> Willow is a fictional bank. Balances, cards, transfers and investments are simulated — no real money moves.</p>
+                <p><a href="/demo">How the demo works</a> · <a href="/privacy">Privacy</a> · <a href="/help">Help</a></p>
+            </footer>
+        </main>
+    </div>
+    <% if (!isAdminEnd) { %>
+    <nav class="app-tabbar" aria-label="Quick navigation">
+        <% appTabs.forEach(tab => { const current = isCurrentNav(tab); %>
+        <a href="<%= tab.href %>" class="app-tab<%= tab.primary ? ' is-primary' : '' %>"<%- current ? ' aria-current="page"' : '' %>>
+            <span class="app-tab-icon"><%- icon(tab.icon, 'icon-md') %></span><span><%= tab.label %></span>
+        </a>
+        <% }) %>
+        <button type="button" class="app-tab" data-sheet-open="moreSheet" aria-haspopup="dialog" aria-controls="moreSheet">
+            <span class="app-tab-icon"><%- icon('grid', 'icon-md') %></span><span>More</span>
+        </button>
+    </nav>
+    <dialog class="sheet" id="moreSheet" aria-labelledby="moreSheetTitle">
+        <div class="sheet-handle" aria-hidden="true"></div>
+        <div class="sheet-head">
+            <h2 id="moreSheetTitle">Everything in Willow</h2>
+            <button type="button" class="btn btn-ghost btn-icon" data-sheet-close aria-label="Close"><%- icon('x', 'icon-md') %></button>
+        </div>
+        <div class="sheet-body">
+            <% appNavigation.forEach(group => { %>
+            <div class="sheet-group">
+                <% if (group.label) { %><p class="app-nav-label"><%= group.label %></p><% } %>
+                <ul role="list" class="sheet-grid">
+                    <% group.items.forEach(item => { %>
+                    <li><a href="<%= item.href %>"<%- isCurrentNav(item) ? ' aria-current="page"' : '' %>><span class="icon-tile icon-tile-sm"><%- icon(item.icon) %></span><%= item.label %></a></li>
+                    <% }) %>
+                </ul>
+            </div>
+            <% }) %>
+            <div class="sheet-group">
+                <p class="app-nav-label">Account</p>
+                <ul role="list" class="sheet-grid">
+                    <li><a href="/notifications"><span class="icon-tile icon-tile-sm"><%- icon('bell') %></span>Notifications</a></li>
+                    <% appSecondaryNavigation.forEach(item => { %>
+                    <li><a href="<%= item.href %>"><span class="icon-tile icon-tile-sm"><%- icon(item.icon) %></span><%= item.label %></a></li>
+                    <% }) %>
+                </ul>
+            </div>
+            <button type="button" class="btn btn-secondary btn-block" data-logout><%- icon('logout') %> Sign out</button>
+        </div>
+    </dialog>
+    <%- include('ask-panel') %>
+    <% } %>
+</div>
+<%- include('foot', { js: ['charts'].concat(typeof js !== 'undefined' ? js : []) }) %>

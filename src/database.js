@@ -142,7 +142,7 @@ async function initializeDatabase() {
             reference TEXT NOT NULL UNIQUE,
             sender_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
             recipient_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-            symbol TEXT NOT NULL CHECK(symbol IN ('BTC', 'ETH')),
+            symbol TEXT NOT NULL CHECK(length(symbol) BETWEEN 2 AND 10),
             quantity REAL NOT NULL CHECK(quantity > 0),
             created_at TEXT NOT NULL DEFAULT (datetime('now')),
             CHECK(sender_user_id != recipient_user_id)
@@ -180,6 +180,104 @@ async function initializeDatabase() {
       title TEXT NOT NULL,
       message TEXT NOT NULL,
       is_read INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS payees (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      recipient_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      nickname TEXT NOT NULL DEFAULT '',
+      last_paid_at TEXT DEFAULT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(user_id, recipient_user_id),
+      CHECK(user_id != recipient_user_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS user_preferences (
+      user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      alert_transactions INTEGER NOT NULL DEFAULT 1,
+      alert_large_threshold_cents INTEGER NOT NULL DEFAULT 50000,
+      alert_cards INTEGER NOT NULL DEFAULT 1,
+      alert_security INTEGER NOT NULL DEFAULT 1,
+      alert_markets INTEGER NOT NULL DEFAULT 0,
+      alert_product_news INTEGER NOT NULL DEFAULT 0,
+      privacy_hide_balances INTEGER NOT NULL DEFAULT 0,
+      privacy_personalized_insights INTEGER NOT NULL DEFAULT 1,
+      sample_data_loaded_at TEXT DEFAULT NULL,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS two_factor (
+      user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      secret_encrypted TEXT NOT NULL,
+      enabled_at TEXT DEFAULT NULL,
+      last_used_step INTEGER DEFAULT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS business_profiles (
+      user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      industry TEXT NOT NULL DEFAULT '',
+      country TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS business_invoices (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      number TEXT NOT NULL,
+      customer_name TEXT NOT NULL,
+      customer_email TEXT NOT NULL DEFAULT '',
+      description TEXT NOT NULL DEFAULT '',
+      amount INTEGER NOT NULL CHECK(amount > 0),
+      currency TEXT NOT NULL DEFAULT 'USD',
+      issued_on TEXT NOT NULL,
+      due_on TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open', 'paid', 'void')),
+      paid_at TEXT DEFAULT NULL,
+      paid_account_id INTEGER REFERENCES accounts(id),
+      transaction_reference TEXT DEFAULT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(user_id, number)
+    );
+
+    CREATE TABLE IF NOT EXISTS business_team_members (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL COLLATE NOCASE,
+      role TEXT NOT NULL CHECK(role IN ('admin', 'approver', 'cardholder', 'viewer')),
+      status TEXT NOT NULL DEFAULT 'invited' CHECK(status IN ('invited', 'removed')),
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(user_id, email)
+    );
+
+    CREATE TABLE IF NOT EXISTS loan_estimates (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      kind TEXT NOT NULL CHECK(kind IN ('personal', 'mortgage', 'business', 'credit')),
+      label TEXT NOT NULL DEFAULT '',
+      principal_cents INTEGER NOT NULL CHECK(principal_cents > 0),
+      annual_rate_bps INTEGER NOT NULL CHECK(annual_rate_bps >= 0),
+      term_months INTEGER NOT NULL CHECK(term_months > 0),
+      monthly_payment_cents INTEGER NOT NULL CHECK(monthly_payment_cents >= 0),
+      total_interest_cents INTEGER NOT NULL CHECK(total_interest_cents >= 0),
+      details TEXT NOT NULL DEFAULT '{}',
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS support_requests (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      reference TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL,
+      topic TEXT NOT NULL,
+      message TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'received',
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
@@ -236,15 +334,75 @@ async function initializeDatabase() {
         "ALTER TABLE users ADD COLUMN auth_version INTEGER NOT NULL DEFAULT 0",
         "ALTER TABLE users ADD COLUMN status_reason TEXT DEFAULT NULL",
         "ALTER TABLE users ADD COLUMN scheduled_deletion_at TEXT DEFAULT NULL",
+        "ALTER TABLE users ADD COLUMN country TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE users ADD COLUMN is_guest INTEGER NOT NULL DEFAULT 0",
+        "ALTER TABLE cards ADD COLUMN form TEXT NOT NULL DEFAULT 'physical'",
+        "ALTER TABLE cards ADD COLUMN nickname TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE cards ADD COLUMN design TEXT NOT NULL DEFAULT 'forest'",
+        "ALTER TABLE cards ADD COLUMN holder_name TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE cards ADD COLUMN online_enabled INTEGER NOT NULL DEFAULT 1",
+        "ALTER TABLE cards ADD COLUMN contactless_enabled INTEGER NOT NULL DEFAULT 1",
+        "ALTER TABLE cards ADD COLUMN atm_enabled INTEGER NOT NULL DEFAULT 1",
+        "ALTER TABLE cards ADD COLUMN international_enabled INTEGER NOT NULL DEFAULT 1",
+        "ALTER TABLE cards ADD COLUMN notifications_enabled INTEGER NOT NULL DEFAULT 1",
+        "ALTER TABLE transactions ADD COLUMN category TEXT DEFAULT NULL",
+        "ALTER TABLE transactions ADD COLUMN counterparty TEXT DEFAULT NULL",
+        "ALTER TABLE transactions ADD COLUMN card_id INTEGER DEFAULT NULL",
     ];
     migrations.forEach(m => { try { db.run(m); } catch (e) { /* column already exists */ } });
     db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_opening_key ON accounts(user_id, opening_key)');
+    [
+        'CREATE INDEX IF NOT EXISTS idx_payees_user ON payees(user_id)',
+        'CREATE INDEX IF NOT EXISTS idx_invoices_user ON business_invoices(user_id, status)',
+        'CREATE INDEX IF NOT EXISTS idx_team_user ON business_team_members(user_id)',
+        'CREATE INDEX IF NOT EXISTS idx_loan_estimates_user ON loan_estimates(user_id, created_at)',
+        'CREATE INDEX IF NOT EXISTS idx_support_user ON support_requests(user_id, created_at)',
+        'CREATE INDEX IF NOT EXISTS idx_transactions_account_created ON transactions(account_id, created_at)',
+    ].forEach(statement => db.run(statement));
+    migrateCryptoTransfers();
 
     // Auto-save to disk every 5 seconds
     saveTimer = setInterval(() => saveToDisk(), 5000);
     saveToDisk();
 
     return db;
+}
+
+/**
+ * The first demo wallet only allowed BTC and ETH sends. Rebuild the table once so
+ * every supported demo crypto asset can move between Willow profiles; the
+ * application validates symbols against the market universe.
+ */
+function migrateCryptoTransfers() {
+    const stmt = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'demo_crypto_transfers'");
+    const definition = stmt.step() ? stmt.get()[0] : '';
+    stmt.free();
+    if (!/symbol IN \('BTC', 'ETH'\)/.test(definition || '')) return;
+    db.run('PRAGMA foreign_keys = OFF');
+    try {
+        db.run('BEGIN');
+        db.run(`CREATE TABLE demo_crypto_transfers_v2 (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            reference TEXT NOT NULL UNIQUE,
+            sender_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            recipient_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            symbol TEXT NOT NULL CHECK(length(symbol) BETWEEN 2 AND 10),
+            quantity REAL NOT NULL CHECK(quantity > 0),
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            CHECK(sender_user_id != recipient_user_id)
+        )`);
+        db.run('INSERT INTO demo_crypto_transfers_v2 SELECT id, reference, sender_user_id, recipient_user_id, symbol, quantity, created_at FROM demo_crypto_transfers');
+        db.run('DROP TABLE demo_crypto_transfers');
+        db.run('ALTER TABLE demo_crypto_transfers_v2 RENAME TO demo_crypto_transfers');
+        db.run('CREATE INDEX IF NOT EXISTS idx_demo_crypto_transfers_sender ON demo_crypto_transfers(sender_user_id, created_at)');
+        db.run('CREATE INDEX IF NOT EXISTS idx_demo_crypto_transfers_recipient ON demo_crypto_transfers(recipient_user_id, created_at)');
+        db.run('COMMIT');
+    } catch (error) {
+        db.run('ROLLBACK');
+        throw error;
+    } finally {
+        db.run('PRAGMA foreign_keys = ON');
+    }
 }
 
 /**

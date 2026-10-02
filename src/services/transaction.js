@@ -3,6 +3,7 @@
  */
 const { getDb } = require('../database');
 const { formatCurrency, fromCents } = require('../middleware/validation');
+const { categorize, categoryMeta } = require('./categories');
 
 function getTransactions(accountId, { page = 1, limit = 20, type, status, search, dateFrom, dateTo, sort = 'desc' } = {}) {
     const db = getDb();
@@ -129,10 +130,13 @@ function getAllTransactions({ page = 1, limit = 20, type, status, search, dateFr
 function formatTransaction(txn) {
     return {
         ...txn,
-        amountFormatted: formatCurrency(txn.amount),
+        amountFormatted: formatCurrency(txn.amount, txn.currency || 'USD'),
         amountDollars: fromCents(txn.amount),
         relatedAccountMasked: txn.related_account_number
             ? '••••' + txn.related_account_number.slice(-4) : null,
+        categoryKey: categorize(txn),
+        categoryLabel: categoryMeta(categorize(txn)).label,
+        categoryIcon: categoryMeta(categorize(txn)).icon,
     };
 }
 

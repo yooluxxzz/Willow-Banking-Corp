@@ -1,0 +1,130 @@
+<%
+  const flowData = {
+    accounts: accounts.map(account => ({ id: account.id, name: account.displayName, masked: account.maskedNumber, currency: account.currency, balance: account.balanceFormatted, available: account.available_balance, kind: account.kind })),
+    payees: payees.filter(payee => payee.active).map(payee => ({ id: payee.id, name: payee.displayName, fullName: payee.name, email: payee.email, lastPaid: payee.last_paid_at })),
+    preselect,
+  };
+  const suggestions = ['maria.silva@community.willow.test', 'daniel.okafor@community.willow.test', 'priya.raman@community.willow.test'];
+%><%- include('../partials/app-start', { css: [] }) %>
+
+<div class="flow flow-wide" data-transfer-flow>
+    <div class="flow-head">
+        <div class="flow-title-row">
+            <h1 class="page-head-title">Send money</h1>
+            <a class="btn btn-ghost btn-sm" href="/payees"><%- icon('users', 'icon-sm') %> Payees</a>
+        </div>
+        <ol class="stepper mt-6" aria-hidden="true"><li class="is-current" data-flow-dot="0"></li><li data-flow-dot="1"></li><li data-flow-dot="2"></li><li data-flow-dot="3"></li><li data-flow-dot="4"></li></ol>
+        <p class="flow-step-label"><span data-flow-label>Step 1 of 5 · Recipient</span><span class="sim-tag">Simulated</span></p>
+    </div>
+
+    <% if (!accounts.length) { %>
+    <div class="panel"><div class="empty"><div class="empty-art"><%- icon('wallet') %></div><h3>No active accounts</h3><p>Open an account and add money before sending.</p><a class="btn btn-primary btn-sm" href="/accounts/new">Open an account</a></div></div>
+    <% } else { %>
+    <form class="flow-card" id="transferForm" novalidate>
+        <!-- 1 · Recipient -->
+        <section class="flow-pane" data-flow-pane="0" aria-labelledby="recipientTitle">
+            <h2 id="recipientTitle">Who are you paying?</h2>
+            <div class="segmented mt-5" role="tablist" aria-label="Recipient type">
+                <button type="button" role="tab" id="tabSomeone" aria-controls="panelSomeone" aria-selected="true" data-mode="someone">Someone</button>
+                <button type="button" role="tab" id="tabOwn" aria-controls="panelOwn" aria-selected="false" data-mode="own" tabindex="-1">My accounts</button>
+            </div>
+
+            <div id="panelSomeone" role="tabpanel" aria-labelledby="tabSomeone" data-mode-panel="someone">
+                <% if (payees.length > 4) { %>
+                <div class="search-field mt-5"><div class="input-group"><%- icon('search') %><input class="input" type="search" placeholder="Search payees" aria-label="Search payees" data-payee-search autocomplete="off"></div></div>
+                <% } %>
+                <% if (payees.length) { %><p class="label mt-5">Saved payees</p><% } %>
+                <div class="pick-list" data-payee-list></div>
+                <details class="new-recipient mt-5" data-new-recipient<%= payees.length ? '' : ' open' %>>
+                    <summary><span class="icon-tile icon-tile-sm"><%- icon('plus') %></span><span><strong>New recipient</strong><small>Pay another Willow customer by email</small></span></summary>
+                    <div class="new-recipient-body">
+                        <div class="field">
+                            <label for="recipientEmail">Their Willow email</label>
+                            <div class="input-group"><input class="input input-lg" id="recipientEmail" type="email" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="255" placeholder="name@example.com" aria-describedby="recipientHelp recipientError"><button type="button" class="btn btn-secondary btn-sm lookup-btn" data-lookup>Check</button></div>
+                            <p class="field-help" id="recipientHelp">Try a demo customer: <% suggestions.forEach((email, index) => { %><button type="button" class="text-link text-sm" data-suggest="<%= email %>"><%= email.split('@')[0].replace('.', ' ').replace(/\b\w/g, c => c.toUpperCase()) %></button><%= index < suggestions.length - 1 ? ', ' : '' %><% }) %></p>
+                            <p class="field-error" id="recipientError" hidden></p>
+                        </div>
+                        <div class="payee-match" data-payee-match hidden></div>
+                        <label class="check-row" data-save-payee-row hidden><input type="checkbox" id="savePayee" checked><span>Save as a payee for next time</span></label>
+                    </div>
+                </details>
+            </div>
+
+            <div id="panelOwn" role="tabpanel" aria-labelledby="tabOwn" data-mode-panel="own" hidden>
+                <p class="label mt-5">Move money to</p>
+                <div class="pick-list" data-own-list></div>
+            </div>
+            <div class="flow-actions"><span></span><button type="button" class="btn btn-primary btn-lg" data-next disabled>Continue</button></div>
+        </section>
+
+        <!-- 2 · Amount -->
+        <section class="flow-pane" data-flow-pane="1" aria-labelledby="amountTitle" hidden>
+            <h2 id="amountTitle">How much?</h2>
+            <p data-amount-to></p>
+            <div class="field mt-6">
+                <label for="amount" class="visually-hidden">Amount</label>
+                <div class="amount-input"><span class="amount-currency" data-amount-symbol>$</span><input class="input amount-field" id="amount" inputmode="decimal" autocomplete="off" placeholder="0.00" aria-describedby="amountError"></div>
+                <div class="cluster mt-3" role="group" aria-label="Quick amounts">
+                    <% [20, 50, 100, 250].forEach(value => { %><button type="button" class="chip chip-sm" data-preset="<%= value %>"><span data-amount-symbol>$</span><%= value %></button><% }) %>
+                </div>
+                <p class="field-error" id="amountError" hidden></p>
+            </div>
+            <div class="field">
+                <label for="note">Reference <span class="optional">· optional</span></label>
+                <input class="input" id="note" maxlength="140" placeholder="What’s it for?">
+            </div>
+            <div class="flow-actions"><button type="button" class="btn btn-ghost" data-back><%- icon('arrow-left', 'icon-sm') %> Back</button><button type="button" class="btn btn-primary btn-lg" data-next>Continue</button></div>
+        </section>
+
+        <!-- 3 · Source account -->
+        <section class="flow-pane" data-flow-pane="2" aria-labelledby="fromTitle" hidden>
+            <h2 id="fromTitle">Pay from</h2>
+            <p>Payments are sent in the account’s own currency.</p>
+            <div class="pick-list" data-from-list></div>
+            <p class="field-error mt-3" data-from-error hidden></p>
+            <div class="flow-actions"><button type="button" class="btn btn-ghost" data-back><%- icon('arrow-left', 'icon-sm') %> Back</button><button type="button" class="btn btn-primary btn-lg" data-next disabled>Review</button></div>
+        </section>
+
+        <!-- 4 · Review -->
+        <section class="flow-pane" data-flow-pane="3" aria-labelledby="reviewTitle" hidden>
+            <h2 id="reviewTitle">Review your payment</h2>
+            <div class="review-hero">
+                <span class="avatar avatar-lg" data-review-initials></span>
+                <p class="review-amount figure" data-review-amount data-private></p>
+                <p class="secondary" data-review-to></p>
+            </div>
+            <dl class="dl-rows mt-6">
+                <div><dt>From</dt><dd data-review-from></dd></div>
+                <div><dt>Reference</dt><dd data-review-note></dd></div>
+                <div><dt>Arrives</dt><dd>Instantly</dd></div>
+                <div><dt>Fee</dt><dd>None</dd></div>
+            </dl>
+            <div class="notice notice-demo mt-6"><%- icon('info') %><div>This is a simulated payment between Willow demo profiles. No real money moves and nothing leaves Willow.</div></div>
+            <p class="field-error mt-4" data-submit-error role="alert" tabindex="-1" hidden></p>
+            <div class="flow-actions"><button type="button" class="btn btn-ghost" data-back><%- icon('arrow-left', 'icon-sm') %> Edit</button><button type="submit" class="btn btn-primary btn-lg" data-confirm>Send money</button></div>
+        </section>
+
+        <!-- 5 · Done -->
+        <section class="flow-pane receipt" data-flow-pane="4" aria-labelledby="doneTitle" hidden>
+            <div class="success-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+            <h2 id="doneTitle" data-done-title>Money sent</h2>
+            <p class="receipt-amount" data-done-amount data-private></p>
+            <p class="receipt-to" data-done-to></p>
+            <p class="muted text-sm mt-2" data-done-when></p>
+            <dl class="dl-rows receipt-meta">
+                <div><dt>From</dt><dd data-done-from></dd></div>
+                <div><dt>Reference</dt><dd class="mono" data-done-ref></dd></div>
+                <div><dt>Status</dt><dd><span class="status-pill is-completed">Completed</span></dd></div>
+            </dl>
+            <p class="sim-note"><%- icon('info', 'icon-sm') %> Simulated payment. No real money moved.</p>
+            <div class="flow-actions is-center">
+                <a class="btn btn-secondary" href="/transfers">Send another</a>
+                <a class="btn btn-primary" href="/dashboard">Done</a>
+            </div>
+        </section>
+    </form>
+    <% } %>
+</div>
+
+<script type="application/json" id="transferData"><%- JSON.stringify(flowData).replace(/</g, '\\u003c') %></script>
+<%- include('../partials/app-end', { js: ['transfers'] }) %>

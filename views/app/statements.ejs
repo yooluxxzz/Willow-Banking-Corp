@@ -1,0 +1,53 @@
+<%- include('../partials/app-start', { css: [] }) %>
+
+<header class="page-head">
+    <div class="page-head-copy">
+        <h1 class="page-head-title">Statements</h1>
+        <p class="page-head-sub">View a statement for any period up to a year, or download it as a PDF.</p>
+    </div>
+</header>
+
+<% if (!accounts.length) { %>
+<div class="panel"><div class="empty"><div class="empty-art"><%- icon('file') %></div><h3>No accounts yet</h3><p>Statements appear once you have an account.</p><a class="btn btn-primary btn-sm" href="/accounts/new">Open an account</a></div></div>
+<% } else { %>
+<div class="layout-main-aside statements-layout">
+    <div class="col-stack">
+        <div id="stmtResult" aria-live="polite" aria-busy="false">
+            <div class="panel"><div class="empty"><div class="empty-art"><%- icon('file') %></div><h3>Choose a period</h3><p>Pick an account and dates, then select View statement.</p></div></div>
+        </div>
+    </div>
+    <aside>
+        <form id="statementForm" class="panel" novalidate>
+            <div class="panel-head"><h2>Statement options</h2></div>
+            <div class="field">
+                <label for="stmtAccount">Account</label>
+                <select class="select" id="stmtAccount" name="accountId" required>
+                    <% accounts.forEach(account => { %><option value="<%= account.id %>"<%- account.id === selectedAccountId ? ' selected' : '' %>><%= account.displayName %> · <%= account.maskedNumber %></option><% }) %>
+                </select>
+            </div>
+            <div class="field">
+                <label for="statementPreset">Period</label>
+                <select class="select" id="statementPreset">
+                    <option value="current">This month so far</option>
+                    <option value="previous">Last month</option>
+                    <option value="quarter">Last 3 months</option>
+                    <option value="year">This year</option>
+                    <option value="custom">Custom dates</option>
+                </select>
+            </div>
+            <div class="field-grid mt-5">
+                <div class="field"><label for="dateFrom">From</label><input class="input" type="date" id="dateFrom" name="dateFrom" required></div>
+                <div class="field"><label for="dateTo">To</label><input class="input" type="date" id="dateTo" name="dateTo" required></div>
+            </div>
+            <p class="text-sm muted mt-4" id="statementStatus" role="status">Dates use UTC. Periods can be up to 366 days.</p>
+            <div class="stack stack-sm mt-5">
+                <button type="submit" class="btn btn-primary btn-block">View statement</button>
+                <button type="button" class="btn btn-secondary btn-block" id="downloadStatement"><%- icon('download') %> Download PDF</button>
+            </div>
+            <p class="text-xs muted mt-4">Statements are generated from simulated activity and are not valid proof of address, income or funds.</p>
+        </form>
+    </aside>
+</div>
+<% } %>
+
+<%- include('../partials/app-end', { js: ['statements'] }) %>

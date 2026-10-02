@@ -39,7 +39,7 @@ describe('Scheduled demo transfers', () => {
         assert.equal(hub.body.summary.scheduledTransfers[0].id, created.body.transfer.id);
         assert.equal(hub.body.summary.scheduledTransferCount, 1);
         const answer = await owner.agent.post('/api/hub/ask').set('X-CSRF-Token', owner.csrfToken).send({ question: 'What transfers are scheduled?' });
-        assert.match(answer.body.answer, /pending scheduled demo transfer/);
+        assert.match(answer.body.answer, /You have 1 scheduled transfer/);
         assert.deepEqual(db.prepare('SELECT id, balance FROM accounts WHERE user_id = (SELECT id FROM users WHERE email = ?) ORDER BY id').all('schedule-owner@example.test'), before);
         assert.deepEqual((await other.agent.get('/api/scheduled-transfers')).body.transfers, []);
         assert.equal((await other.agent.delete(`/api/scheduled-transfers/${created.body.transfer.id}`).set('X-CSRF-Token', other.csrfToken)).status, 404);

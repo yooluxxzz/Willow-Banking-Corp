@@ -1,0 +1,170 @@
+<%
+  const live = cards.filter(card => ['active', 'frozen'].includes(card.status));
+  const past = cards.filter(card => !live.includes(card));
+  const selected = live.find(card => card.id === selectedCardId) || live[0] || null;
+  const controls = [
+    ['online', 'Online purchases', 'Shopping on websites and in apps', 'globe'],
+    ['contactless', 'Contactless', 'Tap to pay in shops', 'contactless'],
+    ['atm', 'ATM withdrawals', 'Cash from cash machines', 'atm'],
+    ['international', 'International use', 'Payments abroad and in other currencies', 'plane'],
+    ['notifications', 'Payment alerts', 'A notification for every card payment', 'bell'],
+  ];
+  const designs = [['forest', 'Forest'], ['sage', 'Sage'], ['copper', 'Copper'], ['ivory', 'Ivory'], ['graphite', 'Graphite']];
+  const symbols = { USD: '$', EUR: '€', GBP: '£', ZAR: 'R', MZN: 'MT' };
+%><%- include('../partials/app-start', { css: [] }) %>
+
+<header class="page-head">
+    <div class="page-head-copy">
+        <h1 class="page-head-title">Cards</h1>
+        <p class="page-head-sub">Freeze, limit and control your cards instantly. No live payments — every card is a demo.</p>
+    </div>
+    <div class="page-head-actions">
+        <% if (live.length) { %><button type="button" class="btn btn-secondary" data-freeze-all><%- icon('snowflake') %> Freeze all</button><% } %>
+        <button type="button" class="btn btn-primary" data-new-card<%= accounts.length ? '' : ' disabled' %>><%- icon('plus') %> New card</button>
+    </div>
+</header>
+
+<% if (notice) { %><div class="notice notice-success mb-6" role="status"><%- icon('check-circle') %><div><%= notice %></div></div><% } %>
+
+<% if (!live.length) { %>
+<div class="panel"><div class="empty"><div class="empty-art"><%- icon('card') %></div><h3>No active cards</h3><p>Create a physical or virtual demo card linked to one of your accounts.</p><% if (accounts.length) { %><button type="button" class="btn btn-primary btn-sm" data-new-card>New card</button><% } %></div></div>
+<% } else { %>
+<div class="card-switcher" role="tablist" aria-label="Your cards">
+    <% live.forEach(card => { %>
+    <button type="button" role="tab" class="card-switch" id="cardTab<%= card.id %>" aria-controls="cardPanel<%= card.id %>" aria-selected="<%= card === selected %>" tabindex="<%= card === selected ? 0 : -1 %>" data-card-tab="<%= card.id %>">
+        <%- include('../partials/bank-card', { card, size: 'xs' }) %>
+        <span class="card-switch-label"><strong><%= card.displayName %></strong><small>•••• <%= card.last_four %><%= card.status === 'frozen' ? ' · Frozen' : '' %></small></span>
+    </button>
+    <% }) %>
+</div>
+
+<% live.forEach(card => { const currency = card.currency || 'USD'; const isFrozen = card.status === 'frozen'; %>
+<section class="card-panel" id="cardPanel<%= card.id %>" role="tabpanel" aria-labelledby="cardTab<%= card.id %>" data-card-panel="<%= card.id %>" data-card-status="<%= card.status %>" data-last-four="<%= card.last_four %>" data-currency="<%= currency %>"<%= card === selected ? '' : ' hidden' %>>
+    <div class="layout-main-aside">
+        <div class="col-stack">
+            <div class="panel card-stage">
+                <div class="card-stage-visual" data-card-visual><%- include('../partials/bank-card', { card }) %></div>
+                <div class="card-stage-actions">
+                    <button type="button" class="card-action<%= isFrozen ? ' is-on' : '' %>" data-card-action="<%= isFrozen ? 'active' : 'frozen' %>" data-card-id="<%= card.id %>" data-last-four="<%= card.last_four %>" aria-pressed="<%= isFrozen %>">
+                        <span class="card-action-icon"><%- icon('snowflake') %></span><span data-freeze-label><%= isFrozen ? 'Unfreeze' : 'Freeze' %></span>
+                    </button>
+                    <button type="button" class="card-action" data-reveal-card data-card-id="<%= card.id %>" aria-pressed="false"><span class="card-action-icon"><%- icon('eye') %></span><span>Details</span></button>
+                    <button type="button" class="card-action" data-card-action="replace" data-card-id="<%= card.id %>" data-last-four="<%= card.last_four %>"><span class="card-action-icon"><%- icon('refresh') %></span><span>Replace</span></button>
+                    <button type="button" class="card-action is-danger" data-card-action="reported" data-card-id="<%= card.id %>" data-last-four="<%= card.last_four %>"><span class="card-action-icon"><%- icon('alert') %></span><span>Lost or stolen</span></button>
+                </div>
+                <div class="card-details-reveal" data-card-details hidden>
+                    <dl class="dl-rows">
+                        <div><dt>Card number</dt><dd class="num">•••• •••• •••• <%= card.last_four %></dd></div>
+                        <div><dt>Expires</dt><dd class="num"><%= card.expiration_date %></dd></div>
+                        <div><dt>Security code</dt><dd>Not issued</dd></div>
+                    </dl>
+                    <p class="text-xs muted mt-3">Demo cards have no full card number or security code, so they can never be used to pay anywhere.</p>
+                </div>
+                <div class="wallet-row">
+                    <button type="button" class="wallet-btn" disabled aria-describedby="walletNote<%= card.id %>"><%- icon('smartphone') %> Add to phone wallet</button>
+                    <span class="text-xs muted" id="walletNote<%= card.id %>">Not available in the demo</span>
+                </div>
+            </div>
+
+            <section class="panel" aria-labelledby="activity<%= card.id %>">
+                <div class="panel-head"><h2 id="activity<%= card.id %>">Card activity</h2><a class="link-arrow" href="/transactions?accountId=<%= card.account_id %>">Account <%- icon('arrow-right') %></a></div>
+                <div data-card-activity="<%= card.id %>"><p class="muted text-sm">Loading activity…</p></div>
+            </section>
+        </div>
+
+        <aside class="col-stack">
+            <section class="panel" aria-labelledby="controls<%= card.id %>">
+                <div class="panel-head"><h2 id="controls<%= card.id %>">Controls</h2><span class="text-xs muted" data-controls-status aria-live="polite"></span></div>
+                <ul class="control-list" role="list">
+                    <% controls.forEach(([key, label, text, iconName]) => { %>
+                    <li>
+                        <span class="icon-tile icon-tile-sm"><%- icon(iconName) %></span>
+                        <label class="control-copy" for="ctl-<%= card.id %>-<%= key %>"><strong><%= label %></strong><small><%= text %></small></label>
+                        <span class="switch"><input type="checkbox" role="switch" id="ctl-<%= card.id %>-<%= key %>" data-control="<%= key %>" data-card-id="<%= card.id %>"<%= card.controls[key] ? ' checked' : '' %>><span class="switch-track"></span></span>
+                    </li>
+                    <% }) %>
+                </ul>
+            </section>
+
+            <section class="panel" aria-labelledby="limit<%= card.id %>">
+                <div class="panel-head"><h2 id="limit<%= card.id %>">Daily spending limit</h2></div>
+                <p class="figure figure-md" data-limit-value data-private><%= card.dailyLimitFormatted %></p>
+                <input type="range" class="range mt-4" min="10" max="20000" step="10" value="<%= Math.round(card.daily_limit / 100) %>" aria-label="Daily spending limit in <%= currency %>" data-limit-range data-card-id="<%= card.id %>">
+                <div class="range-scale"><span><%= symbols[currency] || '' %>10</span><span><%= symbols[currency] || '' %>20,000</span></div>
+                <div class="form-actions"><button type="button" class="btn btn-secondary btn-sm" data-limit-save data-card-id="<%= card.id %>" disabled>Save limit</button></div>
+            </section>
+
+            <section class="panel" aria-labelledby="settings<%= card.id %>">
+                <div class="panel-head"><h2 id="settings<%= card.id %>">Card settings</h2></div>
+                <form data-card-settings="<%= card.id %>" novalidate>
+                    <div class="field">
+                        <label for="cardName<%= card.id %>">Card name</label>
+                        <input class="input" id="cardName<%= card.id %>" name="nickname" maxlength="30" value="<%= card.nickname %>" placeholder="<%= card.form === 'virtual' ? 'Virtual card' : 'Willow debit card' %>">
+                    </div>
+                    <fieldset class="design-picker">
+                        <legend class="field-label">Design</legend>
+                        <div class="cluster">
+                            <% designs.forEach(([value, label]) => { %>
+                            <label class="design-swatch is-<%= value %>" title="<%= label %>"><input type="radio" name="design" value="<%= value %>"<%= (card.design || (card.form === 'virtual' ? 'ivory' : 'forest')) === value ? ' checked' : '' %>><span class="visually-hidden"><%= label %></span></label>
+                            <% }) %>
+                        </div>
+                    </fieldset>
+                    <dl class="dl-rows mt-5">
+                        <div><dt>Type</dt><dd><%= card.form === 'virtual' ? 'Virtual debit' : 'Physical debit' %></dd></div>
+                        <div><dt>Linked account</dt><dd><%= card.accountName %></dd></div>
+                        <div><dt>Card holder</dt><dd><%= card.holder || user.full_name %></dd></div>
+                    </dl>
+                    <div class="form-actions"><button type="submit" class="btn btn-secondary btn-sm">Save settings</button><span class="form-status" role="status" data-settings-status></span></div>
+                </form>
+            </section>
+        </aside>
+    </div>
+</section>
+<% }) %>
+<% } %>
+
+<% if (past.length) { %>
+<section class="panel mt-8" aria-labelledby="pastTitle">
+    <div class="panel-head"><h2 id="pastTitle">Past cards</h2></div>
+    <ul class="list-plain" role="list">
+        <% past.forEach(card => { %>
+        <li class="list-row"><span class="icon-tile icon-tile-sm"><%- icon('card') %></span><span class="list-row-main"><span class="list-row-title"><%= card.displayName %></span><span class="list-row-sub">•••• <%= card.last_four %> · <%= card.accountName %></span></span><span class="status-pill is-<%= card.status === 'reported' ? 'failed' : 'cancelled' %>"><%= card.statusLabel %></span></li>
+        <% }) %>
+    </ul>
+</section>
+<% } %>
+
+<p class="disclosure-note mt-8"><%- icon('info') %> <span>Willow demo cards have no full card number, security code or payment network connection. Nothing is shipped, and they can’t be used to pay anywhere.</span></p>
+
+<dialog class="modal" id="cardReview" aria-labelledby="cardReviewTitle" aria-describedby="cardReviewDescription">
+    <div class="modal-head"><h2 id="cardReviewTitle">Confirm</h2></div>
+    <div class="modal-body"><p class="secondary" id="cardReviewDescription"></p><p class="field-error mt-3" id="cardActionError" role="alert" hidden></p></div>
+    <div class="modal-foot"><button type="button" class="btn btn-secondary" id="cancelCardAction">Cancel</button><button type="button" class="btn btn-primary" id="confirmCardAction">Confirm</button></div>
+</dialog>
+
+<dialog class="modal" id="newCardDialog" aria-labelledby="newCardTitle">
+    <form id="newCardForm" novalidate>
+        <div class="modal-head"><h2 id="newCardTitle">New demo card</h2><button type="button" class="btn btn-ghost btn-icon" data-dialog-close aria-label="Close"><%- icon('x', 'icon-md') %></button></div>
+        <div class="modal-body">
+            <fieldset class="option-stack" style="margin-top:0">
+                <legend class="visually-hidden">Card type</legend>
+                <label class="option-card"><input type="radio" name="form" value="virtual" checked><span class="icon-tile"><%- icon('smartphone') %></span><span><strong>Virtual</strong><span class="option-desc">Ready instantly for online shopping. Freeze or delete it any time.</span></span><span class="option-card-check" aria-hidden="true"></span></label>
+                <label class="option-card"><input type="radio" name="form" value="physical"><span class="icon-tile"><%- icon('card') %></span><span><strong>Physical</strong><span class="option-desc">A card for shops and ATMs. In the demo, nothing is shipped.</span></span><span class="option-card-check" aria-hidden="true"></span></label>
+            </fieldset>
+            <div class="field mt-5">
+                <label for="newCardAccount">Linked account</label>
+                <select class="select" id="newCardAccount" name="accountId">
+                    <% accounts.forEach(account => { %><option value="<%= account.id %>"><%= account.displayName %> · <%= account.maskedNumber %> (<%= account.currency %>)</option><% }) %>
+                </select>
+            </div>
+            <div class="field">
+                <label for="newCardName">Card name <span class="optional">· optional</span></label>
+                <input class="input" id="newCardName" name="nickname" maxlength="30" placeholder="e.g. Subscriptions, Travel">
+            </div>
+            <p class="field-error mt-3" data-new-card-error role="alert" hidden></p>
+        </div>
+        <div class="modal-foot"><button type="button" class="btn btn-secondary" data-dialog-close>Cancel</button><button type="submit" class="btn btn-primary">Create card</button></div>
+    </form>
+</dialog>
+
+<%- include('../partials/app-end', { js: ['cards'] }) %>

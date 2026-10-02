@@ -14,11 +14,14 @@ function securityHeaders(req, res, next) {
     res.setHeader('Content-Security-Policy', [
         "default-src 'self'",
         "script-src 'self' 'unsafe-inline'",
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-        "font-src 'self' https://fonts.gstatic.com",
+        "style-src 'self' 'unsafe-inline'",
+        "font-src 'self'",
         "img-src 'self' data: https://images.unsplash.com",
         "connect-src 'self'",
         "frame-ancestors 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "object-src 'none'",
     ].join('; '));
     if (process.env.NODE_ENV === 'production') {
         res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');

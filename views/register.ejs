@@ -1,109 +1,194 @@
-<%- include('partials/header') %>
+<%
+  const countries = ['United States', 'United Kingdom', 'Portugal', 'Mozambique', 'South Africa', 'Brazil', 'Canada', 'France', 'Germany', 'India', 'Ireland', 'Kenya', 'Netherlands', 'Nigeria', 'Spain', 'Australia', 'Another country'];
+  const steps = [['welcome', 'Welcome'], ['personal', 'About you'], ['account', 'Account'], ['security', 'Security'], ['verify', 'Verify'], ['done', 'Done']];
+%><%- include('partials/head', { css: ['auth'], bodyClass: 'auth-page is-register' }) %>
+<div class="auth-shell">
+    <%- include('partials/auth-visual', { scenes: ['wealth', 'business', 'global'] }) %>
 
-<body class="auth-experience-page">
-    <a class="skip-link" href="#authMain">Skip to account setup</a>
-    <div class="auth-layout">
-        <aside class="auth-visual auth-visual-register" aria-label="Willow banking campaign">
-            <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&amp;fit=crop&amp;w=1200&amp;q=80" alt="" aria-hidden="true" fetchpriority="high" decoding="async">
-            <div class="auth-visual-shade" aria-hidden="true"></div>
-            <a class="auth-campaign-brand" href="/"><img src="/images/logo.svg" alt=""><span>Willow<span>Banking Corp.</span></span></a><div class="auth-visual-copy">
-                <p class="auth-visual-kicker">Willow Banking Corp. <span>Personal banking</span></p>
-                <p class="auth-visual-slogan">A clear start, at your own pace.</p>
-                <p>Begin with the details needed to create your Willow demonstration account.</p>
-            </div>
-        <div class="auth-visual-foot"><span>Clarity for today. Room for tomorrow.</span><span>Willow / Demo experience</span></div></aside>
+    <main class="auth-main" id="main">
+        <header class="auth-top">
+            <span class="auth-top-brand"><%- include('partials/brand') %></span>
+            <span class="demo-badge" title="Willow is a fictional bank. No real money moves.">Demo</span>
+            <a class="auth-top-link" href="/login">Sign in</a>
+        </header>
 
-        <main class="auth-main" id="authMain">
-            <div class="auth-topline">
-                <a href="/" class="auth-brand">
-                    <img src="/images/logo.svg" alt="" class="nav-logo-img">
-                    <span>Willow Banking Corp.</span>
-                </a>
-                <a href="/" class="auth-back-link">Back to Willow</a>
-            </div>
-
-            <section class="auth-form-wrapper auth-register-wrapper" aria-labelledby="registerTitle">
-                <p class="auth-eyebrow">A fresh start with Willow</p>
-                <h1 id="registerTitle">Open your account</h1>
-                <p class="auth-sub">A few details to create your Willow demonstration profile.</p>
-
-                <div class="auth-progress-copy"><span id="registerStepLabel">Step 1 of 2</span><span id="registerStepName">Personal details</span></div>
-                <div class="auth-progress-track" role="progressbar" aria-label="Account setup progress" aria-valuemin="1" aria-valuemax="2" aria-valuenow="1">
-                    <span id="registerProgress"></span>
+        <div class="auth-panel is-wide" data-register>
+            <div class="signup-progress" data-signup-progress>
+                <div class="signup-progress-head">
+                    <p class="label" data-step-label aria-live="polite">Step 1 of 6 · Welcome</p>
+                    <button type="button" class="auth-back" data-step-back hidden><%- icon('arrow-left', 'icon-sm') %> Back</button>
                 </div>
+                <ol class="stepper" aria-hidden="true"><% steps.forEach(([key], index) => { %><li class="<%= index === 0 ? 'is-current' : '' %>" data-step-dot="<%= key %>"></li><% }) %></ol>
+                <ol class="signup-step-names" aria-hidden="true"><% steps.forEach(([key, label], index) => { %><li data-step-name="<%= key %>"<%- index === 0 ? ' class="is-current"' : '' %>><%= label %></li><% }) %></ol>
+            </div>
 
-                <div id="registerStatus" class="auth-message auth-message-success" role="status" aria-live="polite" hidden></div>
-                <div id="registerError" class="auth-message auth-message-error" role="alert" aria-live="assertive" tabindex="-1" hidden>
-                    <span id="registerErrorText"></span>
-                </div>
+            <form id="registerForm" class="auth-form" novalidate>
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
-                <form id="registerForm" onsubmit="handleRegister(event)">
-                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                    <section class="auth-step" data-register-step="0" aria-labelledby="personalStepTitle">
-                        <h2 id="personalStepTitle">Your details</h2>
-                        <div class="auth-field">
-                            <label for="fullName">Full name</label>
-                            <input type="text" id="fullName" name="fullName" class="form-control" placeholder="Name as you'd like us to use" required minlength="2" maxlength="100" autocomplete="name">
-                        </div>
-                        <div class="auth-field">
-                            <label for="email">Email address</label>
-                            <input type="email" id="email" name="email" class="form-control" placeholder="you@example.com" required autocomplete="email" autocapitalize="none" spellcheck="false">
-                        </div>
-                        <div class="auth-field">
-                            <label for="phone">Phone number <span>(optional)</span></label>
-                            <input type="tel" id="phone" name="phone" class="form-control" placeholder="Add a number if you'd like" autocomplete="tel">
-                        </div>
-                        <button class="auth-submit" id="registerNext" type="button">Continue to security</button>
-                    </section>
+                <!-- 1 · Welcome -->
+                <section class="signup-step is-active" data-step="welcome" aria-labelledby="stepWelcome">
+                    <h1 class="auth-title" id="stepWelcome" tabindex="-1">Open your Willow account.</h1>
+                    <p class="auth-sub">It takes about three minutes. You’ll get everyday accounts, cards, a $100,000 demo portfolio and Willow Hub — all in one place.</p>
+                    <ul class="signup-perks" role="list">
+                        <li><span class="icon-tile icon-tile-sm"><%- icon('wallet') %></span><div><strong>Checking and savings</strong><span>Plus accounts in EUR, GBP, MZN and ZAR.</span></div></li>
+                        <li><span class="icon-tile icon-tile-sm"><%- icon('card') %></span><div><strong>Physical and virtual cards</strong><span>Freeze, limit and control them instantly.</span></div></li>
+                        <li><span class="icon-tile icon-tile-sm"><%- icon('chart') %></span><div><strong>Practice investing</strong><span>Stocks, ETFs and crypto with simulated money.</span></div></li>
+                    </ul>
+                    <div class="notice notice-demo"><%- icon('info') %><div><strong>This is a demonstration.</strong> No real account is opened and no money moves. Please use fictional details and a password you don’t use anywhere else.</div></div>
+                    <div class="signup-actions">
+                        <button type="button" class="btn btn-primary btn-lg btn-block" data-step-next>Let’s begin <%- icon('arrow-right', 'icon-arrow') %></button>
+                    </div>
+                    <p class="auth-switch">Already with Willow? <a class="text-link" href="/login">Sign in</a></p>
+                </section>
 
-                    <section class="auth-step" data-register-step="1" aria-labelledby="securityStepTitle" hidden>
-                        <h2 id="securityStepTitle">Create a password</h2>
-                        <div class="auth-field">
-                            <label for="password">Password</label>
-                            <div class="auth-password-field">
-                                <input type="password" id="password" name="password" class="form-control" placeholder="Create a password" required minlength="8" maxlength="128" autocomplete="new-password" aria-describedby="passwordHint passwordStrengthText">
-                                <button class="auth-password-toggle" type="button" data-password-toggle aria-controls="password" aria-label="Show password" aria-pressed="false" title="Show password">
-                                    <svg class="password-show-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
-                                    <svg class="password-hide-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.9 10.9 0 0 1 12 5c6.5 0 10 7 10 7a14.7 14.7 0 0 1-3.2 4.1M6.2 6.2C3.5 8 2 12 2 12s3.5 7 10 7c1.3 0 2.5-.3 3.5-.7"/></svg>
-                                </button>
-                            </div>
-                            <p class="auth-field-help" id="passwordHint">Use at least 8 characters, including upper- and lowercase letters and a number.</p>
-                            <div class="auth-strength" aria-hidden="true"><span id="passwordStrengthBar"></span></div>
-                            <p class="auth-strength-copy" id="passwordStrengthText" aria-live="polite">Password strength</p>
+                <!-- 2 · Personal information -->
+                <section class="signup-step" data-step="personal" aria-labelledby="stepPersonal" hidden>
+                    <h1 class="auth-title" id="stepPersonal" tabindex="-1">Tell us about you.</h1>
+                    <p class="auth-sub">We use this to set up your profile. Fictional details are perfect.</p>
+                    <div class="field">
+                        <label for="fullName">Full name</label>
+                        <input class="input input-lg" id="fullName" name="fullName" required minlength="2" maxlength="100" autocomplete="name" aria-describedby="fullNameError">
+                        <p class="field-error" id="fullNameError" hidden></p>
+                    </div>
+                    <div class="field">
+                        <label for="email">Email</label>
+                        <input class="input input-lg" id="email" name="email" type="email" required maxlength="255" autocomplete="email" autocapitalize="none" spellcheck="false" aria-describedby="emailHelp emailError">
+                        <p class="field-help" id="emailHelp">You’ll use this to sign in. Willow doesn’t send email.</p>
+                        <p class="field-error" id="emailError" hidden></p>
+                    </div>
+                    <div class="field-grid">
+                        <div class="field">
+                            <label for="phone">Phone <span class="optional">· optional</span></label>
+                            <input class="input input-lg" id="phone" name="phone" type="tel" maxlength="40" autocomplete="tel" aria-describedby="phoneError">
+                            <p class="field-error" id="phoneError" hidden></p>
                         </div>
-                        <ul class="auth-password-rules" aria-label="Password requirements">
-                            <li data-password-rule="length">At least 8 characters</li>
-                            <li data-password-rule="upper">One uppercase letter</li>
-                            <li data-password-rule="lower">One lowercase letter</li>
-                            <li data-password-rule="number">One number</li>
+                        <div class="field">
+                            <label for="country">Country of residence</label>
+                            <select class="select input-lg" id="country" name="country" required autocomplete="country-name" aria-describedby="countryError">
+                                <option value="">Choose…</option>
+                                <% countries.forEach(name => { %><option value="<%= name %>"><%= name %></option><% }) %>
+                            </select>
+                            <p class="field-error" id="countryError" hidden></p>
+                        </div>
+                    </div>
+                    <div class="signup-actions">
+                        <button type="button" class="btn btn-primary btn-lg btn-block" data-step-next>Continue</button>
+                    </div>
+                </section>
+
+                <!-- 3 · Account type -->
+                <section class="signup-step" data-step="account" aria-labelledby="stepAccount" hidden>
+                    <h1 class="auth-title" id="stepAccount" tabindex="-1">How will you use Willow?</h1>
+                    <p class="auth-sub">You can add more accounts — including currency accounts — any time.</p>
+                    <fieldset class="option-stack">
+                        <legend class="visually-hidden">Account type</legend>
+                        <label class="option-card">
+                            <input type="radio" name="accountType" value="personal"<%- accountType === 'personal' ? ' checked' : '' %>>
+                            <span class="icon-tile"><%- icon('user') %></span>
+                            <span><strong>Personal</strong><span class="option-desc">Everyday checking, savings, cards, goals and investing for you or your household.</span></span>
+                            <span class="option-card-check" aria-hidden="true"></span>
+                        </label>
+                        <label class="option-card">
+                            <input type="radio" name="accountType" value="business"<%- accountType === 'business' ? ' checked' : '' %>>
+                            <span class="icon-tile"><%- icon('briefcase') %></span>
+                            <span><strong>Personal + business</strong><span class="option-desc">Everything in personal, plus a business operating account, invoices, expenses and a cash-flow dashboard.</span></span>
+                            <span class="option-card-check" aria-hidden="true"></span>
+                        </label>
+                    </fieldset>
+                    <label class="switch-row">
+                        <span><strong>Start with sample activity</strong><span class="option-desc">Fill your new account with a few months of realistic demo transactions, cards, payees and goals so every screen has something to show.</span></span>
+                        <span class="switch"><input type="checkbox" name="sampleData" checked><span class="switch-track"></span></span>
+                    </label>
+                    <div class="signup-actions">
+                        <button type="button" class="btn btn-primary btn-lg btn-block" data-step-next>Continue</button>
+                    </div>
+                </section>
+
+                <!-- 4 · Security -->
+                <section class="signup-step" data-step="security" aria-labelledby="stepSecurity" hidden>
+                    <h1 class="auth-title" id="stepSecurity" tabindex="-1">Secure your account.</h1>
+                    <p class="auth-sub">Choose a password you don’t use anywhere else. You can add two-step verification once you’re in.</p>
+                    <div class="field">
+                        <label for="password">Password</label>
+                        <div class="input-group">
+                            <input class="input input-lg" id="password" name="password" type="password" required minlength="8" maxlength="72" autocomplete="new-password" aria-describedby="passwordRules passwordError">
+                            <button class="input-action pw-toggle" type="button" data-password-toggle aria-controls="password" aria-label="Show password" aria-pressed="false"><%- icon('eye', 'pw-show') %><%- icon('eye-off', 'pw-hide') %></button>
+                        </div>
+                        <div class="strength" data-strength aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+                        <ul class="password-rules" id="passwordRules" role="list">
+                            <li data-rule="length"><%- icon('check', 'icon-sm') %> At least 8 characters</li>
+                            <li data-rule="upper"><%- icon('check', 'icon-sm') %> An uppercase letter</li>
+                            <li data-rule="lower"><%- icon('check', 'icon-sm') %> A lowercase letter</li>
+                            <li data-rule="number"><%- icon('check', 'icon-sm') %> A number</li>
                         </ul>
-                        <div class="auth-field">
-                            <label for="confirmPassword">Confirm password</label>
-                            <div class="auth-password-field">
-                                <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" placeholder="Enter your password again" required autocomplete="new-password" aria-describedby="confirmPasswordError">
-                                <button class="auth-password-toggle" type="button" data-password-toggle aria-controls="confirmPassword" aria-label="Show password" aria-pressed="false" title="Show password">
-                                    <svg class="password-show-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
-                                    <svg class="password-hide-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.9 10.9 0 0 1 12 5c6.5 0 10 7 10 7a14.7 14.7 0 0 1-3.2 4.1M6.2 6.2C3.5 8 2 12 2 12s3.5 7 10 7c1.3 0 2.5-.3 3.5-.7"/></svg>
-                                </button>
-                            </div>
-                            <span class="auth-field-help auth-field-error" id="confirmPasswordError" hidden>Passwords must match.</span>
-                        </div>
-                        <div class="auth-step-actions">
-                            <button class="auth-back-button" id="registerBack" type="button">Back</button>
-                            <button class="auth-submit" id="registerBtn" type="submit">Open demo account</button>
-                        </div>
-                    </section>
-                </form>
+                        <p class="field-error" id="passwordError" hidden></p>
+                    </div>
+                    <div class="field">
+                        <label for="confirmPassword">Confirm password</label>
+                        <input class="input input-lg" id="confirmPassword" name="confirmPassword" type="password" required maxlength="72" autocomplete="new-password" aria-describedby="confirmError">
+                        <p class="field-error" id="confirmError" hidden></p>
+                    </div>
+                    <label class="check-row">
+                        <input type="checkbox" name="terms" required aria-describedby="termsError">
+                        <span>I understand Willow is a fictional demonstration with simulated money, and I agree to the <a class="text-link" href="/terms" target="_blank" rel="noopener">Terms of use</a> and <a class="text-link" href="/privacy" target="_blank" rel="noopener">Privacy notice</a>.</span>
+                    </label>
+                    <p class="field-error" id="termsError" hidden></p>
+                    <div class="signup-actions">
+                        <button type="button" class="btn btn-primary btn-lg btn-block" data-step-next>Continue</button>
+                    </div>
+                </section>
 
-                <p class="auth-demo-note">This is a demonstration platform. Never reuse a password you use elsewhere.</p>
-                <p class="auth-switch">Already have a Willow account? <a href="/login">Sign in</a></p>
-            </section>
+                <!-- 5 · Verification (simulated) -->
+                <section class="signup-step" data-step="verify" aria-labelledby="stepVerify" hidden>
+                    <div class="cluster" style="justify-content:space-between;align-items:center">
+                        <h1 class="auth-title" id="stepVerify" tabindex="-1">Verify your identity.</h1>
+                    </div>
+                    <p class="auth-sub">A real bank would check your ID here. <span class="sim-tag">Simulated</span> Willow runs a pretend check instead — no documents, no credit search and nothing leaves this app.</p>
+                    <dl class="signup-review" data-review>
+                        <div><dt>Name</dt><dd data-review-field="fullName"></dd></div>
+                        <div><dt>Email</dt><dd data-review-field="email"></dd></div>
+                        <div><dt>Country</dt><dd data-review-field="country"></dd></div>
+                        <div><dt>Account</dt><dd data-review-field="accountType"></dd></div>
+                    </dl>
+                    <button type="button" class="text-link text-sm" data-step-go="personal">Edit details</button>
+                    <ol class="kyc-checks" role="list" data-kyc>
+                        <li data-kyc-check><span class="kyc-state" aria-hidden="true"></span><div><strong>Identity details</strong><span>Name, email and country look complete.</span></div></li>
+                        <li data-kyc-check><span class="kyc-state" aria-hidden="true"></span><div><strong>Watchlist screening</strong><span>Simulated — no real screening database is queried.</span></div></li>
+                        <li data-kyc-check><span class="kyc-state" aria-hidden="true"></span><div><strong>Device and session</strong><span>This browser session is set up securely.</span></div></li>
+                    </ol>
+                    <p class="visually-hidden" data-kyc-status aria-live="polite"></p>
+                    <div class="notice notice-error auth-notice" data-register-alert role="alert" tabindex="-1" hidden><%- icon('alert') %><div data-register-alert-text></div></div>
+                    <div class="signup-actions">
+                        <button type="submit" class="btn btn-primary btn-lg btn-block auth-submit"><span class="btn-label">Verify and open my account</span></button>
+                    </div>
+                </section>
 
-            <footer class="auth-bottomline">
-                <a href="/contact">Help and support</a>
-                <a href="/privacy">Privacy</a>
-                <a href="/terms">Terms</a>
-            </footer>
-        </main>
-    </div>
-    <%- include('partials/footer') %>
+                <!-- 6 · Confirmation -->
+                <section class="signup-step auth-success" data-step="done" aria-labelledby="stepDone" hidden>
+                    <div class="success-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+                    <h1 class="auth-title" id="stepDone" tabindex="-1">Welcome to Willow<span data-done-name></span>.</h1>
+                    <p class="auth-sub">Your demo account is open and you’re signed in.</p>
+                    <div class="customer-id-card">
+                        <span class="label">Your customer ID</span>
+                        <strong data-done-customer-id></strong>
+                        <span class="text-sm secondary">Sign in with this or your email.</span>
+                    </div>
+                    <ul class="signup-next" role="list">
+                        <li><%- icon('key', 'icon-sm') %> Save recovery codes in Settings so you can reset your password.</li>
+                        <li><%- icon('shield-check', 'icon-sm') %> Turn on two-step verification in the Security center.</li>
+                        <li data-done-sample hidden><%- icon('sparkle', 'icon-sm') %> Sample activity is loaded — explore your accounts, cards and portfolio.</li>
+                    </ul>
+                    <div class="signup-actions">
+                        <a class="btn btn-primary btn-lg btn-block" href="/dashboard?welcome=1" data-done-continue>Go to my dashboard <%- icon('arrow-right', 'icon-arrow') %></a>
+                    </div>
+                </section>
+            </form>
+        </div>
+
+        <footer class="auth-foot">
+            <p class="auth-safety"><%- icon('lock', 'icon-sm') %> Passwords are hashed and never stored in readable form.</p>
+            <nav aria-label="Legal"><a href="/demo">About the demo</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav>
+        </footer>
+    </main>
+</div>
+<%- include('partials/foot', { js: ['auth'] }) %>

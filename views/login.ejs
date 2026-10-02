@@ -1,91 +1,135 @@
-<%- include('partials/header') %>
+<%- include('partials/head', { css: ['auth'], bodyClass: 'auth-page' }) %>
+<div class="auth-shell">
+    <%- include('partials/auth-visual', { scenes: ['everyday', 'home', 'wealth'] }) %>
 
-<body class="auth-experience-page">
-    <a class="skip-link" href="#authMain">Skip to sign in</a>
-    <div class="auth-layout">
-        <aside class="auth-visual" aria-label="Willow banking campaign">
-            <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&amp;fit=crop&amp;w=1200&amp;q=80" alt="" aria-hidden="true" fetchpriority="high" decoding="async">
-            <div class="auth-visual-shade" aria-hidden="true"></div>
-            <a class="auth-campaign-brand" href="/"><img src="/images/logo.svg" alt=""><span>Willow<span>Banking Corp.</span></span></a><div class="auth-visual-copy">
-                <p class="auth-visual-kicker">Willow Banking Corp. <span>Personal banking</span></p>
-                <p class="auth-visual-slogan">Your money. Moving forward.</p>
-                <p>A considered place for everyday money and the plans you're building.</p>
-            </div>
-        <div class="auth-visual-foot"><span>Clarity for today. Room for tomorrow.</span><span>Willow / Demo experience</span></div></aside>
+    <main class="auth-main" id="main">
+        <header class="auth-top">
+            <span class="auth-top-brand"><%- include('partials/brand') %></span>
+            <span class="demo-badge" title="Willow is a fictional bank. No real money moves.">Demo</span>
+            <a class="auth-top-link" href="/"><%- icon('arrow-left', 'icon-sm') %> Back to Willow</a>
+        </header>
 
-        <main class="auth-main" id="authMain">
-            <div class="auth-topline">
-                <a href="/" class="auth-brand">
-                    <img src="/images/logo.svg" alt="" class="nav-logo-img">
-                    <span>Willow Banking Corp.</span>
-                </a>
-                <a href="/" class="auth-back-link">Back to Willow</a>
-            </div>
+        <div class="auth-panel" data-login>
+            <!-- Credentials -->
+            <section class="auth-view is-active" data-auth-view="credentials" aria-labelledby="loginTitle">
+                <h1 class="auth-title" id="loginTitle" tabindex="-1">Welcome back.</h1>
+                <p class="auth-sub">Sign in to see your money, your plans and your progress.</p>
 
-            <section class="auth-form-wrapper" aria-labelledby="loginTitle">
-                <p class="auth-eyebrow">Your everyday, connected</p>
-                <h1 id="loginTitle">Welcome back</h1>
-                <p class="auth-sub">Sign in to continue to your Willow account.</p>
+                <% if (notice) { %>
+                <div class="notice notice-<%= notice.tone %> auth-notice" role="status" data-page-notice><%- icon(notice.icon) %><div><strong><%= notice.title %></strong><br><%= notice.text %></div></div>
+                <% } %>
+                <div class="notice notice-error auth-notice" data-auth-alert role="alert" tabindex="-1" hidden><%- icon('alert') %><div data-auth-alert-text></div></div>
 
-                <div id="loginStatus" class="auth-message auth-message-success" role="status" aria-live="polite" hidden></div>
-                <div id="loginError" class="auth-message auth-message-error" role="alert" aria-live="assertive" tabindex="-1" hidden>
-                    <span id="loginErrorText"></span>
-                </div>
-
-                <form id="loginForm" onsubmit="handleLogin(event)">
+                <form id="loginForm" class="auth-form" novalidate>
                     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                     <input type="hidden" name="returnTo" value="<%= returnTo %>">
-                    <div class="auth-field">
-                        <label for="email">Email address</label>
-                        <input type="email" id="email" name="email" class="form-control" placeholder="you@example.com" required autocomplete="email" autocapitalize="none" spellcheck="false">
+                    <div class="field">
+                        <label for="email">Email or customer ID</label>
+                        <input class="input input-lg" type="text" id="email" name="email" required maxlength="255" autocomplete="username" autocapitalize="none" spellcheck="false" inputmode="email" aria-describedby="emailError">
+                        <p class="field-error" id="emailError" hidden></p>
                     </div>
-                    <div class="auth-field">
-                        <label for="password">Password</label>
-                        <div class="auth-password-field">
-                            <input type="password" id="password" name="password" class="form-control" placeholder="Enter your password" required autocomplete="current-password">
-                            <button class="auth-password-toggle" type="button" data-password-toggle aria-controls="password" aria-label="Show password" aria-pressed="false" title="Show password">
-                                <svg class="password-show-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
-                                <svg class="password-hide-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.9 10.9 0 0 1 12 5c6.5 0 10 7 10 7a14.7 14.7 0 0 1-3.2 4.1M6.2 6.2C3.5 8 2 12 2 12s3.5 7 10 7c1.3 0 2.5-.3 3.5-.7"/></svg>
-                            </button>
+                    <div class="field">
+                        <div class="field-label-row"><label for="password">Password</label><a class="text-link text-sm" href="/forgot-password">Forgot password?</a></div>
+                        <div class="input-group">
+                            <input class="input input-lg" type="password" id="password" name="password" required maxlength="72" autocomplete="current-password" aria-describedby="passwordError capsHint">
+                            <button class="input-action pw-toggle" type="button" data-password-toggle aria-controls="password" aria-label="Show password" aria-pressed="false"><%- icon('eye', 'pw-show') %><%- icon('eye-off', 'pw-hide') %></button>
                         </div>
+                        <p class="field-help caps-hint" id="capsHint" hidden><%- icon('alert', 'icon-sm') %> Caps Lock is on</p>
+                        <p class="field-error" id="passwordError" hidden></p>
                     </div>
-                    <div class="auth-form-options">
-                        <a href="/forgot-password">Forgot your password?</a>
-                    </div>
-                    <button type="submit" class="auth-submit" id="loginBtn">Sign in</button>
+                    <button type="submit" class="btn btn-primary btn-lg btn-block auth-submit" id="loginBtn"><span class="btn-label">Sign in</span></button>
                 </form>
 
-                <p class="auth-demo-note">Willow is a demonstration platform. Do not use a password you use elsewhere.</p>
-                <p class="auth-switch">New to Willow? <a href="/register">Open an account</a></p>
+                <div class="auth-or"><span>or</span></div>
+                <button type="button" class="btn btn-secondary btn-lg btn-block" data-auth-go="methods"><%- icon('key') %> Use another sign-in method</button>
+
+                <p class="auth-switch">New to Willow? <a class="text-link" href="/register">Open an account</a></p>
             </section>
 
-            <footer class="auth-bottomline">
-                <a href="/contact">Help and support</a>
-                <a href="/privacy">Privacy</a>
-                <a href="/terms">Terms</a>
-            </footer>
-        </main>
-    </div>
+            <!-- Other sign-in methods -->
+            <section class="auth-view" data-auth-view="methods" aria-labelledby="methodsTitle" hidden>
+                <button type="button" class="auth-back" data-auth-go="credentials"><%- icon('arrow-left', 'icon-sm') %> Back</button>
+                <h1 class="auth-title" id="methodsTitle" tabindex="-1">Other ways in.</h1>
+                <p class="auth-sub">Choose what works for you right now.</p>
+                <ul class="auth-methods" role="list">
+                    <li>
+                        <button type="button" class="auth-method" data-demo-start>
+                            <span class="icon-tile"><%- icon('sparkle') %></span>
+                            <span class="auth-method-text"><strong>Explore as a guest</strong><span>Start a temporary profile with a few months of sample activity. No details needed.</span></span>
+                            <%- icon('chevron-right', 'auth-method-arrow') %>
+                        </button>
+                    </li>
+                    <li>
+                        <a class="auth-method" href="/forgot-password">
+                            <span class="icon-tile"><%- icon('key') %></span>
+                            <span class="auth-method-text"><strong>Use a recovery code</strong><span>Forgot your password? Reset it with one of the backup codes you saved.</span></span>
+                            <%- icon('chevron-right', 'auth-method-arrow') %>
+                        </a>
+                    </li>
+                    <li>
+                        <button type="button" class="auth-method" data-auth-go="credentials" data-focus-id>
+                            <span class="icon-tile"><%- icon('user') %></span>
+                            <span class="auth-method-text"><strong>Sign in with your customer ID</strong><span>Use the number that starts with WB — it’s in Settings — instead of your email.</span></span>
+                            <%- icon('chevron-right', 'auth-method-arrow') %>
+                        </button>
+                    </li>
+                    <li>
+                        <div class="auth-method is-disabled" aria-disabled="true">
+                            <span class="icon-tile"><%- icon('fingerprint') %></span>
+                            <span class="auth-method-text"><strong>Passkey or biometrics</strong><span>Not available in the demo. You can turn on two-step verification in the Security center.</span></span>
+                        </div>
+                    </li>
+                </ul>
+                <div class="notice notice-error auth-notice" data-demo-error role="alert" hidden><%- icon('alert') %><div data-demo-error-text></div></div>
+            </section>
 
-    <script>
-        (function () {
-            const params = new URLSearchParams(window.location.search);
-            if (params.get('signedOut') === 'success') {
-                const status = document.getElementById('loginStatus');
-                status.textContent = 'You are signed out.'; status.hidden = false;
-            }
-            if (params.get('reset') === 'success') {
-                const status = document.getElementById('loginStatus');
-                status.textContent = 'Password reset. Sign in with your new password.'; status.hidden = false;
-            }
-            if (params.get('error') === 'session_expired') {
-                document.getElementById('loginErrorText').textContent = 'Your session ended. Please sign in again.';
-                document.getElementById('loginError').hidden = false;
-            }
-            if (params.get('error') !== 'account_suspended') return;
-            const errorBox = document.getElementById('loginError');
-            document.getElementById('loginErrorText').textContent = 'We can’t sign you in right now. Please contact support.';
-            errorBox.hidden = false;
-        })();
-    </script>
-    <%- include('partials/footer') %>
+            <!-- Two-step verification -->
+            <section class="auth-view" data-auth-view="two-factor" aria-labelledby="twoFactorTitle" hidden>
+                <button type="button" class="auth-back" data-auth-restart><%- icon('arrow-left', 'icon-sm') %> Start over</button>
+                <span class="auth-hero-icon"><%- icon('shield-check') %></span>
+                <h1 class="auth-title" id="twoFactorTitle" tabindex="-1">Two-step verification.</h1>
+                <p class="auth-sub" data-code-help>Enter the 6-digit code from your authenticator app.</p>
+                <div class="notice notice-error auth-notice" data-code-alert role="alert" hidden><%- icon('alert') %><div data-code-alert-text></div></div>
+                <form id="twoFactorForm" class="auth-form" novalidate>
+                    <div class="field">
+                        <label for="code" data-code-label>Authentication code</label>
+                        <input class="input input-lg code-input" id="code" name="code" required autocomplete="one-time-code" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="000000" spellcheck="false">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg btn-block auth-submit"><span class="btn-label">Verify and sign in</span></button>
+                </form>
+                <button type="button" class="btn btn-ghost btn-block mt-3" data-code-mode>Use a backup code instead</button>
+                <p class="auth-fineprint">Codes refresh every 30 seconds. For your security, the code step expires after 5 minutes.</p>
+            </section>
+
+            <!-- Paused after too many attempts -->
+            <section class="auth-view" data-auth-view="locked" aria-labelledby="lockedTitle" hidden>
+                <span class="auth-hero-icon is-warning"><%- icon('lock') %></span>
+                <h1 class="auth-title" id="lockedTitle" tabindex="-1">Sign-in paused.</h1>
+                <p class="auth-sub" data-locked-text>Too many unsuccessful attempts. For your security, sign-in is paused for 15 minutes.</p>
+                <div class="auth-locked-tips">
+                    <p><strong>What you can do</strong></p>
+                    <ul role="list">
+                        <li><%- icon('clock', 'icon-sm') %> Wait 15 minutes, then try again.</li>
+                        <li><%- icon('key', 'icon-sm') %> Reset your password with a recovery code.</li>
+                        <li><%- icon('shield', 'icon-sm') %> Didn’t try to sign in? Change your password when you’re back in.</li>
+                    </ul>
+                </div>
+                <a class="btn btn-primary btn-lg btn-block" href="/forgot-password">Reset with a recovery code</a>
+                <button type="button" class="btn btn-ghost btn-block mt-3" data-auth-restart>Back to sign in</button>
+            </section>
+
+            <!-- Success -->
+            <section class="auth-view auth-success" data-auth-view="success" aria-labelledby="successTitle" hidden>
+                <div class="success-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+                <h1 class="auth-title" id="successTitle" tabindex="-1">You’re signed in.</h1>
+                <p class="auth-sub" data-success-text role="status">Taking you to Willow…</p>
+            </section>
+        </div>
+
+        <footer class="auth-foot">
+            <p class="auth-safety"><%- icon('shield', 'icon-sm') %> Willow will never ask for your password or codes by message or phone.</p>
+            <nav aria-label="Legal"><a href="/help">Help</a><a href="/security-info">Security</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav>
+        </footer>
+    </main>
+</div>
+<%- include('partials/foot', { js: ['auth'] }) %>

@@ -5,13 +5,15 @@ const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const { requireAuth } = require('../middleware/auth');
 const { getDb } = require('../database');
-const { validateAmount, toCents } = require('../middleware/validation');
+const { validateAmount, toCents, formatCurrency } = require('../middleware/validation');
+const { scaledLimit } = require('../services/currencies');
 const { createNotification } = require('../services/notification');
 const { logAudit } = require('../services/audit');
 
 const router = express.Router();
 
-const DAILY_DEPOSIT_LIMIT_CENTS = 1000000; // $10,000 per day
+const config = require('../config');
+const DAILY_DEPOSIT_LIMIT_CENTS = config.limits.dailyDepositCents; // $10,000 per day by default
 
 router.post('/', requireAuth, (req, res) => {
     try {
@@ -48,10 +50,11 @@ router.post('/', requireAuth, (req, res) => {
       WHERE account_id = ? AND type = 'deposit' AND date(created_at) = date('now')
     `).get(account.id);
 
-        if (todayDeposits.total + amountCents > DAILY_DEPOSIT_LIMIT_CENTS) {
-            const remaining = ((DAILY_DEPOSIT_LIMIT_CENTS - todayDeposits.total) / 100).toFixed(2);
+        const currency = account.currency || 'USD';
+        const dailyLimit = scaledLimit(DAILY_DEPOSIT_LIMIT_CENTS, currency);
+        if (todayDeposits.total + amountCents > dailyLimit) {
             return res.status(400).json({
-                error: `Daily deposit limit is $10,000. You can deposit up to $${Math.max(0, remaining)} more today.`
+                error: `Daily deposit limit is ${formatCurrency(dailyLimit, currency)} for demo funds. You can add up to ${formatCurrency(Math.max(0, dailyLimit - todayDeposits.total), currency)} more today.`
             });
         }
 
@@ -66,8 +69,8 @@ router.post('/', requireAuth, (req, res) => {
 
             db.prepare(`
         INSERT INTO transactions (reference, account_id, type, amount, currency, direction, status, description)
-        VALUES (?, ?, 'deposit', ?, 'USD', 'credit', 'completed', ?)
-      `).run(reference, account.id, amountCents, desc);
+        VALUES (?, ?, 'deposit', ?, ?, 'credit', 'completed', ?)
+      `).run(reference, account.id, amountCents, account.currency || 'USD', desc);
         });
 
         deposit();
@@ -82,11 +85,11 @@ router.post('/', requireAuth, (req, res) => {
         });
 
         try {
-            createNotification(req.session.userId, 'deposit', 'Deposit Received',
-                `$${Number(amount).toFixed(2)} has been deposited to your account (Ref: ${reference})`);
+            createNotification(req.session.userId, 'deposit', 'Demo funds added',
+                `${formatCurrency(amountCents, currency)} in simulated funds was added to your account (Ref: ${reference}).`);
         } catch (e) { /* non-critical */ }
 
-        res.json({ success: true, reference });
+        res.json({ success: true, simulated: true, reference, amountCents, currency });
     } catch (err) {
         console.error('[Deposit] Error:', err.message);
         res.status(500).json({ error: 'Deposit failed. Please try again.' });

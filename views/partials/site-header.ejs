@@ -1,0 +1,114 @@
+<%
+  const variant = typeof headerVariant !== 'undefined' ? headerVariant : 'solid';
+  const intros = {
+    money: 'Everything you need for everyday money.',
+    wealth: 'Grow what you have — real market data, simulated investing.',
+    borrow: 'Clear estimates before the big decisions.',
+    business: 'Banking built around the working day.',
+    explore: 'Learn, follow the markets and find answers.',
+  };
+  const signedIn = typeof user !== 'undefined' && user;
+  const homeHref = signedIn ? (user.role === 'admin' ? '/admin' : '/dashboard') : '/';
+%>
+<div class="demo-strip" role="note">
+    <div class="container-wide demo-strip-inner">
+        <span class="demo-badge">Demo</span>
+        <span class="demo-strip-text">Willow is a fictional bank for demonstration. No real money, accounts or investments are involved.</span>
+        <a href="/demo" class="demo-strip-link">How the demo works <%- icon('arrow-right', 'icon-sm') %></a>
+    </div>
+</div>
+<header class="site-header" data-site-header data-variant="<%= variant %>">
+    <div class="site-header-bar container-wide">
+        <%- include('brand', { href: '/', inverse: false, label: 'Willow home' }) %>
+        <nav class="site-nav" aria-label="Main">
+            <ul class="site-nav-list" role="list">
+                <% siteNavigation.forEach(section => { %>
+                <li class="site-nav-item">
+                    <button type="button" class="site-nav-trigger" aria-expanded="false" aria-controls="mega-<%= section.key %>" data-mega-trigger="<%= section.key %>">
+                        <%= section.label %> <%- icon('chevron-down', 'icon-sm site-nav-chevron') %>
+                    </button>
+                    <div class="mega" id="mega-<%= section.key %>" data-mega-panel="<%= section.key %>">
+                        <div class="mega-inner container-wide">
+                            <div class="mega-intro">
+                                <p class="eyebrow"><%= section.label %></p>
+                                <p class="mega-intro-title"><%= intros[section.key] %></p>
+                            </div>
+                            <ul class="mega-links" role="list">
+                                <% section.items.forEach(item => { %>
+                                <li><a href="<%= item.href %>" class="mega-link">
+                                    <span class="icon-tile icon-tile-sm"><%- icon(item.icon) %></span>
+                                    <span><strong><%= item.label %></strong><small><%= item.description %></small></span>
+                                </a></li>
+                                <% }) %>
+                            </ul>
+                            <% if (section.featured) { %>
+                            <a href="<%= section.featured.href %>" class="mega-feature mega-feature-<%= section.featured.kind %>">
+                                <span class="mega-feature-art" aria-hidden="true">
+                                    <% if (section.featured.kind === 'card') { %>
+                                        <span class="mini-card"><span class="mini-card-chip"></span><span class="mini-card-num">•••• 4021</span></span>
+                                        <span class="mini-card is-virtual"><span class="mini-card-num">Virtual</span></span>
+                                    <% } else if (section.featured.kind === 'portfolio') { %>
+                                        <svg viewBox="0 0 200 70" preserveAspectRatio="none"><path d="M0 58 C20 54 30 40 50 44 S80 30 100 34 S130 16 150 20 S180 8 200 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+                                        <span class="mega-feature-figure">$100,000</span>
+                                    <% } else if (section.featured.kind === 'calculator') { %>
+                                        <span class="mega-feature-figure">$791<small>/mo</small></span>
+                                        <span class="mega-feature-caption">Illustrative estimate</span>
+                                    <% } else if (section.featured.kind === 'business') { %>
+                                        <span class="mega-bars"><span style="--h:42%"></span><span style="--h:58%"></span><span style="--h:50%"></span><span style="--h:72%"></span><span style="--h:66%"></span><span style="--h:88%"></span></span>
+                                    <% } else { %>
+                                        <span class="mega-feature-demo"><%- icon('sparkle', 'icon-xl') %></span>
+                                    <% } %>
+                                </span>
+                                <span class="mega-feature-copy">
+                                    <span class="eyebrow no-dot"><%= section.featured.eyebrow %></span>
+                                    <strong><%= section.featured.title %></strong>
+                                    <span class="link-arrow"><%= section.featured.cta %> <%- icon('arrow-right') %></span>
+                                </span>
+                            </a>
+                            <% } %>
+                        </div>
+                    </div>
+                </li>
+                <% }) %>
+            </ul>
+        </nav>
+        <div class="site-header-actions">
+            <button type="button" class="btn btn-ghost btn-icon theme-toggle" data-theme-toggle aria-label="Switch to dark theme">
+                <%- icon('moon', 'icon-md theme-icon-dark') %><%- icon('sun', 'icon-md theme-icon-light') %>
+            </button>
+            <% if (signedIn) { %>
+                <a href="<%= homeHref %>" class="btn btn-primary btn-sm site-header-cta">Go to Willow <%- icon('arrow-right', 'icon-arrow') %></a>
+            <% } else { %>
+                <a href="/login" class="btn btn-ghost btn-sm site-header-signin">Sign in</a>
+                <a href="/register" class="btn btn-primary btn-sm site-header-cta">Open an account</a>
+            <% } %>
+            <button type="button" class="btn btn-ghost btn-icon site-menu-toggle" aria-expanded="false" aria-controls="mobileNav" aria-label="Open menu" data-mobile-toggle>
+                <%- icon('menu', 'icon-md site-menu-open') %><%- icon('x', 'icon-md site-menu-close') %>
+            </button>
+        </div>
+    </div>
+    <div class="mega-scrim" data-mega-scrim aria-hidden="true"></div>
+    <div class="mobile-nav" id="mobileNav" data-mobile-nav>
+        <div class="mobile-nav-inner">
+            <% siteNavigation.forEach(section => { %>
+            <details class="mobile-nav-group">
+                <summary><span><%= section.label %></span><%- icon('chevron-down', 'icon-md') %></summary>
+                <ul role="list">
+                    <% section.items.forEach(item => { %>
+                    <li><a href="<%= item.href %>"><span class="icon-tile icon-tile-sm"><%- icon(item.icon) %></span><span><strong><%= item.label %></strong><small><%= item.description %></small></span></a></li>
+                    <% }) %>
+                </ul>
+            </details>
+            <% }) %>
+            <div class="mobile-nav-actions">
+                <% if (signedIn) { %>
+                    <a href="<%= homeHref %>" class="btn btn-primary btn-lg btn-block">Go to Willow</a>
+                <% } else { %>
+                    <a href="/register" class="btn btn-primary btn-lg btn-block">Open an account</a>
+                    <a href="/login" class="btn btn-secondary btn-lg btn-block">Sign in</a>
+                <% } %>
+                <p class="mobile-nav-note">Willow is a fictional demo bank. No real money moves.</p>
+            </div>
+        </div>
+    </div>
+</header>

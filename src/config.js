@@ -9,6 +9,8 @@ const config = {
   session: {
     secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    // Signed-in sessions end after this long without a request (0 disables).
+    idleTimeoutMs: (process.env.SESSION_IDLE_MINUTES === undefined ? 30 : Math.max(0, parseInt(process.env.SESSION_IDLE_MINUTES, 10) || 0)) * 60 * 1000,
   },
 
   admin: {
@@ -24,6 +26,8 @@ const config = {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000,
     max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 100,
     authMax: parseInt(process.env.AUTH_RATE_LIMIT_MAX, 10) || 10,
+    apiMax: parseInt(process.env.API_RATE_LIMIT_MAX, 10) || 240,
+    publicApiMax: parseInt(process.env.PUBLIC_API_RATE_LIMIT_MAX, 10) || 60,
   },
 
   bcryptRounds: 12,
@@ -33,7 +37,7 @@ const config = {
   limits: {
     dailyWithdrawalCents: parseInt(process.env.DAILY_WITHDRAWAL_LIMIT_CENTS, 10) || 1000000, // $10,000
     dailyTransferCents: parseInt(process.env.DAILY_TRANSFER_LIMIT_CENTS, 10) || 2500000,    // $25,000
-    dailyDepositCents: parseInt(process.env.DAILY_DEPOSIT_LIMIT_CENTS, 10) || 5000000,      // $50,000
+    dailyDepositCents: parseInt(process.env.DAILY_DEPOSIT_LIMIT_CENTS, 10) || 1000000,      // $10,000
   },
 
   paths: {

@@ -1,0 +1,55 @@
+<%- include('partials/head', { css: ['site'], bodyClass: 'article-page' }) %>
+<%- include('partials/site-header') %>
+<main id="main">
+    <article>
+        <header class="article-header container-narrow">
+            <nav aria-label="Breadcrumb"><ol class="breadcrumbs"><li><a href="/">Willow</a></li><li><a href="<%= section.href %>"><%= section.label %></a></li><li aria-current="page"><%= article.category %></li></ol></nav>
+            <h1 class="h2"><%= article.title %></h1>
+            <p class="lede"><%= article.dek %></p>
+            <p class="article-meta mt-6"><span><%= article.category %></span><span class="dot"></span><span><%= article.readingMinutes %> min read</span><% if (article.level) { %><span class="dot"></span><span><%= article.level %></span><% } %><span class="dot"></span><span>Willow <%= article.kind === 'guide' ? 'Education' : 'Insights' %></span></p>
+        </header>
+        <div class="container">
+            <div class="article-hero-art art-tone-<%= article.kind === 'guide' ? 1 : 2 %>" aria-hidden="true"><%- icon(article.icon) %></div>
+        </div>
+        <div class="container article-layout">
+            <div class="prose">
+                <% article.sections.forEach(section => { %>
+                <h2><%= section.heading %></h2>
+                <% section.paragraphs.forEach(paragraph => { %><p><%= paragraph %></p><% }) %>
+                <% if (section.list && section.list.length) { %><ul><% section.list.forEach(item => { %><li><%= item %></li><% }) %></ul><% } %>
+                <% }) %>
+                <div class="disclosure-note mt-12"><%- icon('info') %><p>This is general information, not financial advice. Willow is a fictional demonstration platform; any product examples describe simulated features.</p></div>
+            </div>
+            <aside class="article-aside">
+                <div class="takeaways">
+                    <h2>Key takeaways</h2>
+                    <ol>
+                        <% article.keyTakeaways.forEach(item => { %><li><%= item %></li><% }) %>
+                    </ol>
+                </div>
+                <a class="btn btn-secondary btn-block" href="<%= section.href %>"><%- icon('arrow-left', 'icon-sm') %> All <%= section.label.toLowerCase() %></a>
+            </aside>
+        </div>
+    </article>
+    <% if (related.length) { %>
+    <section class="section section-muted">
+        <div class="container">
+            <div class="section-heading"><h2>Keep reading</h2></div>
+            <div class="article-grid article-grid-2">
+                <% related.forEach((item, index) => { %>
+                <a class="article-card card-interactive" href="<%= item.kind === 'guide' ? '/learn' : '/insights' %>/<%= item.slug %>">
+                    <div class="article-card-art art-tone-<%= index + 3 %>"><%- icon(item.icon) %></div>
+                    <div class="article-card-body">
+                        <p class="article-meta"><span><%= item.category %></span><span class="dot"></span><span><%= item.readingMinutes %> min</span></p>
+                        <h3><%= item.title %></h3>
+                        <p><%= item.dek %></p>
+                    </div>
+                </a>
+                <% }) %>
+            </div>
+        </div>
+    </section>
+    <% } %>
+</main>
+<%- include('partials/site-footer') %>
+<%- include('partials/foot') %>

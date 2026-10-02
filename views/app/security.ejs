@@ -1,0 +1,167 @@
+<%
+  const checks = [
+    { label: 'Strong password', done: true, text: 'Set when you opened your account.' },
+    { label: 'Two-step verification', done: twoFactor.enabled, text: twoFactor.enabled ? 'Codes required at every sign-in.' : 'Add a code from an authenticator app.' },
+    { label: 'Recovery codes saved', done: recoveryCount > 0, text: recoveryCount > 0 ? `${recoveryCount} unused code${recoveryCount === 1 ? '' : 's'} left.` : 'Create backup codes in Settings.' },
+    { label: 'Security alerts', done: prefs.alertSecurity, text: prefs.alertSecurity ? 'You’re notified about sign-in and security changes.' : 'Turn on in Settings.' },
+  ];
+  const score = Math.round(checks.filter(item => item.done).length / checks.length * 100);
+  const eventLabels = {
+    password_changed: ['key', 'Password changed'], two_factor_enabled: ['shield-check', 'Two-step verification turned on'], two_factor_disabled: ['shield', 'Two-step verification turned off'],
+    recovery_codes_generated: ['key', 'New recovery codes created'], session_revoked: ['logout', 'A session was signed out'], other_sessions_revoked: ['logout', 'Other sessions signed out'],
+    cards_frozen_all: ['snowflake', 'All cards frozen'], data_exported: ['download', 'Your data was downloaded'], password_recovered: ['key', 'Password reset with a recovery code'],
+  };
+  const frozenCount = cards.filter(card => card.status === 'frozen').length;
+%><%- include('../partials/app-start', { css: [] }) %>
+
+<header class="page-head">
+    <div class="page-head-copy">
+        <h1 class="page-head-title">Security center</h1>
+        <p class="page-head-sub">Check your protection, control your sessions and cards, and see what’s changed.</p>
+    </div>
+    <div class="page-head-actions"><a class="btn btn-secondary" href="/settings"><%- icon('settings') %> Settings</a></div>
+</header>
+
+<div class="layout-main-aside">
+    <div class="col-stack">
+        <section class="panel security-score" aria-labelledby="scoreTitle">
+            <div class="security-score-ring">
+                <div class="progress-ring" style="--value:<%= score %>;--size:112px;--thickness:10px;--ring-color:<%= score === 100 ? 'var(--positive)' : 'var(--accent)' %>" role="img" aria-label="Protection <%= score %>%"><span><%= score %>%</span></div>
+            </div>
+            <div class="security-score-copy">
+                <h2 id="scoreTitle"><%= score === 100 ? 'You’re well protected.' : score >= 75 ? 'Nearly there.' : 'A couple of steps to go.' %></h2>
+                <ul class="check-items" role="list">
+                    <% checks.forEach(item => { %>
+                    <li class="<%= item.done ? 'is-done' : '' %>"><span class="check-dot" aria-hidden="true"><%- icon(item.done ? 'check' : 'minus', 'icon-sm') %></span><div><strong><%= item.label %></strong><small><%= item.text %></small></div><span class="visually-hidden"><%= item.done ? 'Done' : 'Not done' %></span></li>
+                    <% }) %>
+                </ul>
+            </div>
+        </section>
+
+        <section class="panel" aria-labelledby="twoFactorTitle" data-two-factor data-enabled="<%= twoFactor.enabled %>">
+            <div class="panel-head">
+                <h2 id="twoFactorTitle">Two-step verification</h2>
+                <span class="status-pill <%= twoFactor.enabled ? 'is-active' : 'is-pending' %>" data-tf-status><%= twoFactor.enabled ? 'On' : 'Off' %></span>
+            </div>
+            <p class="secondary text-sm">Ask for a six-digit code from an authenticator app every time you sign in, so a password alone isn’t enough.<% if (twoFactor.enabled && twoFactor.enabledAt) { %> On since <%= formatDate(twoFactor.enabledAt) %>.<% } %></p>
+            <div class="form-actions">
+                <% if (twoFactor.enabled) { %>
+                <button type="button" class="btn btn-secondary" data-tf-disable>Turn off</button>
+                <% } else { %>
+                <button type="button" class="btn btn-primary" data-tf-enable><%- icon('shield-check') %> Set up two-step verification</button>
+                <% } %>
+            </div>
+        </section>
+
+        <section class="panel" aria-labelledby="sessionsTitle">
+            <div class="panel-head"><h2 id="sessionsTitle">Where you’re signed in</h2><button type="button" class="btn btn-ghost btn-sm" data-revoke-others><%- icon('logout', 'icon-sm') %> Sign out everywhere else</button></div>
+            <% if (sessionsUnavailable) { %>
+            <p class="muted text-sm">Session details are unavailable right now. You can still sign out everywhere else.</p>
+            <% } else { %>
+            <ul class="list-plain session-list" role="list">
+                <% activeSessions.forEach(session => { %>
+                <li class="list-row session-row" data-session-id="<%= session.id %>">
+                    <span class="icon-tile icon-tile-sm"><%- icon(/iPhone|Android|Mobile/i.test(session.device) ? 'smartphone' : 'laptop') %></span>
+                    <span class="list-row-main">
+                        <span class="list-row-title"><%= session.device %><% if (session.current) { %> <span class="badge badge-positive">This session</span><% } %></span>
+                        <span class="list-row-sub"><% if (session.signedInAt) { %>Signed in <time datetime="<%= session.signedInAt %>"><%= formatDateTime(session.signedInAt) %></time><% } else { %>Sign-in time unavailable<% } %></span>
+                    </span>
+                    <% if (!session.current) { %><button type="button" class="btn btn-secondary btn-sm" data-revoke-session="<%= session.id %>">Sign out</button><% } %>
+                </li>
+                <% }) %>
+            </ul>
+            <% } %>
+            <p class="form-status mt-3" id="sessionFeedback" role="status" tabindex="-1" hidden></p>
+        </section>
+
+        <section class="panel" aria-labelledby="historyTitle">
+            <div class="panel-head"><h2 id="historyTitle">Recent sign-ins</h2></div>
+            <% if (loginHistory.length) { %>
+            <ul class="list-plain" role="list">
+                <% loginHistory.forEach(item => { %>
+                <li class="list-row"><span class="icon-tile icon-tile-sm"><%- icon('login') %></span><span class="list-row-main"><span class="list-row-title"><%= item.device %></span><span class="list-row-sub"><time datetime="<%= item.created_at %>"><%= formatDateTime(item.created_at) %></time></span></span></li>
+                <% }) %>
+            </ul>
+            <p class="text-xs muted mt-3">Don’t recognise a sign-in? Change your password in Settings and sign out everywhere else.</p>
+            <% } else { %><p class="muted text-sm">No sign-ins recorded yet.</p><% } %>
+        </section>
+    </div>
+
+    <aside class="col-stack">
+        <section class="panel" aria-labelledby="cardSecTitle">
+            <div class="panel-head"><h2 id="cardSecTitle">Card safety</h2><a class="link-arrow" href="/cards">Cards <%- icon('arrow-right') %></a></div>
+            <p class="secondary text-sm" data-card-summary><%= cards.length ? `${cards.length - frozenCount} active · ${frozenCount} frozen` : 'No active cards.' %></p>
+            <% if (cards.length) { %>
+            <button type="button" class="btn btn-secondary btn-block mt-4" data-freeze-all<%= frozenCount === cards.length ? ' disabled' : '' %>><%- icon('snowflake') %> Freeze all cards</button>
+            <p class="text-xs muted mt-3">Lost your wallet? Freeze everything now and unfreeze cards one by one later.</p>
+            <% } %>
+        </section>
+
+        <section class="panel" aria-labelledby="recoveryTitle">
+            <div class="panel-head"><h2 id="recoveryTitle">Recovery codes</h2></div>
+            <p class="secondary text-sm"><span class="figure figure-md"><%= recoveryCount %></span> unused of 8</p>
+            <p class="text-xs muted mt-2">Each code resets your password once. Keep them somewhere private and offline.</p>
+            <a class="btn btn-secondary btn-sm mt-4" href="/settings#recovery">Manage codes</a>
+        </section>
+
+        <section class="panel" aria-labelledby="dataTitle">
+            <div class="panel-head"><h2 id="dataTitle">Privacy &amp; data</h2></div>
+            <ul class="control-list" role="list">
+                <li><span class="icon-tile icon-tile-sm"><%- icon('eye-off') %></span><label class="control-copy" for="privacyMode"><strong>Hide balances</strong><small>Blur amounts on this device</small></label><span class="switch"><input type="checkbox" role="switch" id="privacyMode" data-privacy-switch><span class="switch-track"></span></span></li>
+                <li><span class="icon-tile icon-tile-sm"><%- icon('sparkle') %></span><label class="control-copy" for="prefInsights"><strong>Personalized insights</strong><small>Use your activity for tips on Home</small></label><span class="switch"><input type="checkbox" role="switch" id="prefInsights" data-pref="personalizedInsights"<%= prefs.personalizedInsights ? ' checked' : '' %>><span class="switch-track"></span></span></li>
+            </ul>
+            <a class="btn btn-secondary btn-sm mt-4" href="/api/security/export" download><%- icon('download', 'icon-sm') %> Download my data</a>
+            <p class="text-xs muted mt-3">A JSON file with your profile, accounts, transactions, cards, payees, goals and portfolio.</p>
+        </section>
+
+        <section class="panel" aria-labelledby="eventsTitle">
+            <div class="panel-head"><h2 id="eventsTitle">Security activity</h2></div>
+            <% if (events.length) { %>
+            <ol class="timeline" role="list">
+                <% events.forEach(event => { const [iconName, label] = eventLabels[event.action] || ['shield', event.action]; %>
+                <li><span class="timeline-dot"><%- icon(iconName, 'icon-sm') %></span><div><strong><%= label %></strong><small><time datetime="<%= event.created_at %>"><%= formatDateTime(event.created_at) %></time></small></div></li>
+                <% }) %>
+            </ol>
+            <% } else { %><p class="muted text-sm">Security changes you make will be listed here.</p><% } %>
+        </section>
+    </aside>
+</div>
+
+<dialog class="modal" id="tfSetup" aria-labelledby="tfSetupTitle">
+    <div class="modal-head"><h2 id="tfSetupTitle">Set up two-step verification</h2><button type="button" class="btn btn-ghost btn-icon" data-dialog-close aria-label="Close"><%- icon('x', 'icon-md') %></button></div>
+    <div class="modal-body">
+        <ol class="tf-steps">
+            <li>Open an authenticator app on your phone and scan this code.</li>
+        </ol>
+        <div class="tf-qr" data-tf-qr><div class="skeleton skeleton-block" style="width:184px;height:184px"></div></div>
+        <p class="text-sm secondary">Can’t scan? Enter this key manually:</p>
+        <p class="tf-secret mono" data-tf-secret>…</p>
+        <ol class="tf-steps" start="2"><li>Enter the six-digit code the app shows.</li></ol>
+        <div class="field mt-3"><label for="tfCode" class="visually-hidden">Authentication code</label><input class="input input-lg code-entry" id="tfCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"></div>
+        <p class="field-error mt-3" data-tf-error role="alert" hidden></p>
+    </div>
+    <div class="modal-foot"><button type="button" class="btn btn-secondary" data-dialog-close>Cancel</button><button type="button" class="btn btn-primary" data-tf-confirm>Turn on</button></div>
+</dialog>
+
+<dialog class="modal" id="tfDisable" aria-labelledby="tfDisableTitle">
+    <div class="modal-head"><h2 id="tfDisableTitle">Turn off two-step verification?</h2></div>
+    <div class="modal-body">
+        <p class="secondary text-sm">You’ll only need your password to sign in. Confirm with your password and a current code.</p>
+        <div class="field mt-4"><label for="tfPassword">Current password</label><input class="input" id="tfPassword" type="password" autocomplete="current-password"></div>
+        <div class="field"><label for="tfDisableCode">Authenticator or backup code</label><input class="input" id="tfDisableCode" autocomplete="one-time-code"></div>
+        <p class="field-error mt-3" data-tf-disable-error role="alert" hidden></p>
+    </div>
+    <div class="modal-foot"><button type="button" class="btn btn-secondary" data-dialog-close>Cancel</button><button type="button" class="btn btn-danger" data-tf-disable-confirm>Turn off</button></div>
+</dialog>
+
+<dialog class="modal" id="revokeOthers" aria-labelledby="revokeOthersTitle">
+    <div class="modal-head"><h2 id="revokeOthersTitle">Sign out everywhere else?</h2></div>
+    <div class="modal-body">
+        <p class="secondary text-sm">Every other browser and device will be signed out. This one stays signed in.</p>
+        <div class="field mt-4"><label for="revokePassword">Current password</label><input class="input" id="revokePassword" type="password" autocomplete="current-password"></div>
+        <p class="field-error mt-3" data-revoke-error role="alert" hidden></p>
+    </div>
+    <div class="modal-foot"><button type="button" class="btn btn-secondary" data-dialog-close>Cancel</button><button type="button" class="btn btn-primary" data-revoke-confirm>Sign out others</button></div>
+</dialog>
+
+<%- include('../partials/app-end', { js: ['security'] }) %>

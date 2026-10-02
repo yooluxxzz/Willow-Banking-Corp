@@ -1,0 +1,192 @@
+<%
+  const active = accounts.filter(account => account.status === 'active');
+  const usdAccounts = active.filter(account => account.currency === 'USD');
+  const spend = summary.month.spendingCents;
+  const previous = summary.previousMonthToDateSpendingCents;
+  const spendDelta = previous > 0 && spend > 0 ? Math.round((spend - previous) / previous * 100) : null;
+  const chartData = {
+    categories: summary.categories.slice(0, 6).map(item => ({ label: item.label, value: item.cents / 100, color: item.color })),
+    cashflow: cashflow.map(item => ({ label: item.label, values: { income: item.incomeCents / 100, spending: item.spendingCents / 100 } })),
+  };
+  const nothingYet = !summary.transactionCount && !recentTxns.length;
+%><%- include('../partials/app-start', { css: [] }) %>
+
+<header class="page-head">
+    <div class="page-head-copy">
+        <p class="label" data-today><%= formatDate(new Date(), 'long') %></p>
+        <h1 class="page-head-title"><span data-greeting><%= greeting() %></span>, <%= firstName(user.full_name) %>.</h1>
+    </div>
+    <div class="page-head-actions">
+        <a class="btn btn-secondary" href="/hub"><%- icon('hub') %> Your financial picture</a>
+    </div>
+</header>
+
+<% if (welcome) { %>
+<div class="notice notice-success dismissible mb-6" data-dismissible role="status">
+    <%- icon('check-circle') %>
+    <div><strong><%= welcome === 'demo' ? 'Welcome to your guest profile.' : 'Your Willow account is ready.' %></strong>
+        <%= welcome === 'demo' ? 'It comes with a few months of sample activity so you can try everything. Nothing here is real money.' : 'Explore your accounts, send a demo payment, or ask Willow a question about your money.' %></div>
+    <button type="button" class="btn btn-ghost btn-icon btn-sm" data-dismiss aria-label="Dismiss"><%- icon('x') %></button>
+</div>
+<% } %>
+<% if (isGuest && !welcome) { %>
+<div class="notice notice-demo mb-6"><%- icon('info') %><div><strong>You’re using a guest profile.</strong> It works like any other profile. To keep it, <a class="text-link" href="/settings#keep">save your own email and password</a>.</div></div>
+<% } %>
+
+<div class="layout-main-aside">
+    <div class="col-stack">
+        <section class="balance-hero" aria-labelledby="balanceLabel">
+            <div class="balance-hero-top">
+                <div>
+                    <p class="label" id="balanceLabel">Total balance · USD</p>
+                    <p class="figure figure-xl mt-2" data-private data-count-to="<%= totals.total / 100 %>" data-currency="USD"><%= totals.totalFormatted %></p>
+                    <div class="balance-hero-meta">
+                        <span data-private><%= totals.availableFormatted %> available</span>
+                        <span><%= usdAccounts.length %> USD account<%= usdAccounts.length === 1 ? '' : 's' %></span>
+                        <% totals.foreign.forEach(row => { %><span data-private>+ <%= row.totalFormatted %></span><% }) %>
+                    </div>
+                </div>
+                <span class="demo-badge">Demo</span>
+            </div>
+            <nav class="quick-actions" aria-label="Quick actions">
+                <a class="quick-action is-primary" href="/transfers"><span class="quick-action-icon"><%- icon('send') %></span>Send</a>
+                <a class="quick-action" href="/deposits"><span class="quick-action-icon"><%- icon('plus') %></span>Add money</a>
+                <a class="quick-action" href="/transfers?mode=own"><span class="quick-action-icon"><%- icon('transfer') %></span>Move</a>
+                <a class="quick-action" href="/international"><span class="quick-action-icon"><%- icon('swap') %></span>Exchange</a>
+                <a class="quick-action" href="/cards"><span class="quick-action-icon"><%- icon('card') %></span>Cards</a>
+            </nav>
+        </section>
+
+        <% if (nothingYet && !sampleDataLoaded) { %>
+        <section class="panel sample-prompt">
+            <span class="icon-tile is-accent"><%- icon('sparkle') %></span>
+            <div class="sample-prompt-copy">
+                <h2 class="h5">Bring your dashboard to life</h2>
+                <p class="secondary text-sm">Add a few months of realistic sample activity — purchases, salary, savings, cards, payees and goals. It’s all simulated and only visible to you.</p>
+            </div>
+            <button type="button" class="btn btn-primary" data-load-sample>Add sample activity</button>
+        </section>
+        <% } %>
+
+        <section aria-labelledby="accountsTitle">
+            <div class="section-heading"><h2 id="accountsTitle">Accounts</h2><a class="link-arrow" href="/accounts">All accounts <%- icon('arrow-right') %></a></div>
+            <div class="account-tiles">
+                <% active.slice(0, 5).forEach(account => { %><%- include('../partials/account-tile', { account }) %><% }) %>
+                <a class="account-tile is-new" href="/accounts/new"><span class="icon-tile"><%- icon('plus') %></span><span class="account-tile-name">Open an account</span><span class="account-tile-sub">Savings, business or another currency</span></a>
+            </div>
+        </section>
+
+        <section class="panel" aria-labelledby="spendingTitle" id="spending">
+            <div class="panel-head">
+                <h2 id="spendingTitle">This month</h2>
+                <a class="link-arrow" href="/hub#spending">Details <%- icon('arrow-right') %></a>
+            </div>
+            <div class="month-stats">
+                <div><p class="label">Spent</p><p class="figure figure-md" data-private><%= money(spend) %></p>
+                    <% if (spendDelta !== null) { %><p class="text-xs muted"><span class="delta <%= spendDelta <= 0 ? 'is-up' : 'is-down' %>"><%= spendDelta > 0 ? '+' : spendDelta < 0 ? '−' : '' %><%= Math.abs(spendDelta) %>%</span> vs this point last month</p><% } else { %><p class="text-xs muted">USD accounts, excluding transfers</p><% } %>
+                </div>
+                <div><p class="label">Money in</p><p class="figure figure-md positive" data-private><%= money(summary.month.earnedCents) %></p><p class="text-xs muted">Income and deposits</p></div>
+                <div><p class="label">Saved</p><p class="figure figure-md" data-private><%= money(Math.max(0, summary.savingsMovementCents)) %></p><p class="text-xs muted">Net into savings</p></div>
+            </div>
+            <div class="layout-halves mt-6 month-charts">
+                <div>
+                    <p class="label mb-3">Where it went</p>
+                    <div data-category-chart><% if (!summary.categories.length) { %><p class="muted text-sm">No spending yet this month.</p><% } %></div>
+                </div>
+                <div>
+                    <div class="chart-head"><p class="label">Six months</p><span class="legend-inline"><span><i style="background:var(--chart-1)"></i>In</span><span><i style="background:var(--chart-3)"></i>Out</span></span></div>
+                    <div class="chart-columns" data-cashflow-chart></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel" aria-labelledby="activityTitle">
+            <div class="panel-head">
+                <h2 id="activityTitle">Recent activity</h2>
+                <a class="link-arrow" href="/transactions">All transactions <%- icon('arrow-right') %></a>
+            </div>
+            <% if (recentTxns.length) { %>
+            <ul class="txn-list" role="list">
+                <% recentTxns.forEach(txn => { const account = accounts.find(item => item.id === txn.account_id); %><%- include('../partials/txn-row', { txn, accountName: account ? account.displayName : '' }) %><% }) %>
+            </ul>
+            <% } else { %>
+            <div class="empty is-compact"><div class="empty-art"><%- icon('activity') %></div><h3>No activity yet</h3><p>Add money or send a demo payment and it will appear here.</p><a class="btn btn-primary btn-sm" href="/deposits">Add money</a></div>
+            <% } %>
+        </section>
+    </div>
+
+    <aside class="col-stack" aria-label="Highlights">
+        <section class="panel" aria-labelledby="insightsTitle">
+            <div class="panel-head"><h2 id="insightsTitle">Insights</h2><button type="button" class="btn btn-ghost btn-sm" data-ask-open><%- icon('sparkle', 'icon-sm') %> Ask Willow</button></div>
+            <% if (insights.length) { %>
+            <div class="insight-list">
+                <% insights.slice(0, 3).forEach(item => { %>
+                <a class="insight" href="<%= item.href %>"><span class="icon-tile icon-tile-sm<%= item.tone === 'positive' ? ' is-positive' : '' %>"><%- icon(item.icon) %></span><div><p><%= item.text %></p><small data-private><%= item.detail %></small></div></a>
+                <% }) %>
+            </div>
+            <% } else if (!insightsEnabled) { %>
+            <p class="muted text-sm">Personalized insights are off. <a class="text-link" href="/settings#privacy">Turn them on in Settings</a>.</p>
+            <% } else { %>
+            <p class="muted text-sm">Insights appear once you have some activity this month.</p>
+            <% } %>
+            <p class="text-xs muted mt-4">Calculated from your own Willow data. Informational, not advice.</p>
+        </section>
+
+        <section class="panel" aria-labelledby="cardsTitle">
+            <div class="panel-head"><h2 id="cardsTitle">Cards</h2><a class="link-arrow" href="/cards">Manage <%- icon('arrow-right') %></a></div>
+            <% if (cards.length) { %>
+            <a class="dash-card" href="/cards?card=<%= cards[0].id %>" aria-label="Manage <%= cards[0].displayName %>"><%- include('../partials/bank-card', { card: cards[0], size: 'sm' }) %></a>
+            <ul class="list-plain mt-4" role="list">
+                <% cards.forEach(card => { %>
+                <li class="list-row"><span class="list-row-main"><span class="list-row-title"><%= card.displayName %></span><span class="list-row-sub">•••• <%= card.last_four %> · <%= card.form === 'virtual' ? 'Virtual' : 'Physical' %></span></span><span class="status-pill is-<%= card.status %>"><%= card.statusLabel %></span></li>
+                <% }) %>
+            </ul>
+            <% } else { %>
+            <p class="muted text-sm">No active cards.</p>
+            <a class="btn btn-secondary btn-sm mt-3" href="/cards">Get a card</a>
+            <% } %>
+        </section>
+
+        <section class="panel" aria-labelledby="goalsTitle">
+            <div class="panel-head"><h2 id="goalsTitle">Goals</h2><a class="link-arrow" href="/goals">All goals <%- icon('arrow-right') %></a></div>
+            <% if (summary.goals.length) { %>
+            <ul class="goal-mini-list" role="list">
+                <% summary.goals.slice(0, 3).forEach(goal => { const pct = Math.min(100, Math.round(goal.current_cents / goal.target_cents * 100)); %>
+                <li>
+                    <div class="goal-mini-head"><strong><%= goal.name %></strong><span class="num"><%= pct %>%</span></div>
+                    <div class="progress is-accent" role="progressbar" aria-valuenow="<%= pct %>" aria-valuemin="0" aria-valuemax="100" aria-label="<%= goal.name %> progress"><span style="--value: <%= pct %>%"></span></div>
+                    <p class="text-xs muted" data-private><%= money(goal.current_cents, 'USD', { whole: true }) %> of <%= money(goal.target_cents, 'USD', { whole: true }) %></p>
+                </li>
+                <% }) %>
+            </ul>
+            <% } else { %>
+            <p class="muted text-sm">Set a goal — a trip, a home, a safety net — and track your progress.</p>
+            <a class="btn btn-secondary btn-sm mt-3" href="/goals">Create a goal</a>
+            <% } %>
+        </section>
+
+        <section class="panel" aria-labelledby="upcomingTitle">
+            <div class="panel-head"><h2 id="upcomingTitle">Upcoming</h2><a class="link-arrow" href="/scheduled-transfers">Scheduled <%- icon('arrow-right') %></a></div>
+            <% if (summary.scheduledTransfers.length) { %>
+            <ul class="list-plain" role="list">
+                <% summary.scheduledTransfers.slice(0, 3).forEach(item => { %>
+                <li class="list-row"><span class="icon-tile icon-tile-sm"><%- icon('calendar') %></span><span class="list-row-main"><span class="list-row-title"><%= item.description || 'Scheduled transfer' %></span><span class="list-row-sub"><%= formatDate(item.scheduled_for) %> · to <%= item.to_nickname || '••' + item.to_last_four %></span></span><span class="list-row-end"><strong data-private><%= money(item.amount) %></strong></span></li>
+                <% }) %>
+            </ul>
+            <% } else { %>
+            <p class="muted text-sm">Nothing scheduled. Set up a one-time transfer for a future date.</p>
+            <% } %>
+        </section>
+
+        <section class="panel wealth-teaser" aria-labelledby="wealthTitle" data-wealth-teaser>
+            <div class="panel-head"><h2 id="wealthTitle">Demo portfolio</h2><a class="link-arrow" href="/wealth">Open <%- icon('arrow-right') %></a></div>
+            <p class="figure figure-md" data-private data-wealth-value><span class="skeleton skeleton-line" style="width:140px;height:1.4em"></span></p>
+            <p class="text-sm muted" data-wealth-sub>Loading the latest prices…</p>
+            <div class="wealth-teaser-spark" data-wealth-spark aria-hidden="true"></div>
+            <p class="text-xs muted mt-3"><span class="sim-tag">Simulated</span> $100,000 practice money · delayed prices</p>
+        </section>
+    </aside>
+</div>
+
+<script type="application/json" id="dashboardData"><%- JSON.stringify(chartData).replace(/</g, '\\u003c') %></script>
+<%- include('../partials/app-end', { js: ['dashboard'] }) %>

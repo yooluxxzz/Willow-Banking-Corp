@@ -19,7 +19,11 @@ describe('Demo wealth platform', () => {
         assert.equal(page.status, 200);
         assert.match(page.text, /DEMO · NOT A BROKERAGE/);
         assert.match(page.text, /Simulated order/);
-        assert.equal((await supertest(app).get('/loans')).status, 200);
+        const loans = await supertest(app).get('/loans');
+        assert.equal(loans.status, 302);
+        assert.equal(loans.headers.location, '/borrow/personal-loans');
+        assert.equal((await supertest(app).get('/borrow/personal-loans')).status, 200);
+        assert.equal((await first.agent.get('/loans')).status, 200);
         assert.equal((await supertest(app).get('/help')).status, 200);
     });
 
@@ -91,7 +95,7 @@ describe('Demo wealth platform', () => {
             assert.equal(response.status, 200);
             assert.equal(response.body.indicativeOnly, true);
             assert.equal(response.body.rates.length, 4);
-            assert.ok(response.body.rates.every(rate => rate.type === 'fx'));
+            assert.deepEqual(response.body.rates.map(rate => rate.currency).sort(), ['EUR', 'GBP', 'MZN', 'ZAR']);
             assert.equal((await first.agent.get('/international')).status, 200);
         } finally {
             global.fetch = originalFetch;
