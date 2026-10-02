@@ -89,6 +89,7 @@ app.use('/api/statements', require('./src/routes/statements'));
 app.use('/api/wealth', require('./src/routes/wealth'));
 app.use('/api/hub', require('./src/routes/hub'));
 app.use('/api/goals', require('./src/routes/goals'));
+app.use('/api/scheduled-transfers', require('./src/routes/scheduled-transfers'));
 app.use('/api/admin', require('./src/routes/admin'));
 app.use('/health', require('./src/routes/health'));
 
@@ -128,6 +129,18 @@ async function start() {
 
         console.log('[Server] Checking admin account...');
         await initializeAdmin();
+
+        const { processDueScheduledTransfers } = require('./src/services/scheduled-transfers');
+        const processScheduledTransfers = () => {
+            try {
+                const result = processDueScheduledTransfers();
+                if (result.completed) console.log(`[Server] Completed ${result.completed} scheduled demo transfer(s).`);
+            } catch (error) {
+                console.error('[Server] Scheduled demo transfer check failed:', error.message);
+            }
+        };
+        processScheduledTransfers();
+        const scheduledTransferTimer = setInterval(processScheduledTransfers, 60 * 1000);
 
         // Background task: process scheduled deletions every hour
         setInterval(() => {
@@ -173,6 +186,7 @@ async function start() {
         // Graceful shutdown
         const shutdown = (signal) => {
             console.log(`\n[Server] Received ${signal}. Shutting down gracefully...`);
+            clearInterval(scheduledTransferTimer);
             server.close(() => {
                 closeDatabase();
                 console.log('[Server] Shutdown complete.');

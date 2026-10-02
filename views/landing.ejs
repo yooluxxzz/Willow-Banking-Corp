@@ -60,12 +60,15 @@
         <div class="home-hero-story" data-hero-story>
         <section class="home-hero home-hero-crossfade" id="home" aria-labelledby="homeHeroTitle" data-hero-crossfade data-active-image="a">
             <div class="home-hero-photos">
-                <img class="home-hero-photo home-hero-photo-b" src="/images/willow-hero-employee.webp" srcset="/images/willow-hero-employee-768.webp 768w, /images/willow-hero-employee.webp 1536w" sizes="100vw" alt="A bank employee listening attentively across a service counter" aria-hidden="true" width="1536" height="1024" decoding="async">
-                <img class="home-hero-photo home-hero-photo-a" src="/images/willow-hero-customer.webp" srcset="/images/willow-hero-customer-768.webp 768w, /images/willow-hero-customer.webp 1536w" sizes="100vw" alt="A banking customer speaking with an employee at a service counter" width="1536" height="1024" fetchpriority="high" decoding="async">
+                <img class="home-hero-photo home-hero-photo-a" data-hero-photo="a" src="/images/willow-hero-customer.webp" srcset="/images/willow-hero-customer-768.webp 768w, /images/willow-hero-customer.webp 1536w" sizes="100vw" alt="" aria-hidden="false" width="1536" height="1024" fetchpriority="high" decoding="async">
+                <img class="home-hero-photo home-hero-photo-b" data-hero-photo="b" src="https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&amp;fit=crop&amp;w=1536&amp;q=76" srcset="https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&amp;fit=crop&amp;w=768&amp;q=76 768w, https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&amp;fit=crop&amp;w=1536&amp;q=76 1536w" sizes="100vw" alt="" aria-hidden="true" width="1536" height="1024" loading="lazy" fetchpriority="low" decoding="async">
+                <img class="home-hero-photo home-hero-photo-c" data-hero-photo="c" src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&amp;fit=crop&amp;w=1536&amp;q=76" srcset="https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&amp;fit=crop&amp;w=768&amp;q=76 768w, https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&amp;fit=crop&amp;w=1536&amp;q=76 1536w" sizes="100vw" alt="" aria-hidden="true" width="1536" height="1024" loading="lazy" fetchpriority="low" decoding="async">
+                <img class="home-hero-photo home-hero-photo-d" data-hero-photo="d" src="https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&amp;fit=crop&amp;w=1536&amp;q=76" srcset="https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&amp;fit=crop&amp;w=768&amp;q=76 768w, https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&amp;fit=crop&amp;w=1536&amp;q=76 1536w" sizes="100vw" alt="" aria-hidden="true" width="1536" height="1024" loading="lazy" fetchpriority="low" decoding="async">
+                <img class="home-hero-photo home-hero-photo-e" data-hero-photo="e" src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&amp;fit=crop&amp;w=1536&amp;q=76" srcset="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&amp;fit=crop&amp;w=768&amp;q=76 768w, https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&amp;fit=crop&amp;w=1536&amp;q=76 1536w" sizes="100vw" alt="" aria-hidden="true" width="1536" height="1024" loading="lazy" fetchpriority="low" decoding="async">
             </div>
             <div class="home-hero-shade" aria-hidden="true"></div>
             <div class="home-hero-content">
-                <div class="home-hero-copy hero-scene-copy" data-hero-copy="a">
+                <div class="home-hero-copy hero-scene-copy" data-hero-copy="a" data-hero-label="For everyday life.">
                     <p class="home-eyebrow">Willow Banking Corp. <span>Personal banking</span></p>
                     <h1 id="homeHeroTitle">Your money. Moving forward.</h1>
                     <p>Everyday accounts, cards, transfers and clear digital tools, brought together around the life you're building.</p>
@@ -74,24 +77,47 @@
                         <a href="#banking" class="home-text-link">Explore banking <span aria-hidden="true">&#8594;</span></a>
                     </div>
                 </div>
-                <div class="home-hero-copy hero-scene-copy" data-hero-copy="b" aria-hidden="true" inert>
-                    <p class="home-eyebrow">Your next chapter <span>With Willow</span></p>
-                    <h2>More clarity.<br>More possibility.</h2>
-                    <p>A place for everyday spending, the goals ahead, and a clearer view of your money.</p>
-                    <ul class="hero-scene-details" aria-label="Explore Willow banking">
-                        <li>Everyday accounts</li>
-                        <li>Savings goals</li>
-                        <li>Digital tools</li>
-                    </ul>
+                <div class="home-hero-copy hero-scene-copy" data-hero-copy="b" data-hero-label="For what you're building." aria-hidden="true" inert>
+                    <p class="home-eyebrow">Your next chapter <span>Planning</span></p>
+                    <h2>Make room for what matters.</h2>
+                    <p>Bring savings and everyday spending into a clearer view while you plan for home, family and the moments ahead.</p>
                     <div class="home-hero-actions">
-                        <a href="#banking" class="home-button home-button-light">Explore the accounts</a>
-                        <a href="/personal" class="home-text-link">Personal banking <span aria-hidden="true">&#8594;</span></a>
+                        <a href="/products/savings" class="home-button home-button-light">Explore savings</a>
+                        <a href="/login?returnTo=%2Fgoals" class="home-text-link">Plan a goal <span aria-hidden="true">&#8594;</span></a>
+                    </div>
+                </div>
+                <div class="home-hero-copy hero-scene-copy" data-hero-copy="c" data-hero-label="For the work you're building." aria-hidden="true" inert>
+                    <p class="home-eyebrow">Built for business <span>Willow</span></p>
+                    <h2>Keep good work moving.</h2>
+                    <p>See business checking alongside everyday money, with a distinct place to review your demo account activity.</p>
+                    <div class="home-hero-actions">
+                        <a href="/business" class="home-button home-button-light">Explore business</a>
+                        <a href="/login?returnTo=%2Fbusiness%2Fdashboard" class="home-text-link">Business workspace <span aria-hidden="true">&#8594;</span></a>
+                    </div>
+                </div>
+                <div class="home-hero-copy hero-scene-copy" data-hero-copy="d" data-hero-label="For everywhere life takes you." aria-hidden="true" inert>
+                    <p class="home-eyebrow">Across borders <span>Indicative demo</span></p>
+                    <h2>Feel at home, wherever you go.</h2>
+                    <p>Explore indicative currency rates and estimate a conversion. No foreign-currency account or transfer is executed.</p>
+                    <div class="home-hero-actions">
+                        <a href="/login?returnTo=%2Finternational" class="home-button home-button-light">Explore currencies</a>
+                        <a href="/products/transfers" class="home-text-link">Demo transfers <span aria-hidden="true">&#8594;</span></a>
+                    </div>
+                </div>
+                <div class="home-hero-copy hero-scene-copy" data-hero-copy="e" data-hero-label="For the future you're growing." aria-hidden="true" inert>
+                    <p class="home-eyebrow">A longer view <span>Simulated investing</span></p>
+                    <h2>See the bigger picture.</h2>
+                    <p>Explore market data and a simulated portfolio alongside your everyday Willow demo accounts.</p>
+                    <div class="home-hero-actions">
+                        <a href="/login?returnTo=%2Fwealth" class="home-button home-button-light">Explore Wealth</a>
+                        <a href="/login?returnTo=%2Fhub" class="home-text-link">Your financial picture <span aria-hidden="true">&#8594;</span></a>
                     </div>
                 </div>
             </div>
-            <div class="hero-story-guide" aria-hidden="true">
-                <span data-hero-guide>01 / 02 &nbsp; Scroll to discover</span>
-                <span class="hero-story-track"><span></span></span>
+            <div class="hero-story-guide" aria-label="Homepage story controls">
+                <span data-hero-guide aria-live="polite">01 / 05 · For everyday life.</span>
+                <span class="hero-story-track" aria-hidden="true"><span></span></span>
+                <button class="hero-story-toggle" type="button" data-hero-toggle aria-label="Pause hero scenes" aria-pressed="true">Pause scenes</button>
             </div>
         </section>
         </div>

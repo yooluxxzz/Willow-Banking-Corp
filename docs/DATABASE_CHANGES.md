@@ -51,6 +51,13 @@ The application uses sql.js with its schema and startup migrations in `src/datab
 - Startup creates `demo_goals(id, user_id, name, category, target_cents, current_cents, created_at, updated_at)`. Rows are owned by a single user, cascade on account deletion, restrict categories and enforce positive targets with progress between zero and the target.
 - Goal amounts are self-reported planning values only. Creating or updating a goal does not move money or modify account balances, savings balances, or ledger transactions. The Hub shows these saved goals with the same planning-only disclosure.
 
+## 2026-10-02: scheduled demo transfers
+
+- Startup creates `scheduled_transfers`, storing owner ID, source/destination account IDs, amount in cents, description, UTC execution date, status and resulting ledger reference. It is separate from posted transactions until execution.
+- Scheduling is limited to a single future transfer between two active USD accounts owned by the same customer, no more than one year ahead and within the per-transfer demo limit. Creating/cancelling a schedule does not change account balances. Customers can cancel only while the due time has not arrived.
+- The server checks due records every minute. Each settlement runs in a database transaction, rechecks ownership/status/funds/account state/daily transfer limit, debits and credits the paired accounts, writes both ledger entries, updates schedule status and audit event. Reprocessing cannot replay completed or cancelled rows. Insufficient funds/inactive accounts mark the schedule failed without posting a debit.
+- This is a one-time internal demo transfer, not external bill pay, a recurring payment mandate, or a real-money instruction. Dates are interpreted in UTC.
+
 ## Recovery delivery and backups
 
 No email delivery service is configured. Recovery therefore requires a code saved before losing account access. There is no public reset-link shortcut. If all codes are lost and the password is forgotten, self-service recovery is unavailable.

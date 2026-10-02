@@ -1,4 +1,4 @@
-/* Two scenes share one sticky stage, then release into the page categories. */
+/* Five scenes share one sticky stage, then release into the page categories. */
 .home-hero-story {
   --hero-nav-height: 73px;
   --hero-viewport-height: 100vh;
@@ -55,16 +55,16 @@
   transition: opacity 800ms cubic-bezier(0.35, 0, 0, 1);
   mix-blend-mode: normal;
 }
-.home-hero-photo-a { z-index: 1; opacity: 1; }
-.home-hero-photo-b { z-index: 0; }
-[data-active-image="b"] .home-hero-photo-a { opacity: 0; }
-[data-active-image="b"] .home-hero-photo-b { opacity: 1; }
-.is-scroll-ready .home-hero-photos,
-.is-scroll-ready .home-hero-photo {
+.home-hero-photo-a { object-position: var(--hero-photo-a-x, 35%) 0%; }
+.home-hero-photo { z-index: 0; }
+[data-active-image="a"] [data-hero-photo="a"],
+[data-active-image="b"] [data-hero-photo="b"],
+[data-active-image="c"] [data-hero-photo="c"],
+[data-active-image="d"] [data-hero-photo="d"],
+[data-active-image="e"] [data-hero-photo="e"] { opacity: 1; }
+.is-scroll-ready .home-hero-photos {
   transition: none;
 }
-.is-scroll-ready .home-hero-photo-a { opacity: calc(1 - var(--hero-scene-progress, 0)); }
-.is-scroll-ready .home-hero-photo-b { opacity: var(--hero-scene-progress, 0); }
 .home-hero-crossfade .home-hero-shade {
   background: linear-gradient(0deg, rgba(10,30,24,.92) 0%, rgba(10,30,24,.65) 30%, rgba(24,52,46,.05) 70%, transparent 100%);
 }
@@ -74,19 +74,15 @@
   justify-content: start;
   padding: 40px 48px 88px;
   gap: 0;
+  pointer-events: none;
 }
 .home-hero-crossfade .home-hero-copy { max-width: 580px; padding: 0; }
-.hero-scene-copy { grid-area: 1 / 1; transition: opacity 800ms cubic-bezier(0.35,0,0,1), visibility 800ms; }
-.hero-scene-copy[data-hero-copy="b"] { opacity: 0; visibility: hidden; pointer-events: none; }
-[data-active-image="b"] [data-hero-copy="a"] { opacity: 0; visibility: hidden; pointer-events: none; }
-[data-active-image="b"] [data-hero-copy="b"] { opacity: 1; visibility: visible; pointer-events: auto; }
-.is-scroll-ready .home-hero-crossfade .hero-scene-copy {
-  visibility: visible;
-  pointer-events: auto;
-  transition: none;
-}
-.is-scroll-ready .home-hero-crossfade [data-hero-copy="a"] { opacity: var(--hero-copy-a-opacity, 1); }
-.is-scroll-ready .home-hero-crossfade [data-hero-copy="b"] { opacity: var(--hero-copy-b-opacity, 0); }
+.hero-scene-copy { grid-area: 1 / 1; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 800ms cubic-bezier(0.35,0,0,1), visibility 800ms; }
+[data-active-image="a"] [data-hero-copy="a"],
+[data-active-image="b"] [data-hero-copy="b"],
+[data-active-image="c"] [data-hero-copy="c"],
+[data-active-image="d"] [data-hero-copy="d"],
+[data-active-image="e"] [data-hero-copy="e"] { opacity: 1; visibility: visible; pointer-events: auto; }
 .is-scroll-ready .home-hero-crossfade .hero-scene-copy[inert] { pointer-events: none; }
 .home-hero-crossfade .home-hero-copy > * { animation: none; }
 body.home-page .home-hero-crossfade h1,
@@ -99,10 +95,13 @@ body.home-page .home-hero-crossfade .home-text-link,
 body.home-page .home-hero-crossfade .home-text-link:hover { color: #fff; }
 .hero-scene-details { display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 0; margin: 0 0 24px; list-style: none; font-size: 13px; color: #f0e2d4; }
 .hero-scene-details li { border-top: 1px solid #ffffff55; padding-top: 8px; }
-.hero-story-guide { display: flex; position: absolute; bottom: 28px; left: max(48px, calc((100% - 1280px) / 2 + 48px)); right: max(48px, calc((100% - 1280px) / 2 + 48px)); align-items: center; justify-content: space-between; gap: 24px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #f0e2d4; }
+.hero-story-guide { display: flex; position: absolute; z-index: 3; bottom: 28px; left: max(48px, calc((100% - 1280px) / 2 + 48px)); right: max(48px, calc((100% - 1280px) / 2 + 48px)); align-items: center; justify-content: space-between; gap: 18px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #f0e2d4; }
 .is-scroll-ready .hero-story-guide { display: flex; }
-.hero-story-track { display: block; width: 140px; height: 2px; background: #ffffff40; }
+.hero-story-track { display: block; flex: 0 0 140px; height: 2px; background: #ffffff40; }
 .hero-story-track > span { display: block; height: 100%; background: #f0e2d4; transform: scaleX(var(--story-progress,0)); transform-origin: left; }
+.hero-story-toggle { flex: 0 0 auto; border: 1px solid #ffffff75; border-radius: 2px; background: #18342e80; color: #fff; padding: 7px 10px; font: inherit; font-size: 10px; letter-spacing: .04em; text-transform: uppercase; cursor: pointer; }
+.hero-story-toggle:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.hero-story-toggle:disabled { cursor: default; opacity: .8; }
 @media (max-width: 760px) {
   .home-hero-story {
     --hero-stage-height: max(650px, calc(var(--hero-viewport-height) - var(--hero-nav-height)));
@@ -113,6 +112,7 @@ body.home-page .home-hero-crossfade .home-text-link:hover { color: #fff; }
     --hero-photo-start-radius: 12px;
   }
   .home-hero-photo { object-position: 50% 35%; }
+  .home-hero-photo-a { object-position: var(--hero-photo-a-x, 35%) 35%; }
   .home-hero-crossfade .home-hero-shade { background: linear-gradient(0deg,#18342e 48%,transparent 70%); }
   .home-hero-crossfade .home-hero-content { padding: 24px 24px 62px; }
   body.home-page .home-hero-crossfade h1,
@@ -123,8 +123,9 @@ body.home-page .home-hero-crossfade .home-text-link:hover { color: #fff; }
   .home-hero-crossfade .home-button { padding: 12px 15px; font-size: 12px; }
   .home-hero-crossfade .home-text-link { font-size: 12px; }
   .hero-scene-details { gap: 10px; font-size: 10px; margin-bottom: 18px; }
-  .hero-story-guide { left: 24px; right: 24px; bottom: 22px; font-size: 9px; gap: 12px; }
-  .hero-story-track { width: 64px; }
+  .hero-story-guide { left: 24px; right: 24px; bottom: 18px; font-size: 8px; gap: 8px; }
+  .hero-story-track { flex-basis: 44px; }
+  .hero-story-toggle { padding: 6px 7px; font-size: 8px; }
 }
 /* Keep the hero pinned when it fits; let compact landscape screens scroll naturally. */
 @media (min-width: 761px) and (min-height: 560px) and (max-height: 680px) {

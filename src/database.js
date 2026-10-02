@@ -121,6 +121,22 @@ async function initializeDatabase() {
             CHECK(current_cents <= target_cents)
         );
 
+        CREATE TABLE IF NOT EXISTS scheduled_transfers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            from_account_id INTEGER NOT NULL REFERENCES accounts(id),
+            to_account_id INTEGER NOT NULL REFERENCES accounts(id),
+            amount INTEGER NOT NULL CHECK(amount > 0),
+            description TEXT NOT NULL DEFAULT '',
+            scheduled_for TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'processing', 'completed', 'failed', 'cancelled')),
+            transaction_reference TEXT UNIQUE,
+            result_message TEXT DEFAULT NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            executed_at TEXT DEFAULT NULL,
+            CHECK(from_account_id != to_account_id)
+        );
+
     CREATE TABLE IF NOT EXISTS transactions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       reference TEXT NOT NULL UNIQUE,
@@ -192,6 +208,8 @@ async function initializeDatabase() {
         'CREATE INDEX IF NOT EXISTS idx_cards_account_id ON cards(account_id)',
         'CREATE INDEX IF NOT EXISTS idx_demo_trades_user_created ON demo_trades(user_id, created_at)',
         'CREATE INDEX IF NOT EXISTS idx_demo_goals_user ON demo_goals(user_id, created_at)',
+        'CREATE INDEX IF NOT EXISTS idx_scheduled_transfers_due ON scheduled_transfers(status, scheduled_for)',
+        'CREATE INDEX IF NOT EXISTS idx_scheduled_transfers_user ON scheduled_transfers(user_id, created_at)',
         'CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)',
         'CREATE INDEX IF NOT EXISTS idx_users_customer_id ON users(customer_id)',
     ];

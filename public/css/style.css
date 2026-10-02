@@ -3833,6 +3833,7 @@ body.home-page .section-inner {
 
 body.home-page .home-nav {
   position: sticky;
+  z-index: 40;
   top: 0;
   left: auto;
   right: auto;
@@ -3933,6 +3934,32 @@ body.home-page .home-nav .nav-links .home-nav-cta:hover {
 
 .home-menu-toggle[aria-expanded="true"] .menu-close-icon {
   display: block;
+}
+
+@media (min-width: 901px) and (max-width: 1280px) {
+  .home-menu-toggle { display: inline-flex; }
+  body.home-page .home-nav .nav-inner { position: relative; }
+  body.home-page .home-nav .nav-links {
+    position: absolute;
+    top: 100%;
+    right: 24px;
+    left: auto;
+    width: min(520px, calc(100vw - 48px));
+    max-height: calc(100svh - 104px);
+    overflow-y: auto;
+    padding: 18px;
+    display: none;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 4px;
+    border: 1px solid var(--home-line);
+    background: var(--home-paper);
+    box-shadow: 0 12px 28px rgba(18, 39, 32, 0.14);
+  }
+  body.home-page .home-nav .nav-links.is-open { display: flex; }
+  body.home-page .home-nav .nav-links a:not(.home-nav-cta) { padding: 10px 8px; }
+  body.home-page .home-nav .nav-links .home-nav-cta { margin-top: 8px; text-align: center; }
+  body.home-page .nav-theme-toggle { align-self: flex-start; }
 }
 
 .home-hero {

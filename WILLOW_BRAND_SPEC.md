@@ -55,13 +55,13 @@ Use a 4px base rhythm with common steps at 8, 12, 16, 24, 32, 48, 64 and 96px. U
 
 ### Photography and Willow Motif
 
-Use editorial everyday-life photography with natural light, human subjects and room for copy. The hero combines two separate generated photographs at once: a banking customer on the left and a bank employee on the right, facing each other across a service counter. Their neutral interior, lighting, camera height and scale match. A dark forest overlay supports the desktop copy. The willow emblem has a curved canopy, hanging fronds and a clear trunk.
+Use editorial everyday-life photography with natural light, human subjects and room for copy. The homepage hero tells five parts of the Willow story: everyday banking, home and family plans, small business, travel and long-term wealth. Its first scene uses the locally served banking-customer photograph; four responsive photographs currently load from the Unsplash CDN. A dark forest overlay supports white copy. The willow emblem has a curved canopy, hanging fronds and a clear trunk.
 
 ## Homepage Story
 
 1. Utility bar: identify personal banking and provide a direct support path.
 2. Navigation: Banking, Digital experience, Trust and security, Help, Sign in and Open an account.
-3. Hero: explain what Willow is, who it serves and the next action, with two photographs crossfading in one fixed container.
+3. Hero: explain what Willow is, who it serves and the next action, with five photographs and scene-matched copy crossfading in one fixed container.
 4. Brand proposition: connect everyday clarity, room to grow and a people-first experience.
 5. Products: checking, savings, debit cards and transfers link to their existing product pages.
 6. Digital experience: show a clearly labeled illustrative account view and the practical account tasks it represents.
@@ -84,7 +84,7 @@ Do not use fabricated customer counts, ratings, uptime, rates, certifications, g
 
 **Secondary action:** Explore banking.
 
-The hero stacks two separate local WebP photographs in exactly the same full-size container. Photo A starts visible above Photo B. Their complementary opacity transitions last 800ms with cubic-bezier(0.35, 0, 0, 1). Both use identical object-fit: cover and object-position values, with no masks or position animation. An isolated plus-lighter blend prevents a dark midpoint flash; unsupported browsers retain an opaque lower image. Text, buttons and lower shading remain separate HTML/CSS above the images.
+The hero stacks five photographs in the same full-size container and crossfades them over 800ms with cubic-bezier(0.35, 0, 0, 1). Copy, links and the decorative photograph advance together. The first photo is a local WebP; the four later scenes use Unsplash image URLs with 768px/1536px `srcset` candidates. Replace external sources with controlled, locally optimized AVIF/WebP assets before production use. Text and lower shading remain separate HTML/CSS above the images.
 
 On phones, keep the overlapping photographs in the upper 48% of the stage and the copy below them on forest green. Both scenes retain the same dimensions.
 
@@ -108,23 +108,23 @@ Navigation stays flat; the current product set does not need dropdowns. On compa
 
 ## Animation
 
-After both files decode, enhance the hero into a sticky stage beneath the navigation. The stage fills the available viewport and has 190svh of scroll travel. The first scene holds initially; then its framed photograph expands while the HTML copy fades into scene two. Hold the full-bleed second scene before releasing into the page. Reverse the sequence on upward scroll. Do not intercept wheel or touch input. Inactive copy is inert and aria-hidden. A progress line and changing scroll cue explain the sequence. Short viewports fall back to normal flow to keep controls reachable. Section copy reveals once as it enters the viewport. Avoid continuous number counters, parallax and large moving shapes.
+After the first local photo is ready, enhance the hero into a sticky stage beneath the navigation. The stage fills the available viewport and has 190svh of scroll travel. Five scene states are selected across that travel; the framed photograph expands while scene-matched copy fades between states, then the stage releases into the page. Upward scrolling reverses the sequence. Before user interaction, scenes also crossfade every ten seconds. Pointer, focus, keyboard, wheel and touch interaction pause autoplay; the visible pause/resume control can restart it. Inactive copy is inert and aria-hidden. A progress line and changing scene cue explain the sequence. Short viewports fall back to normal flow to keep controls reachable. Section copy reveals once as it enters the viewport. Avoid continuous number counters, parallax and large moving shapes.
 
-For `prefers-reduced-motion: reduce`, disable opacity transitions and remove entrance/reveal movement. Scroll-triggered image changes are immediate.
+For `prefers-reduced-motion: reduce`, disable autoplay and sticky scroll changes, retain the first static scene, and remove entrance/reveal movement.
 
 ## Responsive Behavior
 
-**Desktop:** Two-scene sticky editorial hero, four-column product row, two-column digital preview, and wide trust band.
+**Desktop:** Five-scene sticky editorial hero, four-column product row, two-column digital preview, and wide trust band.
 
 **Tablet:** Keep both image layers identically aligned; change product links to two columns and stack experience and trust layouts where needed.
 
-**Mobile:** Crossfade in a compact fixed photo area with identical centered crops, followed by readable copy and calls to action. Use a 44px hero heading, expose navigation through the menu button, and collapse product links to one column. Keep the dashboard sample narrow and wrap its account rows without horizontal scrolling.
+**Mobile:** Crossfade in a compact fixed photo area with identical cover crops, followed by readable scene copy and calls to action. Keep the scene cue and pause control reachable above the lower edge. Use a 44px hero heading, expose navigation through the menu button, and collapse product links to one column. Keep the dashboard sample narrow and wrap its account rows without horizontal scrolling.
 
 ## Accessibility and Performance
 
-Use semantic sections and heading order, descriptive alt text for both hero photos, expanded states, Escape-to-close navigation and a visible focus outline. Ensure content remains available if JavaScript or IntersectionObserver is unavailable.
+Use semantic sections and heading order, keep decorative hero photos hidden from assistive technology, expose active scene copy and an accessible pause/resume control, and retain expanded states, Escape-to-close navigation and visible focus. Ensure the first scene remains available without JavaScript.
 
-Both responsive hero images use `srcset`, `sizes` and asynchronous decoding; the first has `fetchpriority="high"`. In production, serve campaign images from a controlled asset host in AVIF/WebP with correct dimensions. Keep the images separate and animate only opacity. The first image remains visible without JavaScript, and the inactive image is hidden from the accessibility tree.
+Responsive hero images use `srcset`, `sizes`, asynchronous decoding and lazy loading after the first scene; the first local image has `fetchpriority="high"`. Production must replace external CDN images with a controlled asset host in AVIF/WebP at correct dimensions. Keep images separate and animate only opacity. The first image remains visible without JavaScript, and inactive images/copy are hidden from the accessibility tree.
 
 ## Production Readiness
 

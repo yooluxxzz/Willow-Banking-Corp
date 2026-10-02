@@ -35,27 +35,57 @@ function setupHeroCrossfade() {
     const hero = document.querySelector('[data-hero-crossfade]');
     const story = hero?.closest('[data-hero-story]');
     if (!hero || !story) return;
-    const photos = [hero.querySelector('.home-hero-photo-a'), hero.querySelector('.home-hero-photo-b')];
+    const photos = Array.from(hero.querySelectorAll('[data-hero-photo]'));
     const copies = Array.from(hero.querySelectorAll('[data-hero-copy]'));
     const guide = hero.querySelector('[data-hero-guide]');
+    const toggle = hero.querySelector('[data-hero-toggle]');
     const nav = document.querySelector('.home-nav');
-    if (photos.some(photo => !photo)) return;
+    const sceneIds = photos.map(photo => photo.dataset.heroPhoto);
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (photos.length < 2 || copies.length !== photos.length || photos.some((photo, index) => !photo || !copies.some(copy => copy.dataset.heroCopy === sceneIds[index]))) return;
 
     let frame = null;
+    let autoplayTimer = null;
     let photoFrame = { top: 8, right: 4, bottom: 8, left: 62, radius: 20 };
     const show = (scene) => {
         if (hero.dataset.activeImage === scene) return;
         hero.dataset.activeImage = scene;
-        photos[0].setAttribute('aria-hidden', String(scene !== 'a'));
-        photos[1].setAttribute('aria-hidden', String(scene !== 'b'));
+        photos.forEach(photo => photo.setAttribute('aria-hidden', String(photo.dataset.heroPhoto !== scene)));
         copies.forEach(copy => {
             const inactive = copy.dataset.heroCopy !== scene;
             copy.inert = inactive;
             copy.setAttribute('aria-hidden', String(inactive));
         });
-        if (guide) guide.textContent = scene === 'a'
-            ? '01 / 02  Scroll to discover'
-            : '02 / 02  Keep scrolling to explore';
+        const sceneIndex = sceneIds.indexOf(scene);
+        const sceneCopy = copies.find(copy => copy.dataset.heroCopy === scene);
+        if (guide) guide.textContent = `${String(sceneIndex + 1).padStart(2, '0')} / ${String(sceneIds.length).padStart(2, '0')} · ${sceneCopy.dataset.heroLabel || 'Explore Willow'}`;
+    };
+    const updateToggle = () => {
+        if (!toggle) return;
+        const playing = autoplayTimer !== null;
+        toggle.textContent = playing ? 'Pause scenes' : 'Resume scenes';
+        toggle.setAttribute('aria-label', playing ? 'Pause hero scenes' : 'Resume hero scenes');
+        toggle.setAttribute('aria-pressed', String(playing));
+    };
+    const pauseAutoplay = () => {
+        if (autoplayTimer === null) return;
+        window.clearInterval(autoplayTimer);
+        autoplayTimer = null;
+        updateToggle();
+    };
+    const startAutoplay = () => {
+        if (reducedMotion || autoplayTimer !== null) return;
+        autoplayTimer = window.setInterval(() => {
+            const activeIndex = Math.max(0, sceneIds.indexOf(hero.dataset.activeImage));
+            const nextIndex = (activeIndex + 1) % sceneIds.length;
+            show(sceneIds[nextIndex]);
+            hero.style.setProperty('--story-progress', String(nextIndex / (sceneIds.length - 1)));
+        }, 10000);
+        updateToggle();
+    };
+    const pauseForInteraction = event => {
+        if (event?.target?.closest?.('[data-hero-toggle]')) return;
+        pauseAutoplay();
     };
     const updateFromScroll = () => {
         frame = null;
@@ -65,20 +95,18 @@ function setupHeroCrossfade() {
         const progress = Math.min(1, Math.max(0, (top - bounds.top) / travel));
         const photoProgress = Math.min(1, progress / 0.68);
         const easedPhotoProgress = photoProgress * photoProgress * (3 - 2 * photoProgress);
-        const sceneProgress = Math.min(1, Math.max(0, (progress - 0.36) / 0.32));
-        const copyAOpacity = 1 - Math.min(1, Math.max(0, (progress - 0.26) / 0.22));
-        const copyBOpacity = Math.min(1, Math.max(0, (progress - 0.46) / 0.2));
         hero.style.setProperty('--hero-photo-inset-top', `${photoFrame.top * (1 - easedPhotoProgress)}%`);
         hero.style.setProperty('--hero-photo-inset-right', `${photoFrame.right * (1 - easedPhotoProgress)}%`);
         hero.style.setProperty('--hero-photo-inset-bottom', `${photoFrame.bottom * (1 - easedPhotoProgress)}%`);
         hero.style.setProperty('--hero-photo-inset-left', `${photoFrame.left * (1 - easedPhotoProgress)}%`);
         hero.style.setProperty('--hero-photo-radius', `${photoFrame.radius * (1 - easedPhotoProgress)}px`);
+        hero.style.setProperty('--hero-photo-a-x', `${35 + 15 * easedPhotoProgress}%`);
         hero.style.setProperty('--hero-photo-border-opacity', 0.72 * (1 - easedPhotoProgress));
-        hero.style.setProperty('--hero-scene-progress', sceneProgress);
-        hero.style.setProperty('--hero-copy-a-opacity', copyAOpacity);
-        hero.style.setProperty('--hero-copy-b-opacity', copyBOpacity);
+        if (autoplayTimer === null) {
+            const sceneIndex = Math.min(sceneIds.length - 1, Math.floor(progress * sceneIds.length));
+            show(sceneIds[sceneIndex]);
+        }
         hero.style.setProperty('--story-progress', progress);
-        show(progress >= 0.46 ? 'b' : 'a');
     };
     const schedule = () => {
         if (frame === null) frame = window.requestAnimationFrame(updateFromScroll);
@@ -96,34 +124,35 @@ function setupHeroCrossfade() {
         updateFromScroll();
     };
     const enableScrollStory = () => {
-        const loaded = photos.map(photo => photo.complete && photo.naturalWidth > 0);
-        if (!loaded[0] && loaded[1]) show('b');
-        if (!loaded.every(Boolean) && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-            // Keep the scroll cue visible even if image decoding is slightly delayed.
-            story.classList.add('is-scroll-ready');
-            resize();
-            window.addEventListener('scroll', schedule, { passive: true });
-            window.addEventListener('resize', resize, { passive: true });
-            window.addEventListener('pageshow', resize);
-            if ('ResizeObserver' in window && nav) new ResizeObserver(resize).observe(nav);
+        if (reducedMotion) {
+            hero.dataset.motionPreference = 'reduced';
+            if (toggle) {
+                toggle.disabled = true;
+                toggle.textContent = 'Motion reduced';
+                toggle.setAttribute('aria-label', 'Autoplay disabled by reduced motion preference');
+            }
             return;
         }
-        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
         story.classList.add('is-scroll-ready');
         resize();
         window.addEventListener('scroll', schedule, { passive: true });
         window.addEventListener('resize', resize, { passive: true });
         window.addEventListener('pageshow', resize);
         if ('ResizeObserver' in window && nav) new ResizeObserver(resize).observe(nav);
+        hero.addEventListener('pointerdown', pauseForInteraction);
+        hero.addEventListener('focusin', pauseForInteraction);
+        hero.addEventListener('keydown', pauseForInteraction);
+        window.addEventListener('wheel', pauseAutoplay, { passive: true });
+        window.addEventListener('touchstart', pauseAutoplay, { passive: true });
+        if (toggle) toggle.addEventListener('click', () => autoplayTimer === null ? startAutoplay() : pauseAutoplay());
+        startAutoplay();
     };
-    if (photos.every(photo => photo.complete)) {
+    if (photos[0].complete) {
         enableScrollStory();
     } else {
-        Promise.all(photos.map(photo => new Promise(resolve => {
-            if (photo.complete) return resolve();
-            photo.addEventListener('load', resolve, { once: true });
-            photo.addEventListener('error', resolve, { once: true });
-        }))).then(enableScrollStory).catch(enableScrollStory);
+        const firstPhotoReady = () => enableScrollStory();
+        photos[0].addEventListener('load', firstPhotoReady, { once: true });
+        photos[0].addEventListener('error', firstPhotoReady, { once: true });
     }
 }
 

@@ -30,6 +30,92 @@ describe('Banking experience and transfer boundaries', () => {
         const home = await supertest(app).get('/');
         assert.match(home.text, /progress is self-reported and does not move money/);
         assert.match(home.text, /Sign in to save a planning goal/);
+        assert.equal((home.text.match(/data-hero-photo=/g) || []).length, 5);
+        assert.equal((home.text.match(/data-hero-copy=/g) || []).length, 5);
+        assert.match(home.text, /data-hero-toggle/);
+    });
+    it('crossfades five hero scenes, pauses on interaction, and disables autoplay for reduced motion', () => {
+        const createEnvironment = reducedMotion => {
+            const sceneIds = ['a', 'b', 'c', 'd', 'e'];
+            const windowHandlers = {};
+            const heroHandlers = {};
+            let intervalCallback = null;
+            let intervalId = 0;
+            const photos = sceneIds.map(id => ({
+                complete: true,
+                naturalWidth: 100,
+                dataset: { heroPhoto: id },
+                setAttribute(name, value) { this[name] = value; },
+                addEventListener() {},
+            }));
+            const copies = sceneIds.map(id => ({
+                dataset: { heroCopy: id, heroLabel: `Scene ${id}` },
+                setAttribute(name, value) { this[name] = value; },
+                inert: id !== 'a',
+            }));
+            const guide = { textContent: '' };
+            const toggle = {
+                disabled: false,
+                setAttribute(name, value) { this[name] = value; },
+                addEventListener(name, handler) { this.clickHandler = handler; },
+            };
+            const story = {
+                offsetHeight: 2900,
+                top: 0,
+                style: { setProperty() {} },
+                classList: { add() {} },
+                getBoundingClientRect() { return { top: this.top }; },
+            };
+            const hero = {
+                dataset: { activeImage: 'a' },
+                offsetHeight: 1000,
+                style: { setProperty() {} },
+                closest(selector) { return selector === '[data-hero-story]' ? story : null; },
+                querySelectorAll(selector) { return selector === '[data-hero-photo]' ? photos : copies; },
+                querySelector(selector) { return selector === '[data-hero-guide]' ? guide : toggle; },
+                addEventListener(name, handler) { heroHandlers[name] = handler; },
+            };
+            const window = {
+                matchMedia: () => ({ matches: reducedMotion }),
+                requestAnimationFrame(callback) { callback(); return 1; },
+                getComputedStyle: () => ({ getPropertyValue: () => '' }),
+                addEventListener(name, handler) { windowHandlers[name] = handler; },
+                setInterval(callback) { intervalCallback = callback; intervalId += 1; return intervalId; },
+                clearInterval() { intervalCallback = null; },
+            };
+            const document = {
+                addEventListener() {},
+                querySelector(selector) { return selector === '[data-hero-crossfade]' ? hero : null; },
+            };
+            const context = { document, window };
+            context.window = window;
+            vm.createContext(context);
+            vm.runInContext(fs.readFileSync(path.join(__dirname, '../public/js/app.js'), 'utf8'), context);
+            context.setupHeroCrossfade();
+            return { context, hero, story, toggle, guide, photos, copies, heroHandlers, windowHandlers, get intervalCallback() { return intervalCallback; } };
+        };
+
+        const environment = createEnvironment(false);
+        assert.equal(environment.intervalCallback !== null, true);
+        environment.intervalCallback();
+        assert.equal(environment.hero.dataset.activeImage, 'b');
+        assert.match(environment.guide.textContent, /02 \/ 05/);
+        environment.heroHandlers.pointerdown({ target: environment.hero });
+        assert.equal(environment.intervalCallback, null);
+        const travel = environment.story.offsetHeight - environment.hero.offsetHeight;
+        environment.story.top = -travel;
+        environment.windowHandlers.scroll();
+        assert.equal(environment.hero.dataset.activeImage, 'e');
+        assert.equal(environment.copies.find(copy => copy.dataset.heroCopy === 'e').inert, false);
+        environment.toggle.clickHandler();
+        assert.equal(environment.intervalCallback !== null, true);
+        environment.toggle.clickHandler();
+        assert.equal(environment.intervalCallback, null);
+
+        const reduced = createEnvironment(true);
+        assert.equal(reduced.intervalCallback, null);
+        assert.equal(reduced.toggle.disabled, true);
+        assert.match(reduced.toggle.textContent, /Motion reduced/);
     });
     it('updates the goal story content when a different personal finance goal is selected', () => {
         const fields = {

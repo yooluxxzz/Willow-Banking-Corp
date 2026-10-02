@@ -64,3 +64,9 @@ Each asset is separate and locally served. The two largest WebP files total abou
 The prompts above record the original companion-photo generation. The latest animation brief supersedes the side-by-side layout: public/css/hero-crossfade.css stacks both full-frame assets with identical cover crops and animates complementary opacity over 800ms using cubic-bezier(0.35, 0, 0, 1). Text, buttons and lower shading are separate HTML/CSS. The hero stays pinned while scrolling changes Photo A and its headline into Photo B with new details. It then releases into the page categories. Phones put photos above the copy in the same stage. Scrolling up restores Photo A. There is no autoplay or playback UI. Reduced motion removes the transition.
 
 public/css/depth.css gives selected cards soft shadows and a restrained perspective hover. Hover movement requires a fine pointer, hover support and no reduced-motion preference; touch and reduced-motion layouts remain stable. The photographic hero stays flat and only changes opacity.
+
+## Five-scene homepage story
+
+The current homepage hero uses five sequential scenes: the local Willow customer photograph for everyday banking, then CDN photographs for a family/home goal, business, travel and wealth. The four Unsplash URLs use responsive 768px and 1536px candidates, automatic format selection and quality 76. These URLs were checked for availability when integrated; they remain an external runtime dependency and should be replaced by controlled optimized assets before production.
+
+Scene-matched headlines and calls to action remain live HTML. The pinned scroll journey selects all five scenes; before interaction, autoplay crossfades every ten seconds. Pointer, focus, keyboard, wheel and touch interaction pause it. A visible control resumes or pauses the sequence. Reduced-motion preference disables autoplay and scroll-driven scene changes and keeps the first local photograph static.

@@ -43,6 +43,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             const progress = document.createElement('progress'); progress.max = goal.target_cents; progress.value = goal.current_cents; progress.setAttribute('aria-label', `${goal.name} self-reported goal progress`);
             row.append(label, progress); goals.append(row);
         });
+        const scheduled = byId('hubScheduledTransfers'); scheduled.replaceChildren();
+        if (!summary.scheduledTransfers.length) {
+            scheduled.append(text('p', 'No pending scheduled demo transfers.', 'wealth-empty'));
+        }
+        summary.scheduledTransfers.forEach(transfer => {
+            const row = document.createElement('div'); row.className = 'hub-expense-row';
+            row.append(text('span', `${transfer.description || 'Transfer'} · ${transfer.scheduled_for.slice(0, 10)} UTC`), text('strong', format(transfer.amount)));
+            scheduled.append(row);
+        });
         root.setAttribute('aria-busy', 'false');
     } catch (error) {
         byId('hubError').hidden = false; byId('hubError').textContent = error.message; root.setAttribute('aria-busy', 'false');

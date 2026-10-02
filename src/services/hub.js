@@ -1,6 +1,7 @@
 const { getDb } = require('../database');
 const demoPortfolio = require('./demo-portfolio');
 const goalService = require('./goals');
+const scheduledTransfers = require('./scheduled-transfers');
 
 function getSummary(userId) {
     const db = getDb();
@@ -38,6 +39,8 @@ function getSummary(userId) {
         demoPortfolioCashCents: portfolio.cashCents,
         transactionCount: activity.length,
         goals: goalService.listGoals(userId),
+        scheduledTransfers: scheduledTransfers.listScheduledTransfers(userId).filter(transfer => transfer.status === 'pending').slice(0, 5),
+        scheduledTransferCount: scheduledTransfers.getPendingScheduledTransferCount(userId),
     };
 }
 
@@ -74,7 +77,13 @@ function answerQuestion(userId, question) {
     if (/income|received/.test(query)) {
         return { answer: `Completed credits recorded this month total ${currency(summary.month.incomeCents)} in your demo accounts.`, links: [{ label: 'Review transactions', href: '/transactions' }] };
     }
-    return { answer: 'I can answer from your demo account balances, this month’s completed income or spending, savings balances, and simulated portfolio holdings. I do not have access to scheduled payments, credit, external accounts or financial advice.', links: [{ label: 'View accounts', href: '/accounts' }, { label: 'Open Wealth', href: '/wealth' }] };
+    if (/scheduled|upcoming transfer|due transfer/.test(query)) {
+        const transfers = summary.scheduledTransfers;
+        if (!summary.scheduledTransferCount) return { answer: 'You have no pending scheduled demo transfers. Bill payments and external transfers are not connected.', links: [{ label: 'Schedule a demo transfer', href: '/scheduled-transfers' }] };
+        const next = transfers[0];
+        return { answer: `You have ${summary.scheduledTransferCount} pending scheduled demo transfer${summary.scheduledTransferCount === 1 ? '' : 's'}. The next is ${currency(next.amount)} on ${next.scheduled_for.slice(0, 10)} UTC. No funds move until the due date, and bill pay is not connected.`, links: [{ label: 'Review scheduled transfers', href: '/scheduled-transfers' }] };
+    }
+    return { answer: 'I can answer from your demo account balances, this month’s completed income or spending, savings balances, simulated portfolio holdings, and pending scheduled demo transfers. I do not have access to credit, external accounts, bill pay or financial advice.', links: [{ label: 'View accounts', href: '/accounts' }, { label: 'Open Wealth', href: '/wealth' }] };
 }
 
 module.exports = { getSummary, answerQuestion };

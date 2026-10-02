@@ -123,6 +123,18 @@ router.get('/transfers', requireAuth, (req, res) => {
     res.render('transfers', { title: 'Transfer Money — Willow Banking Corp.', accounts });
 });
 
+router.get('/scheduled-transfers', requireAuth, (req, res) => {
+    const tomorrow = new Date();
+    tomorrow.setUTCHours(0, 0, 0, 0);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+    res.set('Cache-Control', 'no-store');
+    res.render('scheduled-transfers', {
+        title: 'Scheduled transfers — Willow Banking Corp.',
+        accounts: getUserAccounts(req.session.userId).filter(account => account.status === 'active' && account.currency === 'USD'),
+        minScheduleDate: tomorrow.toISOString().slice(0, 10),
+    });
+});
+
 router.get('/deposits', requireAuth, (req, res) => {
     const accounts = getUserAccounts(req.session.userId);
     res.render('deposits', { title: 'Deposit Funds — Willow Banking Corp.', accounts });
