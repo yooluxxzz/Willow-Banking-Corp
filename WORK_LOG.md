@@ -109,3 +109,9 @@ Each completed work session is recorded here and committed locally. Git history 
 - Updated the public page metadata and project brand specification to match the same wording, keeping the digital banking experience consistent from the landing page through the demo sign-in flow.
 - Validation: the project test suite runs successfully with Node’s built-in runner (`node --test tests/*.test.js`), with all 92 tests passing and 0 failing. No schema or live account data changes were introduced in this final brand pass; only the public-facing brand copy and work log were updated.
 - Repository note: this change is recorded in the local Git history without modifying the live session or account database files, and the work log entry documents the final verification state for the current session.
+
+## Homepage personalization pass - 2026-10-02
+
+- Added the missing Willow goal-selection section to the public homepage to match the brief’s “What are you working toward?” requirement, including a premium, interactive selection flow rather than a static questionnaire.
+- The personalization cards surface relevant financial-product cues and a compact goal summary, making the homepage feel more like an integrated financial ecosystem instead of a generic marketing page.
+- Validation: the existing Node regression suite remains green after the homepage update (`node --test tests/*.test.js`), with 92 tests passing and 0 failing. No schema or live account data changes were introduced.

@@ -4257,6 +4257,127 @@ body.home-page .home-nav .nav-links .home-nav-cta:hover {
   font-weight: 600;
 }
 
+.home-personalization {
+  padding: 104px 0 64px;
+  background: var(--home-surface);
+}
+
+.goal-pill-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.goal-pill {
+  min-height: 76px;
+  padding: 18px 18px;
+  border: 1px solid var(--home-line);
+  border-radius: 16px;
+  background: var(--home-paper);
+  color: var(--home-ink);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.goal-pill:hover,
+.goal-pill:focus-visible {
+  border-color: rgba(32, 63, 54, 0.35);
+  transform: translateY(-1px);
+}
+
+.goal-pill.is-active {
+  background: var(--home-forest);
+  border-color: var(--home-forest);
+  color: #FFFFFF;
+  box-shadow: 0 12px 30px rgba(32, 63, 54, 0.18);
+}
+
+.goal-story {
+  margin-top: 26px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: 18px;
+}
+
+.goal-story-card {
+  display: none;
+  min-height: 220px;
+  padding: 28px 24px;
+  border: 1px solid var(--home-line);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(32, 63, 54, 0.04), rgba(120, 137, 123, 0.05));
+}
+
+.goal-story-card.is-active {
+  display: block;
+}
+
+.goal-tag {
+  display: inline-flex;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(32, 63, 54, 0.08);
+  color: var(--home-forest);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.goal-story-card h3 {
+  margin: 18px 0 8px;
+  color: var(--home-ink);
+  font-family: var(--home-font-display);
+  font-size: 32px;
+  line-height: 1.1;
+}
+
+.goal-story-card p {
+  margin: 0;
+  color: var(--home-muted);
+  line-height: 1.7;
+}
+
+.goal-story-card ul {
+  margin: 18px 0 0;
+  padding-left: 18px;
+  color: var(--home-ink);
+  line-height: 1.8;
+}
+
+.goal-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.mini-stat {
+  min-height: 140px;
+  padding: 18px 18px 20px;
+  border: 1px solid var(--home-line);
+  border-radius: 16px;
+  background: var(--home-paper);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.mini-stat span,
+.mini-stat small {
+  color: var(--home-muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+}
+
+.mini-stat strong {
+  color: var(--home-ink);
+  font-size: clamp(1.3rem, 2vw, 2rem);
+  font-weight: 600;
+}
+
 .home-products {
   background: var(--home-surface);
 }

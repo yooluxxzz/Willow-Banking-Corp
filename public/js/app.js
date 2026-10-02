@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupHomeNavigation();
     setupHeroCrossfade();
     setupHomeReveals();
+    setupGoalSelection();
 });
 
 function setupHeroCrossfade() {
@@ -172,6 +173,20 @@ function setupHomeReveals() {
 
     sections.forEach((section) => observer.observe(section));
     document.body.classList.add('home-reveals-enabled');
+}
+
+function setupGoalSelection() {
+    const pills = document.querySelectorAll('.goal-pill');
+    const panels = document.querySelectorAll('[data-goal-panel]');
+    if (!pills.length || !panels.length) return;
+
+    pills.forEach((pill) => {
+        pill.addEventListener('click', () => {
+            const selectedGoal = pill.dataset.goal;
+            pills.forEach((button) => button.classList.toggle('is-active', button === pill));
+            panels.forEach((panel) => panel.classList.toggle('is-active', panel.dataset.goalPanel === selectedGoal));
+        });
+    });
 }
 
 function setupLandingCalculator() {
