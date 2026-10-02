@@ -122,3 +122,10 @@ Each completed work session is recorded here and committed locally. Git history 
 - Added a premium financial-intelligence panel that responds to common finance prompts such as spending, investments, savings and portfolio allocation. This makes the homepage feel like a connected financial operating system instead of a static landing page.
 - The work stays in the demo/illustrative layer only and does not imply real trading, real advice or real-money movement; it is framed as an informational product experience tied to the existing Willow demo ecosystem.
 - Validation: the project regression suite still passes after the page expansion (`node --test tests/*.test.js`), with 92 passing tests and 0 failures. No schema or account-data migration was needed for this UI-only enhancement.
+
+## Willow platform narrative pass - 2026-10-02
+
+- Added a further homepage product-layer section that frames Willow as a fuller financial platform: life banking, wealth, business and security all appear in one connected story rather than a single-account marketing page.
+- This layer gives the homepage more product breadth and makes the brand feel like a serious financial institution rather than a generic fintech landing screen.
+- The section remains demo-oriented and is designed to match the broader Willow upgrade brief without changing existing user flows or backend logic.
+- Validation: the project regression suite remains green after the additional homepage layer (`node --test tests/*.test.js`), with 92 passing tests and 0 failures.
