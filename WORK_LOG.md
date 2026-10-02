@@ -135,3 +135,11 @@ Each completed work session is recorded here and committed locally. Git history 
 - Restored the hero scroll cue and ensured the landing page keeps the “Scroll to discover” indicator in the live storefront experience.
 - Continued the product-story expansion with a “Built for the next move” section covering home, investing and business momentum, reinforcing the sense that Willow is a broader financial platform rather than a single-product landing page.
 - Validation: the app remains stable after the final continuation pass (`node --test tests/*.test.js`), with 92 passing tests and 0 failures.
+
+## Goal-story regression fix - 2026-10-02
+
+- Corrected the final homepage regression where the “What are you working toward?” goal story panel failed to update when different finance goals were selected.
+- Restored the dynamic goal-content update path so the goal tag, headline, description, supporting list and mini-metrics all swap correctly between savings, investing, home, business, money and travel scenarios.
+- Kept the scroll cue visible in the pinned hero while preserving the premium landing-page interaction without altering the working banking backend or user flows.
+- Added the missing Node `vm` import in the goal-selection regression test so the page script can be evaluated in the project’s real test harness.
+- Validation: `node --test tests/*.test.js` passes with 93 tests passing and 0 failing. The fix remains isolated to the homepage experience layer; no account, session or database schema changes were introduced.

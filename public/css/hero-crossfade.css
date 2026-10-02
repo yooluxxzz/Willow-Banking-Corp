@@ -97,7 +97,7 @@ body.home-page .home-hero-crossfade .home-text-link,
 body.home-page .home-hero-crossfade .home-text-link:hover { color: #fff; }
 .hero-scene-details { display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 0; margin: 0 0 24px; list-style: none; font-size: 13px; color: #f0e2d4; }
 .hero-scene-details li { border-top: 1px solid #ffffff55; padding-top: 8px; }
-.hero-story-guide { display: none; position: absolute; bottom: 28px; left: max(48px, calc((100% - 1280px) / 2 + 48px)); right: max(48px, calc((100% - 1280px) / 2 + 48px)); align-items: center; justify-content: space-between; gap: 24px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #f0e2d4; }
+.hero-story-guide { display: flex; position: absolute; bottom: 28px; left: max(48px, calc((100% - 1280px) / 2 + 48px)); right: max(48px, calc((100% - 1280px) / 2 + 48px)); align-items: center; justify-content: space-between; gap: 24px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #f0e2d4; }
 .is-scroll-ready .hero-story-guide { display: flex; }
 .hero-story-track { display: block; width: 140px; height: 2px; background: #ffffff40; }
 .hero-story-track > span { display: block; height: 100%; background: #f0e2d4; transform: scaleX(var(--story-progress,0)); transform-origin: left; }

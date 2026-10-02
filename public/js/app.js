@@ -97,9 +97,17 @@ function setupHeroCrossfade() {
     const enableScrollStory = () => {
         const loaded = photos.map(photo => photo.complete && photo.naturalWidth > 0);
         if (!loaded[0] && loaded[1]) show('b');
-        if (!loaded.every(Boolean)) return;
+        if (!loaded.every(Boolean) && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            // Keep the scroll cue visible even if image decoding is slightly delayed.
+            story.classList.add('is-scroll-ready');
+            resize();
+            window.addEventListener('scroll', schedule, { passive: true });
+            window.addEventListener('resize', resize, { passive: true });
+            window.addEventListener('pageshow', resize);
+            if ('ResizeObserver' in window && nav) new ResizeObserver(resize).observe(nav);
+            return;
+        }
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-        // Enhance only after both photos load; the first scene works without JS.
         story.classList.add('is-scroll-ready');
         resize();
         window.addEventListener('scroll', schedule, { passive: true });
@@ -114,7 +122,7 @@ function setupHeroCrossfade() {
             if (photo.complete) return resolve();
             photo.addEventListener('load', resolve, { once: true });
             photo.addEventListener('error', resolve, { once: true });
-        }))).then(enableScrollStory);
+        }))).then(enableScrollStory).catch(enableScrollStory);
     }
 }
 
@@ -205,11 +213,109 @@ function setupGoalSelection() {
     const panels = document.querySelectorAll('[data-goal-panel]');
     if (!pills.length || !panels.length) return;
 
+    const goalContent = {
+        savings: {
+            tag: 'Savings',
+            title: 'Build a stronger cushion.',
+            description: 'Keep everyday spending in view while setting aside money for the moments that matter most.',
+            bullets: ['Goal-based savings', 'Clear transfer tracking', 'Monthly insight summaries'],
+            stats: [
+                { label: 'Suggested allocation', value: '$18.5K', note: 'target balance' },
+                { label: 'Next step', value: 'Open', note: 'savings goal' },
+                { label: 'Recommended tools', value: '3', note: 'connected features' },
+                { label: 'Focus', value: 'Steady', note: 'monthly growth' },
+            ],
+        },
+        invest: {
+            tag: 'Investing',
+            title: 'Plan for compounding growth.',
+            description: 'Bring long-term goals and portfolio context into the same view without losing sight of everyday spending.',
+            bullets: ['Diversified portfolio tracking', 'Periodic allocation review', 'Long-view goal planning'],
+            stats: [
+                { label: 'Suggested allocation', value: '$42K', note: 'portfolio target' },
+                { label: 'Next step', value: 'Review', note: 'investment mix' },
+                { label: 'Recommended tools', value: '5', note: 'connected features' },
+                { label: 'Focus', value: 'Growth', note: 'compounding pace' },
+            ],
+        },
+        home: {
+            tag: 'Home',
+            title: 'Make the next move feel manageable.',
+            description: 'Stay organized around deposit goals, purchase timing and the monthly rhythm that supports a confident decision.',
+            bullets: ['Home purchase timing', 'Down payment planning', 'Timeline milestones'],
+            stats: [
+                { label: 'Suggested allocation', value: '$64K', note: 'down payment' },
+                { label: 'Next step', value: 'Build', note: 'home timeline' },
+                { label: 'Recommended tools', value: '4', note: 'connected features' },
+                { label: 'Focus', value: 'Ready', note: 'purchase runway' },
+            ],
+        },
+        business: {
+            tag: 'Business',
+            title: 'Keep momentum moving behind the work.',
+            description: 'Connect business spending, savings and daily cash flow so your next opportunity is easier to act on.',
+            bullets: ['Business reserve planning', 'Fast cash visibility', 'Working capital review'],
+            stats: [
+                { label: 'Suggested allocation', value: '$30K', note: 'cash reserve' },
+                { label: 'Next step', value: 'Open', note: 'business hub' },
+                { label: 'Recommended tools', value: '6', note: 'connected features' },
+                { label: 'Focus', value: 'Flow', note: 'operating pace' },
+            ],
+        },
+        money: {
+            tag: 'Everyday money',
+            title: 'Give your routine a clearer rhythm.',
+            description: 'Simplify the essentials while keeping your savings, bills and next-step decisions in one more focused view.',
+            bullets: ['Budget clarity', 'Recurring bill control', 'Daily movement insights'],
+            stats: [
+                { label: 'Suggested allocation', value: '$12K', note: 'monthly buffer' },
+                { label: 'Next step', value: 'Review', note: 'weekly budget' },
+                { label: 'Recommended tools', value: '3', note: 'connected features' },
+                { label: 'Focus', value: 'Clear', note: 'day-to-day pace' },
+            ],
+        },
+        travel: {
+            tag: 'Travel',
+            title: 'Build a plan for the next adventure.',
+            description: 'Keep international spending and your broader goals in sync so the trip feels exciting and prepared.',
+            bullets: ['Travel reserve setting', 'FX-aware planning', 'Trip milestone tracking'],
+            stats: [
+                { label: 'Suggested allocation', value: '$9.8K', note: 'travel budget' },
+                { label: 'Next step', value: 'Set', note: 'travel date' },
+                { label: 'Recommended tools', value: '4', note: 'connected features' },
+                { label: 'Focus', value: 'Flexible', note: 'next departure' },
+            ],
+        },
+    };
+
+    const updateGoalContent = (selectedGoal) => {
+        const content = goalContent[selectedGoal] || goalContent.savings;
+        const tag = document.getElementById('goalTag');
+        const title = document.getElementById('goalStoryTitle');
+        const description = document.getElementById('goalStoryDescription');
+        const list = document.getElementById('goalStoryList');
+
+        if (tag) tag.textContent = content.tag;
+        if (title) title.textContent = content.title;
+        if (description) description.textContent = content.description;
+        if (list) list.innerHTML = content.bullets.map((item) => `<li>${item}</li>`).join('');
+
+        content.stats.forEach((stat, index) => {
+            const label = document.getElementById(`goalStat${index + 1}Label`);
+            const value = document.getElementById(`goalStat${index + 1}Value`);
+            const note = document.getElementById(`goalStat${index + 1}Note`);
+            if (label) label.textContent = stat.label;
+            if (value) value.textContent = stat.value;
+            if (note) note.textContent = stat.note;
+        });
+    };
+
     pills.forEach((pill) => {
         pill.addEventListener('click', () => {
             const selectedGoal = pill.dataset.goal;
             pills.forEach((button) => button.classList.toggle('is-active', button === pill));
             panels.forEach((panel) => panel.classList.toggle('is-active', panel.dataset.goalPanel === selectedGoal));
+            updateGoalContent(selectedGoal);
         });
     });
 }

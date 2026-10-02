@@ -1,5 +1,8 @@
 const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
 const supertest = require('supertest');
 const { createTestApp, registerAgent } = require('./setup');
 
@@ -24,6 +27,50 @@ describe('Banking experience and transfer boundaries', () => {
             assert.equal(response.status, 200, route);
         }
         assert.match((await supertest(app).get('/business')).text, /Business checking is a single-owner demo account/);
+    });
+    it('updates the goal story content when a different personal finance goal is selected', () => {
+        const fields = {
+            goalTag: { textContent: '' },
+            goalStoryTitle: { textContent: '' },
+            goalStoryDescription: { textContent: '' },
+            goalStoryList: { innerHTML: '' },
+            goalStat1Label: { textContent: '' },
+            goalStat1Value: { textContent: '' },
+            goalStat1Note: { textContent: '' },
+            goalStat2Label: { textContent: '' },
+            goalStat2Value: { textContent: '' },
+            goalStat2Note: { textContent: '' },
+            goalStat3Label: { textContent: '' },
+            goalStat3Value: { textContent: '' },
+            goalStat3Note: { textContent: '' },
+            goalStat4Label: { textContent: '' },
+            goalStat4Value: { textContent: '' },
+            goalStat4Note: { textContent: '' },
+        };
+        const pills = [
+            { dataset: { goal: 'savings' }, classList: { toggle: () => {} }, addEventListener: (_, handler) => { pills[0].clickHandler = handler; } },
+            { dataset: { goal: 'invest' }, classList: { toggle: () => {} }, addEventListener: (_, handler) => { pills[1].clickHandler = handler; } },
+        ];
+        const panels = [
+            { dataset: { goalPanel: 'savings' }, classList: { toggle: () => {} } },
+            { dataset: { goalPanel: 'invest' }, classList: { toggle: () => {} } },
+        ];
+        const context = {
+            document: {
+                addEventListener: () => {},
+                querySelectorAll: (selector) => selector === '.goal-pill' ? pills : selector === '[data-goal-panel]' ? panels : [],
+                getElementById: (id) => fields[id] || null,
+            },
+        };
+        context.window = context;
+        vm.createContext(context);
+        vm.runInContext(fs.readFileSync(path.join(__dirname, '../public/js/app.js'), 'utf8'), context);
+        context.setupGoalSelection();
+        pills[1].clickHandler();
+        assert.equal(fields.goalTag.textContent, 'Investing');
+        assert.equal(fields.goalStoryTitle.textContent, 'Plan for compounding growth.');
+        assert.match(fields.goalStoryList.innerHTML, /Diversified portfolio tracking/);
+        assert.equal(fields.goalStat2Value.textContent, 'Review');
     });
     it('creates checking and savings destinations for new demo customers', () => {
         assert.deepEqual(accounts.map(a => a.account_type).sort(), ['checking', 'savings']);
