@@ -297,12 +297,6 @@
     min-height: 0;
 }
 
-/* Hide the y-axis money labels and tooltip value of a private chart. */
-html.is-private [data-private-chart] .chart-axis text:not([text-anchor]),
-html.is-private [data-private-chart] .chart-tooltip strong {
-    filter: blur(6px);
-}
-
 /* ── Tables (holdings, markets, coins) ──────────────────────────────── */
 .wl-table-wrap {
     container-type: inline-size;
@@ -707,11 +701,6 @@ html.is-private [data-private-chart] .chart-tooltip strong {
     font-weight: 560;
     color: var(--text-muted);
     letter-spacing: 0;
-}
-
-.wl-index-unavailable {
-    font-size: var(--fs-base);
-    font-weight: 500;
 }
 
 .wl-index-spark {

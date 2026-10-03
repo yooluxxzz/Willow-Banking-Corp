@@ -3,7 +3,7 @@
  * investing portfolio, and the assets and debts they log themselves. A snapshot
  * is stored per day so the history chart reflects what was true at the time.
  */
-const { v4: uuidv4 } = require('uuid');
+const ids = require('./ids');
 const { getDb } = require('../database');
 const marketData = require('./market-data');
 const portfolio = require('./demo-portfolio');
@@ -221,7 +221,7 @@ function recordPayment(userId, debtId, input = {}) {
         account = db.prepare("SELECT * FROM accounts WHERE id = ? AND user_id = ? AND status = 'active' AND currency = 'USD'").get(Number(input.accountId), userId);
         if (!account) throw new ValidationError('Choose one of your active US dollar accounts, or record a payment made elsewhere.');
     }
-    const reference = account ? `DBT-${uuidv4().slice(0, 8).toUpperCase()}` : null;
+    const reference = account ? ids.reference('DBT') : null;
     db.transaction(() => {
         if (account) {
             const updated = db.prepare('UPDATE accounts SET balance = balance - ?, available_balance = available_balance - ? WHERE id = ? AND available_balance >= ?').run(amountCents, amountCents, account.id, amountCents);
@@ -262,9 +262,9 @@ async function computeNetWorth(userId) {
     const checking = sum(accounts.filter(a => a.purpose === 'personal' && a.account_type !== 'savings'), usdCents);
     const savings = sum(accounts.filter(a => a.purpose === 'personal' && a.account_type === 'savings'), usdCents);
     const business = sum(accounts.filter(a => a.purpose === 'business'), usdCents);
-    let investments = 0;
+    let investments;
     let crypto = 0;
-    let pricing = 'none-held';
+    let pricing;
     try {
         const valuation = await portfolio.valuePortfolio(userId);
         crypto = Math.round(valuation.holdings.filter(h => h.type === 'crypto').reduce((total, h) => total + h.marketValue, 0) * 100);

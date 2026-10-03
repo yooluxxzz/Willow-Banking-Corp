@@ -17,7 +17,7 @@ const featured = {
     wealth: { kind: 'portfolio', eyebrow: 'Investing', title: 'Invest the money you move in — at real, delayed market prices.', href: '/invest/portfolio', cta: 'How it works' },
     borrow: { kind: 'calculator', eyebrow: 'Estimate first', title: 'See an estimated monthly payment in seconds.', href: '/borrow/personal-loans', cta: 'Try the calculator' },
     business: { kind: 'business', eyebrow: 'Willow Business', title: 'Accounts, cards, invoices and cash flow in one place.', href: '/business', cta: 'Explore business' },
-    explore: { kind: 'demo', eyebrow: 'Willow Demo', title: 'A fictional bank. Real product thinking. No real money.', href: '/demo', cta: 'How the demo works' },
+    explore: { kind: 'demo', eyebrow: 'Willow demo', title: 'A fictional bank. Real product thinking. No real money.', href: '/demo', cta: 'How the demo works' },
 };
 
 function buildSiteNavigation() {
@@ -44,7 +44,7 @@ const appNavigation = [
         label: null,
         items: [
             { label: 'Home', href: '/dashboard', icon: 'home', match: ['/dashboard'] },
-            { label: 'Net worth', href: '/hub', icon: 'hub', match: ['/hub'] },
+            { label: 'Net worth', href: '/net-worth', icon: 'hub', match: ['/net-worth'] },
         ],
     },
     {
@@ -88,9 +88,9 @@ const appSecondaryNavigation = [
 ];
 
 const appTabs = [
-    { label: 'Home', href: '/dashboard', icon: 'home', match: ['/dashboard', '/hub', '/budgets', '/debts'] },
+    { label: 'Home', href: '/dashboard', icon: 'home', match: ['/dashboard', '/net-worth', '/budgets', '/debts'] },
     { label: 'Money', href: '/accounts', icon: 'wallet', match: ['/accounts', '/cards', '/transactions', '/statements', '/deposits', '/withdrawals', '/international'] },
-    { label: 'Pay', href: '/transfers', icon: 'send', match: ['/transfers', '/payees', '/scheduled-transfers'], primary: true },
+    { label: 'Payments', href: '/transfers', icon: 'send', match: ['/transfers', '/payees', '/scheduled-transfers'], primary: true },
     { label: 'Wealth', href: '/wealth', icon: 'trend', match: ['/wealth', '/crypto'] },
 ];
 

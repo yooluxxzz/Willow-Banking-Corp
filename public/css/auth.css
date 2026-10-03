@@ -340,6 +340,13 @@
     text-transform: uppercase;
 }
 
+.auth-guest-note {
+    margin-top: var(--s-2);
+    color: var(--text-muted);
+    font-size: var(--fs-sm);
+    text-align: center;
+}
+
 .auth-or::before,
 .auth-or::after {
     content: '';
@@ -661,34 +668,6 @@ a.auth-method:hover {
 
 .signup-step > .field:first-of-type {
     margin-top: var(--s-8);
-}
-
-.switch-row {
-    display: flex;
-    align-items: center;
-    gap: var(--s-4);
-    margin-top: var(--s-4);
-    padding: var(--s-5);
-    border-radius: var(--r-lg);
-    background: var(--surface-muted);
-    cursor: pointer;
-}
-
-.switch-row strong {
-    display: block;
-    font-weight: 600;
-}
-
-.switch-row .option-desc {
-    display: block;
-    margin-top: 2px;
-    font-size: var(--fs-sm);
-    color: var(--text-muted);
-    line-height: 1.5;
-}
-
-.switch-row .switch {
-    flex: none;
 }
 
 .strength {

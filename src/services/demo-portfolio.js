@@ -3,7 +3,7 @@
  * money in from the customer's own Willow accounts (and back out again). Orders
  * use delayed market prices and are never executed on a market.
  */
-const { v4: uuidv4 } = require('uuid');
+const ids = require('./ids');
 const { getDb } = require('../database');
 const marketData = require('./market-data');
 const { logAudit } = require('./audit');
@@ -53,7 +53,7 @@ function moveCash(userId, { accountId, direction, amount }) {
     if (account.status !== 'active') throw new ValidationError('That account is not active.');
     if ((account.currency || 'USD') !== 'USD') throw new ValidationError('Investing cash moves to and from US dollar accounts.');
     ensurePortfolio(userId);
-    const reference = `INV-${direction === 'in' ? 'IN' : 'OUT'}-${uuidv4().slice(0, 8).toUpperCase()}`;
+    const reference = ids.reference(direction === 'in' ? 'INV-IN' : 'INV-OUT');
     db.transaction(() => {
         if (direction === 'in') {
             const updated = db.prepare('UPDATE accounts SET balance = balance - ?, available_balance = available_balance - ? WHERE id = ? AND available_balance >= ?').run(cents, cents, account.id, cents);

@@ -97,20 +97,16 @@ function cashflowSeries(userId, months = 6) {
     return series;
 }
 
-/** Net worth, composition, cash flow and insights from the customer's own records. */
+/**
+ * Cash flow, investing value and insights for the net worth page. Net worth itself
+ * (and its history) comes from ./networth, which the page loads alongside this.
+ */
 async function getPicture(userId) {
     const summary = getSummary(userId);
-    let valuation = null;
-    try { valuation = await demoPortfolio.valuePortfolio(userId); } catch (error) { valuation = null; }
-    const worth = await require('./networth').recordSnapshot(userId);
+    const valuation = await demoPortfolio.valuePortfolio(userId).catch(() => null);
     return {
         summary,
-        worth,
-        composition: worth.composition,
-        netWorthCents: worth.netCents,
         valuation,
-        history: require('./networth').history(userId),
-        fxUnavailable: worth.fxUnavailable,
         cashflow: cashflowSeries(userId),
         insights: buildInsights(summary, valuation),
     };
@@ -129,7 +125,7 @@ function buildInsights(summary, valuation) {
     if (summary.categories.length) {
         const top = summary.categories[0];
         const share = spend ? Math.round(top.cents / spend * 100) : 0;
-        insights.push({ icon: top.icon, tone: 'neutral', text: `Your largest spending category this month is ${top.label.toLowerCase()}.`, detail: `${usd(top.cents)} · ${share}% of spending`, href: '/hub#spending' });
+        insights.push({ icon: top.icon, tone: 'neutral', text: `Your largest spending category this month is ${top.label.toLowerCase()}.`, detail: `${usd(top.cents)} · ${share}% of spending`, href: '/net-worth#spending' });
     }
     if (summary.savingsMovementCents > 0) {
         insights.push({ icon: 'savings', tone: 'positive', text: `You’ve moved ${usd(summary.savingsMovementCents)} into savings this month.`, detail: 'Net change across your savings accounts.', href: '/accounts' });

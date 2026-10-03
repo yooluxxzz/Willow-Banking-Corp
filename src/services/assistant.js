@@ -156,8 +156,7 @@ async function buildContext(userId, now = new Date()) {
     const businessBudgets = budgets.listBudgets(userId, 'business', now);
     section('Budgets', [...personal, ...businessBudgets].map(b => `- ${b.name} (${b.scope}, ${b.period}, ${b.categoryLabel}): spent ${usd(b.spentCents)} of ${usd(b.limitCents)} this period (${b.status}); ${b.remainingCents >= 0 ? `${usd(b.remainingCents)} left, about ${usd(b.perDayLeftCents)} a day for ${b.daysLeft} day(s)` : `${usd(-b.remainingCents)} over`}`));
 
-    let worth = null;
-    try { worth = await networth.computeNetWorth(userId); } catch (error) { worth = null; }
+    const worth = await networth.computeNetWorth(userId).catch(() => null);
     if (worth) {
         section('Net worth', [
             `- Net worth ${usd(worth.netCents)} = Willow accounts ${usd(worth.accountsCents)} + investing ${usd(worth.investmentsCents)} + logged assets ${usd(worth.assetsCents)} - debts ${usd(worth.debtsCents)}`,
@@ -238,10 +237,10 @@ function keyFigures({ accounts, summary, worth, budgets: allBudgets, debts, valu
 function relatedLinks(question) {
     const text = String(question || '').toLowerCase();
     const links = [
-        [/spen[dt]|expens|categor|bought|shopping|grocer|dining/, { label: 'Spending by category', href: '/hub#spending' }],
+        [/spen[dt]|expens|categor|bought|shopping|grocer|dining/, { label: 'Spending by category', href: '/net-worth#spending' }],
         [/budget|limit|on track/, { label: 'Budgets', href: '/budgets' }],
         [/debt|loan|owe|credit card|interest|pay off|payoff|mortgage/, { label: 'Debts', href: '/debts' }],
-        [/net worth|worth|asset|own\b|picture/, { label: 'Net worth', href: '/hub' }],
+        [/net worth|worth|asset|own\b|picture/, { label: 'Net worth', href: '/net-worth' }],
         [/invest|portfolio|stock|shares|etf|fund|allocation|crypto|bitcoin/, { label: 'Portfolio', href: '/wealth' }],
         [/business|invoice|revenue|client/, { label: 'Business', href: '/business/dashboard' }],
         [/saving|goal|emergency/, { label: 'Goals', href: '/goals' }],
@@ -301,7 +300,7 @@ function thinkFilter() {
     };
 }
 
-const fail = (message, status = 502) => Object.assign(new Error(message), { status });
+const fail = (message, httpStatus = 502) => Object.assign(new Error(message), { status: httpStatus });
 /** Ollama's own error text, shortened, for messages people can act on. */
 const ollamaReason = text => String(text || '').replace(/\s+/g, ' ').trim().slice(0, 200);
 

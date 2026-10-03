@@ -3,7 +3,7 @@
  * Uses indicative mid-market rates from the market-data service. Nothing is
  * executed on a real FX market and no fees are modelled.
  */
-const { v4: uuidv4 } = require('uuid');
+const ids = require('./ids');
 const { getDb } = require('../database');
 const marketData = require('./market-data');
 const { validateAmount, toCents, formatCurrency } = require('../middleware/validation');
@@ -75,7 +75,7 @@ async function convertBetweenAccounts(userId, { fromAccountId, toAccountId, amou
     // Part cents are not credited, so converting back and forth can't create money.
     const creditCents = Math.floor(fx.converted * 100 + 1e-6);
     if (creditCents <= 0) throw new FxError('This amount is too small to convert.');
-    const reference = `CNV-${uuidv4().slice(0, 8).toUpperCase()}`;
+    const reference = ids.reference('CNV');
     const rateText = `1 ${source.currency} = ${fx.rate.toFixed(fx.rate < 1 ? 6 : 4)} ${destination.currency}`;
 
     db.transaction(() => {

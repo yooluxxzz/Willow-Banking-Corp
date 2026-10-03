@@ -46,7 +46,7 @@
         }));
 
         const download = doc.getElementById('downloadRecoveryCodes');
-        if (download) download.addEventListener('click', () => {
+        download?.addEventListener('click', () => {
             if (!savedCodes.length) return;
             const blob = new Blob([`Willow demo — one-time recovery codes\nKeep these private. Each code can reset your password once.\n\n${savedCodes.join('\n')}\n`], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
@@ -57,11 +57,11 @@
             global.setTimeout(() => URL.revokeObjectURL(url), 1000);
         });
         const copy = doc.querySelector('[data-copy-codes]');
-        if (copy) copy.addEventListener('click', async () => {
+        copy?.addEventListener('click', async () => {
             try { await global.navigator.clipboard.writeText(savedCodes.join('\n')); W.showToast('Codes copied. Store them somewhere safe.', 'success'); } catch (error) { W.showToast('Copy isn’t available in this browser. Download them instead.', 'warning'); }
         });
         const hide = doc.getElementById('hideRecoveryCodes');
-        if (hide) hide.addEventListener('click', () => {
+        hide?.addEventListener('click', () => {
             savedCodes = [];
             doc.getElementById('recoveryCodeList').textContent = '';
             doc.getElementById('recoveryResults').hidden = true;

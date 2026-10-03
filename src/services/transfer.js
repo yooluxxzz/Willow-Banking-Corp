@@ -1,11 +1,10 @@
 /**
  * Transfer service — atomic internal transfers with full validation
  */
-const { v4: uuidv4 } = require('uuid');
+const ids = require('./ids');
 const { getDb } = require('../database');
 const { toCents, validateAmount, formatCurrency } = require('../middleware/validation');
 const { createNotification } = require('./notification');
-const { logAudit } = require('./audit');
 
 function executeTransfer({ fromAccountId, toAccountNumber, amount, description, userId }) {
     const db = getDb();
@@ -66,7 +65,7 @@ function executeTransfer({ fromAccountId, toAccountNumber, amount, description, 
         return { error: 'Insufficient funds for this transfer.' };
     }
 
-    const reference = `TRF-${uuidv4().slice(0, 8).toUpperCase()}`;
+    const reference = ids.reference('TRF');
     const desc = description?.trim() || (toAccount.owner_id === fromAccount.owner_id ? `Transfer to ${toAccount.nickname || (toAccount.account_type === 'savings' ? 'Savings' : 'Checking')} ••••${toAccount.account_number.slice(-4)}` : `Transfer to ${toAccount.owner_name}`);
     const counterpartyOut = toAccount.owner_id === fromAccount.owner_id ? null : toAccount.owner_name;
     const counterpartyIn = toAccount.owner_id === fromAccount.owner_id ? null : fromAccount.owner_name;

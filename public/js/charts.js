@@ -69,7 +69,8 @@
     /**
      * Line/area chart.
      * points: [{ t: Date|string|number, v: number }]
-     * options: { currency, height, baseline, tone: 'auto'|'up'|'down'|'brand', range, label, onHover, animate, compact }
+     * options: { currency, height, baseline, tone: 'auto'|'up'|'down'|'brand', range, label, onHover, animate, compact,
+     *            private (blur the money on the axis and tooltip when balances are hidden) }
      */
     function line(container, points, options = {}) {
         const data = (points || []).map(point => ({ t: toDate(point.t), v: Number(point.v) })).filter(point => Number.isFinite(point.v) && !Number.isNaN(point.t.getTime()));
@@ -135,6 +136,7 @@
                     grid.append(svg('line', { x1: pad.left, x2: width - pad.right, y1: ty, y2: ty }));
                     const text = svg('text', { x: width - pad.right + 10, y: ty + 4 });
                     text.textContent = formatAxisValue(tick, options.currency);
+                    if (options.private) text.setAttribute('data-private', '');
                     axis.append(text);
                 });
                 const labelCount = width < 420 ? 3 : 5;
@@ -195,6 +197,7 @@
                 tooltip.innerHTML = '';
                 const strong = document.createElement('strong');
                 strong.textContent = money(point.v, options.currency);
+                if (options.private) strong.setAttribute('data-private', '');
                 const when = document.createElement('span');
                 when.textContent = formats.tip(point.t);
                 tooltip.append(strong, when);
@@ -384,7 +387,8 @@
 
     /**
      * Grouped vertical columns.
-     * groups: [{ label, values: { key: number } }], options.keys: [{ key, label, color }]
+     * groups: [{ label, values: { key: number } }], options.keys: [{ key, label, color }],
+     * options.private blurs the money on the axis and tooltip when balances are hidden.
      */
     function columns(container, groups, options = {}) {
         container.replaceChildren();
@@ -416,6 +420,7 @@
                 grid.append(svg('line', { x1: pad.left, x2: width - pad.right, y1: ty, y2: ty }));
                 const text = svg('text', { x: pad.left - 10, y: ty + 4, 'text-anchor': 'end' });
                 text.textContent = formatAxisValue(tick, options.currency);
+                if (options.private) text.setAttribute('data-private', '');
                 axis.append(text);
             });
             root.append(grid, axis);
@@ -437,10 +442,13 @@
                     title.textContent = group.label;
                     tooltip.append(title);
                     keys.forEach(key => {
-                        const line = document.createElement('span');
-                        line.style.display = 'block';
-                        line.textContent = `${key.label}: ${money(group.values[key.key] || 0, options.currency)}`;
-                        tooltip.append(line);
+                        const row = document.createElement('span');
+                        row.style.display = 'block';
+                        const amount = document.createElement('span');
+                        amount.textContent = money(group.values[key.key] || 0, options.currency);
+                        if (options.private) amount.setAttribute('data-private', '');
+                        row.append(`${key.label}: `, amount);
+                        tooltip.append(row);
                     });
                     const box = container.getBoundingClientRect();
                     const scale = box.width / width;

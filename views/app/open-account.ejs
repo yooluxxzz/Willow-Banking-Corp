@@ -16,11 +16,11 @@
         <p class="label">Open an account</p>
         <h1 class="page-head-title mt-2">What would you like to open?</h1>
         <ol class="stepper mt-6" aria-hidden="true"><li class="is-current" data-flow-dot="0"></li><li data-flow-dot="1"></li><li data-flow-dot="2"></li></ol>
-        <p class="flow-step-label"><span data-flow-label>Step 1 of 3 · Choose</span><span>Simulated</span></p>
+        <p class="flow-step-label"><span data-flow-label>Step 1 of 3 · Choose</span><span class="sim-tag">Simulated</span></p>
     </div>
 
     <% if (atLimit) { %>
-    <div class="notice notice-warning"><%- icon('alert') %><div><strong>You’ve reached the demo account limit.</strong> Each Willow demo profile can hold up to 10 accounts. Close or reuse an existing account instead.</div></div>
+    <div class="notice notice-warning"><%- icon('alert') %><div><strong>You’ve reached the demo account limit.</strong> Each Willow demo profile can hold up to 10 accounts, so keep using the ones you already have.</div></div>
     <% } else { %>
     <form id="openAccountForm" class="flow-card" novalidate>
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">

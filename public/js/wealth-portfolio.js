@@ -98,7 +98,7 @@
             box.replaceChildren(W.empty({
                 iconName: 'pie',
                 title: 'No holdings yet',
-                text: funded ? `You have ${W.formatMoney(valuation.cash, 'USD', { digits: 2 })} ready to invest. Explore stocks, ETFs, funds or crypto and place your first order.` : 'Move money in from one of your Willow accounts, then explore stocks, ETFs, funds or crypto.',
+                text: funded ? 'Your investing cash is ready. Explore stocks, ETFs, funds or crypto and place your first order.' : 'Move money in from one of your Willow accounts, then explore stocks, ETFs, funds or crypto.',
                 action: funded ? { label: 'Explore markets', href: '/wealth/markets' } : { label: 'Add cash', onClick: () => openCash('in') },
             }));
             return;
@@ -211,7 +211,7 @@
                 return;
             }
             box.replaceChildren();
-            global.WillowCharts.line(box, data.points, { range: range === 'all' ? 'max' : range, currency: 'USD', height: 240, baseline: data.contributed || undefined, label: 'Portfolio value' });
+            global.WillowCharts.line(box, data.points, { range: range === 'all' ? 'max' : range, currency: 'USD', height: 240, baseline: data.contributed || undefined, label: 'Portfolio value', private: true });
             const baseline = data.contributed ? ` Dashed line: ${W.formatMoney(data.contributed, 'USD', { digits: 2 })} moved in.` : '';
             note.textContent = data.partial
                 ? `Some price history couldn’t be loaded; affected holdings use their trade price.${baseline}`
@@ -301,7 +301,8 @@
         const help = cashForm.querySelector('[data-cash-help]');
         const accounts = cashInfo ? cashInfo.accounts : [];
         const current = select.value;
-        select.replaceChildren(...accounts.map(account => el('option', { value: account.id, text: direction === 'in' ? `${account.name} · ${W.formatCents(account.availableCents)} available` : account.name })));
+        select.replaceChildren(...accounts.map(account => el('option', { value: account.id, text: direction === 'in' ? `${account.name} · ${W.formatCents(account.availableCents)} available` : account.name, 'data-private-text': account.name })));
+        W.syncPrivateOptions(select);
         if (accounts.some(account => String(account.id) === current)) select.value = current;
         cashForm.querySelector('[data-cash-submit]').disabled = !cashInfo;
         if (!cashInfo) help.textContent = 'Your accounts couldn’t be loaded just now. Close this and try again in a moment.';

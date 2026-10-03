@@ -17,9 +17,11 @@ const { createGuestProfile } = require('../services/guests');
 
 const router = express.Router();
 
+// Counts failed attempts only, so people who sign in and out a lot are never locked out.
 const authLimiter = rateLimit({
     windowMs: config.rateLimit.windowMs,
     max: config.rateLimit.authMax,
+    skipSuccessfulRequests: true,
     message: { error: 'Too many attempts. Please try again later.' },
     standardHeaders: true,
     legacyHeaders: false,

@@ -48,7 +48,7 @@ function tokenFile() {
 function ensureToken() {
     if (process.env.MARKET_DATA_TOKEN) return process.env.MARKET_DATA_TOKEN;
     const file = tokenFile();
-    let token = '';
+    let token;
     try { token = file ? fs.readFileSync(file, 'utf8').trim() : ''; } catch (error) { token = ''; }
     if (!/^[a-f0-9]{48}$/.test(token)) {
         token = crypto.randomBytes(24).toString('hex');

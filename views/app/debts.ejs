@@ -5,7 +5,7 @@
         <h1 class="page-head-title">Debts</h1>
         <p class="page-head-sub">Keep every loan and card balance in one place, see when each could be paid off, and record payments as you make them.</p>
     </div>
-    <div class="page-head-actions"><a class="btn btn-secondary" href="/hub"><%- icon('hub') %> Net worth</a><button type="button" class="btn btn-primary" data-debt-new><%- icon('plus') %> Add a debt</button></div>
+    <div class="page-head-actions"><a class="btn btn-secondary" href="/net-worth"><%- icon('hub') %> Net worth</a><button type="button" class="btn btn-primary" data-debt-new><%- icon('plus') %> Add a debt</button></div>
 </header>
 
 <div class="stat-row mb-6" data-debt-summary hidden>
@@ -56,7 +56,7 @@
                 <div class="cluster mt-3" data-payment-quick></div></div>
             <div class="field mt-5"><label for="paymentFrom">Paid from</label><select class="select" id="paymentFrom" name="accountId">
                 <option value="">Paid outside Willow</option>
-                <% accounts.forEach(account => { %><option value="<%= account.id %>"><%= account.displayName %> · <%= money(account.available_balance, account.currency) %> available</option><% }) %>
+                <% accounts.forEach(account => { %><option value="<%= account.id %>" data-private-text="<%= account.displayName %>"><%= account.displayName %> · <%= money(account.available_balance, account.currency) %> available</option><% }) %>
             </select><p class="field-help">Choosing an account takes the money from it now.</p></div>
             <div class="field mt-5"><label for="paymentDate">Date</label><input class="input" id="paymentDate" name="paidOn" type="date"></div>
             <p class="field-error mt-3" data-payment-error role="alert" hidden></p>

@@ -2,7 +2,7 @@
  * Withdrawal routes
  */
 const express = require('express');
-const { v4: uuidv4 } = require('uuid');
+const ids = require('../services/ids');
 const { requireAuth } = require('../middleware/auth');
 const { getDb } = require('../database');
 const { validateAmount, toCents, formatCurrency, isOptionalText } = require('../middleware/validation');
@@ -68,7 +68,7 @@ router.post('/', requireAuth, (req, res) => {
             });
         }
 
-        const reference = `WDR-${uuidv4().slice(0, 8).toUpperCase()}`;
+        const reference = ids.reference('WDR');
         const desc = description?.trim() || 'Withdrawal';
 
         const withdrawal = db.transaction(() => {

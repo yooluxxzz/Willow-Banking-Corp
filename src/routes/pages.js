@@ -56,9 +56,11 @@ router.get('/dashboard', customer, (req, res) => {
     });
 });
 
-router.get('/hub', customer, (req, res) => {
+router.get('/net-worth', customer, (req, res) => {
     res.render('app/hub', { title: 'Net worth' });
 });
+// The page used to be called the Hub; keep old links and bookmarks working.
+router.get('/hub', (req, res) => res.redirect(301, '/net-worth'));
 
 router.get('/accounts', customer, (req, res) => {
     const userId = req.session.userId;
@@ -136,7 +138,7 @@ router.get('/cards', customer, (req, res) => {
 router.get('/transfers', customer, (req, res) => {
     const accounts = getUserAccounts(req.session.userId).filter(account => account.status === 'active');
     res.render('app/transfers', {
-        title: 'Send & transfer',
+        title: 'Payments',
         accounts,
         payees: payees.listPayees(req.session.userId),
         preselect: {

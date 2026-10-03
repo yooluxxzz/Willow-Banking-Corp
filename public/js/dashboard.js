@@ -21,6 +21,7 @@
             charts.columns(cashflow, data.cashflow, {
                 currency: 'USD',
                 height: 200,
+                private: true,
                 label: 'Money in and out over six months',
                 keys: [{ key: 'income', label: 'In', color: 'var(--chart-1)' }, { key: 'spending', label: 'Out', color: 'var(--chart-3)' }],
             });

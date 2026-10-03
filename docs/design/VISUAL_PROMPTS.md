@@ -1,5 +1,7 @@
 # Visual Prompts for Nano Banana
 
+> Historical design notes, kept for reference. Some files they mention (such as hero-crossfade.css and depth.css) no longer exist; the current styles are in `public/css/`.
+
 Nano Banana is not connected. The two hero assets are included and were generated with the built-in image tool. Their two detailed prompts, exact generation inputs and saved asset manifest are in [HERO_PHOTO_PROMPTS.md](HERO_PHOTO_PROMPTS.md). Other campaign images still use Unsplash photographs as interim assets; the remaining prompts below are a future production plan.
 
 All photographs share an editorial campaign look: forest-green and warm neutral wardrobe, natural skin texture, realistic proportions, understated settings and gentle contrast. All text, balances, buttons, logos and gradients are rendered in HTML/CSS. Do not flatten an interface into a photograph.

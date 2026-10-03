@@ -14,3 +14,9 @@ data/*
 *recovery-codes*.txt
 *.bak-*
 *.tmp
+
+# Logs and local test output
+*.log
+test_out*.txt
+test_output*
+coverage/

@@ -17,7 +17,7 @@ function internalLinks(html) {
 }
 
 describe('Platform: navigation, sessions and new flows', () => {
-    let app, db, store, close, owner, maria, originalFetch;
+    let app, db, store, close, owner, originalFetch;
     const email = 'platform@example.test';
     const password = 'Platform123';
 
@@ -28,7 +28,7 @@ describe('Platform: navigation, sessions and new flows', () => {
         const env = await createTestApp();
         app = env.app; db = env.getDb(); store = env.sessionStore; close = env.closeDatabase;
         owner = await registerAgent(supertest, app, { email, password, fullName: 'Platform Person', country: 'Portugal', accountType: 'business' });
-        maria = await registerAgent(supertest, app, { email: 'maria@example.test', password, fullName: 'Maria Silva' });
+        await registerAgent(supertest, app, { email: 'maria@example.test', password, fullName: 'Maria Silva' });
     });
     after(() => { global.fetch = originalFetch; close(); });
 
@@ -56,7 +56,7 @@ describe('Platform: navigation, sessions and new flows', () => {
         const publicPages = ['/', '/markets', '/insights', '/learn', '/help', '/login', '/register', '/forgot-password', '/about', '/careers', '/press', '/contact', '/privacy', '/terms', '/compliance', '/security-info', '/demo',
             ...products.map(product => product.path), ...articles.map(article => `/${article.kind === 'guide' ? 'learn' : 'insights'}/${article.slug}`), ...categories.map(category => `/help/${category.slug}`)];
         const accountId = (await owner.agent.get('/api/accounts')).body.accounts[0].id;
-        const appPages = ['/dashboard', '/hub', '/accounts', '/accounts/new', `/accounts/${accountId}`, '/transactions', '/statements', '/deposits', '/withdrawals', '/cards', '/transfers', '/transfers?mode=own', '/payees', '/scheduled-transfers', '/international',
+        const appPages = ['/dashboard', '/net-worth', '/accounts', '/accounts/new', `/accounts/${accountId}`, '/transactions', '/statements', '/deposits', '/withdrawals', '/cards', '/transfers', '/transfers?mode=own', '/payees', '/scheduled-transfers', '/international',
             '/wealth', '/wealth/markets', '/wealth/stocks/AAPL', '/crypto', '/crypto/BTC', '/goals', '/budgets', '/debts', '/loans', '/business/dashboard', '/business/expense-log', '/business/invoices', '/business/team', '/notifications', '/security', '/settings', '/help'];
         const checked = new Map();
         const check = async (agent, path, from) => {
@@ -144,7 +144,7 @@ describe('Platform: navigation, sessions and new flows', () => {
         assert.match(settings.text, /Keep this profile/);
         const token = csrfFrom(settings.text);
         const claim = body => agent.post('/auth/claim-guest').set('X-CSRF-Token', token).set('Accept', 'application/json').send(body);
-        assert.equal((await claim({ email: email, newPassword: 'Guest12345' })).status, 400);
+        assert.equal((await claim({ email, newPassword: 'Guest12345' })).status, 400);
         assert.equal((await claim({ email: 'kept@example.test', newPassword: 'weak' })).status, 400);
         assert.equal((await claim({ email: 'x@demo.willow.test', newPassword: 'Guest12345' })).status, 400);
         assert.equal((await claim({ email: 'x@guest.willow.test', newPassword: 'Guest12345' })).status, 400);

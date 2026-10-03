@@ -1,10 +1,10 @@
-const { randomUUID } = require('crypto');
 const { getDb } = require('../database');
 const { createNotification } = require('./notification');
 const { logAudit } = require('./audit');
 
 const { CRYPTO } = require('../content/instruments');
 const { ValidationError } = require('../errors');
+const ids = require('./ids');
 
 const SUPPORTED_ASSETS = new Set(CRYPTO);
 const normalizeUnits = quantity => Math.round((quantity + Number.EPSILON) * 1e8) / 1e8;
@@ -61,7 +61,7 @@ function sendDemoCrypto(senderUserId, input = {}) {
         db.prepare(`INSERT INTO demo_holdings (user_id, symbol, quantity, average_price) VALUES (?, ?, ?, ?)
             ON CONFLICT(user_id, symbol) DO UPDATE SET quantity = excluded.quantity, average_price = excluded.average_price, updated_at = datetime('now')`)
             .run(recipient.id, symbol, receivedQuantity, receivedAverage);
-        const reference = `CRY-${randomUUID().slice(0, 8).toUpperCase()}`;
+        const reference = ids.reference('CRY');
         db.prepare(`INSERT INTO demo_crypto_transfers (reference, sender_user_id, recipient_user_id, symbol, quantity)
             VALUES (?, ?, ?, ?, ?)`).run(reference, senderUserId, recipient.id, symbol, quantity);
         logAudit({ actorId: senderUserId, actorEmail: sender.email, action: 'demo_crypto_sent', targetType: 'demo_crypto_transfer', targetId: reference, metadata: { symbol, quantity, recipientUserId: recipient.id, simulated: true } });

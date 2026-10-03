@@ -59,7 +59,7 @@ function importSnapshot(sqlDb, sql) {
     } catch (error) {
         try { sqlDb.exec('ROLLBACK;'); } catch (rollback) { /* nothing open */ }
         sqlDb.exec('PRAGMA foreign_keys = ON;');
-        throw new Error(`The snapshot could not be restored: ${error.message}`);
+        throw new Error(`The snapshot could not be restored: ${error.message}`, { cause: error });
     }
 }
 

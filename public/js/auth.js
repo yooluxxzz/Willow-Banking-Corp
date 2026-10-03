@@ -261,26 +261,32 @@
             }
         });
 
+        setupGuestStart(root, succeed);
+        if (!email.value) email.focus({ preventScroll: true });
+    }
+
+    // "Explore as a guest" starts a temporary, empty profile — no details needed.
+    function setupGuestStart(root, done) {
         root.querySelectorAll('[data-demo-start]').forEach(button => button.addEventListener('click', async () => {
-            const errorBox = root.querySelector('[data-demo-error]');
+            if (button.getAttribute('aria-busy') === 'true') return;
+            const view = button.closest('[data-auth-view], [data-step]') || root;
+            const errorBox = view.querySelector('[data-demo-error]') || root.querySelector('[data-demo-error]');
             hideAlert(errorBox);
             button.classList.add('is-loading');
             button.setAttribute('aria-busy', 'true');
-            const description = button.querySelector('.auth-method-text span');
-            const original = description.textContent;
-            description.textContent = 'Opening your guest profile…';
+            const description = button.querySelector('[data-demo-text]');
+            const original = description ? description.textContent : '';
+            if (description) description.textContent = 'Opening your guest profile…';
             try {
                 const result = await global.Willow.api('/auth/demo', { method: 'POST', body: {}, timeout: 45000 });
-                succeed(result.redirect || '/dashboard');
+                done(result.redirect || '/dashboard');
             } catch (error) {
-                description.textContent = original;
+                if (description) description.textContent = original;
                 button.classList.remove('is-loading');
                 button.removeAttribute('aria-busy');
                 showAlert(errorBox, error.message);
             }
         }));
-
-        if (!email.value) email.focus({ preventScroll: true });
     }
 
     // ── Sign up ─────────────────────────────────────────────────────────
@@ -531,7 +537,10 @@
         const register = doc.querySelector('[data-register]');
         const recovery = doc.querySelector('[data-recovery]');
         if (login) setupLogin(login);
-        if (register) setupRegister(register);
+        if (register) {
+            setupRegister(register);
+            setupGuestStart(register, goTo);
+        }
         if (recovery) setupRecovery(recovery);
     }
 

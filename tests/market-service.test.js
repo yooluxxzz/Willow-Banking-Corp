@@ -9,8 +9,9 @@ const net = require('node:net');
  * The supervisor that starts the Python market-data service with Willow. A stand-in
  * "python" (a small shell script) lets this run without Python installed: asked to
  * import yfinance it succeeds, asked to run server.py it serves /health via Node.
+ * Windows can't run that shell script, so the suite runs on macOS and Linux.
  */
-describe('Python market-data bridge supervisor', () => {
+describe('Python market-data bridge supervisor', { skip: process.platform === 'win32' && 'the stand-in python is a POSIX shell script' }, () => {
     let dir, supervisor, port;
     const freePort = () => new Promise(resolve => { const srv = net.createServer(); srv.listen(0, '127.0.0.1', () => { const { port: p } = srv.address(); srv.close(() => resolve(p)); }); });
 

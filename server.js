@@ -1,14 +1,14 @@
 /**
  * Willow — main server
  */
-const path = require('path');
 const config = require('./src/config');
 const { initializeDatabase, closeDatabase } = require('./src/database');
 const { initializeAdmin } = require('./src/services/auth');
 const { createApp } = require('./src/app');
 const SQLiteSessionStore = require('./src/session-store');
 
-const sessionStore = new SQLiteSessionStore({ db: 'sessions.db', dir: path.resolve(config.paths.root, 'data') });
+// Sessions are kept next to the database (DATABASE_PATH), so a separate database never shares them.
+const sessionStore = new SQLiteSessionStore({ db: 'sessions.db', dir: config.paths.local });
 const app = createApp({ sessionStore });
 
 // Startup

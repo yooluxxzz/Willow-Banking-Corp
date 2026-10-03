@@ -9,7 +9,6 @@ const BOOLEAN_FIELDS = {
     alertCards: 'alert_cards',
     alertBudgets: 'alert_budgets',
     alertSecurity: 'alert_security',
-    hideBalances: 'privacy_hide_balances',
     personalizedInsights: 'privacy_personalized_insights',
 };
 

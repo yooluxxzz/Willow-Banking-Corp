@@ -1,8 +1,8 @@
 /**
- * Identifiers shown to customers. Both use a cryptographic random source and are
- * checked against the database, so they never collide.
+ * Identifiers shown to customers, all from a cryptographic random source. Customer
+ * IDs and account numbers are checked against the database, so they never collide.
  */
-const { randomInt } = require('crypto');
+const { randomInt, randomBytes } = require('crypto');
 
 /** Customer ID such as WB48213907 (used to sign in instead of an email address). */
 function uniqueCustomerId(db) {
@@ -20,4 +20,12 @@ function uniqueAccountNumber(db) {
     return number;
 }
 
-module.exports = { uniqueCustomerId, uniqueAccountNumber };
+/**
+ * Ledger reference such as TRF-3F9A1C0B7E: a type prefix and 10 random hex digits.
+ * Prefixes mean something elsewhere (see ./spending), so keep them stable.
+ */
+function reference(prefix) {
+    return `${prefix}-${randomBytes(5).toString('hex').toUpperCase()}`;
+}
+
+module.exports = { uniqueCustomerId, uniqueAccountNumber, reference };

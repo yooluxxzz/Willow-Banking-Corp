@@ -82,51 +82,6 @@ function getRecentTransactions(accountIds, limit = 5) {
     return rows.map(formatTransaction);
 }
 
-function getAllTransactions({ page = 1, limit = 20, type, status, search, dateFrom, dateTo, sort = 'desc' } = {}) {
-    const db = getDb();
-    const offset = (page - 1) * limit;
-    const conditions = ['1=1'];
-    const params = [];
-
-    if (type) { conditions.push('t.type = ?'); params.push(type); }
-    if (status) { conditions.push('t.status = ?'); params.push(status); }
-    if (search) {
-        conditions.push('(t.description LIKE ? OR t.reference LIKE ? OR a.account_number LIKE ?)');
-        params.push(`%${search}%`, `%${search}%`, `%${search}%`);
-    }
-    if (dateFrom) { conditions.push('t.created_at >= ?'); params.push(dateFrom); }
-    if (dateTo) { conditions.push('t.created_at <= ?'); params.push(dateTo + ' 23:59:59'); }
-
-    const where = conditions.join(' AND ');
-    const orderDir = sort === 'asc' ? 'ASC' : 'DESC';
-
-    const countResult = db.prepare(`
-    SELECT COUNT(*) as total FROM transactions t
-    JOIN accounts a ON t.account_id = a.id
-    WHERE ${where}
-  `).get(...params);
-
-    const rows = db.prepare(`
-    SELECT t.*, a.account_number, u.full_name, u.email,
-           ra.account_number as related_account_number
-    FROM transactions t
-    JOIN accounts a ON t.account_id = a.id
-    JOIN users u ON a.user_id = u.id
-    LEFT JOIN accounts ra ON t.related_account_id = ra.id
-    WHERE ${where}
-    ORDER BY t.created_at ${orderDir}, t.id ${orderDir}
-    LIMIT ? OFFSET ?
-  `).all(...params, limit, offset);
-
-    return {
-        transactions: rows.map(formatTransaction),
-        total: countResult.total,
-        page,
-        limit,
-        totalPages: Math.ceil(countResult.total / limit),
-    };
-}
-
 function formatTransaction(txn) {
     return {
         ...txn,
@@ -140,4 +95,4 @@ function formatTransaction(txn) {
     };
 }
 
-module.exports = { getTransactions, getTransactionById, getRecentTransactions, getAllTransactions };
+module.exports = { getTransactions, getTransactionById, getRecentTransactions };

@@ -161,7 +161,6 @@
                 if (value === null || value === undefined || value === false) return;
                 if (key === 'className') node.className = value;
                 else if (key === 'text') node.textContent = value;
-                else if (key === 'html') node.innerHTML = value;
                 else if (key === 'dataset') Object.assign(node.dataset, value);
                 else if (key.startsWith('on') && typeof value === 'function') node.addEventListener(key.slice(2).toLowerCase(), value);
                 else node.setAttribute(key, value === true ? '' : value);
@@ -239,13 +238,11 @@
     function openDialog(dialog) {
         if (!dialog) return;
         if (typeof dialog.showModal === 'function' && !dialog.open) dialog.showModal();
-        doc.body.classList.add('has-dialog');
     }
 
     function closeDialog(dialog) {
         if (!dialog) return;
         if (dialog.open) dialog.close();
-        doc.body.classList.remove('has-dialog');
     }
 
     function enableBackdropClose(dialog) {
@@ -304,6 +301,17 @@
             button.setAttribute('aria-label', hidden ? 'Show balances' : 'Hide balances');
             button.title = hidden ? 'Show balances on screen' : 'Hide balances on screen';
         });
+        syncPrivateOptions();
+    }
+
+    // An open option list can't be blurred, so account pickers drop the balance from
+    // each option's text (data-private-text) while balances are hidden.
+    function syncPrivateOptions(root = doc) {
+        const hidden = doc.documentElement.classList.contains('is-private');
+        root.querySelectorAll('option[data-private-text]').forEach(option => {
+            if (option.dataset.fullText === undefined) option.dataset.fullText = option.textContent;
+            option.textContent = hidden ? option.dataset.privateText : option.dataset.fullText;
+        });
     }
 
     function togglePrivacy() {
@@ -358,7 +366,6 @@
         doc.querySelectorAll('dialog.sheet, dialog.modal').forEach(dialog => {
             enableBackdropClose(dialog);
             dialog.querySelectorAll('[data-sheet-close], [data-dialog-close]').forEach(button => button.addEventListener('click', () => closeDialog(dialog)));
-            dialog.addEventListener('close', () => doc.body.classList.remove('has-dialog'));
         });
     }
 
@@ -798,13 +805,15 @@
             if (question) ask(question);
         };
         const recheck = panel.querySelector('[data-ask-recheck]');
-        if (recheck) recheck.addEventListener('click', async () => {
-            recheck.classList.add('is-loading');
-            const status = await checkStatus(true);
-            recheck.classList.remove('is-loading');
-            if (status && status.available) setTimeout(() => input.focus(), 60);
-            else if (setupStatus) setupStatus.textContent = `${REASONS[status && status.reason] || 'Still off.'} Checked just now.`;
-        });
+        if (recheck) {
+            recheck.addEventListener('click', async () => {
+                recheck.classList.add('is-loading');
+                const status = await checkStatus(true);
+                recheck.classList.remove('is-loading');
+                if (status && status.available) setTimeout(() => input.focus(), 60);
+                else if (setupStatus) setupStatus.textContent = `${REASONS[status && status.reason] || 'Still off.'} Checked just now.`;
+            });
+        }
         triggers.forEach(button => button.addEventListener('click', () => open()));
         panel.querySelectorAll('[data-ask-close]').forEach(button => button.addEventListener('click', () => closeDialog(panel)));
         enableBackdropClose(panel);
@@ -956,7 +965,7 @@
         doc.body.append(dialog);
         enableBackdropClose(dialog);
         dialog.querySelector('[data-dialog-close]').addEventListener('click', () => closeDialog(dialog));
-        dialog.addEventListener('close', () => { doc.body.classList.remove('has-dialog'); dialog.remove(); });
+        dialog.addEventListener('close', () => dialog.remove());
         openDialog(dialog);
     }
 
@@ -1216,6 +1225,7 @@
         api, csrfToken, el, icon, empty, skeletonRows, showToast, showConfirm, openDialog, closeDialog, enableBackdropClose,
         formatMoney, formatCents, formatNumber, formatCompact, formatPercent, formatQuantity, formatDate, relativeDay, parseDate,
         countUp, prefersReducedMotion, setupRangeFill, toggleTheme, txnRow, showTransaction, flow, highlight, stagger, rovingTabs,
+        syncPrivateOptions,
     };
     global.showToast = showToast;
     global.showConfirm = showConfirm;

@@ -149,17 +149,6 @@
         });
     }
 
-    function skeletonRows(count = 4, compact = false) {
-        const rows = [];
-        for (let i = 0; i < count; i++) {
-            rows.push(W.el('div', { className: `wl-skel-row${compact ? ' is-compact' : ''}`, 'aria-hidden': 'true' },
-                W.el('span', { className: 'skeleton wl-skel-mark' }),
-                W.el('span', { className: 'wl-skel-main' }, W.el('span', { className: 'skeleton skeleton-line w-60' }), W.el('span', { className: 'skeleton skeleton-line w-40' })),
-                W.el('span', { className: 'skeleton skeleton-line wl-skel-end' })));
-        }
-        return rows;
-    }
-
     function setBusy(node, busy) {
         if (node) node.setAttribute('aria-busy', busy ? 'true' : 'false');
     }
@@ -303,7 +292,6 @@
         if (!dialog.__wired) {
             dialog.__wired = true;
             dialog.addEventListener('close', () => {
-                doc.body.classList.remove('has-dialog');
                 const back = dialog.__opener;
                 if (back && back.isConnected && typeof back.focus === 'function') global.setTimeout(() => back.focus(), 0);
             });
@@ -342,7 +330,7 @@
 
     global.WillowWealth = {
         UNAVAILABLE, displaySymbol, tone, assetMark, detailHref, typeLabel, unitWord, formatQuantity, formatPrice, formatLevel,
-        isPriced, direction, delta, freshness, shortTime, asOfText, timeNow, positive, unavailableState, skeletonRows, setBusy,
+        isPriced, direction, delta, freshness, shortTime, asOfText, timeNow, positive, unavailableState, setBusy,
         setWatchlist, isWatching, onWatchlistChange, toggleWatch, starButton, radioGroup, poll, openModal, successMark, rows, readJson,
     };
 })(window);

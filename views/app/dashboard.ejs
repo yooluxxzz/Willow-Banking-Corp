@@ -17,7 +17,7 @@
         <h1 class="page-head-title"><span data-greeting><%= greeting() %></span>, <%= firstName(user.full_name) %>.</h1>
     </div>
     <div class="page-head-actions">
-        <a class="btn btn-secondary" href="/hub"><%- icon('hub') %> Net worth</a>
+        <a class="btn btn-secondary" href="/net-worth"><%- icon('hub') %> Net worth</a>
     </div>
 </header>
 
@@ -63,7 +63,7 @@
             <ol class="get-started-list" role="list">
                 <li><a href="/deposits"><span class="icon-tile icon-tile-sm"><%- icon('plus') %></span><span><strong>Add money</strong><small>Put money into your checking account</small></span><%- icon('chevron-right', 'icon-sm') %></a></li>
                 <li><a href="/budgets"><span class="icon-tile icon-tile-sm"><%- icon('sliders') %></span><span><strong>Set a budget</strong><small>Daily, weekly or monthly limits</small></span><%- icon('chevron-right', 'icon-sm') %></a></li>
-                <li><a href="/hub"><span class="icon-tile icon-tile-sm"><%- icon('hub') %></span><span><strong>Record what you own and owe</strong><small>See your real net worth</small></span><%- icon('chevron-right', 'icon-sm') %></a></li>
+                <li><a href="/net-worth"><span class="icon-tile icon-tile-sm"><%- icon('hub') %></span><span><strong>Record what you own and owe</strong><small>See your real net worth</small></span><%- icon('chevron-right', 'icon-sm') %></a></li>
                 <li><a href="/cards"><span class="icon-tile icon-tile-sm"><%- icon('card') %></span><span><strong>Order a card</strong><small>Physical or virtual, with instant controls</small></span><%- icon('chevron-right', 'icon-sm') %></a></li>
             </ol>
         </section>
@@ -80,7 +80,7 @@
         <section class="panel" aria-labelledby="spendingTitle" id="spending">
             <div class="panel-head">
                 <h2 id="spendingTitle">This month</h2>
-                <a class="link-arrow" href="/hub#spending">Details <%- icon('arrow-right') %></a>
+                <a class="link-arrow" href="/net-worth#spending">Details <%- icon('arrow-right') %></a>
             </div>
             <div class="month-stats">
                 <div><p class="label">Spent</p><p class="figure figure-md" data-private><%= money(spend) %></p>

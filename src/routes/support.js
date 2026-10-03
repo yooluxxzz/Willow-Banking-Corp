@@ -1,6 +1,6 @@
 /**
  * Help center contact form. Requests are stored for demonstration only —
- * Willow Demo has no staffed support team.
+ * The Willow demo has no staffed support team.
  */
 const express = require('express');
 const crypto = require('crypto');
@@ -24,7 +24,7 @@ router.post('/', limiter, (req, res) => {
     if (typeof message !== 'string' || message.trim().length < 10 || message.length > 2000) return res.status(400).json({ error: 'Write a message of 10 to 2,000 characters.' });
     const reference = `WLW-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
     getDb().prepare('INSERT INTO support_requests (user_id, reference, name, email, topic, message) VALUES (?, ?, ?, ?, ?, ?)').run(user ? user.id : null, reference, senderName.trim(), senderEmail.trim().toLowerCase(), topic, message.trim());
-    res.status(201).json({ success: true, reference, message: 'Your message was saved with this reference. Willow Demo has no staffed support team, so no one will reply — but you can find most answers in the Help center.' });
+    res.status(201).json({ success: true, reference, message: 'Your message was saved with this reference. The Willow demo has no staffed support team, so no one will reply — but you can find most answers in the Help center.' });
 });
 
 router.get('/', (req, res) => {

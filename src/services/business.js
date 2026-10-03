@@ -2,7 +2,7 @@
  * Willow Business — profile, invoices, team and cash-flow summaries for a
  * single owner's business demo accounts. Team invitations never grant access.
  */
-const { v4: uuidv4 } = require('uuid');
+const ids = require('./ids');
 const { getDb } = require('../database');
 const { validateAmount, toCents, validateEmail, formatCurrency } = require('../middleware/validation');
 const { logAudit } = require('./audit');
@@ -80,7 +80,7 @@ function markInvoicePaid(userId, invoiceId, { accountId } = {}) {
     const accounts = businessAccounts(userId).filter(account => account.status === 'active' && account.currency === invoice.currency);
     const account = accountId ? accounts.find(item => item.id === Number(accountId)) : accounts[0];
     if (!account) throw new ValidationError('Choose an active business account in the invoice currency.');
-    const reference = `INV-PAY-${uuidv4().slice(0, 8).toUpperCase()}`;
+    const reference = ids.reference('INV-PAY');
     db.transaction(() => {
         const updated = db.prepare("UPDATE business_invoices SET status = 'paid', paid_at = datetime('now'), paid_account_id = ?, transaction_reference = ? WHERE id = ? AND status = 'open'").run(account.id, reference, invoice.id);
         if (updated.changes !== 1) throw new ValidationError('This invoice was already updated.');
@@ -183,7 +183,7 @@ function createExpense(userId, input = {}) {
         account = businessAccounts(userId).find(item => item.id === accountId && item.status === 'active' && item.currency === 'USD');
         if (!account) throw new ValidationError('Choose an active US dollar business account, or log the expense without paying from an account.');
     }
-    const reference = account ? `EXP-${uuidv4().slice(0, 8).toUpperCase()}` : null;
+    const reference = account ? ids.reference('EXP') : null;
     const id = db.transaction(() => {
         if (account) {
             const updated = db.prepare('UPDATE accounts SET balance = balance - ?, available_balance = available_balance - ? WHERE id = ? AND available_balance >= ?').run(amountCents, amountCents, account.id, amountCents);
@@ -222,16 +222,16 @@ function deleteExpense(userId, expenseId) {
 function getDashboard(userId) {
     const db = getDb();
     const accounts = businessAccounts(userId);
-    const ids = accounts.map(account => account.id);
+    const accountIds = accounts.map(account => account.id);
     const usdIds = accounts.filter(account => account.currency === 'USD').map(account => account.id);
     const expenses = db.prepare("SELECT * FROM business_expenses WHERE user_id = ? AND currency = 'USD' AND spent_on >= date('now', 'start of month', '-5 months') ORDER BY spent_on DESC, id DESC").all(userId);
     const linked = new Set(expenses.filter(row => row.transaction_reference).map(row => row.transaction_reference));
     const empty = { accounts, profile: getProfile(userId), months: [], revenueCents: 0, expensesCents: 0, netCents: 0, categories: [], activity: [], upcoming: [], invoices: listInvoices(userId), team: listTeam(userId), availableCents: 0, balanceCents: 0, recentExpenses: expenses.slice(0, 8).map(formatExpense) };
-    const placeholders = ids.map(() => '?').join(',') || 'NULL';
-    const rows = ids.length ? db.prepare(`SELECT t.*, a.nickname AS account_nickname FROM transactions t JOIN accounts a ON a.id = t.account_id
+    const placeholders = accountIds.map(() => '?').join(',') || 'NULL';
+    const rows = accountIds.length ? db.prepare(`SELECT t.*, a.nickname AS account_nickname FROM transactions t JOIN accounts a ON a.id = t.account_id
         WHERE t.account_id IN (${placeholders}) AND t.status = 'completed' AND t.created_at >= date('now', 'start of month', '-5 months')
-        ORDER BY t.created_at DESC, t.id DESC`).all(...ids) : [];
-    if (!ids.length && !expenses.length) return empty;
+        ORDER BY t.created_at DESC, t.id DESC`).all(...accountIds) : [];
+    if (!accountIds.length && !expenses.length) return empty;
     const usdRows = rows.filter(row => usdIds.includes(row.account_id));
     const monthKey = value => String(value).slice(0, 7);
     const months = [];
@@ -263,7 +263,7 @@ function getDashboard(userId) {
         categoryTotals.set('account', (categoryTotals.get('account') || 0) + row.amount);
     });
     const scheduled = db.prepare(`SELECT s.id, s.amount, s.description, s.scheduled_for, a.currency FROM scheduled_transfers s JOIN accounts a ON a.id = s.from_account_id
-        WHERE s.user_id = ? AND s.status = 'pending' AND s.from_account_id IN (${placeholders}) ORDER BY s.scheduled_for LIMIT 5`).all(userId, ...ids);
+        WHERE s.user_id = ? AND s.status = 'pending' AND s.from_account_id IN (${placeholders}) ORDER BY s.scheduled_for LIMIT 5`).all(userId, ...accountIds);
     const invoices = listInvoices(userId);
     const upcoming = [
         ...scheduled.map(item => ({ kind: 'payment', label: item.description || 'Scheduled transfer', date: item.scheduled_for.slice(0, 10), amountCents: item.amount, currency: item.currency, direction: 'out' })),

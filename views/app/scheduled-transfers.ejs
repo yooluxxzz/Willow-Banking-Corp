@@ -28,7 +28,7 @@
             <div class="field">
                 <label for="scheduleFrom">From</label>
                 <select class="select" id="scheduleFrom" name="fromAccountId">
-                    <% accounts.forEach(account => { %><option value="<%= account.id %>" data-currency="<%= account.currency %>"><%= account.displayName %> · <%= account.balanceFormatted %></option><% }) %>
+                    <% accounts.forEach(account => { %><option value="<%= account.id %>" data-currency="<%= account.currency %>" data-private-text="<%= account.displayName %>"><%= account.displayName %> · <%= account.balanceFormatted %></option><% }) %>
                 </select>
             </div>
             <div class="field">

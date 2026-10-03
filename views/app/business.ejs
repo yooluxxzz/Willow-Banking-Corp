@@ -226,7 +226,7 @@
             </div>
             <div class="field mt-5" data-expense-pay-field><label for="expAccount">Pay from</label><select class="select" id="expAccount" name="payFromAccountId">
                 <option value="">Don’t take money from an account (record only)</option>
-                <% activeUsd.forEach(account => { %><option value="<%= account.id %>"><%= account.displayName %> · <%= money(account.available_balance, account.currency) %> available</option><% }) %>
+                <% activeUsd.forEach(account => { %><option value="<%= account.id %>" data-private-text="<%= account.displayName %>"><%= account.displayName %> · <%= money(account.available_balance, account.currency) %> available</option><% }) %>
             </select></div>
             <div class="field mt-5"><label for="expNote">Note <span class="optional">· optional</span></label><input class="input" id="expNote" name="note" maxlength="200" autocomplete="off"></div>
             <p class="field-error mt-3" data-expense-error role="alert" hidden></p>

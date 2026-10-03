@@ -1,12 +1,11 @@
-const { randomUUID } = require('crypto');
 const { getDb } = require('../database');
-const { toCents, validateAmount } = require('../middleware/validation');
+const { toCents, validateAmount, formatCurrency } = require('../middleware/validation');
 const { createNotification } = require('./notification');
 const { logAudit } = require('./audit');
 const config = require('../config');
-const { formatCurrency } = require('../middleware/validation');
 const { scaledLimit } = require('./currencies');
 const { ValidationError } = require('../errors');
+const ids = require('./ids');
 
 function parseAccountId(value) {
     const text = String(value ?? '');
@@ -120,7 +119,7 @@ function processDueScheduledTransfers(now = new Date().toISOString()) {
             }
             db.prepare('UPDATE accounts SET balance = balance + ?, available_balance = available_balance + ? WHERE id = ? AND user_id = ? AND status = ?')
                 .run(schedule.amount, schedule.amount, destination.id, schedule.user_id, 'active');
-            const reference = `SCH-${randomUUID().slice(0, 8).toUpperCase()}`;
+            const reference = ids.reference('SCH');
             const description = schedule.description || 'Scheduled demo transfer';
             db.prepare(`INSERT INTO transactions (reference, account_id, related_account_id, type, amount, currency, direction, status, description)
                 VALUES (?, ?, ?, 'transfer', ?, ?, 'debit', 'completed', ?)`)

@@ -188,7 +188,7 @@ tests/                       Node test suites
 
 - **One ledger.** Every change to a balance is a transaction row: deposits, payments, investing cash moves (`INV-IN-`/`INV-OUT-`), business expenses paid from an account (`EXP-`), debt payments (`DBT-`) and conversions (`CNV-`). Holdings and trades live in the separate `demo_*` tables; prices come only from the market-data layer.
 - **APIs.** Each page loads its data from JSON endpoints (`/api/budgets`, `/api/networth`, `/api/debts`, `/api/business/expenses`, `/api/wealth/cash`, `/api/assistant/chat` …) and updates without a reload.
-- **Design system.** Tokens, components, attention animations and the dark theme are in `public/css/willow.css`; see [WILLOW_BRAND_SPEC.md](WILLOW_BRAND_SPEC.md).
+- **Design system.** Tokens, components, attention animations and the dark theme are in `public/css/willow.css`; see [docs/WILLOW_BRAND_SPEC.md](docs/WILLOW_BRAND_SPEC.md).
 - **No third-party scripts.** Charts are in-house SVG; fonts are self-hosted; only homepage photography loads from Unsplash.
 
 ## Security
@@ -197,7 +197,7 @@ Passwords hashed with bcrypt; rate-limited sign-in with temporary lockout; sessi
 
 ## Documentation
 
-- [WILLOW_BRAND_SPEC.md](WILLOW_BRAND_SPEC.md) — brand, design system and experience rules
+- [docs/WILLOW_BRAND_SPEC.md](docs/WILLOW_BRAND_SPEC.md) — brand, design system and experience rules
 - [docs/DATABASE_CHANGES.md](docs/DATABASE_CHANGES.md) — schema and migration history
 - [market-data-service/README.md](market-data-service/README.md) — the market-data service
 - [WORK_LOG.md](WORK_LOG.md) — work sessions and checks

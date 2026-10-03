@@ -30,7 +30,11 @@
             let message = '';
             if (!raw) message = 'Enter an amount.';
             else if (!/^\d+(\.\d{1,2})?$/.test(raw) || value() <= 0) message = 'Enter a positive amount with up to two decimal places.';
-            else if (!deposit && Math.round(value() * 100) > Number(option().dataset.available)) message = `That’s more than the available balance (${option().dataset.balance}).`;
+            else if (!deposit && Math.round(value() * 100) > Number(option().dataset.available)) {
+                message = doc.documentElement.classList.contains('is-private')
+                    ? 'That’s more than this account’s available balance.'
+                    : `That’s more than the available balance (${W.formatCents(Number(option().dataset.available), currency())}).`;
+            }
             amount.setAttribute('aria-invalid', String(Boolean(message)));
             amountError.textContent = message;
             amountError.hidden = !message;
@@ -44,7 +48,7 @@
         form.querySelector('[data-flow-next]').addEventListener('click', () => {
             if (!validate()) { amount.focus(); return; }
             form.querySelector('[data-review-amount]').textContent = W.formatMoney(value(), currency(), { digits: 2 });
-            form.querySelector('[data-review-account]').textContent = option().textContent.split(' · ')[0];
+            form.querySelector('[data-review-account]').textContent = option().dataset.privateText || option().textContent.split(' · ')[0];
             form.querySelector('[data-review-note]').textContent = form.elements.description.value.trim() || (deposit ? 'Deposit' : 'Withdrawal');
             const reviewCategory = form.querySelector('[data-review-category]');
             if (reviewCategory) reviewCategory.textContent = form.elements.category.value ? form.elements.category.selectedOptions[0].textContent : 'Not set';

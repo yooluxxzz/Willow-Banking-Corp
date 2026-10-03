@@ -1,5 +1,5 @@
 const destinations = new Set([
-    '/dashboard', '/hub', '/accounts', '/accounts/new', '/transactions', '/transfers', '/payees', '/scheduled-transfers',
+    '/dashboard', '/net-worth', '/budgets', '/debts', '/accounts', '/accounts/new', '/transactions', '/transfers', '/payees', '/scheduled-transfers',
     '/deposits', '/withdrawals', '/statements', '/cards', '/international', '/notifications', '/security', '/settings',
     '/wealth', '/wealth/markets', '/crypto', '/goals', '/loans', '/business/dashboard', '/business/invoices', '/business/team',
     '/help', '/admin',

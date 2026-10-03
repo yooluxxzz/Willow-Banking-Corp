@@ -29,21 +29,6 @@ router.get('/instruments', (req, res) => {
     res.json({ instruments: marketData.listInstruments(type).filter(item => item.tradable || item.type === 'index').map(({ provider, ...item }) => item) });
 });
 
-router.get('/search', async (req, res) => {
-    const query = typeof req.query.q === 'string' ? req.query.q.slice(0, 40) : '';
-    const matches = marketData.searchInstruments(query);
-    const quotes = matches.length ? await marketData.getQuotes(matches.slice(0, 8).map(item => item.symbol)).catch(() => []) : [];
-    res.json({ results: matches.map(({ provider, ...item }) => ({ ...item, quote: quotes.find(quote => quote.symbol === item.symbol) || null })) });
-});
-
-router.get('/fx', async (req, res) => {
-    try {
-        res.json({ rates: await marketData.getFxRates(), indicativeOnly: true });
-    } catch (error) {
-        unavailable(res);
-    }
-});
-
 router.get('/quotes/:symbol', async (req, res) => {
     const instrument = marketData.getInstrument(req.params.symbol);
     if (!instrument) return res.status(404).json({ error: 'This asset is unavailable.', code: 'not_found' });

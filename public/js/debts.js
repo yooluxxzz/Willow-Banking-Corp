@@ -36,11 +36,11 @@
             const box = doc.querySelector('[data-debt-summary]');
             box.hidden = !debts.length;
             if (!debts.length) return;
-            const open = debts.filter(debt => debt.status === 'open');
-            box.querySelector('[data-summary-owed]').textContent = money(open.reduce((sum, debt) => sum + debt.balanceCents, 0));
-            box.querySelector('[data-summary-count]').textContent = `${open.length} open debt${open.length === 1 ? '' : 's'}`;
-            box.querySelector('[data-summary-minimum]').textContent = money(open.reduce((sum, debt) => sum + debt.minimumCents, 0));
-            box.querySelector('[data-summary-interest]').textContent = money(open.reduce((sum, debt) => sum + debt.monthlyInterestCents, 0));
+            const owing = debts.filter(debt => debt.status === 'open');
+            box.querySelector('[data-summary-owed]').textContent = money(owing.reduce((sum, debt) => sum + debt.balanceCents, 0));
+            box.querySelector('[data-summary-count]').textContent = `${owing.length} open debt${owing.length === 1 ? '' : 's'}`;
+            box.querySelector('[data-summary-minimum]').textContent = money(owing.reduce((sum, debt) => sum + debt.minimumCents, 0));
+            box.querySelector('[data-summary-interest]').textContent = money(owing.reduce((sum, debt) => sum + debt.monthlyInterestCents, 0));
             box.querySelector('[data-summary-paid]').textContent = money(debts.reduce((sum, debt) => sum + debt.paidCents, 0));
         }
 

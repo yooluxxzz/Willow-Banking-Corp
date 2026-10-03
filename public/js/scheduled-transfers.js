@@ -11,7 +11,7 @@
         const form = doc.getElementById('scheduledForm');
         const dialog = doc.getElementById('scheduleReview');
         if (!upcoming) return;
-        let currencyById = new Map();
+        const currencyById = new Map();
         if (form && form.elements.fromAccountId) {
             Array.from(form.elements.fromAccountId.options).forEach(option => currencyById.set(Number(option.value), option.dataset.currency));
         }
@@ -85,8 +85,8 @@
                 if (!/^\d+(\.\d{1,2})?$/.test(String(data.amount).trim()) || Number(data.amount) <= 0) return fail('Enter a positive amount with up to two decimal places.');
                 if (!data.scheduledDate) return fail('Choose a date.');
                 doc.getElementById('reviewScheduleAmount').textContent = W.formatMoney(Number(data.amount), from.dataset.currency, { digits: 2 });
-                doc.getElementById('reviewScheduleFrom').textContent = from.textContent.split(' · ')[0];
-                doc.getElementById('reviewScheduleTo').textContent = to.textContent.split(' · ')[0];
+                doc.getElementById('reviewScheduleFrom').textContent = from.dataset.privateText || from.textContent.split(' · ')[0];
+                doc.getElementById('reviewScheduleTo').textContent = to.dataset.privateText || to.textContent.split(' · ')[0];
                 doc.getElementById('reviewScheduleDate').textContent = `${dateLabel(`${data.scheduledDate}T00:00:00Z`)} (UTC)`;
                 reviewError.hidden = true;
                 W.openDialog(dialog);

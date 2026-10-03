@@ -48,7 +48,7 @@
 
         const history = doc.querySelector('[data-history-chart]');
         if (charts() && worth.history.length >= 2) {
-            charts().line(history, worth.history.map(point => ({ t: point.day, v: point.netCents / 100 })), { currency: 'USD', height: 220, tone: 'brand', label: 'Net worth over time' });
+            charts().line(history, worth.history.map(point => ({ t: point.day, v: point.netCents / 100 })), { currency: 'USD', height: 220, tone: 'brand', label: 'Net worth over time', private: true });
         } else {
             history.replaceChildren(W.empty({ iconName: 'chart', title: 'Your history starts today', text: 'Come back tomorrow to see the first change. Each day Willow runs, it records your net worth here.', compact: true }));
         }
@@ -80,7 +80,7 @@
         const chart = doc.querySelector('[data-cashflow-chart]');
         const groups = picture.cashflow.map(item => ({ label: item.label, values: { income: item.incomeCents / 100, spending: item.spendingCents / 100 } }));
         if (charts() && groups.some(group => group.values.income || group.values.spending)) {
-            charts().columns(chart, groups, { currency: 'USD', height: 240, label: 'Money in and out by month', keys: [{ key: 'income', label: 'In', color: 'var(--chart-1)' }, { key: 'spending', label: 'Out', color: 'var(--chart-3)' }] });
+            charts().columns(chart, groups, { currency: 'USD', height: 240, private: true, label: 'Money in and out by month', keys: [{ key: 'income', label: 'In', color: 'var(--chart-1)' }, { key: 'spending', label: 'Out', color: 'var(--chart-3)' }] });
         } else {
             chart.replaceChildren(W.empty({ iconName: 'chart', title: 'No money movement yet', text: 'Add money to an account to start your monthly history.', compact: true, action: { label: 'Add money', primary: false, href: '/deposits' } }));
         }

@@ -7,12 +7,11 @@ const supertest = require('supertest');
 const { createTestApp, loginAgent, registerAgent } = require('./setup');
 
 describe('Auth', () => {
-    let app, getDb, closeDatabase;
+    let app, closeDatabase;
 
     before(async () => {
         const env = await createTestApp();
         app = env.app;
-        getDb = env.getDb;
         closeDatabase = env.closeDatabase;
     });
 

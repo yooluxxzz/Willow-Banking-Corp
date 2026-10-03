@@ -60,14 +60,6 @@ function listInstruments(type) {
     return universe.instruments.filter(item => !type || item.type === type);
 }
 
-function searchInstruments(query, { tradableOnly = true } = {}) {
-    const term = String(query || '').trim().toLowerCase();
-    return universe.instruments
-        .filter(item => (!tradableOnly || item.tradable))
-        .filter(item => !term || `${item.symbol} ${item.name} ${item.legalName || ''} ${item.sector || ''}`.toLowerCase().includes(term))
-        .slice(0, 25);
-}
-
 // ── Cache ─────────────────────────────────────────────────────────────
 function remember(key, value, ttl) {
     if (cache.size >= MAX_CACHE_ENTRIES) cache.delete(cache.keys().next().value);
@@ -451,7 +443,7 @@ async function mapLimit(items, limit, worker) {
 
 module.exports = {
     MarketDataError, RANGES,
-    getInstrument, listInstruments, searchInstruments,
+    getInstrument, listInstruments,
     getQuotes, getLatestQuote, getQuote, getHistory, getProfile, getNews,
     getMarkets, getMarketOverview, getFxRates, convertAmount, getStatus, clearCache,
 };

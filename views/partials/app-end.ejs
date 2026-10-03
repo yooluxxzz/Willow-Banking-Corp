@@ -6,14 +6,15 @@
         </main>
     </div>
     <% if (!isAdminEnd) { %>
+    <% const inMore = !appTabs.some(tab => isCurrentNav(tab)); /* Goals, Loans, Business… live under More */ %>
     <nav class="app-tabbar" aria-label="Quick navigation">
         <% appTabs.forEach(tab => { const current = isCurrentNav(tab); %>
         <a href="<%= tab.href %>" class="app-tab<%= tab.primary ? ' is-primary' : '' %>"<%- current ? ' aria-current="page"' : '' %>>
             <span class="app-tab-icon"><%- icon(tab.icon, 'icon-md') %></span><span><%= tab.label %></span>
         </a>
         <% }) %>
-        <button type="button" class="app-tab" data-sheet-open="moreSheet" aria-haspopup="dialog" aria-controls="moreSheet">
-            <span class="app-tab-icon"><%- icon('grid', 'icon-md') %></span><span>More</span>
+        <button type="button" class="app-tab<%= inMore ? ' is-current' : '' %>" data-sheet-open="moreSheet" aria-haspopup="dialog" aria-controls="moreSheet">
+            <span class="app-tab-icon"><%- icon('grid', 'icon-md') %></span><span>More</span><% if (inMore) { %><span class="visually-hidden"> (current section)</span><% } %>
         </button>
     </nav>
     <dialog class="sheet" id="moreSheet" aria-labelledby="moreSheetTitle">

@@ -1,5 +1,7 @@
 # Two companion banking photographs
 
+> Historical design notes, kept for reference. Some files they mention (such as hero-crossfade.css and depth.css) no longer exist; the current styles are in `public/css/`.
+
 These are two separate prompts for Nano Banana or another photorealistic image generator. The implemented assets were created with the built-in image generation tool, not Nano Banana. Photo B used Photo A as a lighting, environment and scale reference. No reference screenshot accompanied the latest text brief; the implementation follows its written requirements.
 
 ## Photo 1 — Banking customer, left

@@ -18,7 +18,6 @@
         const more = form.querySelector('[data-filter-more]');
         const countBadge = form.querySelector('[data-filter-count]');
         let controller = null;
-        let lastPage = [];
         let lastParams = null;
 
         const initial = new URLSearchParams(global.location.search);
@@ -63,7 +62,7 @@
             summary.hidden = false;
         }
 
-        function renderPagination(data, load) {
+        function renderPagination(data) {
             pagination.replaceChildren();
             if (data.totalPages <= 1) return;
             const button = (label, page, options = {}) => W.el('button', {
@@ -105,7 +104,6 @@
             try {
                 const data = await W.api(`/api/transactions?${params}`);
                 if (request.abort) return;
-                lastPage = data.transactions;
                 exportButton.disabled = !data.transactions.length;
                 renderSummary(data.transactions);
                 if (!data.transactions.length) {
@@ -122,7 +120,7 @@
                 }
                 results.replaceChildren(renderList(data.transactions));
                 status.textContent = `${data.total} transaction${data.total === 1 ? '' : 's'} · page ${data.page} of ${data.totalPages}`;
-                renderPagination(data, load);
+                renderPagination(data);
             } catch (error) {
                 if (request.abort) return;
                 results.replaceChildren(W.empty({ iconName: 'alert', title: 'Transactions couldn’t load', text: error.message, error: true, action: { label: 'Try again', onClick: () => load(page) } }));
@@ -176,7 +174,7 @@
             const rows = [['Date', 'Reference', 'Description', 'Counterparty', 'Category', 'Type', 'Status', 'Direction', 'Amount', 'Currency']];
             transactions.forEach(txn => rows.push([txn.created_at, txn.reference, txn.description || '', txn.counterparty || '', txn.categoryLabel || '', txn.type, txn.status, txn.direction, (txn.amount / 100).toFixed(2), txn.currency || 'USD']));
             const csv = rows.map(row => row.map(csvCell).join(',')).join('\r\n');
-            const url = URL.createObjectURL(new Blob([`﻿${csv}`], { type: 'text/csv;charset=utf-8' }));
+            const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }));
             const link = W.el('a', { href: url, download: `willow-transactions-${new Date().toISOString().slice(0, 10)}.csv` });
             doc.body.append(link);
             link.click();

@@ -56,7 +56,6 @@ const config = {
 
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000,
-    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 100,
     authMax: parseInt(process.env.AUTH_RATE_LIMIT_MAX, 10) || 10,
     apiMax: parseInt(process.env.API_RATE_LIMIT_MAX, 10) || 240,
     publicApiMax: parseInt(process.env.PUBLIC_API_RATE_LIMIT_MAX, 10) || 60,

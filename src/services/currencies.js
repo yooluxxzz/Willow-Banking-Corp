@@ -1,5 +1,5 @@
 /**
- * Supported Willow Demo account currencies. Limits are product policy expressed
+ * Supported Willow demo account currencies. Limits are product policy expressed
  * in each currency's own units — they are rounded figures, not exchange rates.
  */
 const { formatCurrency } = require('../middleware/validation');

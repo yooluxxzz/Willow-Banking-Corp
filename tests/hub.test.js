@@ -4,17 +4,19 @@ const supertest = require('supertest');
 const { createTestApp, registerAgent } = require('./setup');
 
 describe('Net worth page and its financial summary', () => {
-    let app, db, close, owner, other, hub;
+    let app, db, close, owner, hub;
     before(async () => {
         const env = await createTestApp(); app = env.app; db = env.getDb(); close = env.closeDatabase;
         owner = await registerAgent(supertest, app, { email: 'hub-owner@example.test', password: 'HubDemo123', fullName: 'Hub Owner' });
-        other = await registerAgent(supertest, app, { email: 'hub-other@example.test', password: 'HubDemo123', fullName: 'Hub Other' });
+        await registerAgent(supertest, app, { email: 'hub-other@example.test', password: 'HubDemo123', fullName: 'Hub Other' });
         hub = require('../src/services/hub');
     });
     after(() => close());
 
     it('renders a protected Hub and derives account and month totals from owned records', async () => {
-        assert.equal((await supertest(app).get('/hub')).status, 302);
+        assert.equal((await supertest(app).get('/net-worth')).status, 302);
+        const old = await supertest(app).get('/hub');
+        assert.equal(old.status, 301); assert.equal(old.headers.location, '/net-worth');
         const ownerId = db.prepare('SELECT id FROM users WHERE email = ?').get('hub-owner@example.test').id;
         const account = db.prepare('SELECT id FROM accounts WHERE user_id = ? LIMIT 1').get(ownerId);
         db.prepare(`INSERT INTO transactions (reference, account_id, type, amount, currency, direction, status, description, created_at)
@@ -26,7 +28,7 @@ describe('Net worth page and its financial summary', () => {
         assert.equal(summary.month.spendingCents, 1234);
         assert.equal(summary.month.incomeCents, 7500);
         assert.equal(summary.topExpenses[0].description, 'Market groceries');
-        const page = await owner.agent.get('/hub');
+        const page = await owner.agent.get('/net-worth');
         assert.equal(page.status, 200);
         assert.match(page.text, /<h1 class="page-head-title">Net worth<\/h1>/);
         assert.match(page.text, /Assets you track/);

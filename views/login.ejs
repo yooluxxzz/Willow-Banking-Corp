@@ -41,7 +41,10 @@
                 </form>
 
                 <div class="auth-or"><span>or</span></div>
-                <button type="button" class="btn btn-secondary btn-lg btn-block" data-auth-go="methods"><%- icon('key') %> Use another sign-in method</button>
+                <button type="button" class="btn btn-secondary btn-lg btn-block" data-demo-start><%- icon('sparkle') %> <span data-demo-text>Explore as a guest</span></button>
+                <p class="auth-guest-note">A temporary, empty profile — no details needed.</p>
+                <div class="notice notice-error auth-notice" data-demo-error role="alert" tabindex="-1" hidden><%- icon('alert') %><div data-demo-error-text></div></div>
+                <button type="button" class="btn btn-ghost btn-block mt-3" data-auth-go="methods"><%- icon('key', 'icon-sm') %> Other ways to sign in</button>
 
                 <p class="auth-switch">New to Willow? <a class="text-link" href="/register">Open an account</a></p>
             </section>
@@ -55,7 +58,7 @@
                     <li>
                         <button type="button" class="auth-method" data-demo-start>
                             <span class="icon-tile"><%- icon('sparkle') %></span>
-                            <span class="auth-method-text"><strong>Explore as a guest</strong><span>Start a temporary, empty profile. No details needed.</span></span>
+                            <span class="auth-method-text"><strong>Explore as a guest</strong><span data-demo-text>Start a temporary, empty profile. No details needed.</span></span>
                             <%- icon('chevron-right', 'auth-method-arrow') %>
                         </button>
                     </li>
@@ -80,7 +83,7 @@
                         </div>
                     </li>
                 </ul>
-                <div class="notice notice-error auth-notice" data-demo-error role="alert" hidden><%- icon('alert') %><div data-demo-error-text></div></div>
+                <div class="notice notice-error auth-notice" data-demo-error role="alert" tabindex="-1" hidden><%- icon('alert') %><div data-demo-error-text></div></div>
             </section>
 
             <!-- Two-step verification -->

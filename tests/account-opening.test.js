@@ -4,7 +4,8 @@ const supertest=require('supertest');
 const {randomUUID}=require('crypto');
 const {createTestApp,registerAgent}=require('./setup');
 describe('Optional demo account opening',()=>{
- let app,db,close,owner,other,opened=[];
+ let app,db,close,owner,other;
+ const opened=[];
  const request=(auth,body,csrf=true)=>{const req=auth.agent.post('/api/accounts').set('Accept','application/json');if(csrf)req.set('X-CSRF-Token',auth.csrfToken);return req.send(body);};
  const payload=(product='checking')=>({product,requestKey:randomUUID(),demoAcknowledged:true});
  before(async()=>{const env=await createTestApp();app=env.app;db=env.getDb();close=env.closeDatabase;
@@ -47,7 +48,7 @@ describe('Optional demo account opening',()=>{
   const today=new Date().toISOString().slice(0,10);const statement=await owner.agent.get('/api/statements').query({accountId:opened[2].id,dateFrom:today,dateTo:today});assert.equal(statement.status,200);assert.equal(statement.body.statement.account.displayName,'Business checking');assert.equal(statement.body.statement.closingBalance,700);
  });
  it('limits each profile to ten accounts without affecting another profile',async()=>{
-  let accounts=(await owner.agent.get('/api/accounts')).body.accounts;
+  const accounts=(await owner.agent.get('/api/accounts')).body.accounts;
   for(let i=accounts.length;i<10;i++)assert.equal((await request(owner,payload())).status,201);
   assert.equal((await request(owner,payload())).status,400);assert.equal((await owner.agent.get('/api/accounts')).body.accounts.length,10);
   assert.match((await owner.agent.get('/accounts/new')).text,/reached the demo account limit/);

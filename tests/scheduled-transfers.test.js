@@ -36,7 +36,7 @@ describe('Scheduled demo transfers', () => {
         const created = await owner.agent.post('/api/scheduled-transfers').set('X-CSRF-Token', owner.csrfToken).send(payload);
         assert.equal(created.status, 201);
         assert.equal(created.body.transfer.status, 'pending');
-        const hub = await owner.agent.get('/api/hub/summary');
+        const hub = await owner.agent.get('/api/hub/picture');
         assert.equal(hub.body.summary.scheduledTransfers[0].id, created.body.transfer.id);
         assert.equal(hub.body.summary.scheduledTransferCount, 1);
         const context = await require('../src/services/assistant').buildContext(db.prepare('SELECT id FROM users WHERE email = ?').get('schedule-owner@example.test').id);

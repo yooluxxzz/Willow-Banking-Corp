@@ -95,13 +95,13 @@ class SQLiteSessionStore extends session.Store {
         } catch (err) { callback(err); }
     }
 
-    set(sid, session, callback) {
+    set(sid, sess, callback) {
         if (!this._db) return callback?.();
         try {
-            const maxAge = session.cookie?.maxAge || 86400000;
+            const maxAge = sess.cookie?.maxAge || 86400000;
             const expired = Date.now() + maxAge;
             this._db.run('DELETE FROM sessions WHERE sid = ?', [sid]);
-            this._db.run('INSERT INTO sessions (sid, sess, expired) VALUES (?, ?, ?)', [sid, JSON.stringify(session), expired]);
+            this._db.run('INSERT INTO sessions (sid, sess, expired) VALUES (?, ?, ?)', [sid, JSON.stringify(sess), expired]);
             this._save();
             callback?.(null);
         } catch (err) { callback?.(err); }
@@ -116,10 +116,10 @@ class SQLiteSessionStore extends session.Store {
         } catch (err) { callback?.(err); }
     }
 
-    touch(sid, session, callback) {
+    touch(sid, sess, callback) {
         if (!this._db) return callback?.();
         try {
-            const maxAge = session.cookie?.maxAge || 86400000;
+            const maxAge = sess.cookie?.maxAge || 86400000;
             const expired = Date.now() + maxAge;
             this._db.run('UPDATE sessions SET expired = ? WHERE sid = ?', [expired, sid]);
             this._save();
@@ -151,7 +151,7 @@ class SQLiteSessionStore extends session.Store {
         try {
             this._db.run('DELETE FROM sessions WHERE expired <= ?', [Date.now()]);
             this._save();
-        } catch (e) { }
+        } catch (e) { /* the next cleanup will try again */ }
     }
 
     close() {

@@ -4,11 +4,11 @@ const supertest = require('supertest');
 const { createTestApp, registerAgent } = require('./setup');
 
 describe('Demo wealth platform', () => {
-    let app, db, close, first, second, portfolio;
+    let app, db, close, first, portfolio;
     before(async () => {
         const env = await createTestApp(); app = env.app; db = env.getDb(); close = env.closeDatabase;
         first = await registerAgent(supertest, app, { email: 'wealth-one@example.test', password: 'WealthDemo123', fullName: 'Wealth One' });
-        second = await registerAgent(supertest, app, { email: 'wealth-two@example.test', password: 'WealthDemo123', fullName: 'Wealth Two' });
+        await registerAgent(supertest, app, { email: 'wealth-two@example.test', password: 'WealthDemo123', fullName: 'Wealth Two' });
         portfolio = require('../src/services/demo-portfolio');
     });
     after(() => close());
@@ -141,19 +141,19 @@ describe('Demo wealth platform', () => {
         }
     });
 
-    it('returns indicative FX quotes only through the authenticated demo endpoint', async () => {
+    it('returns indicative FX rates only to signed-in customers', async () => {
         const originalFetch = global.fetch;
         global.fetch = async () => ({
             ok: true,
             json: async () => ({ chart: { result: [{ meta: { currency: 'USD', regularMarketPrice: 1.1, previousClose: 1.09 }, timestamp: [], indicators: { quote: [{ close: [] }] } }] } }),
         });
         try {
-            assert.equal((await supertest(app).get('/api/wealth/fx').set('Accept', 'application/json')).status, 401);
-            const response = await first.agent.get('/api/wealth/fx').set('Accept', 'application/json');
+            assert.equal((await supertest(app).get('/api/fx/rates').set('Accept', 'application/json')).status, 401);
+            const response = await first.agent.get('/api/fx/rates').set('Accept', 'application/json');
             assert.equal(response.status, 200);
             assert.equal(response.body.indicativeOnly, true);
-            assert.equal(response.body.rates.length, 4);
-            assert.deepEqual(response.body.rates.map(rate => rate.currency).sort(), ['EUR', 'GBP', 'MZN', 'ZAR']);
+            assert.equal(response.body.base, 'USD');
+            assert.deepEqual(response.body.rates.map(rate => rate.currency).sort(), ['EUR', 'GBP', 'MZN', 'USD', 'ZAR']);
             assert.equal((await first.agent.get('/international')).status, 200);
         } finally {
             global.fetch = originalFetch;

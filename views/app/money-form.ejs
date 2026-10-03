@@ -27,7 +27,7 @@
             <div class="field mt-6">
                 <label for="accountId"><%= deposit ? 'Into' : 'From' %></label>
                 <select class="select input-lg" id="accountId" name="accountId">
-                    <% accounts.forEach(account => { %><option value="<%= account.id %>" data-currency="<%= account.currency %>" data-balance="<%= account.balanceFormatted %>" data-available="<%= account.available_balance %>"<%- account.id === selectedAccountId ? ' selected' : '' %>><%= account.displayName %> · <%= account.balanceFormatted %></option><% }) %>
+                    <% accounts.forEach(account => { %><option value="<%= account.id %>" data-currency="<%= account.currency %>" data-available="<%= account.available_balance %>" data-private-text="<%= account.displayName %>"<%- account.id === selectedAccountId ? ' selected' : '' %>><%= account.displayName %> · <%= account.balanceFormatted %></option><% }) %>
                 </select>
             </div>
             <div class="field">

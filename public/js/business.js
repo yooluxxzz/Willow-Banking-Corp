@@ -12,7 +12,7 @@
         const chart = doc.querySelector('[data-business-chart]');
         if (chart) {
             if (data.months.some(month => month.values.revenue || month.values.expenses)) {
-                global.WillowCharts.columns(chart, data.months, { currency: 'USD', height: 240, label: 'Business money in and out by month', keys: [{ key: 'revenue', label: 'In', color: 'var(--chart-1)' }, { key: 'expenses', label: 'Out', color: 'var(--chart-3)' }] });
+                global.WillowCharts.columns(chart, data.months, { currency: 'USD', height: 240, private: true, label: 'Business money in and out by month', keys: [{ key: 'revenue', label: 'In', color: 'var(--chart-1)' }, { key: 'expenses', label: 'Out', color: 'var(--chart-3)' }] });
             } else {
                 chart.replaceChildren(W.empty({ iconName: 'chart', title: 'No activity yet', text: 'Money in and out of your business accounts will be charted here.', compact: true }));
             }

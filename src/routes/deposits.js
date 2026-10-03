@@ -2,7 +2,7 @@
  * Deposit routes
  */
 const express = require('express');
-const { v4: uuidv4 } = require('uuid');
+const ids = require('../services/ids');
 const { requireAuth } = require('../middleware/auth');
 const { getDb } = require('../database');
 const { validateAmount, toCents, formatCurrency, isOptionalText } = require('../middleware/validation');
@@ -61,7 +61,7 @@ router.post('/', requireAuth, (req, res) => {
             });
         }
 
-        const reference = `DEP-${uuidv4().slice(0, 8).toUpperCase()}`;
+        const reference = ids.reference('DEP');
         const desc = description?.trim() || 'Deposit';
 
         const deposit = db.transaction(() => {

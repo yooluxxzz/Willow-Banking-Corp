@@ -4,14 +4,6 @@ const loans = require('../services/loans');
 const { sendError } = require('./helpers');
 const router = express.Router();
 
-router.post('/calculate', (req, res) => {
-    try {
-        res.json({ estimate: loans.calculate(req.body && req.body.kind, req.body || {}), estimateOnly: true });
-    } catch (error) {
-        sendError(res, error, 'Loans');
-    }
-});
-
 router.use(requireAuth);
 router.get('/estimates', (req, res) => {
     res.set('Cache-Control', 'no-store');

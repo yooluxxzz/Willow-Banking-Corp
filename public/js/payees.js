@@ -42,8 +42,8 @@
                 doc.querySelector('[data-payee-count]').textContent = `${payees.length} saved`;
                 doc.querySelector('[data-payee-empty]').hidden = Boolean(payees.length);
                 W.showToast('Payee removed.', 'success');
-            } catch (error) {
-                W.showToast(error.message, 'error');
+            } catch (failure) {
+                W.showToast(failure.message, 'error');
             }
         }));
     }

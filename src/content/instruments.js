@@ -1,5 +1,5 @@
 /**
- * Curated Willow Demo market universe. Prices are never stored here — only
+ * Curated Willow demo market universe. Prices are never stored here — only
  * identifiers and descriptive metadata. Live data comes from the market-data
  * service. `provider` is the Yahoo Finance symbol used upstream.
  */

@@ -4,17 +4,15 @@
 const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const supertest = require('supertest');
-const { createTestApp, registerAgent, loginAgent } = require('./setup');
+const { createTestApp, registerAgent } = require('./setup');
 
 describe('Financial Operations', () => {
-    let app, getDb, closeDatabase;
+    let app, closeDatabase;
     let userAgent, userCsrf, userAccountId;
-    let user2Agent, user2Csrf;
 
     before(async () => {
         const env = await createTestApp();
         app = env.app;
-        getDb = env.getDb;
         closeDatabase = env.closeDatabase;
 
         // Register user 1
@@ -30,14 +28,12 @@ describe('Financial Operations', () => {
         const acctRes = await userAgent.get('/api/accounts');
         userAccountId = acctRes.body.accounts?.[0]?.id;
 
-        // Register user 2
-        const { agent: a2, csrfToken: c2 } = await registerAgent(supertest, app, {
+        // A second customer to pay
+        await registerAgent(supertest, app, {
             email: 'bob@test.com',
             password: 'Password123',
             fullName: 'Bob Test',
         });
-        user2Agent = a2;
-        user2Csrf = c2;
     });
 
     after(() => {

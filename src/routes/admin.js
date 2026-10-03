@@ -2,11 +2,10 @@
  * Admin routes — dashboard, user management, audit logs, adjustments
  */
 const express = require('express');
-const { v4: uuidv4 } = require('uuid');
+const ids = require('../services/ids');
 const { requireAdmin } = require('../middleware/auth');
 const { getDb } = require('../database');
 const { logAudit, getAuditLogs } = require('../services/audit');
-const { getAllTransactions } = require('../services/transaction');
 const { validateAmount, toCents, formatCurrency } = require('../middleware/validation');
 const { createNotification } = require('../services/notification');
 const { formatMoney } = require('../services/currencies');
@@ -251,7 +250,7 @@ router.post('/balance-adjustment', requireAdmin, (req, res) => {
         const currency = account.currency || 'USD';
         const note = reason.trim();
 
-        const reference = `ADJ-${uuidv4().slice(0, 8).toUpperCase()}`;
+        const reference = ids.reference('ADJ');
 
         const adjustment = db.transaction(() => {
             if (type === 'credit') {
@@ -289,26 +288,6 @@ router.post('/balance-adjustment', requireAdmin, (req, res) => {
         if (err.status === 400) return res.status(400).json({ error: err.message });
         console.error('[Admin] Adjustment error:', err.message);
         res.status(500).json({ error: 'Failed to process adjustment.' });
-    }
-});
-
-// Transactions (admin-level)
-router.get('/transactions', requireAdmin, (req, res) => {
-    try {
-        const result = getAllTransactions({
-            page: parseInt(req.query.page) || 1,
-            limit: parseInt(req.query.limit) || 20,
-            type: req.query.type || undefined,
-            status: req.query.status || undefined,
-            search: req.query.search || undefined,
-            dateFrom: req.query.dateFrom || undefined,
-            dateTo: req.query.dateTo || undefined,
-            sort: req.query.sort || 'desc',
-        });
-        res.json(result);
-    } catch (err) {
-        console.error('[Admin] Transactions error:', err.message);
-        res.status(500).json({ error: 'Failed to load transactions.' });
     }
 });
 

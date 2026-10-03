@@ -63,7 +63,7 @@
                     W.el('div', null,
                         W.el('p', { className: 'figure figure-md', 'data-private': '', text: money(goal.current_cents) }),
                         W.el('p', { className: 'text-sm muted', 'data-private': '', text: `of ${money(goal.target_cents)}` }),
-                        W.el('p', { className: 'text-xs muted mt-2', text: done ? 'Target reached' : `${money(goal.target_cents - goal.current_cents)} to go` }))),
+                        W.el('p', { className: 'text-xs muted mt-2', 'data-private': done ? null : '', text: done ? 'Target reached' : `${money(goal.target_cents - goal.current_cents)} to go` }))),
                 done ? W.el('p', { className: 'goal-done' }, W.icon('check-circle', 'icon-sm'), 'Target reached') : quick);
         }
 

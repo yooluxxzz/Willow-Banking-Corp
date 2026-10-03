@@ -44,7 +44,7 @@ describe('Individual session management', () => {
     it('revokes only the selected session and blocks replay even if a stale request restores its store row', async () => {
         const page = await owner.agent.get('/security');
         const id = page.text.match(/data-revoke-session="([a-f0-9]+)"/)[1];
-        const [sid, snapshot] = Object.entries(await list()).find(([sid]) => sessionKey(sid) === id);
+        const [sid, snapshot] = Object.entries(await list()).find(([key]) => sessionKey(key) === id);
         assert.equal((await revoke(id)).status, 200);
         assert.equal(db.prepare('SELECT session_hash FROM revoked_sessions').get().session_hash, id);
         await new Promise((resolve,reject) => store.set(sid, snapshot, err => err ? reject(err) : resolve()));

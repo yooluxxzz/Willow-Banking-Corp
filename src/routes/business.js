@@ -8,7 +8,6 @@ const { jsonRoute, validId, noStore } = require('./helpers');
 router.use(requireAuth, noStore);
 const handle = (status, fn) => jsonRoute(status, fn, 'Business');
 
-router.get('/dashboard', handle(200, req => ({ dashboard: business.getDashboard(req.session.userId) })));
 router.put('/profile', handle(200, req => ({ profile: business.saveProfile(req.session.userId, req.body || {}) })));
 router.get('/invoices', handle(200, req => ({ invoices: business.listInvoices(req.session.userId) })));
 router.post('/invoices', handle(201, req => ({ invoice: business.createInvoice(req.session.userId, req.body || {}), simulated: true })));
