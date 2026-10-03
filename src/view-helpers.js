@@ -133,6 +133,7 @@ function attachViewHelpers(req, res, next) {
         isCurrentNav: item => nav.isCurrent(item, req.path),
         idleMinutes: Math.round(require('./config').session.idleTimeoutMs / 60000),
         guestRetentionDays: require('./config').session.guestRetentionDays,
+        assistant: require('./services/assistant').cachedStatus(),
     });
     next();
 }

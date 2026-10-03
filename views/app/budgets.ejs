@@ -1,0 +1,25 @@
+<%- include('../partials/app-start', { css: [] }) %>
+
+<header class="page-head">
+    <div class="page-head-copy">
+        <h1 class="page-head-title">Budgets</h1>
+        <p class="page-head-sub">Set limits for what you spend. Willow measures them against your real activity and checks every budget each night.</p>
+    </div>
+    <div class="page-head-actions"><button type="button" class="btn btn-primary" data-budget-new><%- icon('plus') %> New budget</button></div>
+</header>
+
+<section class="budget-board" data-budgets data-scope="personal" aria-label="Your budgets">
+    <div class="stat-row mb-6" data-budget-summary hidden>
+        <div class="stat-tile" data-attention><span class="label"><%- icon('check-circle', 'icon-sm') %> On track</span><span class="figure" data-summary-ok>0</span><small data-summary-ok-note>budgets</small></div>
+        <div class="stat-tile"><span class="label"><%- icon('alert', 'icon-sm') %> Close to limit</span><span class="figure" data-summary-near>0</span><small>85% or more used</small></div>
+        <div class="stat-tile"><span class="label"><%- icon('x-circle', 'icon-sm') %> Over limit</span><span class="figure" data-summary-over>0</span><small>This period</small></div>
+        <div class="stat-tile"><span class="label"><%- icon('wallet', 'icon-sm') %> Left to spend</span><span class="figure" data-private data-summary-left>$0</span><small>Across budgets this period</small></div>
+    </div>
+    <div class="budget-grid" data-budget-list aria-live="polite"></div>
+</section>
+
+<p class="disclosure-note mt-8"><%- icon('info') %> <span>Budgets count payments, withdrawals, money you send to other people and debt payments from your personal US dollar accounts. Give a withdrawal a category when you make it so it lands in the right budget. Each night Willow records how every budget stood that day, and tells you once per period when one gets close to or goes over its limit.</span></p>
+
+<%- include('../partials/budget-dialog', { scope: 'personal' }) %>
+
+<%- include('../partials/app-end', { js: ['budgets'] }) %>

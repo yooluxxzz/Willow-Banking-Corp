@@ -13,7 +13,7 @@
 <div class="demo-strip" role="note">
     <div class="container-wide demo-strip-inner">
         <span class="demo-badge">Demo</span>
-        <span class="demo-strip-text">Willow is a fictional bank for demonstration. No real money, accounts or investments are involved.</span>
+        <span class="demo-strip-text">Willow is a fictional bank for demonstration.<span class="demo-strip-more"> No real money, accounts or investments are involved.</span></span>
         <a href="/demo" class="demo-strip-link">How the demo works <%- icon('arrow-right', 'icon-sm') %></a>
     </div>
 </div>
@@ -49,14 +49,14 @@
                                         <span class="mini-card is-virtual"><span class="mini-card-num">Virtual</span></span>
                                     <% } else if (section.featured.kind === 'portfolio') { %>
                                         <svg viewBox="0 0 200 70" preserveAspectRatio="none"><path d="M0 58 C20 54 30 40 50 44 S80 30 100 34 S130 16 150 20 S180 8 200 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
-                                        <span class="mega-feature-figure">$100,000</span>
+                                        <span class="mega-feature-caption">Real, delayed market prices</span>
                                     <% } else if (section.featured.kind === 'calculator') { %>
                                         <span class="mega-feature-figure">$791<small>/mo</small></span>
                                         <span class="mega-feature-caption">Illustrative estimate</span>
                                     <% } else if (section.featured.kind === 'business') { %>
                                         <span class="mega-bars"><span style="--h:42%"></span><span style="--h:58%"></span><span style="--h:50%"></span><span style="--h:72%"></span><span style="--h:66%"></span><span style="--h:88%"></span></span>
                                     <% } else { %>
-                                        <span class="mega-feature-demo"><%- icon('sparkle', 'icon-xl') %></span>
+                                        <span class="mega-feature-symbols"><% ['lightbulb', 'chart', 'graduation', 'shield-check'].forEach(name => { %><span><%- icon(name, 'icon-md') %></span><% }) %></span>
                                     <% } %>
                                 </span>
                                 <span class="mega-feature-copy">

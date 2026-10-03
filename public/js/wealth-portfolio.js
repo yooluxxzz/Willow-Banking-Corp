@@ -26,7 +26,7 @@
 
         const day = $('[data-portfolio-day]');
         if (valuation.pricing === 'none-held') {
-            day.replaceChildren(el('span', { className: 'muted', text: 'All in cash. Place a simulated order to start investing.' }));
+            day.replaceChildren(el('span', { className: 'muted', text: valuation.cash > 0 ? 'All in cash. Place a simulated order to start investing.' : 'Add cash from one of your accounts to start investing.' }));
         } else if (valuation.pricing === 'unavailable') {
             day.replaceChildren(el('span', { className: 'badge badge-warning' }, W.icon('alert'), 'Prices unavailable'), el('span', { className: 'muted', text: ' Holdings valued at cost' }));
         } else {
@@ -38,8 +38,9 @@
         const metric = key => $(`[data-metric="${key}"]`);
         metric('return').replaceChildren(W.formatMoney(valuation.totalReturn, 'USD', { sign: true, digits: 2 }));
         const returnSub = root.querySelector('[data-metric-sub="return"]');
-        if (valuation.pricing === 'unavailable') returnSub.replaceChildren('Holdings at cost · vs $100,000 starting cash');
-        else returnSub.replaceChildren(WW.delta(valuation.totalReturnPercent), ' vs $100,000 starting cash');
+        if (!valuation.contributed) returnSub.replaceChildren('Add cash to start');
+        else if (valuation.pricing === 'unavailable') returnSub.replaceChildren(`Holdings at cost · vs ${W.formatMoney(valuation.contributed, 'USD', { digits: 2 })} moved in`);
+        else returnSub.replaceChildren(WW.delta(valuation.totalReturnPercent), ` vs ${W.formatMoney(valuation.contributed, 'USD', { digits: 2 })} moved in`);
         metric('invested').replaceChildren(W.formatMoney(valuation.marketValue, 'USD', { digits: 2 }));
         const investedSub = root.querySelector('[data-metric-sub="invested"]');
         const count = valuation.holdings.length;
@@ -93,11 +94,12 @@
         const box = $('[data-holdings]');
         WW.setBusy(box, false);
         if (!valuation.holdings.length) {
+            const funded = valuation.cash > 0;
             box.replaceChildren(W.empty({
                 iconName: 'pie',
                 title: 'No holdings yet',
-                text: 'Your $100,000 in simulated cash is ready. Explore stocks, ETFs, funds or crypto and place your first simulated order.',
-                action: { label: 'Explore markets', href: '/wealth/markets' },
+                text: funded ? `You have ${W.formatMoney(valuation.cash, 'USD', { digits: 2 })} ready to invest. Explore stocks, ETFs, funds or crypto and place your first order.` : 'Move money in from one of your Willow accounts, then explore stocks, ETFs, funds or crypto.',
+                action: funded ? { label: 'Explore markets', href: '/wealth/markets' } : { label: 'Add cash', onClick: () => openCash('in') },
             }));
             return;
         }
@@ -118,7 +120,7 @@
         const box = $('[data-activity]');
         WW.setBusy(box, false);
         if (!activity.length) {
-            box.replaceChildren(W.empty({ iconName: 'activity', title: 'No simulated orders yet', text: 'Buys and sells you place with demo cash will appear here.', compact: true }));
+            box.replaceChildren(W.empty({ iconName: 'activity', title: 'No orders yet', text: 'Buys and sells you place will appear here.', compact: true }));
             return;
         }
         const list = el('ul', { className: 'list-plain wl-activity', role: 'list' }, activity.slice(0, 8).map(trade => {
@@ -204,15 +206,16 @@
             if (!hasTrades || !data.points || data.points.length < 2) {
                 box.replaceChildren(el('div', { className: 'wl-chart-empty' },
                     W.icon('trend', 'icon-lg'),
-                    el('p', { className: 'text-sm', text: 'Your performance chart starts with your first simulated order.' })));
+                    el('p', { className: 'text-sm', text: 'Your performance chart starts with your first order.' })));
                 note.textContent = 'Portfolio value over time, including cash.';
                 return;
             }
             box.replaceChildren();
-            global.WillowCharts.line(box, data.points, { range: range === 'all' ? 'max' : range, currency: 'USD', height: 240, baseline: 100000, label: 'Simulated portfolio value' });
+            global.WillowCharts.line(box, data.points, { range: range === 'all' ? 'max' : range, currency: 'USD', height: 240, baseline: data.contributed || undefined, label: 'Portfolio value' });
+            const baseline = data.contributed ? ` Dashed line: ${W.formatMoney(data.contributed, 'USD', { digits: 2 })} moved in.` : '';
             note.textContent = data.partial
-                ? 'Some price history couldn’t be loaded; affected holdings use their trade price. Dashed line: $100,000 starting cash.'
-                : 'Portfolio value over time, including cash. Dashed line: $100,000 starting cash.';
+                ? `Some price history couldn’t be loaded; affected holdings use their trade price.${baseline}`
+                : `Portfolio value over time, including cash.${baseline}`;
         } catch (error) {
             if (token !== state.perfToken) return;
             box.setAttribute('aria-busy', 'false');
@@ -248,7 +251,7 @@
             const retry = { label: 'Retry', onClick: () => reload(), primary: false };
             const holdings = $('[data-holdings]');
             WW.setBusy(holdings, false);
-            holdings.replaceChildren(W.empty({ iconName: 'pie', title: 'Your demo portfolio couldn’t be loaded', text: error.message, error: true, compact: true, action: retry }));
+            holdings.replaceChildren(W.empty({ iconName: 'pie', title: 'Your portfolio couldn’t be loaded', text: error.message, error: true, compact: true, action: retry }));
             const activity = $('[data-activity]');
             WW.setBusy(activity, false);
             activity.replaceChildren();
@@ -266,11 +269,87 @@
         if (button) button.classList.remove('is-loading');
     }
 
+    // ── Cash in and out ────────────────────────────────────────────────
+    const cashDialog = doc.getElementById('cashDialog');
+    const cashForm = doc.getElementById('cashForm');
+    let cashInfo = null;
+
+    async function loadCash() {
+        const box = doc.querySelector('[data-cash-moves]');
+        try {
+            cashInfo = await W.api('/api/wealth/cash', { passive: true });
+            if (!cashInfo.transfers.length) {
+                box.replaceChildren(el('p', { className: 'muted text-sm', text: 'No cash moved yet. Money you add from your accounts, or withdraw back to them, is listed here.' }));
+                return;
+            }
+            box.replaceChildren(el('ul', { className: 'list-plain', role: 'list' }, cashInfo.transfers.slice(0, 6).map(move => el('li', { className: 'list-row' },
+                el('span', { className: `icon-tile icon-tile-sm${move.direction === 'in' ? ' is-positive' : ''}` }, W.icon(move.direction === 'in' ? 'arrow-down-left' : 'arrow-up-right')),
+                el('span', { className: 'list-row-main' }, el('span', { className: 'list-row-title', text: move.direction === 'in' ? `From ${move.account}` : `To ${move.account}` }), el('span', { className: 'list-row-sub', text: W.formatDate(move.createdAt) })),
+                el('span', { className: 'list-row-end' }, el('strong', { className: move.direction === 'in' ? 'positive' : '', 'data-private': '', text: `${move.direction === 'in' ? '+' : '−'}${W.formatCents(move.amountCents)}` }))))));
+        } catch (error) {
+            box.replaceChildren(el('p', { className: 'muted text-sm', text: 'Cash movements couldn’t load.' }));
+        }
+    }
+
+    function syncCashForm() {
+        const direction = cashForm.querySelector('input[name="direction"]:checked').value;
+        doc.getElementById('cashDialogTitle').textContent = direction === 'in' ? 'Add cash to investing' : 'Withdraw investing cash';
+        cashForm.querySelector('[data-cash-account-label]').textContent = direction === 'in' ? 'From' : 'To';
+        cashForm.querySelector('[data-cash-submit]').textContent = direction === 'in' ? 'Add cash' : 'Withdraw';
+        const select = cashForm.elements.accountId;
+        const help = cashForm.querySelector('[data-cash-help]');
+        const accounts = cashInfo ? cashInfo.accounts : [];
+        const current = select.value;
+        select.replaceChildren(...accounts.map(account => el('option', { value: account.id, text: direction === 'in' ? `${account.name} · ${W.formatCents(account.availableCents)} available` : account.name })));
+        if (accounts.some(account => String(account.id) === current)) select.value = current;
+        if (!accounts.length) help.textContent = 'Open a US dollar account first.';
+        else if (direction === 'in') {
+            const account = accounts.find(item => String(item.id) === select.value) || accounts[0];
+            help.textContent = account.availableCents ? `Up to ${W.formatCents(account.availableCents)} from this account.` : 'This account has no money yet — add money to it first.';
+        } else help.textContent = `${W.formatCents(cashInfo.cashCents)} of investing cash can be withdrawn. Sell holdings to free up more.`;
+    }
+
+    async function openCash(direction) {
+        cashForm.reset();
+        cashForm.querySelector(`input[name="direction"][value="${direction}"]`).checked = true;
+        cashForm.querySelector('[data-cash-error]').hidden = true;
+        if (!cashInfo) await loadCash();
+        syncCashForm();
+        W.openDialog(cashDialog);
+        cashForm.elements.amount.focus();
+    }
+
+    doc.querySelectorAll('[data-cash-open]').forEach(button => button.addEventListener('click', () => openCash(button.dataset.cashOpen)));
+    cashForm.addEventListener('change', event => { if (event.target.name === 'direction' || event.target.name === 'accountId') syncCashForm(); });
+    cashForm.addEventListener('submit', async event => {
+        event.preventDefault();
+        const error = cashForm.querySelector('[data-cash-error]');
+        error.hidden = true;
+        const button = cashForm.querySelector('[data-cash-submit]');
+        button.classList.add('is-loading');
+        try {
+            const direction = cashForm.querySelector('input[name="direction"]:checked').value;
+            const result = await W.api('/api/wealth/cash', { method: 'POST', body: { direction, accountId: cashForm.elements.accountId.value, amount: String(cashForm.elements.amount.value).replace(/[,\s$]/g, '') } });
+            W.closeDialog(cashDialog);
+            W.showToast(result.message, 'success');
+            cashInfo = null;
+            await Promise.all([load(), loadCash()]);
+            loadPerformance(state.range);
+            W.highlight($('[data-metric="cash"]').closest('div'));
+        } catch (err) {
+            error.textContent = err.message;
+            error.hidden = false;
+        } finally {
+            button.classList.remove('is-loading');
+        }
+    });
+
     WW.radioGroup($('[data-range-group]'), range => loadPerformance(range));
     $('[data-retry]').addEventListener('click', reload);
 
     (async () => {
         loadWatchlist();
+        loadCash();
         await load();
         loadPerformance(state.range);
     })();

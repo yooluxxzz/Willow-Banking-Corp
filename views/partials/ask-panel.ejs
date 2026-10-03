@@ -1,10 +1,11 @@
+<% const assistantModel = typeof assistant !== 'undefined' && assistant && assistant.model ? assistant.model : 'a local model'; %>
 <dialog class="ask-panel" id="askPanel" aria-labelledby="askTitle" data-ask-panel>
     <div class="ask-panel-head">
         <div class="ask-panel-title">
             <span class="ask-orb" aria-hidden="true"><%- icon('sparkle', 'icon-md') %></span>
             <div>
                 <h2 id="askTitle">Ask Willow</h2>
-                <p>Answers come only from your own Willow demo data.</p>
+                <p>Runs on this computer with <span data-ask-model><%= assistantModel %></span>. Answers use your Willow records.</p>
             </div>
         </div>
         <button type="button" class="btn btn-ghost btn-icon" data-ask-close aria-label="Close Ask Willow"><%- icon('x', 'icon-md') %></button>
@@ -13,7 +14,7 @@
         <div class="ask-welcome" data-ask-welcome>
             <p class="ask-welcome-title">What would you like to know?</p>
             <div class="ask-suggestions" role="list">
-                <% ['How much did I spend this month?', 'What are my biggest expenses?', 'How much do I have in savings?', 'Show me my investments.', 'What is my portfolio allocation?', 'Do I have scheduled payments?', 'How are my goals doing?', 'What is my net worth?'].forEach(prompt => { %>
+                <% ['How much have I spent this month?', 'Am I on track with my budgets?', 'What is my net worth made of?', 'Which debt should I pay off first?', 'Summarize my last 10 transactions.', 'How is my business doing this month?'].forEach(prompt => { %>
                 <button type="button" class="chip" role="listitem" data-ask-prompt="<%= prompt %>"><%= prompt %></button>
                 <% }) %>
             </div>
@@ -21,8 +22,9 @@
     </div>
     <form class="ask-form" data-ask-form>
         <label for="askInput" class="visually-hidden">Ask a question about your money</label>
-        <input id="askInput" name="question" class="ask-input" placeholder="Ask about spending, savings, investments…" maxlength="200" autocomplete="off" required>
-        <button type="submit" class="btn btn-primary btn-icon" aria-label="Ask"><%- icon('arrow-up', 'icon-md') %></button>
+        <textarea id="askInput" name="question" class="ask-input" rows="1" placeholder="Ask about spending, budgets, debts…" maxlength="1000" autocomplete="off" required></textarea>
+        <button type="submit" class="btn btn-primary btn-icon" aria-label="Ask" data-ask-send><%- icon('arrow-up', 'icon-md') %></button>
+        <button type="button" class="btn btn-secondary btn-icon" aria-label="Stop answering" data-ask-stop hidden><%- icon('pause', 'icon-md') %></button>
     </form>
-    <p class="ask-disclaimer">Informational only — not financial advice. Willow Intelligence never predicts returns or recommends trades.</p>
+    <p class="ask-disclaimer">Information, not financial advice. It won’t predict markets or tell you what to buy, and it can make mistakes — check important numbers.</p>
 </dialog>

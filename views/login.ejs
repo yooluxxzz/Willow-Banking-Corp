@@ -6,7 +6,7 @@
         <header class="auth-top">
             <span class="auth-top-brand"><%- include('partials/brand') %></span>
             <span class="demo-badge" title="Willow is a fictional bank. No real money moves.">Demo</span>
-            <a class="auth-top-link" href="/"><%- icon('arrow-left', 'icon-sm') %> Back to Willow</a>
+            <a class="auth-top-link" href="/" aria-label="Back to Willow"><%- icon('arrow-left', 'icon-sm') %> Back<span class="auth-top-link-more"> to Willow</span></a>
         </header>
 
         <div class="auth-panel" data-login>
@@ -55,7 +55,7 @@
                     <li>
                         <button type="button" class="auth-method" data-demo-start>
                             <span class="icon-tile"><%- icon('sparkle') %></span>
-                            <span class="auth-method-text"><strong>Explore as a guest</strong><span>Start a temporary profile with a few months of sample activity. No details needed.</span></span>
+                            <span class="auth-method-text"><strong>Explore as a guest</strong><span>Start a temporary, empty profile. No details needed.</span></span>
                             <%- icon('chevron-right', 'auth-method-arrow') %>
                         </button>
                     </li>

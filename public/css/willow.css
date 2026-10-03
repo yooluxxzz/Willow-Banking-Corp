@@ -285,6 +285,8 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    /* Long unbroken strings (emails, references) wrap instead of widening narrow screens. */
+    overflow-wrap: break-word;
 }
 
 img,
@@ -1547,6 +1549,10 @@ select.form-control {
     border-color: var(--focus);
 }
 
+.amount-input:has(input[aria-invalid='true']) {
+    border-color: var(--negative);
+}
+
 .amount-input .currency {
     font-size: clamp(1.75rem, 3vw, 2.5rem);
     font-weight: 500;
@@ -1772,6 +1778,48 @@ select.form-control {
     box-shadow: var(--shadow-sm);
 }
 
+/* Radio-input variant: <label class="segmented-option"><input type="radio"> Label</label> */
+.segmented-option {
+    position: relative;
+    min-height: 34px;
+    padding: 0 14px;
+    border-radius: var(--r-pill);
+    font-size: var(--fs-sm);
+    font-weight: 580;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color var(--dur-2), color var(--dur-2), box-shadow var(--dur-2);
+}
+
+.segmented-option input {
+    position: absolute;
+    opacity: 0;
+    inset: 0;
+    margin: 0;
+    cursor: pointer;
+}
+
+.segmented-option:hover {
+    color: var(--text);
+}
+
+.segmented-option:has(input:checked) {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow-sm);
+}
+
+.segmented-option:has(input:focus-visible) {
+    box-shadow: var(--ring);
+}
+
+[data-theme="dark"] .segmented-option:has(input:checked) {
+    background: var(--surface-raised);
+}
+
 [data-theme="dark"] .segmented [aria-pressed='true'],
 [data-theme="dark"] .segmented [aria-selected='true'],
 [data-theme="dark"] .segmented [aria-checked='true'],
@@ -1984,7 +2032,7 @@ select.form-control {
 
 @media (max-width: 520px) {
     .field-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
 }
 
@@ -2130,7 +2178,7 @@ a.list-row:hover {
 
 .dl-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
     gap: var(--s-1);
 }
 
@@ -2177,9 +2225,18 @@ a.list-row:hover {
 
 /* ── Tables ─────────────────────────────────────────────────────────── */
 .table-wrap {
+    position: relative;
     width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+}
+
+/* Horizontal scrollers are the containing block for visually hidden labels inside them,
+   so those labels scroll with the content instead of widening the page. */
+.segmented,
+.tabs,
+.card-switcher {
+    position: relative;
 }
 
 .table {
@@ -3414,6 +3471,38 @@ html.is-private [data-private]:hover {
 @keyframes w-grow-x {
     from { transform: scaleX(0); }
     to { transform: scaleX(1); }
+}
+
+/* ── Attention: content fades in, then a soft glow fades in and out ──── */
+:root {
+    --attention-ring: color-mix(in srgb, var(--accent) 42%, transparent);
+    --attention-glow: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+@keyframes w-attention {
+    0% { box-shadow: 0 0 0 0 transparent, 0 0 0 0 transparent; }
+    20%, 55% { box-shadow: 0 0 0 3px var(--attention-ring), 0 10px 32px var(--attention-glow); }
+    100% { box-shadow: 0 0 0 0 transparent, 0 0 0 0 transparent; }
+}
+
+@keyframes w-attention-text {
+    0% { text-shadow: none; }
+    20%, 55% { text-shadow: 0 0 22px var(--attention-ring); }
+    100% { text-shadow: none; }
+}
+
+.is-attention {
+    animation: w-attention 2.4s var(--ease-in-out) 1;
+}
+
+.figure.is-attention,
+.is-attention-text {
+    animation: w-attention-text 2.4s var(--ease-in-out) 1;
+}
+
+.stagger-in > * {
+    animation: w-fade-up 560ms var(--ease-out) both;
+    animation-delay: calc(var(--i, 0) * 70ms);
 }
 
 @keyframes w-pop {

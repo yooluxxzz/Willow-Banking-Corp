@@ -4,7 +4,6 @@
     payees: payees.filter(payee => payee.active).map(payee => ({ id: payee.id, name: payee.displayName, fullName: payee.name, email: payee.email, lastPaid: payee.last_paid_at })),
     preselect,
   };
-  const suggestions = ['maria.silva@community.willow.test', 'daniel.okafor@community.willow.test', 'priya.raman@community.willow.test'];
 %><%- include('../partials/app-start', { css: [] }) %>
 
 <div class="flow flow-wide" data-transfer-flow>
@@ -41,7 +40,7 @@
                         <div class="field">
                             <label for="recipientEmail">Their Willow email</label>
                             <div class="input-group"><input class="input input-lg" id="recipientEmail" type="email" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="255" placeholder="name@example.com" aria-describedby="recipientHelp recipientError"><button type="button" class="btn btn-secondary btn-sm lookup-btn" data-lookup>Check</button></div>
-                            <p class="field-help" id="recipientHelp">Try a demo customer: <% suggestions.forEach((email, index) => { %><button type="button" class="text-link text-sm" data-suggest="<%= email %>"><%= email.split('@')[0].replace('.', ' ').replace(/\b\w/g, c => c.toUpperCase()) %></button><%= index < suggestions.length - 1 ? ', ' : '' %><% }) %></p>
+                            <p class="field-help" id="recipientHelp">The email they use to sign in to Willow. You can pay anyone with a Willow account.</p>
                             <p class="field-error" id="recipientError" hidden></p>
                         </div>
                         <div class="payee-match" data-payee-match hidden></div>
@@ -63,9 +62,9 @@
             <p data-amount-to></p>
             <div class="field mt-6">
                 <label for="amount" class="visually-hidden">Amount</label>
-                <div class="amount-input"><span class="amount-currency" data-amount-symbol>$</span><input class="input amount-field" id="amount" inputmode="decimal" autocomplete="off" placeholder="0.00" aria-describedby="amountError"></div>
+                <div class="amount-input"><span class="currency" data-amount-symbol aria-hidden="true">$</span><input id="amount" inputmode="decimal" autocomplete="off" placeholder="0.00" aria-describedby="amountError"></div>
                 <div class="cluster mt-3" role="group" aria-label="Quick amounts">
-                    <% [20, 50, 100, 250].forEach(value => { %><button type="button" class="chip chip-sm" data-preset="<%= value %>"><span data-amount-symbol>$</span><%= value %></button><% }) %>
+                    <% [20, 50, 100, 250].forEach(value => { %><button type="button" class="chip chip-sm" data-preset="<%= value %>"><span><span data-amount-symbol>$</span><%= value %></span></button><% }) %>
                 </div>
                 <p class="field-error" id="amountError" hidden></p>
             </div>

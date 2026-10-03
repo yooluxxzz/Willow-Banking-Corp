@@ -3,7 +3,9 @@
   const profile = dashboard.profile;
   const businessName = profile && profile.name ? profile.name : 'Your business';
   const primary = dashboard.accounts.find(account => account.status === 'active');
-  const tabs = [['overview', 'Overview', '/business/dashboard'], ['invoices', 'Invoices', '/business/invoices'], ['team', 'Team', '/business/team']];
+  const tabs = [['overview', 'Overview', '/business/dashboard'], ['expenses', 'Expenses & budgets', '/business/expense-log'], ['invoices', 'Invoices', '/business/invoices'], ['team', 'Team', '/business/team']];
+  const categoryList = typeof expenseCategories === 'object' && expenseCategories ? Object.entries(expenseCategories) : [];
+  const activeUsd = dashboard.accounts.filter(account => account.status === 'active' && account.currency === 'USD');
   const roleText = { admin: 'Full control of accounts, cards and team', approver: 'Approves payments and invoices', cardholder: 'Uses a business card with limits', viewer: 'Read-only access to activity' };
   const today = new Date().toISOString().slice(0, 10);
   const in30 = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
@@ -17,33 +19,24 @@
         <h1 class="page-head-title" data-business-name><%= businessName %></h1>
         <% if (profile && (profile.industry || profile.country)) { %><p class="page-head-sub"><%= [profile.industry, profile.country].filter(Boolean).join(' · ') %></p><% } %>
     </div>
-    <% if (hasAccount) { %>
     <div class="page-head-actions">
         <button type="button" class="btn btn-secondary" data-edit-profile><%- icon('settings') %> Business details</button>
-        <button type="button" class="btn btn-primary" data-new-invoice><%- icon('invoice') %> New invoice</button>
+        <% if (section === 'expenses') { %><button type="button" class="btn btn-primary" data-expense-new><%- icon('receipt') %> Log an expense</button><% } else if (!hasAccount) { %><a class="btn btn-primary" href="/business/expense-log#new"><%- icon('receipt') %> Log an expense</a><% } else { %><button type="button" class="btn btn-primary" data-new-invoice><%- icon('invoice') %> New invoice</button><% } %>
     </div>
-    <% } %>
 </header>
 
 <% if (!hasAccount) { %>
-<section class="panel business-empty">
-    <div class="empty">
-        <div class="empty-art"><%- icon('briefcase') %></div>
-        <h3>No business account yet</h3>
-        <p>Open business checking to unlock invoices, expense insights, team access and a cash-flow dashboard. It’s a simulated, single-owner account.</p>
-        <a class="btn btn-primary btn-sm" href="/accounts/new?type=business">Open business checking</a>
-    </div>
-</section>
-<% } else { %>
+<div class="notice notice-info mb-6"><%- icon('briefcase') %><div><strong>No business account yet.</strong> You can log expenses and set budgets now. <a class="text-link" href="/accounts/new?type=business">Open business checking</a> to send invoices, receive payments and pay expenses from the account.</div></div>
+<% } %>
 <nav class="tabs mb-6" aria-label="Business sections">
     <% tabs.forEach(([key, label, href]) => { %><a href="<%= href %>"<%- section === key ? ' aria-current="page"' : '' %>><%= label %><% if (key === 'invoices' && openInvoices.length) { %> <span class="badge badge-brand"><%= openInvoices.length %></span><% } %></a><% }) %>
 </nav>
 
 <% if (section === 'overview') { %>
-<div class="stat-row mb-6">
+<div class="stat-row mb-6" data-attention>
     <div class="stat-tile"><span class="label"><%- icon('wallet', 'icon-sm') %> Available</span><span class="figure" data-private><%= money(dashboard.availableCents) %></span><small>USD business accounts</small></div>
     <div class="stat-tile"><span class="label"><%- icon('arrow-down-left', 'icon-sm') %> Money in this month</span><span class="figure positive" data-private><%= money(dashboard.revenueCents) %></span><small>Payments and deposits received</small></div>
-    <div class="stat-tile"><span class="label"><%- icon('arrow-up-right', 'icon-sm') %> Money out this month</span><span class="figure" data-private><%= money(dashboard.expensesCents) %></span><small>Spending, excluding transfers</small></div>
+    <div class="stat-tile"><span class="label"><%- icon('arrow-up-right', 'icon-sm') %> Money out this month</span><span class="figure" data-private><%= money(dashboard.expensesCents) %></span><small>Logged expenses and account payments</small></div>
     <div class="stat-tile"><span class="label"><%- icon('activity', 'icon-sm') %> Net cash flow</span><span class="figure <%= dashboard.netCents >= 0 ? 'positive' : 'negative' %>" data-private><%= money(dashboard.netCents, 'USD', { sign: true }) %></span><small>This month so far</small></div>
 </div>
 
@@ -54,8 +47,8 @@
             <div data-business-chart></div>
         </section>
         <section class="panel" aria-labelledby="expensesTitle">
-            <div class="panel-head"><h2 id="expensesTitle">Where the money goes · last 3 months</h2></div>
-            <div data-business-categories><% if (!dashboard.categories.length) { %><p class="muted text-sm">No business spending recorded yet.</p><% } %></div>
+            <div class="panel-head"><h2 id="expensesTitle">Where the money goes · this month</h2><a class="link-arrow" href="/business/expense-log">Expenses <%- icon('arrow-right') %></a></div>
+            <div data-business-categories><% if (!dashboard.categories.length) { %><p class="muted text-sm">No business expenses this month. <a class="text-link" href="/business/expense-log">Log one</a>.</p><% } %></div>
         </section>
         <section class="panel" aria-labelledby="bizActivityTitle">
             <div class="panel-head"><h2 id="bizActivityTitle">Recent activity</h2><% if (primary) { %><a class="link-arrow" href="/transactions?accountId=<%= primary.id %>">All <%- icon('arrow-right') %></a><% } %></div>
@@ -70,9 +63,9 @@
         <section class="panel" aria-labelledby="quickTitle">
             <div class="panel-head"><h2 id="quickTitle">Quick actions</h2></div>
             <div class="quick-actions is-light biz-actions">
-                <button type="button" class="quick-action is-primary" data-new-invoice><span class="quick-action-icon"><%- icon('invoice') %></span>Invoice</button>
-                <a class="quick-action" href="/transfers?from=<%= primary ? primary.id : '' %>"><span class="quick-action-icon"><%- icon('send') %></span>Pay</a>
-                <a class="quick-action" href="/cards"><span class="quick-action-icon"><%- icon('card') %></span>Cards</a>
+                <% if (hasAccount) { %><button type="button" class="quick-action is-primary" data-new-invoice><span class="quick-action-icon"><%- icon('invoice') %></span>Invoice</button><% } %>
+                <a class="quick-action<%= hasAccount ? '' : ' is-primary' %>" href="/business/expense-log"><span class="quick-action-icon"><%- icon('receipt') %></span>Expenses</a>
+                <% if (hasAccount) { %><a class="quick-action" href="/transfers?from=<%= primary ? primary.id : '' %>"><span class="quick-action-icon"><%- icon('send') %></span>Pay</a><% } %>
                 <a class="quick-action" href="/business/team"><span class="quick-action-icon"><%- icon('users') %></span>Team</a>
             </div>
         </section>
@@ -88,14 +81,41 @@
         </section>
         <section class="panel" aria-labelledby="bizAccountsTitle">
             <div class="panel-head"><h2 id="bizAccountsTitle">Business accounts</h2></div>
+            <% if (hasAccount) { %>
             <ul class="account-rows" role="list">
                 <% dashboard.accounts.forEach(account => { %><li><%- include('../partials/account-row', { account }) %></li><% }) %>
             </ul>
             <a class="btn btn-ghost btn-sm mt-3" href="/accounts/new?type=business"><%- icon('plus', 'icon-sm') %> Another business account</a>
+            <% } else { %>
+            <p class="muted text-sm">None yet.</p>
+            <a class="btn btn-secondary btn-sm mt-3" href="/accounts/new?type=business"><%- icon('plus', 'icon-sm') %> Open business checking</a>
+            <% } %>
         </section>
     </aside>
 </div>
-<p class="disclosure-note mt-8"><%- icon('info') %> <span>Figures summarize simulated account activity — not accounting revenue or expense reports. Business banking in Willow Demo is single-owner and connects to no real payroll, tax or accounting service.</span></p>
+<p class="disclosure-note mt-8"><%- icon('info') %> <span>Figures come from your business accounts and the expenses you log — they aren’t an accounting report. Willow connects to no payroll, tax or accounting service.</span></p>
+<% } %>
+
+<% if (section === 'expenses') { %>
+<div class="layout-main-aside">
+    <section class="panel" aria-labelledby="expenseLogTitle">
+        <div class="panel-head"><h2 id="expenseLogTitle">Expense log</h2>
+            <div class="cluster"><label class="visually-hidden" for="expenseMonth">Month</label><select class="select select-sm" id="expenseMonth" data-expense-month></select><button type="button" class="btn btn-primary btn-sm" data-expense-new><%- icon('plus', 'icon-sm') %> Log</button></div>
+        </div>
+        <div class="stat-row is-compact mb-4" data-expense-totals hidden>
+            <div class="stat-tile"><span class="label"><%- icon('receipt', 'icon-sm') %> Total</span><span class="figure" data-private data-expense-total>$0</span><small data-expense-count>0 expenses</small></div>
+            <div class="stat-tile"><span class="label"><%- icon('tag', 'icon-sm') %> Largest category</span><span class="expense-top" data-expense-top>—</span><small data-expense-top-amount></small></div>
+        </div>
+        <div data-expense-list aria-live="polite"><div class="skeleton skeleton-block" style="height:180px"></div></div>
+    </section>
+    <aside class="col-stack">
+        <section class="panel" aria-labelledby="bizBudgetsTitle" data-budgets data-scope="business">
+            <div class="panel-head"><h2 id="bizBudgetsTitle">Budgets</h2><button type="button" class="btn btn-ghost btn-sm" data-budget-new><%- icon('plus', 'icon-sm') %> New</button></div>
+            <div class="budget-grid is-stacked" data-budget-list aria-live="polite"></div>
+        </section>
+    </aside>
+</div>
+<p class="disclosure-note mt-8"><%- icon('info') %> <span>Log what the business spends — with or without a Willow account. Choosing “Pay from” takes the amount from that business account now; otherwise the expense is a record only. Business budgets are measured against this log and checked every night.</span></p>
 <% } %>
 
 <% if (section === 'invoices') { %>
@@ -122,7 +142,7 @@
     <% } else { %>
     <div class="empty is-compact"><div class="empty-art"><%- icon('invoice') %></div><h3>No invoices yet</h3><p>Create an invoice to track money your customers owe you.</p><button type="button" class="btn btn-primary btn-sm" data-new-invoice>New invoice</button></div>
     <% } %>
-    <p class="text-xs muted mt-4">Invoices aren’t sent to anyone. Marking one paid records a simulated payment into your business account.</p>
+    <p class="text-xs muted mt-4">Invoices aren’t sent to anyone. When your customer pays, mark the invoice paid to add the payment to your business account.</p>
 </section>
 <% } %>
 
@@ -155,7 +175,6 @@
     </aside>
 </div>
 <% } %>
-<% } %>
 
 <dialog class="modal" id="invoiceDialog" aria-labelledby="invoiceDialogTitle">
     <form id="invoiceForm" novalidate>
@@ -187,5 +206,31 @@
     </form>
 </dialog>
 
+<dialog class="modal" id="expenseDialog" aria-labelledby="expenseDialogTitle">
+    <form id="expenseForm" novalidate>
+        <div class="modal-head"><h2 id="expenseDialogTitle">Log an expense</h2><button type="button" class="btn btn-ghost btn-icon" data-dialog-close aria-label="Close"><%- icon('x', 'icon-md') %></button></div>
+        <div class="modal-body">
+            <input type="hidden" name="id">
+            <div class="field-grid">
+                <div class="field"><label for="expVendor">Paid to</label><input class="input" id="expVendor" name="vendor" required maxlength="80" autocomplete="off" placeholder="Supplier or service"></div>
+                <div class="field"><label for="expCategory">Category</label><select class="select" id="expCategory" name="category"><% categoryList.forEach(([key, label]) => { %><option value="<%= key %>"><%= label %></option><% }) %></select></div>
+            </div>
+            <div class="field-grid mt-5">
+                <div class="field"><label for="expAmount">Amount (USD)</label><div class="input-group has-prefix"><span class="input-prefix">$</span><input class="input num" id="expAmount" name="amount" inputmode="decimal" required autocomplete="off"></div></div>
+                <div class="field"><label for="expDate">Date</label><input class="input" id="expDate" name="spentOn" type="date" max="<%= today %>" value="<%= today %>" required></div>
+            </div>
+            <div class="field mt-5" data-expense-pay-field><label for="expAccount">Pay from</label><select class="select" id="expAccount" name="payFromAccountId">
+                <option value="">Don’t take money from an account (record only)</option>
+                <% activeUsd.forEach(account => { %><option value="<%= account.id %>"><%= account.displayName %> · <%= money(account.available_balance, account.currency) %> available</option><% }) %>
+            </select></div>
+            <div class="field mt-5"><label for="expNote">Note <span class="optional">· optional</span></label><input class="input" id="expNote" name="note" maxlength="200" autocomplete="off"></div>
+            <p class="field-error mt-3" data-expense-error role="alert" hidden></p>
+        </div>
+        <div class="modal-foot"><button type="button" class="btn btn-ghost btn-danger-text" data-expense-delete hidden>Delete</button><button type="button" class="btn btn-secondary" data-dialog-close>Cancel</button><button type="submit" class="btn btn-primary">Save expense</button></div>
+    </form>
+</dialog>
+
+<% if (section === 'expenses') { %><%- include('../partials/budget-dialog', { scope: 'business' }) %><% } %>
+
 <script type="application/json" id="businessData"><%- JSON.stringify(chartData).replace(/</g, '\\u003c') %></script>
-<%- include('../partials/app-end', { js: ['business'] }) %>
+<%- include('../partials/app-end', { js: section === 'expenses' ? ['business', 'budgets', 'business-expenses'] : ['business'] }) %>

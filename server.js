@@ -20,8 +20,15 @@ async function start() {
 
         console.log('[Server] Checking admin account...');
         await initializeAdmin();
-        // Demo customers that anyone can send simulated payments to.
-        await require('./src/services/demo-data').ensureCommunity();
+
+        // Start the Python market-data service (yfinance) if it isn't already running.
+        // Runs in the background: pages work immediately and market data switches over when ready.
+        const marketService = require('./src/services/market-service');
+        marketService.start().catch(error => console.error('[Market service] Could not start:', error.message));
+        // The local model for the assistant, if Ollama is running.
+        require('./src/services/assistant').refreshStatus().then(status => {
+            console.log(status.available ? `[Assistant] Using ${status.model} via Ollama.` : `[Assistant] Off (${status.reason === 'unreachable' ? 'Ollama is not running' : status.reason}).`);
+        });
 
         const { processDueScheduledTransfers } = require('./src/services/scheduled-transfers');
         const processScheduledTransfers = () => {
@@ -35,11 +42,28 @@ async function start() {
         processScheduledTransfers();
         const scheduledTransferTimer = setInterval(processScheduledTransfers, 60 * 1000);
 
+        // Daily budget checks and net-worth snapshots: catch up on days missed while the
+        // app was stopped, then run every night at the configured time.
+        const budgets = require('./src/services/budgets');
+        const networth = require('./src/services/networth');
+        const nightly = async mode => {
+            try {
+                const result = budgets.runBudgetChecks({ mode });
+                const snapshots = await networth.snapshotAll();
+                if (result.checks || snapshots) console.log(`[Server] Daily checks (${mode}): ${result.checks} budget check(s) over ${result.days.length} day(s), ${result.alerts} alert(s), ${snapshots} net-worth snapshot(s).`);
+            } catch (error) {
+                console.error('[Server] Daily checks failed:', error.message);
+            }
+        };
+        nightly('startup');
+        const scheduleNightly = () => setTimeout(async () => { await nightly('nightly'); scheduleNightly(); }, budgets.msUntil(config.jobs.nightlyTime)).unref();
+        scheduleNightly();
+
         // Background task: remove guest demo profiles nobody has used for a while
         const purgeGuests = () => {
             if (!config.session.guestRetentionDays) return;
             try {
-                const { purged } = require('./src/services/demo-data').purgeStaleGuests({ days: config.session.guestRetentionDays });
+                const { purged } = require('./src/services/guests').purgeStaleGuests({ days: config.session.guestRetentionDays });
                 if (purged) console.log(`[Server] Removed ${purged} inactive guest profile(s).`);
             } catch (error) {
                 console.error('[Server] Guest cleanup failed:', error.message);
@@ -93,6 +117,7 @@ async function start() {
         const shutdown = (signal) => {
             console.log(`\n[Server] Received ${signal}. Shutting down gracefully...`);
             clearInterval(scheduledTransferTimer);
+            require('./src/services/market-service').stop();
             server.close(() => {
                 closeDatabase();
                 console.log('[Server] Shutdown complete.');

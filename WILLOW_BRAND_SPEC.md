@@ -63,14 +63,15 @@ Buttons (primary, secondary, ghost, light/outline-light on dark, danger; small/l
 ## 6. Layout and navigation
 
 * **Public site:** demo strip → header with mega menus (Money, Wealth, Borrow, Business, Explore) and Sign in / Open an account; full-screen mobile navigation with grouped disclosure sections; editorial footer with disclosures.
-* **Signed-in app:** left sidebar (Home, Your picture, Money, Wealth, Plan & borrow, Business, Security/Settings/Help) on desktop; top bar with “Ask Willow” (⌘K), privacy toggle, theme, notifications and profile menu; on tablet/mobile a bottom tab bar (Home, Money, Pay, Wealth, More sheet).
+* **Signed-in app:** left sidebar (Home, Your picture — Net worth, Budgets, Debts — Money, Wealth, Plan & borrow, Business, Security/Settings/Help) on desktop; top bar with “Ask Willow” (⌘K, shown only when a local Ollama model is reachable), privacy toggle, theme, notifications and profile menu; on tablet/mobile a bottom tab bar (Home, Money, Pay, Wealth, More sheet). Page titles carry the matching sidebar symbol.
 * Grids: `layout-main-aside`, `layout-halves`, `layout-thirds`; content max width 1240px; 16–24px mobile gutters; no horizontal page scroll.
 
 ## 7. Motion
 
 * Durations `--dur-1…4` (120–560ms) and a cinematic 1.8s crossfade for hero imagery; easing `--ease-out` for entrances.
 * Micro-interactions: button press, card hover lift, count-up balances, success check drawing, flow-step fades, shake on invalid sign-in.
-* `prefers-reduced-motion` removes autoplay, drift, count-ups and transitions (instant state changes); the hero shows a still scene and its play button is disabled.
+* Attention: key figures and new results fade in, hold a soft copper glow and fade back out over about 2.4 seconds (`W.highlight`, `[data-attention]`); lists and cards enter with a short stagger (`W.stagger`). Used sparingly — one highlight per screen load or user action.
+* `prefers-reduced-motion` removes autoplay, drift, count-ups, attention glows and transitions (instant state changes); the hero shows a still scene and its play button is disabled.
 
 ## 8. Imagery
 
@@ -78,12 +79,14 @@ Warm, natural-light photography of real-life moments (everyday life, home, a sma
 
 ## 9. Key experiences
 
-* **Homepage:** five-scene crossfading hero (“For everyday life.” → “For what you’re building.” → “For what’s next.”), autoplay with pause on hover/focus/interaction and when hidden, scene tabs, then Everyday banking, Grow your money (live delayed market panel), “What are you working toward?” goal picker, Willow Hub, Security, and “Where will your money take you?”.
+* **Homepage:** five-scene crossfading hero (“For everyday life.” → “For what you’re building.” → “For what’s next.”), autoplay with pause on hover/focus/interaction and when hidden, scene tabs, then Everyday banking, Grow your money (live delayed market panel), “What are you working toward?” goal picker, Net worth, Security, and “Where will your money take you?”.
 * **Sign in:** split screen with fading imagery; Email or customer ID; states for loading, incorrect password (with attempts left), paused (locked), suspended, session timeout, signed out and password reset; other methods (guest profile, recovery code, customer ID); two-step verification.
 * **Sign up:** six steps with progress — Welcome, About you, Account, Security, Verify (clearly **simulated** identity check), Done (customer ID and next steps).
 * **Payments:** recipient → amount → account → review → confirm → success (“Money sent · $45.00 · To Lucas Moreau · Today · 2:50 PM”), with confirmation of payee and saved payees.
 * **Wealth:** portfolio dashboard, markets, stock/crypto detail with 1D–MAX charts, simulated buy/sell with receipts stating “This is a simulated transaction. No real securities are purchased.”
-* **Willow Hub:** net worth and composition, money movement, categories, investments, goals, insights and an assistant that answers only from the customer’s own records.
+* **Net worth:** accounts, investing and the assets and debts the customer records, as one figure with own/owe donuts, daily history, money movement, categories, investments, goals and insights. Everything starts at zero; nothing is pre-filled.
+* **Budgets and debts:** daily/weekly/monthly limits measured against real activity and checked every night (and at start-up); debts with payoff estimates and payments from a Willow account or recorded from elsewhere.
+* **Ask Willow:** an optional assistant that runs locally with Ollama and answers only from the customer’s own records.
 
 ## 10. Accessibility and quality bar
 

@@ -2,77 +2,108 @@
 
 <header class="page-head">
     <div class="page-head-copy">
-        <p class="label">Willow Hub</p>
-        <h1 class="page-head-title">Your financial picture</h1>
-        <p class="page-head-sub">Everything you hold with Willow — cash, savings, investments and crypto — in one view.</p>
+        <p class="label">Your picture</p>
+        <h1 class="page-head-title">Net worth</h1>
+        <p class="page-head-sub">Everything you own minus everything you owe — your Willow accounts and investing, plus the assets and debts you record here.</p>
     </div>
-    <div class="page-head-actions"><button type="button" class="btn btn-secondary" data-ask-open><%- icon('sparkle') %> Ask Willow</button></div>
+    <div class="page-head-actions"><a class="btn btn-secondary" href="/debts"><%- icon('scale') %> Debts</a><button type="button" class="btn btn-primary" data-asset-new><%- icon('plus') %> Add an asset</button></div>
 </header>
 
 <section class="hub-hero" aria-labelledby="netWorthLabel" data-hub-hero>
     <div class="hub-hero-figure">
         <p class="label" id="netWorthLabel">Net worth · USD</p>
-        <p class="figure figure-xl" data-private data-net-worth><span class="skeleton skeleton-line" style="width:260px;height:1em"></span></p>
-        <p class="hub-hero-note" data-net-note>Calculating from your accounts and portfolio…</p>
+        <p class="figure figure-xl" data-private data-net-worth data-attention><span class="skeleton skeleton-line" style="width:260px;height:1em"></span></p>
+        <p class="hub-hero-note" data-net-note>Adding up your accounts, investing, assets and debts…</p>
     </div>
-    <div class="hub-composition">
-        <div class="hub-donut" data-composition-chart aria-hidden="true"></div>
-        <ul class="hub-legend" role="list" data-composition-list></ul>
-    </div>
+    <dl class="hub-stats" data-net-stats>
+        <div><dt><%- icon('layers', 'icon-sm') %> You own</dt><dd class="figure figure-md" data-private data-stat-assets>—</dd></div>
+        <div><dt><%- icon('scale', 'icon-sm') %> You owe</dt><dd class="figure figure-md" data-private data-stat-debts>—</dd></div>
+        <div><dt><%- icon('trend', 'icon-sm') %> Last 30 days</dt><dd class="figure figure-md" data-private data-stat-change>—</dd></div>
+        <div><dt><%- icon('percent', 'icon-sm') %> Debt to assets</dt><dd class="figure figure-md" data-stat-ratio>—</dd></div>
+    </dl>
 </section>
-<div class="data-banner mt-4" data-fx-banner hidden><%- icon('alert') %><span>Currency accounts aren’t included in cash right now because exchange rates are temporarily unavailable.</span></div>
+<div class="data-banner mt-4" data-fx-banner hidden><%- icon('alert') %><span>Some currency accounts aren’t included right now because exchange rates are temporarily unavailable.</span></div>
+
+<div class="layout-halves mt-6">
+    <section class="panel" aria-labelledby="ownTitle">
+        <div class="panel-head"><h2 id="ownTitle">What you own</h2></div>
+        <div class="hub-composition">
+            <div class="hub-donut" data-own-chart aria-hidden="true"></div>
+            <ul class="hub-legend" role="list" data-own-list></ul>
+        </div>
+    </section>
+    <section class="panel" aria-labelledby="oweTitle">
+        <div class="panel-head"><h2 id="oweTitle">What you owe</h2><a class="link-arrow" href="/debts">Manage <%- icon('arrow-right') %></a></div>
+        <div class="hub-composition">
+            <div class="hub-donut" data-owe-chart aria-hidden="true"></div>
+            <ul class="hub-legend" role="list" data-owe-list></ul>
+        </div>
+    </section>
+</div>
+
+<section class="panel mt-6" aria-labelledby="historyTitle">
+    <div class="panel-head"><h2 id="historyTitle">Net worth over time</h2></div>
+    <div data-history-chart><div class="skeleton skeleton-block" style="height:220px"></div></div>
+    <p class="text-xs muted mt-3">Willow records your net worth each day it runs and whenever you change an asset or debt.</p>
+</section>
 
 <div class="layout-main-aside mt-6">
     <div class="col-stack">
+        <section class="panel" aria-labelledby="assetsTitle">
+            <div class="panel-head"><h2 id="assetsTitle">Assets you track</h2><button type="button" class="btn btn-ghost btn-sm" data-asset-new><%- icon('plus', 'icon-sm') %> Add</button></div>
+            <div data-asset-list aria-live="polite"></div>
+        </section>
+
         <section class="panel" aria-labelledby="flowTitle">
             <div class="panel-head"><h2 id="flowTitle">Money movement</h2><span class="legend-inline"><span><i style="background:var(--chart-1)"></i>In</span><span><i style="background:var(--chart-3)"></i>Out</span></span></div>
             <div class="month-stats mb-6" data-month-stats></div>
             <div data-cashflow-chart><div class="skeleton skeleton-block" style="height:220px"></div></div>
-            <p class="text-xs muted mt-3">USD accounts, excluding transfers between your own accounts.</p>
+            <p class="text-xs muted mt-3">US dollar accounts, excluding moves between your own accounts.</p>
         </section>
 
         <section class="panel" aria-labelledby="spendingTitle" id="spending">
-            <div class="panel-head"><h2 id="spendingTitle">Spending by category · this month</h2><a class="link-arrow" href="/transactions">Transactions <%- icon('arrow-right') %></a></div>
+            <div class="panel-head"><h2 id="spendingTitle">Spending by category · this month</h2><a class="link-arrow" href="/budgets">Budgets <%- icon('arrow-right') %></a></div>
             <div data-category-bars><div class="skeleton skeleton-block" style="height:160px"></div></div>
-        </section>
-
-        <section class="panel" aria-labelledby="investTitle">
-            <div class="panel-head"><h2 id="investTitle">Investments</h2><a class="link-arrow" href="/wealth">Portfolio <%- icon('arrow-right') %></a></div>
-            <div data-investments><div class="skeleton skeleton-block" style="height:120px"></div></div>
         </section>
     </div>
 
     <aside class="col-stack">
-        <section class="panel hub-assistant" aria-labelledby="assistantTitle">
-            <div class="ask-orb"><%- icon('sparkle', 'icon-md') %></div>
-            <h2 id="assistantTitle">Ask about your money</h2>
-            <p class="text-sm secondary">Answers use only your Willow accounts, completed transactions and simulated investment records — no guesses, no predictions.</p>
-            <div class="ask-suggestions mt-4">
-                <% ['How much did I spend this month?', 'What are my biggest expenses?', 'How much do I have in savings?', 'What is my net worth?', 'Show me my investments', 'What payments are coming up?'].forEach(question => { %>
-                <button type="button" class="chip chip-sm" data-ask-open data-ask-question="<%= question %>"><%= question %></button>
-                <% }) %>
-            </div>
-        </section>
-
         <section class="panel" aria-labelledby="insightTitle">
             <div class="panel-head"><h2 id="insightTitle">Insights</h2></div>
             <div data-insights><div class="skeleton skeleton-block" style="height:120px"></div></div>
-            <p class="text-xs muted mt-4">Informational only, calculated from your own data. Not financial advice.</p>
+            <p class="text-xs muted mt-4">Calculated from your own records. Not financial advice.</p>
+        </section>
+
+        <section class="panel" aria-labelledby="investTitle">
+            <div class="panel-head"><h2 id="investTitle">Investing</h2><a class="link-arrow" href="/wealth">Portfolio <%- icon('arrow-right') %></a></div>
+            <div data-investments><div class="skeleton skeleton-block" style="height:120px"></div></div>
         </section>
 
         <section class="panel" aria-labelledby="goalTitle">
             <div class="panel-head"><h2 id="goalTitle">Goals</h2><a class="link-arrow" href="/goals">All <%- icon('arrow-right') %></a></div>
             <div data-goals></div>
         </section>
-
-        <section class="panel" aria-labelledby="otherTitle">
-            <div class="panel-head"><h2 id="otherTitle">Not included</h2></div>
-            <ul class="list-plain is-wrap" role="list">
-                <li class="list-row"><span class="icon-tile icon-tile-sm"><%- icon('card') %></span><span class="list-row-main"><span class="list-row-title">Credit and loans</span><span class="list-row-sub">Willow Demo has no credit accounts</span></span><span class="status-pill">Not connected</span></li>
-                <li class="list-row"><span class="icon-tile icon-tile-sm"><%- icon('building') %></span><span class="list-row-main"><span class="list-row-title">Other banks</span><span class="list-row-sub">External accounts can’t be linked</span></span><span class="status-pill">Not connected</span></li>
-            </ul>
-        </section>
     </aside>
 </div>
+
+<dialog class="modal" id="assetDialog" aria-labelledby="assetDialogTitle">
+    <form id="assetForm" novalidate>
+        <div class="modal-head"><h2 id="assetDialogTitle">Add an asset</h2><button type="button" class="btn btn-ghost btn-icon" data-dialog-close aria-label="Close"><%- icon('x', 'icon-md') %></button></div>
+        <div class="modal-body">
+            <input type="hidden" name="id">
+            <div class="field"><label for="assetName">Name</label><input class="input" id="assetName" name="name" required maxlength="60" autocomplete="off" placeholder="e.g. Apartment, car, pension"></div>
+            <div class="field-grid mt-5">
+                <div class="field"><label for="assetKind">Type</label><select class="select" id="assetKind" name="kind">
+                    <option value="property">Property</option><option value="vehicle">Vehicle</option><option value="cash">Cash outside Willow</option><option value="investment">Other investments</option><option value="retirement">Retirement</option><option value="business">Business ownership</option><option value="other">Other</option>
+                </select></div>
+                <div class="field"><label for="assetValue">Worth today</label><div class="input-group has-prefix"><span class="input-prefix">$</span><input class="input num" id="assetValue" name="value" inputmode="decimal" required autocomplete="off"></div></div>
+            </div>
+            <div class="field mt-5"><label for="assetNote">Note <span class="optional">· optional</span></label><input class="input" id="assetNote" name="note" maxlength="200" autocomplete="off"></div>
+            <p class="field-help mt-3">Your Willow accounts and investing are counted automatically — add what you hold elsewhere.</p>
+            <p class="field-error mt-3" data-asset-error role="alert" hidden></p>
+        </div>
+        <div class="modal-foot"><button type="button" class="btn btn-ghost btn-danger-text" data-asset-delete hidden>Delete</button><button type="button" class="btn btn-secondary" data-dialog-close>Cancel</button><button type="submit" class="btn btn-primary">Save</button></div>
+    </form>
+</dialog>
 
 <%- include('../partials/app-end', { js: ['hub'] }) %>

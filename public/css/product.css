@@ -340,7 +340,7 @@
 
 .pv-order {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 2px 12px;
     margin-left: 60px;
@@ -559,7 +559,7 @@
 
 .calc-row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: var(--s-4);
 }
 
@@ -659,7 +659,7 @@
 
 @media (max-width: 520px) {
     .calc-row {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
 
     .calc-save {
@@ -785,6 +785,6 @@ a.market-row:hover .market-row-main strong {
 
 @media (max-width: 900px) {
     .markets-columns {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
 }

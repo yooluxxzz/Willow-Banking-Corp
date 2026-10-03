@@ -186,6 +186,16 @@
     transition: background-color var(--dur-2), color var(--dur-2);
 }
 
+.auth-top-link {
+    white-space: nowrap;
+}
+
+@media (max-width: 400px) {
+    .auth-top-link-more {
+        display: none;
+    }
+}
+
 .auth-top-link:hover {
     background: var(--surface-muted);
     color: var(--text);
@@ -683,7 +693,7 @@ a.auth-method:hover {
 
 .strength {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 4px;
     margin-top: 4px;
 }
@@ -889,7 +899,7 @@ a.auth-method:hover {
 
 @media (max-width: 520px) {
     .password-rules {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
 
     .signup-step-names {

@@ -79,7 +79,7 @@
         if (!holdings.length) {
             day.replaceChildren(el('span', { className: 'muted', text: 'You don’t hold any demo crypto yet.' }));
             box.replaceChildren(el('div', { className: 'wl-crypto-empty' },
-                el('p', { className: 'text-sm secondary', text: `Buy a coin with your ${W.formatMoney(valuation.cash, 'USD', { digits: 0 })} of simulated cash to see it here. You can start with as little as $1.` }),
+                el('p', { className: 'text-sm secondary', text: valuation.cash > 0 ? `Buy a coin with your ${W.formatMoney(valuation.cash, 'USD', { digits: 2 })} of investing cash to see it here. You can start with as little as $1.` : 'Add cash to investing from one of your accounts, then buy a coin — from as little as $1.' }),
                 el('div', { className: 'cluster' },
                     el('a', { className: 'btn btn-primary btn-sm', href: '/crypto/BTC' }, 'Buy Bitcoin'),
                     el('a', { className: 'btn btn-secondary btn-sm', href: '/crypto/ETH' }, 'Buy Ethereum'))));

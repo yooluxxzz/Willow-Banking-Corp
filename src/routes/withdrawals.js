@@ -17,7 +17,11 @@ const DAILY_WITHDRAWAL_LIMIT_CENTS = config.limits.dailyWithdrawalCents;
 
 router.post('/', requireAuth, (req, res) => {
     try {
-        const { accountId, amount, description } = req.body;
+        const { accountId, amount, description, category } = req.body;
+        const SPEND_CATEGORIES = ['groceries', 'dining', 'transport', 'housing', 'bills', 'shopping', 'entertainment', 'health', 'travel', 'cash', 'other'];
+        if (category !== undefined && category !== null && category !== '' && !SPEND_CATEGORIES.includes(category)) {
+            return res.status(400).json({ error: 'Choose a category from the list.' });
+        }
 
         if (!accountId || !amount) {
             return res.status(400).json({ error: 'Account and amount are required.' });
@@ -76,9 +80,9 @@ router.post('/', requireAuth, (req, res) => {
             }
 
             db.prepare(`
-        INSERT INTO transactions (reference, account_id, type, amount, currency, direction, status, description)
-        VALUES (?, ?, 'withdrawal', ?, ?, 'debit', 'completed', ?)
-      `).run(reference, account.id, amountCents, account.currency || 'USD', desc);
+        INSERT INTO transactions (reference, account_id, type, amount, currency, direction, status, description, category)
+        VALUES (?, ?, 'withdrawal', ?, ?, 'debit', 'completed', ?, ?)
+      `).run(reference, account.id, amountCents, account.currency || 'USD', desc, category || null);
         });
 
         try {

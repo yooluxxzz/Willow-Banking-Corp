@@ -17,7 +17,7 @@
         <h1 class="page-head-title"><span data-greeting><%= greeting() %></span>, <%= firstName(user.full_name) %>.</h1>
     </div>
     <div class="page-head-actions">
-        <a class="btn btn-secondary" href="/hub"><%- icon('hub') %> Your financial picture</a>
+        <a class="btn btn-secondary" href="/hub"><%- icon('hub') %> Net worth</a>
     </div>
 </header>
 
@@ -25,7 +25,7 @@
 <div class="notice notice-success dismissible mb-6" data-dismissible role="status">
     <%- icon('check-circle') %>
     <div><strong><%= welcome === 'demo' ? 'Welcome to your guest profile.' : 'Your Willow account is ready.' %></strong>
-        <%= welcome === 'demo' ? 'It comes with a few months of sample activity so you can try everything. Nothing here is real money.' : 'Explore your accounts, send a demo payment, or ask Willow a question about your money.' %></div>
+        <%= welcome === 'demo' ? 'It starts empty, like any new account. Add money to your checking account to get going.' : 'Your checking account starts at $0. Add money to get going — everything else builds from what you do.' %></div>
     <button type="button" class="btn btn-ghost btn-icon btn-sm" data-dismiss aria-label="Dismiss"><%- icon('x') %></button>
 </div>
 <% } %>
@@ -39,7 +39,7 @@
             <div class="balance-hero-top">
                 <div>
                     <p class="label" id="balanceLabel">Total balance · USD</p>
-                    <p class="figure figure-xl mt-2" data-private data-count-to="<%= totals.total / 100 %>" data-currency="USD"><%= totals.totalFormatted %></p>
+                    <p class="figure figure-xl mt-2" data-private data-attention data-count-to="<%= totals.total / 100 %>" data-currency="USD"><%= totals.totalFormatted %></p>
                     <div class="balance-hero-meta">
                         <span data-private><%= totals.availableFormatted %> available</span>
                         <span><%= usdAccounts.length %> USD account<%= usdAccounts.length === 1 ? '' : 's' %></span>
@@ -57,14 +57,15 @@
             </nav>
         </section>
 
-        <% if (nothingYet && !sampleDataLoaded) { %>
-        <section class="panel sample-prompt">
-            <span class="icon-tile is-accent"><%- icon('sparkle') %></span>
-            <div class="sample-prompt-copy">
-                <h2 class="h5">Bring your dashboard to life</h2>
-                <p class="secondary text-sm">Add a few months of realistic sample activity — purchases, salary, savings, cards, payees and goals. It’s all simulated and only visible to you.</p>
-            </div>
-            <button type="button" class="btn btn-primary" data-load-sample>Add sample activity</button>
+        <% if (nothingYet) { %>
+        <section class="panel get-started" aria-labelledby="startTitle">
+            <div class="panel-head"><h2 id="startTitle">Get started</h2><span class="text-xs muted">Everything starts at zero</span></div>
+            <ol class="get-started-list" role="list">
+                <li><a href="/deposits"><span class="icon-tile icon-tile-sm"><%- icon('plus') %></span><span><strong>Add money</strong><small>Put money into your checking account</small></span><%- icon('chevron-right', 'icon-sm') %></a></li>
+                <li><a href="/budgets"><span class="icon-tile icon-tile-sm"><%- icon('sliders') %></span><span><strong>Set a budget</strong><small>Daily, weekly or monthly limits</small></span><%- icon('chevron-right', 'icon-sm') %></a></li>
+                <li><a href="/hub"><span class="icon-tile icon-tile-sm"><%- icon('hub') %></span><span><strong>Record what you own and owe</strong><small>See your real net worth</small></span><%- icon('chevron-right', 'icon-sm') %></a></li>
+                <li><a href="/cards"><span class="icon-tile icon-tile-sm"><%- icon('card') %></span><span><strong>Order a card</strong><small>Physical or virtual, with instant controls</small></span><%- icon('chevron-right', 'icon-sm') %></a></li>
+            </ol>
         </section>
         <% } %>
 
@@ -117,7 +118,7 @@
 
     <aside class="col-stack" aria-label="Highlights">
         <section class="panel" aria-labelledby="insightsTitle">
-            <div class="panel-head"><h2 id="insightsTitle">Insights</h2><button type="button" class="btn btn-ghost btn-sm" data-ask-open><%- icon('sparkle', 'icon-sm') %> Ask Willow</button></div>
+            <div class="panel-head"><h2 id="insightsTitle">Insights</h2><button type="button" class="btn btn-ghost btn-sm" data-ask-open<%= assistant && assistant.available ? '' : ' hidden' %>><%- icon('sparkle', 'icon-sm') %> Ask Willow</button></div>
             <% if (insights.length) { %>
             <div class="insight-list">
                 <% insights.slice(0, 3).forEach(item => { %>
@@ -179,11 +180,11 @@
         </section>
 
         <section class="panel wealth-teaser" aria-labelledby="wealthTitle" data-wealth-teaser>
-            <div class="panel-head"><h2 id="wealthTitle">Demo portfolio</h2><a class="link-arrow" href="/wealth">Open <%- icon('arrow-right') %></a></div>
+            <div class="panel-head"><h2 id="wealthTitle">Investing</h2><a class="link-arrow" href="/wealth">Open <%- icon('arrow-right') %></a></div>
             <p class="figure figure-md" data-private data-wealth-value><span class="skeleton skeleton-line" style="width:140px;height:1.4em"></span></p>
             <p class="text-sm muted" data-wealth-sub>Loading the latest prices…</p>
             <div class="wealth-teaser-spark" data-wealth-spark aria-hidden="true"></div>
-            <p class="text-xs muted mt-3"><span class="sim-tag">Simulated</span> $100,000 practice money · delayed prices</p>
+            <p class="text-xs muted mt-3"><span class="sim-tag">Simulated orders</span> Funded from your accounts · delayed prices</p>
         </section>
     </aside>
 </div>

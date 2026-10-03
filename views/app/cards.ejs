@@ -27,7 +27,7 @@
 <% if (notice) { %><div class="notice notice-success mb-6" role="status"><%- icon('check-circle') %><div><%= notice %></div></div><% } %>
 
 <% if (!live.length) { %>
-<div class="panel"><div class="empty"><div class="empty-art"><%- icon('card') %></div><h3>No active cards</h3><p>Create a physical or virtual demo card linked to one of your accounts.</p><% if (accounts.length) { %><button type="button" class="btn btn-primary btn-sm" data-new-card>New card</button><% } %></div></div>
+<div class="panel"><div class="empty"><div class="empty-art"><%- icon('card') %></div><h2>No cards yet</h2><p>Order a physical or virtual card for one of your accounts. You only get a card when you ask for one.</p><% if (accounts.length) { %><button type="button" class="btn btn-primary btn-sm" data-new-card>New card</button><% } %></div></div>
 <% } else { %>
 <div class="card-switcher" role="tablist" aria-label="Your cards">
     <% live.forEach(card => { %>

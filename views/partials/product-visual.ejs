@@ -51,7 +51,7 @@
 <% } else if (['stocks', 'etfs', 'funds', 'crypto', 'portfolio'].includes(kind)) { %>
 <div class="pv pv-market" aria-hidden="true">
     <div class="pv-chart glass">
-        <div class="pv-chart-head"><span class="asset-mark"><%= { stocks: 'AAPL', etfs: 'SPY', funds: 'VTSAX'.slice(0, 4), crypto: 'BTC', portfolio: 'W' }[kind] %></span><div><strong><%= { stocks: 'Apple', etfs: 'SPDR S&P 500 ETF', funds: 'Total Market Index', crypto: 'Bitcoin', portfolio: 'Demo portfolio' }[kind] %></strong><small><%= kind === 'portfolio' ? 'Simulated cash $100,000' : 'Delayed market data' %></small></div></div>
+        <div class="pv-chart-head"><span class="asset-mark"><%= { stocks: 'AAPL', etfs: 'SPY', funds: 'VTSAX'.slice(0, 4), crypto: 'BTC', portfolio: 'W' }[kind] %></span><div><strong><%= { stocks: 'Apple', etfs: 'SPDR S&P 500 ETF', funds: 'Total Market Index', crypto: 'Bitcoin', portfolio: 'Your portfolio' }[kind] %></strong><small><%= kind === 'portfolio' ? 'Funded from your accounts' : 'Delayed market data' %></small></div></div>
         <svg viewBox="0 0 320 120" preserveAspectRatio="none" class="pv-line"><defs><linearGradient id="pvfill-<%= kind %>" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3A9C6E" stop-opacity=".28"/><stop offset="1" stop-color="#3A9C6E" stop-opacity="0"/></linearGradient></defs><path d="M0 96 C30 90 42 70 70 74 S112 58 140 62 S184 34 212 40 S262 18 290 22 L320 12 L320 120 L0 120Z" fill="url(#pvfill-<%= kind %>)"/><path d="M0 96 C30 90 42 70 70 74 S112 58 140 62 S184 34 212 40 S262 18 290 22 L320 12" fill="none" stroke="#2F8A60" stroke-width="2.5" stroke-linecap="round"/></svg>
         <div class="pv-ranges"><span>1D</span><span>1W</span><span>1M</span><span class="is-active">1Y</span><span>5Y</span></div>
     </div>

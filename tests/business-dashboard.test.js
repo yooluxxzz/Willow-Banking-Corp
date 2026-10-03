@@ -13,13 +13,15 @@ describe('Business demo workspace', () => {
     });
     after(() => close());
 
-    it('shows a truthful empty state until an owned business account exists', async () => {
+    it('lets owners without a business account log expenses, and explains what an account adds', async () => {
         assert.equal((await supertest(app).get('/business/dashboard')).status, 302);
         const empty = await owner.agent.get('/business/dashboard');
         assert.equal(empty.status, 200);
         assert.match(empty.text, /No business account yet/);
-        assert.match(empty.text, /invoices, expense insights, team access/);
+        assert.match(empty.text, /log expenses and set budgets now/);
         assert.match(empty.text, /href="\/accounts\/new\?type=business"/);
+        assert.match(empty.text, /href="\/business\/expense-log"/);
+        assert.doesNotMatch(empty.text, /data-new-invoice/, 'invoices need a business account');
     });
 
     it('lists only the owner’s business checking and its account-specific ledger', async () => {
@@ -31,7 +33,7 @@ describe('Business demo workspace', () => {
         assert.match(page.text, /Studio operations/);
         assert.match(page.text, /Money in this month/);
         assert.match(page.text, /href="\/business\/invoices"/);
-        assert.match(page.text, /not accounting revenue or expense reports/);
+        assert.match(page.text, /aren’t an accounting report/);
         assert.doesNotMatch(page.text, /Personal checking/);
     });
 });

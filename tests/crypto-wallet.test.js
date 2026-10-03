@@ -13,9 +13,16 @@ describe('Simulated crypto wallet', () => {
         walletService = require('../src/services/crypto-wallet');
         const senderId = db.prepare('SELECT id FROM users WHERE email = ?').get('crypto-sender@example.test').id;
         const receiverId = db.prepare('SELECT id FROM users WHERE email = ?').get('crypto-receiver@example.test').id;
+        // Investing cash comes only from the customer's own deposited money.
+        for (const [who, id, amount] of [[sender, senderId, '10000'], [receiver, receiverId, '8000']]) {
+            const checking = db.prepare('SELECT id FROM accounts WHERE user_id = ?').get(id);
+            assert.equal((await who.agent.post('/api/deposits').set('X-CSRF-Token', who.csrfToken).send({ accountId: checking.id, amount })).status, 200);
+            portfolio.moveCash(id, { accountId: checking.id, direction: 'in', amount });
+        }
         portfolio.executeTrade(senderId, { symbol: 'BTC', side: 'buy', quantity: 0.5, price: 20000 });
         portfolio.executeTrade(receiverId, { symbol: 'BTC', side: 'buy', quantity: 0.2, price: 40000 });
         accounts = db.prepare('SELECT id, balance FROM accounts WHERE user_id IN (?, ?) ORDER BY id').all(senderId, receiverId);
+        assert.equal(accounts.length, 2);
     });
     after(() => close());
 

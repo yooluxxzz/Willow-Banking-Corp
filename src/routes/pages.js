@@ -51,14 +51,13 @@ router.get('/dashboard', customer, (req, res) => {
         insights: prefs.personalizedInsights ? hub.buildInsights(summary, null) : [],
         insightsEnabled: prefs.personalizedInsights,
         cashflow: hub.cashflowSeries(userId, 6),
-        sampleDataLoaded: Boolean(prefs.sampleDataLoadedAt),
         welcome: typeof req.query.welcome === 'string' ? req.query.welcome : '',
         isGuest: Boolean(guest && guest.is_guest),
     });
 });
 
 router.get('/hub', customer, (req, res) => {
-    res.render('app/hub', { title: 'Your financial picture' });
+    res.render('app/hub', { title: 'Net worth' });
 });
 
 router.get('/accounts', customer, (req, res) => {
@@ -202,6 +201,12 @@ router.get('/crypto', customer, (req, res) => {
     res.render('app/crypto', { title: 'Crypto' });
 });
 
+router.get('/budgets', customer, (req, res) => {
+    res.render('app/budgets', { title: 'Budgets', scope: 'personal' });
+});
+router.get('/debts', customer, (req, res) => {
+    res.render('app/debts', { title: 'Debts', accounts: getUserAccounts(req.session.userId).filter(account => account.status === 'active' && account.currency === 'USD') });
+});
 router.get('/goals', customer, (req, res) => {
     res.render('app/goals', { title: 'Goals' });
 });
@@ -215,6 +220,9 @@ router.get('/business/dashboard', customer, (req, res) => {
 });
 router.get('/business/invoices', customer, (req, res) => {
     res.render('app/business', { title: 'Invoices', section: 'invoices', dashboard: business.getDashboard(req.session.userId) });
+});
+router.get('/business/expense-log', customer, (req, res) => {
+    res.render('app/business', { title: 'Expenses & budgets', section: 'expenses', dashboard: business.getDashboard(req.session.userId), expenseCategories: require('../services/budgets').BUSINESS_CATEGORIES });
 });
 router.get('/business/team', customer, (req, res) => {
     res.render('app/business', { title: 'Team', section: 'team', dashboard: business.getDashboard(req.session.userId), roles: business.ROLES });

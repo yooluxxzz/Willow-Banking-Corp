@@ -33,11 +33,17 @@
 
         const recipientLabel = () => (state.mode === 'own' ? state.to && state.to.name : state.recipient && state.recipient.name) || '';
 
+        // Long emails may wrap after the @ on narrow screens rather than mid-word.
+        const emailParts = text => {
+            const at = String(text).indexOf('@');
+            return at > 0 ? [text.slice(0, at + 1), W.el('wbr'), text.slice(at + 1)] : [text];
+        };
+
         // ── Step 1: recipient ─────────────────────────────────────────
         function pick({ title, sub, end, avatar, iconName, selected, onSelect, disabled }) {
             const button = W.el('button', { type: 'button', className: 'pick', 'aria-pressed': String(Boolean(selected)), disabled: disabled || null },
                 avatar ? W.el('span', { className: 'avatar', text: avatar }) : W.el('span', { className: 'icon-tile icon-tile-sm' }, W.icon(iconName || 'wallet')),
-                W.el('span', { className: 'pick-main' }, W.el('strong', { text: title }), sub ? W.el('small', { text: sub }) : null),
+                W.el('span', { className: 'pick-main' }, W.el('strong', { text: title }), sub ? W.el('small', null, ...emailParts(sub)) : null),
                 end ? W.el('span', { className: 'pick-end', 'data-private': '', text: end }) : null);
             button.addEventListener('click', () => onSelect(button));
             button.addEventListener('dblclick', () => { if (!nextButton(steps.index).disabled) nextButton(steps.index).click(); });
@@ -161,7 +167,6 @@
         emailInput.addEventListener('input', () => {
             if (state.recipient && !state.recipient.payeeId) { state.recipient = null; match.hidden = true; saveRow.hidden = true; updateRecipientNext(); }
         });
-        form.querySelectorAll('[data-suggest]').forEach(button => button.addEventListener('click', () => { emailInput.value = button.dataset.suggest; lookup(); }));
         const search = form.querySelector('[data-payee-search]');
         if (search) search.addEventListener('input', () => renderPayees(search.value));
 
@@ -236,7 +241,9 @@
             form.querySelector('[data-review-initials]').textContent = state.mode === 'own' ? '' : (state.recipient.initials || initials(name));
             form.querySelector('[data-review-initials]').hidden = state.mode === 'own';
             form.querySelector('[data-review-amount]').textContent = W.formatMoney(state.amount, state.currency, { digits: 2 });
-            form.querySelector('[data-review-to]').textContent = state.mode === 'own' ? `To your ${name} account` : `To ${name}${state.recipient.email ? ` · ${state.recipient.email}` : ''}`;
+            const reviewTo = form.querySelector('[data-review-to]');
+            if (state.mode === 'own') reviewTo.textContent = `To your ${name} account`;
+            else reviewTo.replaceChildren(`To ${name}`, ...(state.recipient.email ? [W.el('span', { className: 'review-to-email' }, ...emailParts(state.recipient.email))] : []));
             form.querySelector('[data-review-from]').textContent = `${state.from.name} · ${state.from.masked}`;
             form.querySelector('[data-review-note]').textContent = doc.getElementById('note').value.trim() || '—';
             form.querySelector('[data-confirm]').textContent = state.mode === 'own' ? 'Move money' : 'Send money';

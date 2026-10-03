@@ -1,0 +1,68 @@
+<%- include('../partials/app-start', { css: [] }) %>
+
+<header class="page-head">
+    <div class="page-head-copy">
+        <h1 class="page-head-title">Debts</h1>
+        <p class="page-head-sub">Keep every loan and card balance in one place, see when each could be paid off, and record payments as you make them.</p>
+    </div>
+    <div class="page-head-actions"><a class="btn btn-secondary" href="/hub"><%- icon('hub') %> Net worth</a><button type="button" class="btn btn-primary" data-debt-new><%- icon('plus') %> Add a debt</button></div>
+</header>
+
+<div class="stat-row mb-6" data-debt-summary hidden>
+    <div class="stat-tile" data-attention><span class="label"><%- icon('scale', 'icon-sm') %> Total owed</span><span class="figure" data-private data-summary-owed>$0</span><small data-summary-count>0 debts</small></div>
+    <div class="stat-tile"><span class="label"><%- icon('calendar', 'icon-sm') %> Monthly minimums</span><span class="figure" data-private data-summary-minimum>$0</span><small>Due each month</small></div>
+    <div class="stat-tile"><span class="label"><%- icon('percent', 'icon-sm') %> Interest this month</span><span class="figure" data-private data-summary-interest>$0</span><small>At current balances</small></div>
+    <div class="stat-tile"><span class="label"><%- icon('check-circle', 'icon-sm') %> Paid off so far</span><span class="figure" data-private data-summary-paid>$0</span><small data-summary-paid-note>Of the original amounts</small></div>
+</div>
+
+<div class="debt-list" id="debtList" aria-live="polite"></div>
+
+<p class="disclosure-note mt-8"><%- icon('info') %> <span>Debts are what you record here — Willow doesn’t connect to lenders. Payment estimates assume a fixed rate and the minimum payment each month. Paying from a Willow account moves the money through your account history; payments made elsewhere only update the balance.</span></p>
+
+<dialog class="modal" id="debtDialog" aria-labelledby="debtDialogTitle">
+    <form id="debtForm" novalidate>
+        <div class="modal-head"><h2 id="debtDialogTitle">Add a debt</h2><button type="button" class="btn btn-ghost btn-icon" data-dialog-close aria-label="Close"><%- icon('x', 'icon-md') %></button></div>
+        <div class="modal-body">
+            <input type="hidden" name="id">
+            <div class="field-grid">
+                <div class="field"><label for="debtName">Name</label><input class="input" id="debtName" name="name" required maxlength="60" autocomplete="off" placeholder="e.g. Visa card"></div>
+                <div class="field"><label for="debtKind">Type</label><select class="select" id="debtKind" name="kind">
+                    <option value="credit_card">Credit card</option><option value="student_loan">Student loan</option><option value="mortgage">Mortgage</option><option value="auto">Car loan</option><option value="personal">Personal loan</option><option value="medical">Medical</option><option value="other">Other debt</option>
+                </select></div>
+            </div>
+            <div class="field mt-5"><label for="debtLender">Lender <span class="optional">· optional</span></label><input class="input" id="debtLender" name="lender" maxlength="60" autocomplete="off"></div>
+            <div class="field-grid mt-5">
+                <div class="field"><label for="debtBalance">Owed today</label><div class="input-group has-prefix"><span class="input-prefix">$</span><input class="input num" id="debtBalance" name="balance" inputmode="decimal" required autocomplete="off"></div></div>
+                <div class="field"><label for="debtOriginal">Original amount <span class="optional">· optional</span></label><div class="input-group has-prefix"><span class="input-prefix">$</span><input class="input num" id="debtOriginal" name="original" inputmode="decimal" autocomplete="off"></div></div>
+            </div>
+            <div class="field-grid mt-5">
+                <div class="field"><label for="debtRate">Interest rate (APR)</label><div class="input-group has-suffix"><input class="input num" id="debtRate" name="rate" inputmode="decimal" autocomplete="off"><span class="input-suffix">%</span></div></div>
+                <div class="field"><label for="debtMinimum">Minimum payment</label><div class="input-group has-prefix"><span class="input-prefix">$</span><input class="input num" id="debtMinimum" name="minimum" inputmode="decimal" autocomplete="off"></div></div>
+            </div>
+            <div class="field mt-5"><label for="debtDueDay">Due day of the month <span class="optional">· optional</span></label><input class="input num" id="debtDueDay" name="dueDay" inputmode="numeric" maxlength="2" autocomplete="off" style="max-width: 8rem"></div>
+            <p class="field-error mt-3" data-debt-error role="alert" hidden></p>
+        </div>
+        <div class="modal-foot"><button type="button" class="btn btn-ghost btn-danger-text" data-debt-delete hidden>Delete</button><button type="button" class="btn btn-secondary" data-dialog-close>Cancel</button><button type="submit" class="btn btn-primary">Save</button></div>
+    </form>
+</dialog>
+
+<dialog class="modal" id="paymentDialog" aria-labelledby="paymentDialogTitle">
+    <form id="paymentForm" novalidate>
+        <div class="modal-head"><h2 id="paymentDialogTitle">Record a payment</h2><button type="button" class="btn btn-ghost btn-icon" data-dialog-close aria-label="Close"><%- icon('x', 'icon-md') %></button></div>
+        <div class="modal-body">
+            <input type="hidden" name="debtId">
+            <p class="text-sm muted" data-payment-for></p>
+            <div class="field mt-4"><label for="paymentAmount">Amount</label><div class="input-group has-prefix"><span class="input-prefix">$</span><input class="input num" id="paymentAmount" name="amount" inputmode="decimal" required autocomplete="off"></div>
+                <div class="cluster mt-3" data-payment-quick></div></div>
+            <div class="field mt-5"><label for="paymentFrom">Paid from</label><select class="select" id="paymentFrom" name="accountId">
+                <option value="">Paid outside Willow</option>
+                <% accounts.forEach(account => { %><option value="<%= account.id %>"><%= account.displayName %> · <%= money(account.available_balance, account.currency) %> available</option><% }) %>
+            </select><p class="field-help">Choosing an account takes the money from it now.</p></div>
+            <div class="field mt-5"><label for="paymentDate">Date</label><input class="input" id="paymentDate" name="paidOn" type="date"></div>
+            <p class="field-error mt-3" data-payment-error role="alert" hidden></p>
+        </div>
+        <div class="modal-foot"><button type="button" class="btn btn-secondary" data-dialog-close>Cancel</button><button type="submit" class="btn btn-primary">Record payment</button></div>
+    </form>
+</dialog>
+
+<%- include('../partials/app-end', { js: ['debts'] }) %>

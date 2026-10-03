@@ -23,7 +23,8 @@ async function initializeDatabase() {
     }
 
     // Load existing database or create new
-    if (dbPath && fs.existsSync(dbPath)) {
+    const existed = Boolean(dbPath && fs.existsSync(dbPath));
+    if (existed) {
         const buffer = fs.readFileSync(dbPath);
         db = new SQL.Database(buffer);
     } else {
@@ -65,7 +66,7 @@ async function initializeDatabase() {
 
         CREATE TABLE IF NOT EXISTS demo_portfolios (
             user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-            cash_cents INTEGER NOT NULL DEFAULT 10000000 CHECK(cash_cents >= 0),
+            cash_cents INTEGER NOT NULL DEFAULT 0 CHECK(cash_cents >= 0),
             created_at TEXT NOT NULL DEFAULT (datetime('now')),
             updated_at TEXT NOT NULL DEFAULT (datetime('now'))
         );
@@ -281,6 +282,117 @@ async function initializeDatabase() {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS app_meta (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS portfolio_transfers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      account_id INTEGER REFERENCES accounts(id),
+      direction TEXT NOT NULL CHECK(direction IN ('in', 'out')),
+      amount_cents INTEGER NOT NULL CHECK(amount_cents > 0),
+      reference TEXT NOT NULL UNIQUE,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS budgets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      scope TEXT NOT NULL DEFAULT 'personal' CHECK(scope IN ('personal', 'business')),
+      name TEXT NOT NULL,
+      category TEXT DEFAULT NULL,
+      period TEXT NOT NULL CHECK(period IN ('daily', 'weekly', 'monthly')),
+      limit_cents INTEGER NOT NULL CHECK(limit_cents > 0),
+      status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'archived')),
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS budget_checks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      budget_id INTEGER NOT NULL REFERENCES budgets(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      day TEXT NOT NULL,
+      period_start TEXT NOT NULL,
+      spent_cents INTEGER NOT NULL CHECK(spent_cents >= 0),
+      limit_cents INTEGER NOT NULL CHECK(limit_cents > 0),
+      status TEXT NOT NULL CHECK(status IN ('under', 'near', 'over')),
+      notified TEXT NOT NULL DEFAULT '' CHECK(notified IN ('', 'near', 'over')),
+      checked_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(budget_id, day)
+    );
+
+    CREATE TABLE IF NOT EXISTS business_expenses (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      spent_on TEXT NOT NULL,
+      vendor TEXT NOT NULL,
+      category TEXT NOT NULL,
+      amount_cents INTEGER NOT NULL CHECK(amount_cents > 0),
+      currency TEXT NOT NULL DEFAULT 'USD',
+      note TEXT NOT NULL DEFAULT '',
+      account_id INTEGER REFERENCES accounts(id),
+      transaction_reference TEXT DEFAULT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS assets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      kind TEXT NOT NULL CHECK(kind IN ('cash', 'property', 'vehicle', 'investment', 'retirement', 'business', 'other')),
+      value_cents INTEGER NOT NULL CHECK(value_cents >= 0),
+      currency TEXT NOT NULL DEFAULT 'USD',
+      note TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS debts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      kind TEXT NOT NULL CHECK(kind IN ('credit_card', 'student_loan', 'mortgage', 'auto', 'personal', 'medical', 'other')),
+      lender TEXT NOT NULL DEFAULT '',
+      balance_cents INTEGER NOT NULL CHECK(balance_cents >= 0),
+      original_cents INTEGER NOT NULL CHECK(original_cents >= 0),
+      rate_bps INTEGER NOT NULL DEFAULT 0 CHECK(rate_bps BETWEEN 0 AND 10000),
+      minimum_cents INTEGER NOT NULL DEFAULT 0 CHECK(minimum_cents >= 0),
+      due_day INTEGER DEFAULT NULL CHECK(due_day IS NULL OR due_day BETWEEN 1 AND 31),
+      currency TEXT NOT NULL DEFAULT 'USD',
+      status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open', 'paid_off')),
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS debt_payments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      debt_id INTEGER NOT NULL REFERENCES debts(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      amount_cents INTEGER NOT NULL CHECK(amount_cents > 0),
+      account_id INTEGER REFERENCES accounts(id),
+      transaction_reference TEXT DEFAULT NULL,
+      paid_on TEXT NOT NULL,
+      note TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS net_worth_snapshots (
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      day TEXT NOT NULL,
+      accounts_cents INTEGER NOT NULL,
+      investments_cents INTEGER NOT NULL,
+      assets_cents INTEGER NOT NULL,
+      debts_cents INTEGER NOT NULL,
+      net_cents INTEGER NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (user_id, day)
+    );
+
     CREATE TABLE IF NOT EXISTS audit_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       actor_id INTEGER,
@@ -358,8 +470,30 @@ async function initializeDatabase() {
         'CREATE INDEX IF NOT EXISTS idx_loan_estimates_user ON loan_estimates(user_id, created_at)',
         'CREATE INDEX IF NOT EXISTS idx_support_user ON support_requests(user_id, created_at)',
         'CREATE INDEX IF NOT EXISTS idx_transactions_account_created ON transactions(account_id, created_at)',
+        'CREATE INDEX IF NOT EXISTS idx_portfolio_transfers_user ON portfolio_transfers(user_id, created_at)',
+        'CREATE INDEX IF NOT EXISTS idx_budgets_user ON budgets(user_id, scope, status)',
+        'CREATE INDEX IF NOT EXISTS idx_budget_checks_user_day ON budget_checks(user_id, day)',
+        'CREATE INDEX IF NOT EXISTS idx_business_expenses_user ON business_expenses(user_id, spent_on)',
+        'CREATE INDEX IF NOT EXISTS idx_assets_user ON assets(user_id)',
+        'CREATE INDEX IF NOT EXISTS idx_debts_user ON debts(user_id, status)',
+        'CREATE INDEX IF NOT EXISTS idx_debt_payments_debt ON debt_payments(debt_id, paid_on)',
     ].forEach(statement => db.run(statement));
     migrateCryptoTransfers();
+
+    // A fresh database (for example a new clone) starts from the committed snapshot, if any.
+    if (!existed && dbPath && config.database.autoRestore) {
+        const snapshotPath = path.resolve(config.paths.root, config.database.snapshotPath);
+        if (fs.existsSync(snapshotPath)) {
+            require('./services/snapshot').importSnapshot(db, fs.readFileSync(snapshotPath, 'utf8'));
+            console.log(`[Database] Restored data from ${path.relative(config.paths.root, snapshotPath)}.`);
+        }
+    }
+
+    // One-time data migrations that need the full schema (lazy require avoids a cycle).
+    const cleanup = require('./services/data-cleanup').run();
+    if (cleanup && !cleanup.skipped && (cleanup.community || cleanup.guests || cleanup.sampleTransactions || cleanup.autoCards || cleanup.portfolios)) {
+        console.log('[Database] Removed pre-filled demo data:', JSON.stringify(cleanup));
+    }
 
     // Auto-save to disk every 5 seconds
     saveTimer = setInterval(() => saveToDisk(), 5000);
@@ -525,4 +659,10 @@ function closeDatabase() {
     }
 }
 
-module.exports = { getDb, initializeDatabase, closeDatabase };
+/** The underlying sql.js database, for snapshot tooling. */
+function getSqlDatabase() {
+    if (!db) throw new Error('Database not initialized. Call initializeDatabase() first.');
+    return db;
+}
+
+module.exports = { getDb, getSqlDatabase, initializeDatabase, closeDatabase };

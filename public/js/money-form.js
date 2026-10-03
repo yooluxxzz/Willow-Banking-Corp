@@ -46,6 +46,8 @@
             form.querySelector('[data-review-amount]').textContent = W.formatMoney(value(), currency(), { digits: 2 });
             form.querySelector('[data-review-account]').textContent = option().textContent.split(' · ')[0];
             form.querySelector('[data-review-note]').textContent = form.elements.description.value.trim() || (deposit ? 'Deposit' : 'Withdrawal');
+            const reviewCategory = form.querySelector('[data-review-category]');
+            if (reviewCategory) reviewCategory.textContent = form.elements.category.value ? form.elements.category.selectedOptions[0].textContent : 'Not set';
             submitError.hidden = true;
             steps.next();
         });
@@ -65,6 +67,7 @@
             button.disabled = true;
             try {
                 const body = { accountId: Number(form.elements.accountId.value), amount: String(amount.value).replace(/[,\s]/g, ''), description: form.elements.description.value.trim() };
+                if (!deposit && form.elements.category.value) body.category = form.elements.category.value;
                 const data = await W.api(deposit ? '/api/deposits' : '/api/withdrawals', { method: 'POST', body });
                 form.querySelector('[data-receipt-amount]').textContent = `${deposit ? '+' : '−'}${W.formatCents(data.amountCents, data.currency)}`;
                 form.querySelector('[data-receipt-to]').textContent = `${deposit ? 'To' : 'From'} ${option().textContent.split(' · ')[0]}`;

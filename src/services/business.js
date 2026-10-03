@@ -11,6 +11,7 @@ const { categorize, categoryMeta } = require('./categories');
 const { formatAccount } = require('./account');
 
 const ROLES = { admin: 'Administrator', approver: 'Approver', cardholder: 'Cardholder', viewer: 'Viewer' };
+const { BUSINESS_CATEGORIES } = require('./budgets');
 const text = (value, max) => typeof value === 'string' && value.trim().length <= max && !/[<>\x00-\x1f\x7f]/.test(value);
 
 function businessAccounts(userId) {
@@ -121,18 +122,115 @@ function removeMember(userId, memberId) {
     return listTeam(userId);
 }
 
+// ── Expenses the owner logs ─────────────────────────────────────────────
+const isDay = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value));
+const localToday = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+
+function formatExpense(row) {
+    return {
+        id: row.id,
+        spentOn: row.spent_on,
+        vendor: row.vendor,
+        category: row.category,
+        categoryLabel: BUSINESS_CATEGORIES[row.category] || 'Other',
+        amountCents: row.amount_cents,
+        currency: row.currency,
+        note: row.note,
+        accountId: row.account_id,
+        paidFromAccount: Boolean(row.transaction_reference),
+        transactionReference: row.transaction_reference,
+        createdAt: row.created_at,
+    };
+}
+
+function listExpenses(userId, { from, to, category } = {}) {
+    const rows = getDb().prepare(`SELECT * FROM business_expenses WHERE user_id = ?
+        AND (? IS NULL OR spent_on >= ?) AND (? IS NULL OR spent_on <= ?) AND (? IS NULL OR category = ?)
+        ORDER BY spent_on DESC, id DESC LIMIT 500`).all(userId, isDay(from) ? from : null, isDay(from) ? from : null, isDay(to) ? to : null, isDay(to) ? to : null, category || null, category || null);
+    return rows.map(formatExpense);
+}
+
+function validateExpense(input, existing = null) {
+    const vendor = typeof input.vendor === 'string' ? input.vendor.trim() : existing?.vendor;
+    if (!text(vendor || '', 80) || !vendor || vendor.length < 2) throw new Error('Enter who you paid (2–80 characters).');
+    const category = input.category ?? existing?.category;
+    if (!Object.hasOwn(BUSINESS_CATEGORIES, category)) throw new Error('Choose an expense category.');
+    const spentOn = input.spentOn ?? existing?.spent_on;
+    if (!isDay(spentOn) || spentOn > localToday()) throw new Error('Choose the date it was paid (today or earlier).');
+    const note = typeof input.note === 'string' ? input.note.trim() : (existing?.note || '');
+    if (!text(note, 200)) throw new Error('Keep the note under 200 characters.');
+    let amountCents = existing?.amount_cents;
+    if (input.amount !== undefined) {
+        if (!validateAmount(input.amount) || toCents(input.amount) > 100000000) throw new Error('Enter an amount up to 1,000,000.');
+        amountCents = toCents(input.amount);
+    }
+    if (!amountCents) throw new Error('Enter the amount.');
+    return { vendor, category, spentOn, note, amountCents };
+}
+
+/**
+ * Logs a business expense. With payFromAccountId, the amount is also debited
+ * from that business account through the ledger; otherwise it is a record only.
+ */
+function createExpense(userId, input = {}) {
+    const db = getDb();
+    const { vendor, category, spentOn, note, amountCents } = validateExpense(input);
+    if (db.prepare('SELECT COUNT(*) AS n FROM business_expenses WHERE user_id = ?').get(userId).n >= 5000) throw new Error('You have reached the expense log limit.');
+    const accountId = input.payFromAccountId ? Number(input.payFromAccountId) : null;
+    let account = null;
+    if (accountId) {
+        account = businessAccounts(userId).find(item => item.id === accountId && item.status === 'active' && item.currency === 'USD');
+        if (!account) throw new Error('Choose an active US dollar business account, or log the expense without paying from an account.');
+    }
+    const reference = account ? `EXP-${uuidv4().slice(0, 8).toUpperCase()}` : null;
+    const id = db.transaction(() => {
+        if (account) {
+            const updated = db.prepare('UPDATE accounts SET balance = balance - ?, available_balance = available_balance - ? WHERE id = ? AND available_balance >= ?').run(amountCents, amountCents, account.id, amountCents);
+            if (updated.changes !== 1) throw new Error(`Not enough available money in ${account.displayName}.`);
+            db.prepare(`INSERT INTO transactions (reference, account_id, type, amount, currency, direction, status, description, category, counterparty)
+                VALUES (?, ?, 'payment', ?, 'USD', 'debit', 'completed', ?, 'business', ?)`).run(reference, account.id, amountCents, `${vendor} — ${BUSINESS_CATEGORIES[category]}`, vendor);
+        }
+        const created = db.prepare('INSERT INTO business_expenses (user_id, spent_on, vendor, category, amount_cents, note, account_id, transaction_reference) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+            .run(userId, spentOn, vendor, category, amountCents, note, account ? account.id : null, reference);
+        logAudit({ actorId: userId, action: 'business_expense_logged', targetType: 'business_expense', targetId: String(created.lastInsertRowid), metadata: { amount: amountCents, paidFromAccount: Boolean(account), reference } });
+        return created.lastInsertRowid;
+    })();
+    return formatExpense(db.prepare('SELECT * FROM business_expenses WHERE id = ?').get(id));
+}
+
+function updateExpense(userId, expenseId, input = {}) {
+    const db = getDb();
+    const existing = db.prepare('SELECT * FROM business_expenses WHERE id = ? AND user_id = ?').get(expenseId, userId);
+    if (!existing) throw Object.assign(new Error('Expense not found.'), { status: 404 });
+    if (existing.transaction_reference && input.amount !== undefined && toCents(input.amount) !== existing.amount_cents) throw new Error('This expense was paid from an account, so its amount can’t change.');
+    const { vendor, category, spentOn, note, amountCents } = validateExpense(input, existing);
+    db.prepare("UPDATE business_expenses SET vendor = ?, category = ?, spent_on = ?, note = ?, amount_cents = ?, updated_at = datetime('now') WHERE id = ?").run(vendor, category, spentOn, note, amountCents, existing.id);
+    return formatExpense(db.prepare('SELECT * FROM business_expenses WHERE id = ?').get(existing.id));
+}
+
+function deleteExpense(userId, expenseId) {
+    const db = getDb();
+    const existing = db.prepare('SELECT * FROM business_expenses WHERE id = ? AND user_id = ?').get(expenseId, userId);
+    if (!existing) throw Object.assign(new Error('Expense not found.'), { status: 404 });
+    if (existing.transaction_reference) throw new Error('This expense was paid from an account and stays in your records. You can edit its details instead.');
+    db.prepare('DELETE FROM business_expenses WHERE id = ?').run(existing.id);
+    logAudit({ actorId: userId, action: 'business_expense_deleted', targetType: 'business_expense', targetId: String(existing.id) });
+}
+
 /** Revenue, expenses, cash flow and upcoming items for business accounts. */
 function getDashboard(userId) {
     const db = getDb();
     const accounts = businessAccounts(userId);
     const ids = accounts.map(account => account.id);
     const usdIds = accounts.filter(account => account.currency === 'USD').map(account => account.id);
-    const empty = { accounts, profile: getProfile(userId), months: [], revenueCents: 0, expensesCents: 0, netCents: 0, categories: [], activity: [], upcoming: [], invoices: listInvoices(userId), team: listTeam(userId), availableCents: 0, balanceCents: 0 };
-    if (!ids.length) return empty;
-    const placeholders = ids.map(() => '?').join(',');
-    const rows = db.prepare(`SELECT t.*, a.nickname AS account_nickname FROM transactions t JOIN accounts a ON a.id = t.account_id
+    const expenses = db.prepare("SELECT * FROM business_expenses WHERE user_id = ? AND currency = 'USD' AND spent_on >= date('now', 'start of month', '-5 months') ORDER BY spent_on DESC, id DESC").all(userId);
+    const linked = new Set(expenses.filter(row => row.transaction_reference).map(row => row.transaction_reference));
+    const empty = { accounts, profile: getProfile(userId), months: [], revenueCents: 0, expensesCents: 0, netCents: 0, categories: [], activity: [], upcoming: [], invoices: listInvoices(userId), team: listTeam(userId), availableCents: 0, balanceCents: 0, recentExpenses: expenses.slice(0, 8).map(formatExpense) };
+    const placeholders = ids.map(() => '?').join(',') || 'NULL';
+    const rows = ids.length ? db.prepare(`SELECT t.*, a.nickname AS account_nickname FROM transactions t JOIN accounts a ON a.id = t.account_id
         WHERE t.account_id IN (${placeholders}) AND t.status = 'completed' AND t.created_at >= date('now', 'start of month', '-5 months')
-        ORDER BY t.created_at DESC, t.id DESC`).all(...ids);
+        ORDER BY t.created_at DESC, t.id DESC`).all(...ids) : [];
+    if (!ids.length && !expenses.length) return empty;
     const usdRows = rows.filter(row => usdIds.includes(row.account_id));
     const monthKey = value => String(value).slice(0, 7);
     const months = [];
@@ -143,17 +241,25 @@ function getDashboard(userId) {
         const key = date.toISOString().slice(0, 7);
         months.push({ key, label: new Intl.DateTimeFormat('en-US', { month: 'short', timeZone: 'UTC' }).format(date), revenueCents: 0, expensesCents: 0 });
     }
+    // Revenue: money into business accounts. Expenses: logged expenses plus any other
+    // account payments (expenses paid from an account are counted once, via the log).
     usdRows.filter(row => row.type !== 'transfer').forEach(row => {
         const month = months.find(item => item.key === monthKey(row.created_at));
         if (!month) return;
         if (row.direction === 'credit') month.revenueCents += row.amount;
-        else month.expensesCents += row.amount;
+        else if (!linked.has(row.reference)) month.expensesCents += row.amount;
+    });
+    expenses.forEach(row => {
+        const month = months.find(item => item.key === monthKey(row.spent_on));
+        if (month) month.expensesCents += row.amount_cents;
     });
     const current = months[months.length - 1];
     const categoryTotals = new Map();
-    usdRows.filter(row => row.direction === 'debit' && row.type !== 'transfer' && monthKey(row.created_at) >= months[3].key).forEach(row => {
-        const key = categorize(row);
-        categoryTotals.set(key, (categoryTotals.get(key) || 0) + row.amount);
+    expenses.filter(row => monthKey(row.spent_on) === current.key).forEach(row => {
+        categoryTotals.set(row.category, (categoryTotals.get(row.category) || 0) + row.amount_cents);
+    });
+    usdRows.filter(row => row.direction === 'debit' && row.type !== 'transfer' && !linked.has(row.reference) && monthKey(row.created_at) === current.key).forEach(row => {
+        categoryTotals.set('account', (categoryTotals.get('account') || 0) + row.amount);
     });
     const scheduled = db.prepare(`SELECT s.id, s.amount, s.description, s.scheduled_for, a.currency FROM scheduled_transfers s JOIN accounts a ON a.id = s.from_account_id
         WHERE s.user_id = ? AND s.status = 'pending' AND s.from_account_id IN (${placeholders}) ORDER BY s.scheduled_for LIMIT 5`).all(userId, ...ids);
@@ -168,7 +274,7 @@ function getDashboard(userId) {
         revenueCents: current.revenueCents,
         expensesCents: current.expensesCents,
         netCents: current.revenueCents - current.expensesCents,
-        categories: [...categoryTotals.entries()].sort((a, b) => b[1] - a[1]).map(([key, cents]) => ({ ...categoryMeta(key), cents })),
+        categories: [...categoryTotals.entries()].sort((a, b) => b[1] - a[1]).map(([key, cents], index) => ({ key, label: key === 'account' ? 'Other account payments' : BUSINESS_CATEGORIES[key] || 'Other', cents, color: `var(--chart-${(index % 8) + 1})` })),
         activity: rows.slice(0, 10).map(row => ({ ...row, categoryKey: categorize(row), categoryLabel: categoryMeta(categorize(row)).label, categoryIcon: categoryMeta(categorize(row)).icon, amountFormatted: formatCurrency(row.amount, row.currency) })),
         upcoming,
         invoices,
@@ -177,4 +283,4 @@ function getDashboard(userId) {
     };
 }
 
-module.exports = { ROLES, businessAccounts, getProfile, saveProfile, listInvoices, createInvoice, markInvoicePaid, voidInvoice, listTeam, inviteMember, removeMember, getDashboard };
+module.exports = { ROLES, businessAccounts, getProfile, saveProfile, listInvoices, createInvoice, markInvoicePaid, voidInvoice, listTeam, inviteMember, removeMember, getDashboard, listExpenses, createExpense, updateExpense, deleteExpense };

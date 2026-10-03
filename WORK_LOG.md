@@ -333,3 +333,151 @@ The user asked for Willow to be upgraded into one premium digital bank, investin
 **Known limitations**
 - Real-time data still depends on running `npm run market-service` with internet access.
 - There is no self-service account deletion. Admin deletion is a soft delete.
+
+## Responsive layout pass — 2026-10-03
+
+**Reported problems**
+- **Homepage hero scene tabs.** On short or zoomed laptop windows (for example 1307×620), the demo note and the illustrative card ran into the scene tab row, and the tab progress line crossed the note.
+  - Cause: the hero had a fixed height while the tabs were absolutely positioned at its bottom.
+  - The hero is now a flex column with a minimum height and the tabs in normal flow, so it grows with its content.
+  - On short wide screens the headline also scales with viewport height and the spacing tightens, so the tabs stay on screen.
+
+**Found by the audit and fixed**
+- **Mobile menu.** On every public page, at 1120px and narrower, the menu panel opened 0px tall, so it never appeared. The desktop mega-menu scrim had collapsed the same way.
+  - Cause: `backdrop-filter` on `.site-header` made the header the containing block for those fixed-position children.
+  - The frosted background now lives on `.site-header::before`.
+- **Help category pages** (`/help/<topic>`) were about 1230px wide on phones and tablets.
+  - Cause: bare `1fr` grid tracks grow to fit non-wrapping content.
+  - All 47 such declarations across the stylesheets now use `minmax(0, …fr)`. `auto-fill` / `auto-fit` minimums are capped with `min(…, 100%)`.
+  - Before/after screenshots of 65 pages at 390px and 1440px show no other changes.
+- **Horizontal overflow on phones:**
+  - Business invoices: a visually hidden column label escaped the table scroller. `.table-wrap`, `.tabs`, `.segmented` and `.card-switcher` are now positioned.
+  - 320px: the Security panel header button, the send-money recipient list, and the homepage currency board and mortgages split layout.
+  - The forgot-password back link.
+  - `body` now sets `overflow-wrap: break-word`, panel headers wrap, and emails wrap after the “@”.
+- **Amount fields.** On send money, deposit/withdraw and convert, the “$” overlapped the typed amount at every width.
+  - Cause: two conflicting `.amount-input` definitions.
+  - These forms now use the design-system field, the same one the order dialog uses, and the app copy was removed. The underline turns red when the amount is invalid.
+  - The quick-amount chips now read “$20” instead of “$ 20”.
+- **Demo strip.** It is shortened on mid-size screens so it stays on one line, and the 1px gap under the open mobile menu is closed.
+- **Accessibility** (found by axe once the test profile had unread notifications and wide tables):
+  - The notification badge contrast is now 5.5:1 in light mode and 7.8:1 in dark mode.
+  - Horizontal scrollers that overflow and contain nothing focusable become keyboard-focusable, and plain wrappers get a named region (`setupScrollRegions` in `app.js`).
+  - The shortened sign-in back links keep their full accessible names.
+
+**Database / schema**
+- None.
+
+**Checks run**
+- Playwright audit scripts, kept outside the repo, flagging horizontal page overflow, off-screen elements, overlapping controls and clipped text:
+  - 65 public and signed-in pages at 17 widths (320–2560), light and dark: no issues remaining. The one flag left is the intentional phone illustration bleed on the homepage tile.
+  - Interactive states at 6 sizes, including 844×390 landscape: mega menus, mobile menu, profile menu, More sheet, Ask Willow and every dialog trigger, 413 states with 0 issues. Every surface fits the screen or scrolls.
+  - Full flows at 320×568, 390×844, 768×1024 and 844×390: send money (5 steps), stock order (with a local fake price feed kept outside the repo), Ask Willow, sign-up and sign-in. Screenshots reviewed.
+  - Hero: 120 checks across window sizes, 125% zoom and all five scenes. The tabs never overlap the content.
+- axe-core: 0 violations on 30 pages at 390px and 1280px, light and dark.
+- `npm test`: 129 tests pass. New `tests/responsive-css.test.js` adds static guards:
+  - no bare `fr` grid tracks;
+  - no containing-block-creating effects on `.site-header`;
+  - a single `.amount-input` definition;
+  - positioned table scrollers.
+  - All four were confirmed to fail on the previous stylesheets.
+- `python3 -m unittest`: 41 tests pass.
+- All 61 EJS templates compile, all 32 browser scripts parse, and `git diff --check` is clean.
+
+## Real data only, budgets, debts, net worth and a local assistant — 2026-10-03
+
+**Requested**
+- Customers have only their own money: no pre-filled balances, cards, recipients or activity. Everything is 0 until the customer acts, and transfers go only to accounts that exist.
+- Business owners log their own expenses and budgets.
+- A daily budget check, run at night while the app is running and at start-up.
+- Databases stored in GitHub.
+- Debts the customer can manage; a net worth the customer logs, with the charts and statistics computed from it.
+- Replace the old assistant with a local one if possible.
+- Short fade-in / fade-out attention animations.
+- Fix the Explore mega-menu image and the Education header.
+- Use more symbols and images.
+- Let Python (yfinance) and Node work together automatically.
+- Update the README.
+
+**Implemented**
+- **Nothing invented.**
+  - Sign-up and guest profiles create one $0 checking account only: no savings account, card, sample activity or welcome messages (`src/services/auth.js`, new `src/services/guests.js`).
+  - Removed `src/seed.js`, `src/services/demo-data.js`, the sample-activity route and `npm run seed`, along with the five `@community.willow.test` customers. Payments go only to registered customers.
+  - The dashboard shows a “get started” checklist (add money, open savings, order a card) until each step is done.
+  - Public copy no longer mentions $100,000 practice cash or sample data.
+  - A one-time clean-up removes what earlier versions created for existing databases (see Database).
+- **Investing funded from deposits.**
+  - Investing cash starts at $0. *Add cash* / *Withdraw cash* on the Portfolio page move money from or to a US dollar account through the ledger (`INV-IN-` / `INV-OUT-`).
+  - Total return is measured against the money moved in.
+- **Budgets** (`/budgets`, and business budgets on `/business/expense-log`).
+  - Daily, weekly (Monday start) or monthly; overall or per category.
+  - Near the limit at 85% or more; over when spending passes it.
+  - Withdrawals can carry a category.
+  - `server.js` runs the check at start-up, catching up on missed days up to 31, and nightly at `NIGHTLY_CHECK_TIME` (default 23:55). Each level is notified once per period.
+- **Business expenses.**
+  - Owners log their own expenses, optionally paid from the business account (`EXP-` debit; deleting the expense refunds it).
+  - The business dashboard counts logged expenses plus other account debits.
+  - Owners without a business account can still log expenses and budgets.
+- **Net worth** (`/hub`, now titled *Net worth*).
+  - Accounts (converted from other currencies) + investing + recorded assets − open debts.
+  - Own/owe donuts, daily history, debt-to-assets ratio, money movement, categories, insights.
+  - Assets can be added, edited and deleted.
+- **Debts** (`/debts`).
+  - Balances, APR, minimums and due days, with payoff and interest estimates.
+  - Payments can come from a Willow account (`DBT-` debit) or be recorded as paid elsewhere.
+- **Ask Willow.**
+  - The old rule-based `/api/hub/ask` was removed.
+  - The new assistant uses a local model through Ollama (`src/services/assistant.js`). It streams answers and gets a summary of only the signed-in customer’s own records.
+  - It is hidden unless Ollama is reachable and limited to 20 questions per 5 minutes. Replies are rendered as safe DOM, never as raw HTML.
+- **Python ↔ Node bridge.**
+  - `src/services/market-service.js` starts `market-data-service/server.py` with Willow when `/health` doesn’t answer, after checking for Python and yfinance.
+  - It generates the shared `X-Willow-Service-Token` secret, restarts the service with back-off and stops it with Willow. `/health` reports its state.
+- **Database in Git.** `npm run db:save` / `npm run db:restore -- --force` and auto-restore on first start (`src/services/snapshot.js`, `scripts/db.js`).
+- **Attention and symbols.**
+  - `W.highlight` / `[data-attention]`: a fade-in glow held about 2.4 s, then faded out. `W.stagger` for lists. Both respect reduced motion.
+  - Page titles carry their sidebar symbol, and stat labels have icons.
+  - The Explore mega-menu feature card was 64px tall because its variant class collided with the icon-tile class. It now uses `.mega-feature-symbols`.
+  - **Education / Insights header.** A `flex: 0 1 440px` meant for row ledes also hit the lede nested in the right-hand column stack, making it 440px tall. The rule is now `> .lede`. The “Browse …” card is larger, with a row of topic symbols.
+- **Smaller changes.**
+  - The Security center export includes budgets, budget checks, business expenses, assets, debts, payments, net-worth history and investing cash moves. The file is now `willow-data-<date>.json`.
+  - On Wealth at 320px, the long simulated-orders badge wraps instead of overflowing.
+  - Stat tiles stay two per row on phones (one column only below 360px), so Budgets and Debts show their figures without a long scroll.
+  - The largest-category insight reads “Your largest spending category this month is debt payments.” The Debts “paid off so far” note now says it is measured against the original amounts.
+  - Accessibility:
+    - Empty states take a heading `level` (`W.empty({ level: 2 })`), so Goals, Budgets, Debts and the no-cards state keep heading order on a new, empty profile.
+    - The public markets strip has `role="group"` for its label.
+- **Docs.** README rewritten, along with `.env.example`, `docs/DATABASE_CHANGES.md`, `WILLOW_BRAND_SPEC.md`, the market-data service README and AGENTS.md (snapshot policy).
+
+**Database / schema** (details in `docs/DATABASE_CHANGES.md`)
+- New tables: `app_meta`, `portfolio_transfers`, `budgets`, `budget_checks`, `business_expenses`, `assets`, `debts`, `debt_payments`, `net_worth_snapshots`, with indexes. `demo_portfolios.cash_cents` defaults to 0.
+- One-time clean-up `fabricated_data_removed_v1` (audit event `fabricated_data_removed`):
+  - removes community customers and old guest profiles;
+  - removes sample ledger rows, reversing their balance effect;
+  - removes other sample records and auto-issued unused cards;
+  - resets portfolios bought with practice cash.
+  - On this session’s scratch preview database (outside the repo, test data only, not backed up) it removed 5 community customers, 14 guests, 113 sample transactions, 11 other records and 1 card, and reset 1 portfolio.
+- `.gitignore` keeps `data/*` ignored except `data/willow-snapshot.sql`. No snapshot is committed in this session: the only database here holds test profiles.
+
+**Checks run**
+- `npm test`: 148 tests pass.
+  - New suites: `budgets`, `networth`, `assistant` (against a stand-in Ollama server), `snapshot` and `market-service` (against a stand-in Python).
+  - New CSS guard for the split-intro lede. It was confirmed to fail on the previous stylesheet.
+  - Existing suites were updated for empty new profiles.
+  - The first full run failed one assertion: it still expected the old `/business/expenses` link. Fixed.
+- `python3 -m unittest`: 41 tests pass.
+- All 64 EJS templates compile, all 35 browser scripts parse, and `git diff --check` is clean.
+- Browser:
+  - A guest profile was filled through the APIs with deposits, a business account, categorised withdrawals, budgets, debts with a payment, assets, business expenses, investing cash and a card.
+  - Dashboard, Net worth, Budgets, Debts, Business expenses and Wealth were screenshotted at 1440 and 390/360 with no console errors. Every figure was checked against the entered data: totals, net worth, budget status and left-to-spend, debt interest and paid-off amounts.
+  - Education and Insights headers were screenshotted at 1440, 1024 and 390, light and dark. The open Explore mega menu now shows its full feature card (343×276 at 1440, 279×276 at 1180).
+  - Attention animation on `/budgets`: the glow starts about 0.8 s after load, lasts 2.4 s and clears. With reduced motion it is effectively off.
+- Responsive audit (scripts outside the repo): 37 public and 32 signed-in pages, including `/budgets`, `/debts` and `/business/expense-log`, at 9 widths from 320 to 1440.
+  - No issues except the known intentional homepage tile bleed at 320.
+  - The first parallel run timed out on some pages because 9 browsers hit the dev server at once. They were re-run in batches of 3 widths.
+  - After the stat-tile change, the affected pages were re-checked at 320–600: 0 issues.
+- axe-core:
+  - First run, on 15 public and 25 signed-in pages at 390 and 1280, light and dark: two pre-existing issues, the role-less labelled markets strip and an `h3` empty state under the Goals title.
+  - Both were fixed, together with the same empty-state issue on Cards.
+  - Re-check on a populated profile and a brand-new empty profile: 30 pages at 390 and 1280, 0 violations.
+- Python bridge, end to end: Willow started the service itself; requests without the token got 401; the service restarted after being killed; it stopped with Willow. This environment blocks Yahoo, so quotes correctly show as unavailable.
+- Ollama isn’t installed here, so the assistant was tested only against the stand-in server, not a real model.

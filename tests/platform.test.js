@@ -17,7 +17,7 @@ function internalLinks(html) {
 }
 
 describe('Platform: navigation, sessions and new flows', () => {
-    let app, db, store, close, owner, originalFetch;
+    let app, db, store, close, owner, maria, originalFetch;
     const email = 'platform@example.test';
     const password = 'Platform123';
 
@@ -27,17 +27,22 @@ describe('Platform: navigation, sessions and new flows', () => {
         global.fetch = async () => { throw new Error('network disabled in tests'); };
         const env = await createTestApp();
         app = env.app; db = env.getDb(); store = env.sessionStore; close = env.closeDatabase;
-        await require('../src/services/demo-data').ensureCommunity();
-        owner = await registerAgent(supertest, app, { email, password, fullName: 'Platform Person', country: 'Portugal', accountType: 'business', sampleData: true });
+        owner = await registerAgent(supertest, app, { email, password, fullName: 'Platform Person', country: 'Portugal', accountType: 'business' });
+        maria = await registerAgent(supertest, app, { email: 'maria@example.test', password, fullName: 'Maria Silva' });
     });
     after(() => { global.fetch = originalFetch; close(); });
 
-    it('registers with sample activity, a business account and a customer ID', async () => {
+    it('registers with only the requested accounts — empty, with no invented data', async () => {
         assert.equal(owner.regRes.status, 200);
-        assert.equal(owner.regRes.body.sampleData, true);
+        assert.match(owner.regRes.body.customerId, /^WB\d{8}$/);
         const { accounts } = (await owner.agent.get('/api/accounts')).body;
-        assert.ok(accounts.some(account => account.purpose === 'business'));
-        assert.ok(accounts.some(account => account.currency === 'EUR'));
+        assert.deepEqual(accounts.map(account => [account.purpose, account.account_type, account.currency, account.balance]).sort(), [['business', 'checking', 'USD', 0], ['personal', 'checking', 'USD', 0]]);
+        const userId = db.prepare('SELECT id FROM users WHERE email = ?').get(email).id;
+        for (const [table, where] of [['transactions', 'account_id IN (SELECT id FROM accounts WHERE user_id = ?)'], ['cards', 'account_id IN (SELECT id FROM accounts WHERE user_id = ?)'], ['notifications', 'user_id = ?'], ['payees', 'user_id = ?'], ['demo_goals', 'user_id = ?'], ['business_invoices', 'user_id = ?'], ['demo_holdings', 'user_id = ?']]) {
+            assert.equal(db.prepare(`SELECT COUNT(*) AS n FROM ${table} WHERE ${where}`).get(userId).n, 0, `${table} starts empty`);
+        }
+        assert.equal(require('../src/services/demo-portfolio').getPortfolio(userId).cashCents, 0);
+        assert.equal(db.prepare("SELECT COUNT(*) AS n FROM users WHERE email LIKE '%@community.willow.test'").get().n, 0, 'no fictional customers');
         const bad = await registerAgent(supertest, app, { email: 'phone@example.test', password, fullName: 'Phone Test', phone: '12' });
         assert.equal(bad.regRes.status, 400);
         assert.match(bad.regRes.body.error, /phone/i);
@@ -52,7 +57,7 @@ describe('Platform: navigation, sessions and new flows', () => {
             ...products.map(product => product.path), ...articles.map(article => `/${article.kind === 'guide' ? 'learn' : 'insights'}/${article.slug}`), ...categories.map(category => `/help/${category.slug}`)];
         const accountId = (await owner.agent.get('/api/accounts')).body.accounts[0].id;
         const appPages = ['/dashboard', '/hub', '/accounts', '/accounts/new', `/accounts/${accountId}`, '/transactions', '/statements', '/deposits', '/withdrawals', '/cards', '/transfers', '/transfers?mode=own', '/payees', '/scheduled-transfers', '/international',
-            '/wealth', '/wealth/markets', '/wealth/stocks/AAPL', '/crypto', '/crypto/BTC', '/goals', '/loans', '/business/dashboard', '/business/invoices', '/business/team', '/notifications', '/security', '/settings', '/help'];
+            '/wealth', '/wealth/markets', '/wealth/stocks/AAPL', '/crypto', '/crypto/BTC', '/goals', '/budgets', '/debts', '/loans', '/business/dashboard', '/business/expense-log', '/business/invoices', '/business/team', '/notifications', '/security', '/settings', '/help'];
         const checked = new Map();
         const check = async (agent, path, from) => {
             const key = `${agent === anonymous ? 'anon' : 'user'}:${path}`;
@@ -120,13 +125,13 @@ describe('Platform: navigation, sessions and new flows', () => {
     });
 
     it('confirms payee names before paying and never reveals the caller', async () => {
-        const lookup = await owner.agent.get('/api/payees/lookup?email=maria.silva@community.willow.test').set('Accept', 'application/json');
+        const lookup = await owner.agent.get('/api/payees/lookup?email=maria@example.test').set('Accept', 'application/json');
         assert.equal(lookup.status, 200);
         assert.deepEqual({ found: lookup.body.found, name: lookup.body.name }, { found: true, name: 'Maria S.' });
         assert.equal((await owner.agent.get(`/api/payees/lookup?email=${encodeURIComponent(email)}`)).body.self, true);
         assert.equal((await owner.agent.get('/api/payees/lookup?email=nobody@example.test')).body.found, false);
         assert.equal((await owner.agent.get('/api/payees/lookup?email=bad')).status, 400);
-        assert.equal((await supertest(app).get('/api/payees/lookup?email=maria.silva@community.willow.test').set('Accept', 'application/json')).status, 401);
+        assert.equal((await supertest(app).get('/api/payees/lookup?email=maria@example.test').set('Accept', 'application/json')).status, 401);
     });
 
     it('lets a guest profile keep its data by adding its own sign-in details', async () => {
@@ -142,13 +147,15 @@ describe('Platform: navigation, sessions and new flows', () => {
         assert.equal((await claim({ email: email, newPassword: 'Guest12345' })).status, 400);
         assert.equal((await claim({ email: 'kept@example.test', newPassword: 'weak' })).status, 400);
         assert.equal((await claim({ email: 'x@demo.willow.test', newPassword: 'Guest12345' })).status, 400);
+        assert.equal((await claim({ email: 'x@guest.willow.test', newPassword: 'Guest12345' })).status, 400);
         const kept = await claim({ email: 'kept@example.test', newPassword: 'Guest12345' });
         assert.equal(kept.status, 200);
         assert.equal((await claim({ email: 'again@example.test', newPassword: 'Guest12345' })).status, 400);
         assert.doesNotMatch((await agent.get('/settings')).text, /Keep this profile/);
         const signedIn = await loginAgent(supertest, app, 'kept@example.test', 'Guest12345');
         assert.equal(signedIn.loginRes.status, 200);
-        assert.ok((await signedIn.agent.get('/api/accounts')).body.accounts.length >= 2);
+        const keptAccounts = (await signedIn.agent.get('/api/accounts')).body.accounts;
+        assert.deepEqual(keptAccounts.map(account => [account.account_type, account.balance]), [['checking', 0]], 'guests start empty like any new profile');
     });
 
     it('removes guest profiles unused for a week without touching anyone else', async () => {
@@ -156,24 +163,29 @@ describe('Platform: navigation, sessions and new flows', () => {
             const agent = supertest.agent(app);
             const csrf = csrfFrom((await agent.get('/login')).text);
             assert.equal((await agent.post('/auth/demo').set('X-CSRF-Token', csrf).set('Accept', 'application/json').send({})).status, 200);
-            return { agent, id: db.prepare("SELECT id FROM users WHERE is_guest = 1 ORDER BY id DESC LIMIT 1").get().id };
+            return { agent, csrf: csrfFrom((await agent.get('/settings')).text), id: db.prepare("SELECT id FROM users WHERE is_guest = 1 ORDER BY id DESC LIMIT 1").get().id };
         };
         const stale = await start();
         const fresh = await start();
         const staleAccounts = db.prepare('SELECT id FROM accounts WHERE user_id = ?').all(stale.id).map(row => row.id);
+        // The guest adds money and pays a real customer, so other people's records reference it.
+        assert.equal((await stale.agent.post('/api/deposits').set('X-CSRF-Token', stale.csrf).send({ accountId: staleAccounts[0], amount: '40' })).status, 200);
+        assert.equal((await stale.agent.post('/api/transfers').set('X-CSRF-Token', stale.csrf).send({ fromAccountId: staleAccounts[0], recipientEmail: 'maria@example.test', amount: '15' })).status, 200);
         const linked = db.prepare(`SELECT COUNT(*) AS n FROM transactions WHERE related_account_id IN (${staleAccounts.join(',')}) AND account_id NOT IN (${staleAccounts.join(',')})`).get().n;
-        assert.ok(linked > 0, 'the guest paid other customers');
-        const communityBefore = db.prepare("SELECT SUM(balance) AS total FROM accounts a JOIN users u ON u.id = a.user_id WHERE u.email LIKE '%@community.willow.test'").get().total;
+        assert.ok(linked > 0, 'the guest paid another customer');
+        const mariaId = db.prepare('SELECT id FROM users WHERE email = ?').get('maria@example.test').id;
+        const communityBefore = db.prepare('SELECT SUM(balance) AS total FROM accounts WHERE user_id = ?').get(mariaId).total;
+        assert.equal(communityBefore, 1500);
         const otherRowsBefore = db.prepare('SELECT COUNT(*) AS n FROM transactions WHERE account_id NOT IN (SELECT id FROM accounts WHERE user_id = ?)').get(stale.id).n;
         db.prepare("UPDATE users SET created_at = datetime('now', '-10 days') WHERE id = ?").run(stale.id);
         db.prepare("UPDATE audit_logs SET created_at = datetime('now', '-9 days') WHERE actor_id = ?").run(stale.id);
-        const { purgeStaleGuests } = require('../src/services/demo-data');
+        const { purgeStaleGuests } = require('../src/services/guests');
         assert.equal(purgeStaleGuests({ days: 7 }).purged, 1);
         assert.equal(db.prepare('SELECT COUNT(*) AS n FROM users WHERE id = ?').get(stale.id).n, 0);
         assert.equal(db.prepare('SELECT COUNT(*) AS n FROM accounts WHERE user_id = ?').get(stale.id).n, 0);
         assert.equal(db.prepare(`SELECT COUNT(*) AS n FROM transactions WHERE account_id IN (${staleAccounts.join(',')}) OR related_account_id IN (${staleAccounts.join(',')})`).get().n, 0);
         assert.equal(db.prepare('SELECT COUNT(*) AS n FROM transactions WHERE account_id NOT IN (SELECT id FROM accounts WHERE user_id = ?)').get(stale.id).n, otherRowsBefore);
-        assert.equal(db.prepare("SELECT SUM(balance) AS total FROM accounts a JOIN users u ON u.id = a.user_id WHERE u.email LIKE '%@community.willow.test'").get().total, communityBefore);
+        assert.equal(db.prepare('SELECT SUM(balance) AS total FROM accounts WHERE user_id = ?').get(mariaId).total, communityBefore);
         assert.equal(db.prepare('SELECT COUNT(*) AS n FROM users WHERE id = ?').get(fresh.id).n, 1);
         assert.ok(db.prepare("SELECT COUNT(*) AS n FROM users WHERE email = 'kept@example.test' AND is_guest = 0").get().n === 1);
         assert.equal((await stale.agent.get('/dashboard')).status, 302);

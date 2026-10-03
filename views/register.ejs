@@ -28,11 +28,11 @@
                 <!-- 1 · Welcome -->
                 <section class="signup-step is-active" data-step="welcome" aria-labelledby="stepWelcome">
                     <h1 class="auth-title" id="stepWelcome" tabindex="-1">Open your Willow account.</h1>
-                    <p class="auth-sub">It takes about three minutes. You’ll get everyday accounts, cards, a $100,000 demo portfolio and Willow Hub — all in one place.</p>
+                    <p class="auth-sub">It takes about three minutes. Your account starts at $0 — add money, open savings, order cards, set budgets and invest when you’re ready.</p>
                     <ul class="signup-perks" role="list">
-                        <li><span class="icon-tile icon-tile-sm"><%- icon('wallet') %></span><div><strong>Checking and savings</strong><span>Plus accounts in EUR, GBP, MZN and ZAR.</span></div></li>
+                        <li><span class="icon-tile icon-tile-sm"><%- icon('wallet') %></span><div><strong>Checking, savings and currencies</strong><span>Open savings and EUR, GBP, MZN or ZAR accounts when you need them.</span></div></li>
                         <li><span class="icon-tile icon-tile-sm"><%- icon('card') %></span><div><strong>Physical and virtual cards</strong><span>Freeze, limit and control them instantly.</span></div></li>
-                        <li><span class="icon-tile icon-tile-sm"><%- icon('chart') %></span><div><strong>Practice investing</strong><span>Stocks, ETFs and crypto with simulated money.</span></div></li>
+                        <li><span class="icon-tile icon-tile-sm"><%- icon('chart') %></span><div><strong>Investing</strong><span>Stocks, ETFs and crypto at delayed market prices, funded from your own accounts.</span></div></li>
                     </ul>
                     <div class="notice notice-demo"><%- icon('info') %><div><strong>This is a demonstration.</strong> No real account is opened and no money moves. Please use fictional details and a password you don’t use anywhere else.</div></div>
                     <div class="signup-actions">
@@ -85,20 +85,16 @@
                         <label class="option-card">
                             <input type="radio" name="accountType" value="personal"<%- accountType === 'personal' ? ' checked' : '' %>>
                             <span class="icon-tile"><%- icon('user') %></span>
-                            <span><strong>Personal</strong><span class="option-desc">Everyday checking, savings, cards, goals and investing for you or your household.</span></span>
+                            <span><strong>Personal</strong><span class="option-desc">Opens a checking account. Add savings, cards, budgets and investing whenever you like.</span></span>
                             <span class="option-card-check" aria-hidden="true"></span>
                         </label>
                         <label class="option-card">
                             <input type="radio" name="accountType" value="business"<%- accountType === 'business' ? ' checked' : '' %>>
                             <span class="icon-tile"><%- icon('briefcase') %></span>
-                            <span><strong>Personal + business</strong><span class="option-desc">Everything in personal, plus a business operating account, invoices, expenses and a cash-flow dashboard.</span></span>
+                            <span><strong>Personal + business</strong><span class="option-desc">Opens personal and business checking, with invoices, an expense log, budgets and a cash-flow dashboard.</span></span>
                             <span class="option-card-check" aria-hidden="true"></span>
                         </label>
                     </fieldset>
-                    <label class="switch-row">
-                        <span><strong>Start with sample activity</strong><span class="option-desc">Fill your new account with a few months of realistic demo transactions, cards, payees and goals so every screen has something to show.</span></span>
-                        <span class="switch"><input type="checkbox" name="sampleData" checked><span class="switch-track"></span></span>
-                    </label>
                     <div class="signup-actions">
                         <button type="button" class="btn btn-primary btn-lg btn-block" data-step-next>Continue</button>
                     </div>
@@ -176,7 +172,7 @@
                     <ul class="signup-next" role="list">
                         <li><%- icon('key', 'icon-sm') %> Save recovery codes in Settings so you can reset your password.</li>
                         <li><%- icon('shield-check', 'icon-sm') %> Turn on two-step verification in the Security center.</li>
-                        <li data-done-sample hidden><%- icon('sparkle', 'icon-sm') %> Sample activity is loaded — explore your accounts, cards and portfolio.</li>
+                        <li><%- icon('plus', 'icon-sm') %> Add money to your checking account to get started — it opens at $0.</li>
                     </ul>
                     <div class="signup-actions">
                         <a class="btn btn-primary btn-lg btn-block" href="/dashboard?welcome=1" data-done-continue>Go to my dashboard <%- icon('arrow-right', 'icon-arrow') %></a>

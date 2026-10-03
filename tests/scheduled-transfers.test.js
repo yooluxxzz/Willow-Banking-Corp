@@ -1,7 +1,7 @@
 const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const supertest = require('supertest');
-const { createTestApp, registerAgent } = require('./setup');
+const { createTestApp, registerAgent, openAccount } = require('./setup');
 
 describe('Scheduled demo transfers', () => {
     let app, db, close, owner, other, accounts, schedules;
@@ -16,6 +16,7 @@ describe('Scheduled demo transfers', () => {
         owner = await registerAgent(supertest, app, { email: 'schedule-owner@example.test', password: 'ScheduleDemo123', fullName: 'Schedule Owner' });
         other = await registerAgent(supertest, app, { email: 'schedule-other@example.test', password: 'ScheduleDemo123', fullName: 'Schedule Other' });
         const userId = db.prepare('SELECT id FROM users WHERE email = ?').get('schedule-owner@example.test').id;
+        await openAccount(owner.agent, owner.csrfToken, 'savings');
         accounts = db.prepare('SELECT id FROM accounts WHERE user_id = ? ORDER BY id').all(userId);
         db.prepare('UPDATE accounts SET balance = 0, available_balance = 0 WHERE user_id = ?').run(userId);
         schedules = require('../src/services/scheduled-transfers');
@@ -38,8 +39,8 @@ describe('Scheduled demo transfers', () => {
         const hub = await owner.agent.get('/api/hub/summary');
         assert.equal(hub.body.summary.scheduledTransfers[0].id, created.body.transfer.id);
         assert.equal(hub.body.summary.scheduledTransferCount, 1);
-        const answer = await owner.agent.post('/api/hub/ask').set('X-CSRF-Token', owner.csrfToken).send({ question: 'What transfers are scheduled?' });
-        assert.match(answer.body.answer, /You have 1 scheduled transfer/);
+        const context = await require('../src/services/assistant').buildContext(db.prepare('SELECT id FROM users WHERE email = ?').get('schedule-owner@example.test').id);
+        assert.match(context, /## Scheduled transfers\n- \d{4}-\d{2}-\d{2}: \$12\.34 Future savings/);
         assert.deepEqual(db.prepare('SELECT id, balance FROM accounts WHERE user_id = (SELECT id FROM users WHERE email = ?) ORDER BY id').all('schedule-owner@example.test'), before);
         assert.deepEqual((await other.agent.get('/api/scheduled-transfers')).body.transfers, []);
         assert.equal((await other.agent.delete(`/api/scheduled-transfers/${created.body.transfer.id}`).set('X-CSRF-Token', other.csrfToken)).status, 404);

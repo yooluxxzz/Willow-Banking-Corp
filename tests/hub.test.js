@@ -28,8 +28,9 @@ describe('Grounded financial Hub', () => {
         assert.equal(summary.topExpenses[0].description, 'Market groceries');
         const page = await owner.agent.get('/hub');
         assert.equal(page.status, 200);
-        assert.match(page.text, /Answers use only your Willow accounts/);
-        assert.match(page.text, /Not connected/);
+        assert.match(page.text, /<h1 class="page-head-title">Net worth<\/h1>/);
+        assert.match(page.text, /Assets you track/);
+        assert.match(page.text, /What you owe/);
     });
 
     it('excludes internal transfers from spending totals and expense rankings', () => {
@@ -43,15 +44,15 @@ describe('Grounded financial Hub', () => {
         assert.equal(summary.topExpenses[0].description, 'Market groceries');
     });
 
-    it('answers only from the requesting user’s financial records and rejects missing CSRF', async () => {
+    it('gives the assistant only the requesting user’s records and has retired the old rule-based endpoint', async () => {
         const ownerId = db.prepare('SELECT id FROM users WHERE email = ?').get('hub-owner@example.test').id;
         const otherId = db.prepare('SELECT id FROM users WHERE email = ?').get('hub-other@example.test').id;
-        assert.match((await hub.answerQuestion(ownerId, 'How much did I spend this month?')).answer, /\$12\.34/);
-        assert.match((await hub.answerQuestion(otherId, 'How much did I spend this month?')).answer, /\$0\.00/);
-        const response = await owner.agent.post('/api/hub/ask').send({ question: 'How much did I spend this month?' });
-        assert.equal(response.status, 403);
-        const unsupported = await hub.answerQuestion(ownerId, 'What will my stocks return?');
-        assert.match(unsupported.answer, /can’t predict investment performance/);
-        assert.equal(unsupported.kind, 'refusal');
+        const assistant = require('../src/services/assistant');
+        const own = await assistant.buildContext(ownerId);
+        assert.match(own, /spending \(excludes moves between own accounts\): \$12\.34/);
+        assert.match(own, /Market groceries/);
+        const others = await assistant.buildContext(otherId);
+        assert.doesNotMatch(others, /Market groceries|12\.34/);
+        assert.equal((await owner.agent.post('/api/hub/ask').set('X-CSRF-Token', owner.csrfToken).send({ question: 'Spending?' })).status, 404);
     });
 });

@@ -91,7 +91,7 @@ router.get('/export', (req, res) => {
         : [];
     const payload = {
         exportedAt: new Date().toISOString(),
-        notice: 'Willow is a fictional demonstration platform. All balances, transactions and holdings in this file are simulated.',
+        notice: 'Willow is a fictional demonstration platform. Balances and transactions come only from what you added in Willow; investing is simulated.',
         profile,
         accounts,
         transactions,
@@ -103,12 +103,20 @@ router.get('/export', (req, res) => {
             holdings: db.prepare('SELECT symbol, quantity, average_price FROM demo_holdings WHERE user_id = ?').all(userId),
             trades: db.prepare('SELECT symbol, side, quantity, price, total_cents, created_at FROM demo_trades WHERE user_id = ? ORDER BY id').all(userId),
         },
+        portfolioCashMoves: db.prepare('SELECT account_id, direction, amount_cents, reference, created_at FROM portfolio_transfers WHERE user_id = ? ORDER BY id').all(userId),
+        budgets: db.prepare('SELECT id, scope, name, category, period, limit_cents, status, created_at FROM budgets WHERE user_id = ?').all(userId),
+        budgetChecks: db.prepare('SELECT budget_id, day, period_start, spent_cents, limit_cents, status, checked_at FROM budget_checks WHERE user_id = ? ORDER BY day').all(userId),
+        businessExpenses: db.prepare('SELECT spent_on, vendor, category, amount_cents, currency, note, account_id, transaction_reference, created_at FROM business_expenses WHERE user_id = ? ORDER BY spent_on').all(userId),
+        assets: db.prepare('SELECT name, kind, value_cents, currency, note, created_at, updated_at FROM assets WHERE user_id = ?').all(userId),
+        debts: db.prepare('SELECT id, name, kind, lender, balance_cents, original_cents, rate_bps, minimum_cents, due_day, currency, status, created_at FROM debts WHERE user_id = ?').all(userId),
+        debtPayments: db.prepare('SELECT debt_id, amount_cents, account_id, transaction_reference, paid_on, note FROM debt_payments WHERE user_id = ? ORDER BY paid_on').all(userId),
+        netWorthHistory: db.prepare('SELECT day, accounts_cents, investments_cents, assets_cents, debts_cents, net_cents FROM net_worth_snapshots WHERE user_id = ? ORDER BY day').all(userId),
         loanEstimates: db.prepare('SELECT kind, label, principal_cents, annual_rate_bps, term_months, monthly_payment_cents, created_at FROM loan_estimates WHERE user_id = ?').all(userId),
         signIns: db.prepare("SELECT created_at FROM audit_logs WHERE actor_id = ? AND action = 'login' ORDER BY created_at DESC LIMIT 50").all(userId),
     };
     logAudit({ actorId: userId, actorEmail: res.locals.user.email, action: 'data_exported', targetType: 'user', targetId: String(userId) });
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="willow-demo-data-${new Date().toISOString().slice(0, 10)}.json"`);
+    res.setHeader('Content-Disposition', `attachment; filename="willow-data-${new Date().toISOString().slice(0, 10)}.json"`);
     res.send(JSON.stringify(payload, null, 2));
 });
 

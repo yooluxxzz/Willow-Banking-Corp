@@ -117,20 +117,6 @@
         doc.querySelectorAll('[data-copy]').forEach(button => button.addEventListener('click', async () => {
             try { await global.navigator.clipboard.writeText(button.dataset.copy); W.showToast('Copied.', 'success', 1800); } catch (error) { W.showToast('Copy isn’t available in this browser.', 'warning'); }
         }));
-        const sample = doc.querySelector('[data-load-sample]');
-        if (sample) sample.addEventListener('click', async () => {
-            sample.classList.add('is-loading');
-            sample.disabled = true;
-            try {
-                await W.api('/api/demo/sample-data', { method: 'POST', body: {}, timeout: 45000 });
-                W.showToast('Sample activity added.', 'success');
-                global.setTimeout(() => { global.location.href = '/dashboard'; }, 800);
-            } catch (error) {
-                W.showToast(error.message, 'error');
-                sample.classList.remove('is-loading');
-                sample.disabled = false;
-            }
-        });
     }
 
     function init() {

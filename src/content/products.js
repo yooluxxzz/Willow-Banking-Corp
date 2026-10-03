@@ -360,7 +360,7 @@ const products = [
                 'Emergency fund, home, travel and other goals',
                 'Self-reported progress toward each target',
                 'Goals never move money automatically',
-                'Goals shown in Willow Hub alongside balances',
+                'Goals shown on your Net worth page alongside balances',
             ],
         },
         steps: [
@@ -483,10 +483,10 @@ const products = [
         navLabel: 'Stocks',
         navDescription: 'Simulated trading with real market data',
         icon: 'trend',
-        metaDescription: 'Practice investing in stocks with $100,000 of simulated cash, delayed market data, interactive charts and company profiles. No real trades take place.',
+        metaDescription: 'Invest in stocks with money you move in from your Willow accounts, using delayed market data, interactive charts and company profiles. Orders are simulated.',
         eyebrow: 'Willow Wealth',
         headline: 'Practice investing with real market data.',
-        lede: 'Explore a curated list of companies with delayed market data, interactive charts and key statistics, then place simulated orders with $100,000 of demo cash.',
+        lede: 'Explore a curated list of companies with delayed market data, interactive charts and key statistics, then place simulated orders with the cash you move into investing.',
         primaryCta: { label: 'Open an account', href: '/register' },
         secondaryCta: { label: 'Explore markets', href: '/login?returnTo=%2Fwealth%2Fmarkets' },
         highlights: [
@@ -528,7 +528,7 @@ const products = [
             },
             {
                 title: 'Place a simulated order',
-                body: 'Buy or sell with demo portfolio cash. The order is priced on the server at the latest available price.',
+                body: 'Buy or sell with your investing cash. The order is priced on the server at the latest available price.',
             },
         ],
         faqs: [
@@ -549,7 +549,7 @@ const products = [
                 a: 'No. Willow does not give investment advice or recommendations. The curated list exists to make the demo easy to explore, not to suggest that any company is a good investment.',
             },
         ],
-        disclosure: 'Stock trading in Willow is simulated with $100,000 of demo cash. Willow is not a broker, gives no investment advice and never buys or sells real securities.',
+        disclosure: 'Stock orders in Willow are simulated and funded only from money you move in from your Willow accounts. Willow is not a broker, gives no investment advice and never buys or sells real securities.',
         related: ['etfs', 'portfolio', 'funds'],
     },
     {
@@ -603,7 +603,7 @@ const products = [
                 body: 'Review the price history and key statistics of each ETF, and read its profile where one is available.',
             },
             {
-                title: 'Practice with demo cash',
+                title: 'Invest the cash you move in',
                 body: 'Place a simulated order and follow how the position behaves in your portfolio over time.',
             },
         ],
@@ -622,10 +622,10 @@ const products = [
             },
             {
                 q: 'Does buying an ETF use my bank balance?',
-                a: 'No. Simulated investing uses the $100,000 of demo cash in your separate portfolio. Your bank account balances are never touched by simulated orders, and portfolio cash cannot be moved into your accounts.',
+                a: 'Only when you choose. You move cash from a US dollar Willow account into investing, and orders use that investing cash. Buying and selling never touch your account balances; you can move uninvested cash back whenever you like.',
             },
         ],
-        disclosure: 'ETF orders in Willow are simulated with demo portfolio cash. Market data may be delayed, and no real fund units are bought, sold or held.',
+        disclosure: 'ETF orders in Willow are simulated and funded from the cash you move into investing. Market data may be delayed, and no real fund units are bought, sold or held.',
         related: ['stocks', 'funds', 'portfolio'],
     },
     {
@@ -680,7 +680,7 @@ const products = [
             },
             {
                 title: 'Build a simulated position',
-                body: 'Place a simulated order with demo portfolio cash and track the fund on your portfolio dashboard.',
+                body: 'Place a simulated order with your investing cash and track the fund on your portfolio dashboard.',
             },
         ],
         faqs: [
@@ -701,7 +701,7 @@ const products = [
                 a: 'No. Willow does not manage, distribute or recommend any fund. The funds in the curated list are shown with public market data for demonstration and education only.',
             },
         ],
-        disclosure: 'Fund investing in Willow is simulated with demo portfolio cash. No real fund units are bought or held, and nothing here is investment advice.',
+        disclosure: 'Fund orders in Willow are simulated and funded from the cash you move into investing. No real fund units are bought or held, and nothing here is investment advice.',
         related: ['etfs', 'stocks', 'portfolio'],
     },
     {
@@ -737,7 +737,7 @@ const products = [
         feature: {
             eyebrow: 'Simulated trading',
             title: 'Practice the moves, without the exposure.',
-            body: 'Buy and sell simulated crypto with your demo portfolio cash at the latest available price. Activity history records every trade and transfer, so you can see how positions change as prices move.',
+            body: 'Buy and sell simulated crypto with your investing cash at the latest available price. Activity history records every trade and transfer, so you can see how positions change as prices move.',
             points: [
                 'Market overview and price charts',
                 'Simulated buy and sell orders',
@@ -756,7 +756,7 @@ const products = [
             },
             {
                 title: 'Trade or send units',
-                body: 'Place simulated trades with demo cash, or send units to another Willow demo profile by email.',
+                body: 'Place simulated trades with your investing cash, or send units to another Willow profile by email.',
             },
         ],
         faqs: [
@@ -766,7 +766,7 @@ const products = [
             },
             {
                 q: 'What pays for simulated crypto trades?',
-                a: 'Simulated crypto orders use the demo cash in your separate Willow portfolio, never your bank balances. Prices come from the latest available market data, which may be delayed.',
+                a: 'Simulated crypto orders use your investing cash — money you moved in from your accounts — never your bank balances directly. Prices come from the latest available market data, which may be delayed.',
             },
             {
                 q: 'Why do crypto prices move so much?',
@@ -787,10 +787,10 @@ const products = [
         navLabel: 'Portfolio',
         navDescription: 'Track simulated holdings and returns',
         icon: 'pie',
-        metaDescription: 'Track a simulated portfolio funded with $100,000 of demo cash: value, daily change, total return, allocation, holdings and a watchlist in one view.',
+        metaDescription: 'Track a portfolio funded from your own Willow accounts: value, daily change, return on what you put in, allocation, holdings and a watchlist in one view.',
         eyebrow: 'Willow Portfolio',
         headline: 'See how your investments fit together.',
-        lede: 'One dashboard for your simulated portfolio: value, daily change, total return and allocation, with every holding and order recorded. Start with $100,000 of demo cash.',
+        lede: 'One dashboard for your simulated portfolio: value, daily change, total return and allocation, with every holding and order recorded. It starts at $0 and grows with the cash you move in.',
         primaryCta: { label: 'Open an account', href: '/register' },
         secondaryCta: { label: 'View your portfolio', href: '/login?returnTo=%2Fwealth' },
         highlights: [
@@ -811,9 +811,9 @@ const products = [
             },
         ],
         feature: {
-            eyebrow: 'Demo portfolio',
-            title: '$100,000 of simulated cash, kept separate.',
-            body: 'Every profile receives $100,000 of simulated cash in a dedicated demo portfolio. It is entirely separate from your bank balances, so buying and selling never touches your accounts, and bank activity never changes your portfolio.',
+            eyebrow: 'Your portfolio',
+            title: 'Funded by you, measured on what you put in.',
+            body: 'Investing cash starts at $0. Move money in from a US dollar Willow account, invest it, and move uninvested cash back whenever you like. Returns are measured against the money you actually moved in.',
             points: [
                 'Value, daily change and total return',
                 'Allocation and holdings breakdown',
@@ -823,8 +823,8 @@ const products = [
         },
         steps: [
             {
-                title: 'Start with demo cash',
-                body: 'Every profile begins with $100,000 of simulated cash in a dedicated portfolio, separate from your accounts.',
+                title: 'Add cash',
+                body: 'Move money from one of your Willow accounts into investing. Both sides are recorded in your account history.',
             },
             {
                 title: 'Build positions',
@@ -837,8 +837,8 @@ const products = [
         ],
         faqs: [
             {
-                q: 'Can I move portfolio cash into my bank account?',
-                a: 'No. The $100,000 of simulated portfolio cash is kept completely separate from your bank balances. It cannot be transferred into or out of your accounts, and it has no real value.',
+                q: 'Can I move portfolio cash back into my account?',
+                a: 'Yes. Uninvested cash can go back to any of your US dollar Willow accounts at any time. Sell holdings first to free up more cash.',
             },
             {
                 q: 'What does total return show?',
@@ -850,10 +850,10 @@ const products = [
             },
             {
                 q: 'Is my portfolio part of my net worth?',
-                a: 'Yes. Willow Hub adds your simulated portfolio value and simulated crypto value to your demo bank balances to show a combined net worth. Each part stays separate, and nothing moves between them.',
+                a: 'Yes. The Net worth page adds your portfolio value and crypto value to your Willow account balances and the assets you record, then subtracts the debts you record. Money only moves into investing when you add cash from one of your accounts.',
             },
         ],
-        disclosure: 'Your Willow portfolio is simulated. The $100,000 starting cash is demo money, separate from bank balances, and no real securities are bought or held.',
+        disclosure: 'Your Willow portfolio is simulated: it is funded only from money you move in from your accounts, orders use delayed prices, and no real securities are bought or held.',
         related: ['stocks', 'crypto', 'savings'],
     },
 
@@ -1328,7 +1328,7 @@ const products = [
         headline: 'See where the business money goes.',
         lede: 'Expenses are drawn from completed debits on your business accounts and grouped into categories, so costs are easier to understand and cash flow is easier to plan.',
         primaryCta: { label: 'Open business banking', href: '/register?type=business' },
-        secondaryCta: { label: 'View the dashboard', href: '/login?returnTo=%2Fbusiness%2Fdashboard' },
+        secondaryCta: { label: 'Sign in to the expense log', href: '/login?returnTo=%2Fbusiness%2Fexpense-log' },
         highlights: [
             {
                 icon: 'tag',

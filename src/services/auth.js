@@ -59,32 +59,12 @@ async function registerUser({ email, password, fullName, phone, country }) {
     VALUES (?, ?, 'checking', 0, 0, 'USD', 'active')
   `);
 
-    const insertNotification = db.prepare(`
-    INSERT INTO notifications (user_id, type, title, message)
-    VALUES (?, 'info', 'Welcome to Willow', 'Your demo profile is ready. Add simulated funds or explore with sample activity — no real money moves.')
-  `);
-
-    const insertCard = db.prepare(`
-    INSERT INTO cards (account_id, card_type, last_four, expiration_date, status, daily_limit)
-    VALUES (?, 'debit', ?, ?, 'active', 500000)
-  `);
-
     const transaction = db.transaction(() => {
         const result = insertUser.run(email, fullName, phone, passwordHash, customerId, typeof country === 'string' ? country.trim() : '');
         const userId = result.lastInsertRowid;
-        const accountResult = insertAccount.run(userId, accountNumber);
-        const accountId = accountResult.lastInsertRowid;
-        // Give newly registered demo customers a savings destination as well.
-        db.prepare("INSERT INTO accounts (user_id, account_number, account_type, balance, available_balance) VALUES (?, ?, 'savings', 0, 0)").run(userId, generateAccountNumber());
-        insertNotification.run(userId);
-
-        // Generate a demo debit card
-        const lastFour = accountNumber.slice(-4);
-        const exp = new Date();
-        exp.setFullYear(exp.getFullYear() + 3);
-        const expStr = `${String(exp.getMonth() + 1).padStart(2, '0')}/${exp.getFullYear()}`;
-        insertCard.run(accountId, lastFour, expStr);
-
+        // The account the customer asked to open. Balances start at zero; cards, savings and
+        // everything else are created only when the customer asks for them.
+        insertAccount.run(userId, accountNumber);
         return { userId, customerId, accountNumber };
     });
 

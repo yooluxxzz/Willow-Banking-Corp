@@ -54,6 +54,9 @@ function articleList(kind) {
     return articles.filter(article => article.kind === kind);
 }
 
+/** Up to five distinct topic symbols from a collection, for the link to it. */
+const topicIcons = kind => [...new Set(articleList(kind).map(article => article.icon).filter(Boolean))].slice(0, 5);
+
 router.get('/insights', (req, res) => {
     res.render('articles', {
         title: 'Insights',
@@ -62,7 +65,7 @@ router.get('/insights', (req, res) => {
         heading: 'Perspectives on money, without the noise.',
         intro: 'Short reads on saving, investing, business and security — written to help you think clearly, not to tell you what to buy.',
         list: articleList('insight'),
-        other: { label: 'Education guides', href: '/learn' },
+        other: { label: 'Education guides', href: '/learn', icon: 'graduation', count: articleList('guide').length, noun: 'guide', blurb: 'Plain-language explanations of the ideas behind everyday money.', topics: topicIcons('guide') },
     });
 });
 
@@ -74,7 +77,7 @@ router.get('/learn', (req, res) => {
         heading: 'Understand your money, one guide at a time.',
         intro: 'Plain-language explanations of the ideas behind everyday finance — from compound growth to how loan payments are calculated.',
         list: articleList('guide'),
-        other: { label: 'Insights', href: '/insights' },
+        other: { label: 'Insights', href: '/insights', icon: 'lightbulb', count: articleList('insight').length, noun: 'article', blurb: 'Short perspectives on saving, investing, business and security.', topics: topicIcons('insight') },
     });
 });
 

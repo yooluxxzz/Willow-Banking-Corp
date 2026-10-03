@@ -9,7 +9,6 @@
         const form = doc.getElementById('payeeForm');
         if (!form) return;
         const error = form.querySelector('[data-payee-error]');
-        form.querySelectorAll('[data-suggest]').forEach(button => button.addEventListener('click', () => { form.elements.email.value = button.dataset.suggest; form.elements.nickname.focus(); }));
         form.addEventListener('submit', async event => {
             event.preventDefault();
             error.hidden = true;

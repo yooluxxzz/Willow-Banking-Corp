@@ -1,4 +1,4 @@
-/* Willow Home — charts, sample activity and the portfolio teaser. */
+/* Willow Home — charts and the investing teaser. */
 'use strict';
 
 (function (global) {
@@ -29,24 +29,6 @@
         }
     }
 
-    function setupSampleData() {
-        const button = doc.querySelector('[data-load-sample]');
-        if (!button) return;
-        button.addEventListener('click', async () => {
-            button.classList.add('is-loading');
-            button.disabled = true;
-            try {
-                await W.api('/api/demo/sample-data', { method: 'POST', body: {}, timeout: 45000 });
-                W.showToast('Sample activity added. Refreshing your dashboard…', 'success');
-                global.setTimeout(() => global.location.reload(), 700);
-            } catch (error) {
-                W.showToast(error.message, 'error');
-                button.classList.remove('is-loading');
-                button.disabled = false;
-            }
-        });
-    }
-
     async function loadWealthTeaser() {
         const panel = doc.querySelector('[data-wealth-teaser]');
         if (!panel) return;
@@ -55,8 +37,10 @@
         try {
             const { valuation } = await W.api('/api/wealth/portfolio', { passive: true, timeout: 20000 });
             value.textContent = W.formatMoney(valuation.total, 'USD');
-            if (valuation.pricing === 'none-held') {
-                sub.textContent = 'All demo cash so far. Explore markets to place your first simulated order.';
+            if (!valuation.contributed && !valuation.total) {
+                sub.replaceChildren('Nothing invested yet. ', W.el('a', { className: 'text-link', href: '/wealth', text: 'Add cash to start' }));
+            } else if (valuation.pricing === 'none-held') {
+                sub.textContent = 'All in cash so far. Explore markets to place your first order.';
             } else {
                 const up = valuation.totalReturn >= 0;
                 sub.replaceChildren(
@@ -78,7 +62,6 @@
 
     function init() {
         renderCharts(readData());
-        setupSampleData();
         loadWealthTeaser();
     }
 
