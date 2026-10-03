@@ -21,7 +21,7 @@ router.post('/reset-password', limiter, async (req, res) => {
         if (result.error) return res.status(400).json({ error: result.error });
         logAudit({ actorId: result.userId, actorEmail: result.email, action: 'password_recovered', targetType: 'user', targetId: String(result.userId) });
         req.session.destroy(() => {
-            res.clearCookie('willow.sid');
+            res.clearCookie(req.app.get('session cookie'));
             res.json({ success: true, message: 'Password reset. Sign in with your new password.', redirect: '/login?reset=success' });
         });
     } catch (err) { res.status(500).json({ error: 'Could not reset your password. Please try again.' }); }

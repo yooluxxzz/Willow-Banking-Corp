@@ -65,7 +65,8 @@ describe('Sign-in navigation and reliable sign-out', () => {
         assert.equal((await auth.agent.get('/api/accounts')).status, 200);
         const success = await auth.agent.post('/auth/logout').set('X-CSRF-Token', auth.csrfToken).set('Accept','application/json');
         assert.equal(success.status, 200); assert.equal(success.body.redirect, '/login?signedOut=success');
-        assert.ok(success.headers['set-cookie'].some(cookie => cookie.startsWith('willow.sid=;')));
+        // The app under test names its cookie willow.sid.test; sign-out must clear that one, not a hard-coded name.
+        assert.ok(success.headers['set-cookie'].some(cookie => cookie.startsWith('willow.sid.test=;')));
         assert.equal((await auth.agent.get('/api/accounts')).status, 401);
     });
 });

@@ -72,13 +72,12 @@ router.post('/', requireAuth, (req, res) => {
         const desc = description?.trim() || 'Withdrawal';
 
         const withdrawal = db.transaction(() => {
-            db.prepare(`
+            const debit = db.prepare(`
         UPDATE accounts SET balance = balance - ?, available_balance = available_balance - ?
         WHERE id = ? AND available_balance >= ?
       `).run(amountCents, amountCents, account.id, amountCents);
-
-            const updated = db.prepare('SELECT available_balance FROM accounts WHERE id = ?').get(account.id);
-            if (updated.available_balance < 0) {
+            // Nothing is recorded unless the money was actually there.
+            if (debit.changes !== 1) {
                 throw new Error('Insufficient funds');
             }
 

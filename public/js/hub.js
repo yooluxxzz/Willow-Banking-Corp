@@ -202,6 +202,13 @@
         if (worthResult.status === 'rejected') {
             doc.querySelector('[data-net-worth]').textContent = '—';
             doc.querySelector('[data-net-note]').textContent = worthResult.reason.message;
+            // Don't leave skeletons spinning: say what failed and offer a retry.
+            const retry = { label: 'Try again', primary: false, onClick: () => global.location.reload() };
+            doc.querySelector('[data-history-chart]').replaceChildren(W.empty({ iconName: 'alert', title: 'Net worth couldn’t load', text: worthResult.reason.message, compact: true, error: true, action: retry }));
+            ['[data-own-list]', '[data-owe-list]', '[data-asset-list]'].forEach(selector => {
+                const node = doc.querySelector(selector);
+                if (node) node.replaceChildren(W.el('p', { className: 'muted text-sm', text: 'Unavailable right now.' }));
+            });
         }
         if (pictureResult.status === 'fulfilled') {
             const picture = pictureResult.value;

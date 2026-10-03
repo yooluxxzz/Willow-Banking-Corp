@@ -11,17 +11,10 @@ const goalService = require('./goals');
 const scheduledTransfers = require('./scheduled-transfers');
 const { categorize, categoryMeta } = require('./categories');
 const { formatCurrency } = require('../middleware/validation');
+const { monthBounds, ledgerRows, isSpending, isIncome, total, sqlUtc } = require('./spending');
 
 const usd = cents => formatCurrency(Math.round(cents), 'USD');
 const accountName = account => account.nickname || (account.purpose === 'business' ? 'Business checking' : account.currency !== 'USD' ? `${account.currency} account` : account.account_type === 'savings' ? 'Savings' : 'Checking');
-
-function monthBounds(offset = 0) {
-    const now = new Date();
-    const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + offset, 1));
-    const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + offset + 1, 1));
-    const sql = date => date.toISOString().replace('T', ' ').slice(0, 19);
-    return { start: sql(start), end: sql(end), label: new Intl.DateTimeFormat('en-US', { month: 'short', timeZone: 'UTC' }).format(start), key: start.toISOString().slice(0, 7) };
-}
 
 /** Synchronous summary from banking records (USD accounts for spending analysis). */
 function getSummary(userId) {
@@ -34,15 +27,14 @@ function getSummary(userId) {
         FROM transactions t JOIN accounts a ON a.id = t.account_id
         WHERE a.user_id = ? AND t.status = 'completed' AND t.created_at >= ? AND t.created_at < ?
         ORDER BY t.created_at DESC, t.id DESC`).all(userId, thisMonth.start, thisMonth.end);
-    const usdActivity = activity.filter(item => (item.currency || 'USD') === 'USD');
-    const spending = usdActivity.filter(item => item.direction === 'debit' && item.type !== 'transfer');
-    const monthTotals = usdActivity.reduce((totals, item) => {
-        if (item.direction === 'credit') totals.incomeCents += item.amount;
-        if (item.direction === 'debit') totals.expenseCents += item.amount;
-        return totals;
-    }, { incomeCents: 0, expenseCents: 0, spendingCents: 0, earnedCents: 0 });
-    monthTotals.spendingCents = spending.reduce((sum, item) => sum + item.amount, 0);
-    monthTotals.earnedCents = usdActivity.filter(item => item.direction === 'credit' && item.type !== 'transfer').reduce((sum, item) => sum + item.amount, 0);
+    const usdActivity = ledgerRows(userId, thisMonth.start, thisMonth.end);
+    const spending = usdActivity.filter(item => isSpending(item, userId));
+    const monthTotals = {
+        incomeCents: total(usdActivity.filter(item => item.direction === 'credit')),
+        expenseCents: total(usdActivity.filter(item => item.direction === 'debit')),
+        spendingCents: total(spending),
+        earnedCents: total(usdActivity.filter(item => isIncome(item, userId))),
+    };
     const expenses = spending.reduce((groups, item) => {
         const label = item.description?.trim() || item.type;
         groups.set(label, (groups.get(label) || 0) + item.amount);
@@ -53,14 +45,12 @@ function getSummary(userId) {
         groups.set(key, (groups.get(key) || 0) + item.amount);
         return groups;
     }, new Map());
-    const lastMonthSpending = db.prepare(`SELECT COALESCE(SUM(t.amount), 0) AS total FROM transactions t JOIN accounts a ON a.id = t.account_id
-        WHERE a.user_id = ? AND t.status = 'completed' AND t.direction = 'debit' AND t.type != 'transfer' AND COALESCE(t.currency, 'USD') = 'USD' AND t.created_at >= ? AND t.created_at < ?`).get(userId, lastMonth.start, lastMonth.end).total;
+    const spentBetween = (from, to) => total(ledgerRows(userId, from, to).filter(item => isSpending(item, userId)));
+    const lastMonthSpending = spentBetween(lastMonth.start, lastMonth.end);
     // Last month up to the same point in the month, for like-for-like comparisons.
-    const toMs = value => Date.parse(value.replace(' ', 'T') + 'Z');
-    const elapsedMs = Date.now() - toMs(thisMonth.start);
-    const sameDayLastMonth = new Date(Math.min(toMs(lastMonth.start) + elapsedMs, toMs(lastMonth.end))).toISOString().replace('T', ' ').slice(0, 19);
-    const lastMonthToDateSpending = db.prepare(`SELECT COALESCE(SUM(t.amount), 0) AS total FROM transactions t JOIN accounts a ON a.id = t.account_id
-        WHERE a.user_id = ? AND t.status = 'completed' AND t.direction = 'debit' AND t.type != 'transfer' AND COALESCE(t.currency, 'USD') = 'USD' AND t.created_at >= ? AND t.created_at < ?`).get(userId, lastMonth.start, sameDayLastMonth).total;
+    const elapsedMs = Date.now() - thisMonth.startDate.getTime();
+    const sameDayLastMonth = sqlUtc(new Date(Math.min(lastMonth.startDate.getTime() + elapsedMs, lastMonth.endDate.getTime())));
+    const lastMonthToDateSpending = spentBetween(lastMonth.start, sameDayLastMonth);
     const savingsIds = new Set(accounts.filter(account => account.account_type === 'savings').map(account => account.id));
     const savingsMovementCents = activity.filter(item => savingsIds.has(item.account_id)).reduce((sum, item) => sum + (item.direction === 'credit' ? item.amount : -item.amount), 0);
     const savingsCents = accounts.filter(account => account.account_type === 'savings' && account.currency === 'USD').reduce((sum, account) => sum + account.balance, 0);
@@ -96,18 +86,13 @@ function getSummary(userId) {
     };
 }
 
-/** Six months of income vs spending (USD accounts, excluding transfers between accounts). */
+/** Six months of income vs spending (US dollar accounts, by the shared definition in ./spending). */
 function cashflowSeries(userId, months = 6) {
-    const db = getDb();
     const series = [];
     for (let offset = months - 1; offset >= 0; offset -= 1) {
         const bounds = monthBounds(-offset);
-        const row = db.prepare(`SELECT
-                COALESCE(SUM(CASE WHEN t.direction = 'credit' THEN t.amount ELSE 0 END), 0) AS income,
-                COALESCE(SUM(CASE WHEN t.direction = 'debit' THEN t.amount ELSE 0 END), 0) AS spending
-            FROM transactions t JOIN accounts a ON a.id = t.account_id
-            WHERE a.user_id = ? AND t.status = 'completed' AND t.type != 'transfer' AND COALESCE(t.currency, 'USD') = 'USD' AND t.created_at >= ? AND t.created_at < ?`).get(userId, bounds.start, bounds.end);
-        series.push({ label: bounds.label, key: bounds.key, incomeCents: row.income, spendingCents: row.spending });
+        const rows = ledgerRows(userId, bounds.start, bounds.end);
+        series.push({ label: bounds.label, key: bounds.key, incomeCents: total(rows.filter(row => isIncome(row, userId))), spendingCents: total(rows.filter(row => isSpending(row, userId))) });
     }
     return series;
 }

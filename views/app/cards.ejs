@@ -67,7 +67,7 @@
             </div>
 
             <section class="panel" aria-labelledby="activity<%= card.id %>">
-                <div class="panel-head"><h2 id="activity<%= card.id %>">Card activity</h2><a class="link-arrow" href="/transactions?accountId=<%= card.account_id %>">Account <%- icon('arrow-right') %></a></div>
+                <div class="panel-head"><h2 id="activity<%= card.id %>">Spending from this account</h2><a class="link-arrow" href="/transactions?accountId=<%= card.account_id %>">Account <%- icon('arrow-right') %></a></div>
                 <div data-card-activity="<%= card.id %>"><p class="muted text-sm">Loading activity…</p></div>
             </section>
         </div>

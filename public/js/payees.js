@@ -29,7 +29,16 @@
             if (!ok) return;
             try {
                 const { payees } = await W.api(`/api/payees/${button.dataset.removePayee}`, { method: 'DELETE' });
-                doc.querySelector(`[data-payee-row="${button.dataset.removePayee}"]`).remove();
+                const row = doc.querySelector(`[data-payee-row="${button.dataset.removePayee}"]`);
+                // Keep keyboard focus nearby instead of dropping it to the top of the page.
+                const next = row.nextElementSibling || row.previousElementSibling;
+                row.remove();
+                let target = next && next.querySelector('[data-remove-payee], a, button');
+                if (!target) {
+                    target = doc.getElementById('payeesTitle');
+                    if (target) target.setAttribute('tabindex', '-1');
+                }
+                if (target) target.focus();
                 doc.querySelector('[data-payee-count]').textContent = `${payees.length} saved`;
                 doc.querySelector('[data-payee-empty]').hidden = Boolean(payees.length);
                 W.showToast('Payee removed.', 'success');

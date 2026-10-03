@@ -120,7 +120,7 @@
 
 <% if (section === 'invoices') { %>
 <section class="panel" aria-labelledby="invoiceListTitle">
-    <div class="panel-head"><h2 id="invoiceListTitle">Invoices</h2><button type="button" class="btn btn-primary btn-sm" data-new-invoice><%- icon('plus', 'icon-sm') %> New invoice</button></div>
+    <div class="panel-head"><h2 id="invoiceListTitle">Invoices</h2><% if (hasAccount) { %><button type="button" class="btn btn-primary btn-sm" data-new-invoice><%- icon('plus', 'icon-sm') %> New invoice</button><% } else { %><a class="btn btn-primary btn-sm" href="/accounts/new?type=business"><%- icon('plus', 'icon-sm') %> Open business checking</a><% } %></div>
     <% if (dashboard.invoices.length) { %>
     <div class="table-wrap">
         <table class="table invoice-table">
@@ -140,7 +140,12 @@
         </table>
     </div>
     <% } else { %>
-    <div class="empty is-compact"><div class="empty-art"><%- icon('invoice') %></div><h3>No invoices yet</h3><p>Create an invoice to track money your customers owe you.</p><button type="button" class="btn btn-primary btn-sm" data-new-invoice>New invoice</button></div>
+    <% if (hasAccount) { %>
+    <div class="empty is-compact"><div class="empty-art"><%- icon('invoice') %></div><h3>No invoices yet</h3><p>Create an invoice to track money your customers owe you.</p><button type="button" class="btn btn-primary btn-sm" data-new-invoice><%- icon('plus', 'icon-sm') %> New invoice</button></div>
+    <% } else { %>
+    <div class="empty is-compact"><div class="empty-art"><%- icon('invoice') %></div><h3>Invoices need a business account</h3><p>Paid invoices are added to your business checking account, so open one first. You can log expenses without it.</p><a class="btn btn-primary btn-sm" href="/accounts/new?type=business">Open business checking</a></div>
+    <% } %>
+
     <% } %>
     <p class="text-xs muted mt-4">Invoices aren’t sent to anyone. When your customer pays, mark the invoice paid to add the payment to your business account.</p>
 </section>

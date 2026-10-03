@@ -197,7 +197,7 @@ router.post('/logout', (req, res) => {
             console.error('[Auth] Logout error:', err.message);
             return res.status(500).json({ error: 'Sign-out could not be completed. Please try again.' });
         }
-        res.clearCookie('willow.sid');
+        res.clearCookie(req.app.get('session cookie'));
         res.set('Cache-Control', 'no-store');
         res.json({ success: true, redirect: '/login?signedOut=success' });
     });

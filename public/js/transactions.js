@@ -19,6 +19,7 @@
         const countBadge = form.querySelector('[data-filter-count]');
         let controller = null;
         let lastPage = [];
+        let lastParams = null;
 
         const initial = new URLSearchParams(global.location.search);
         ['type', 'status', 'dateFrom', 'dateTo', 'search', 'sort'].forEach(key => { if (initial.has(key)) form.elements[key].value = initial.get(key); });
@@ -40,7 +41,9 @@
             let day = '';
             transactions.forEach(txn => {
                 const label = W.relativeDay(txn.created_at);
-                const key = String(txn.created_at).slice(0, 10);
+                // Group by the day in the customer's own time zone, the same day the label shows.
+                const date = W.parseDate(txn.created_at);
+                const key = date ? `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}` : String(txn.created_at).slice(0, 10);
                 if (key !== day) {
                     day = key;
                     list.append(W.el('li', { className: 'txn-day', text: label === 'Today' || label === 'Yesterday' ? label : W.formatDate(txn.created_at) }));
@@ -95,6 +98,7 @@
             global.history.replaceState(null, '', `/transactions?${url}`);
             params.set('page', page);
             params.set('limit', PAGE_SIZE);
+            lastParams = new URLSearchParams(params);
             results.setAttribute('aria-busy', 'true');
             results.replaceChildren(W.skeletonRows(6));
             status.textContent = 'Loading transactions…';
@@ -136,17 +140,49 @@
             load();
         }
 
-        function exportCsv() {
+        // Spreadsheet apps run cells that start with = + - @ (or a tab/return) as formulas; a
+        // payer's name must never become one, so such text is prefixed with an apostrophe.
+        const csvCell = value => {
+            let text = String(value ?? '');
+            if (/^[=+\-@\t\r]/.test(text) && !/^-?\d+(\.\d+)?$/.test(text)) text = `'${text}`;
+            return `"${text.replace(/"/g, '""')}"`;
+        };
+
+        /** Every transaction that matches the current filters (up to 5,000), not just this page. */
+        async function allMatching() {
+            const params = new URLSearchParams(lastParams || '');
+            params.set('limit', '100');
+            const rows = [];
+            for (let page = 1; page <= 50; page += 1) {
+                params.set('page', String(page));
+                const data = await W.api(`/api/transactions?${params}`);
+                rows.push(...data.transactions);
+                if (page >= data.totalPages) break;
+            }
+            return rows;
+        }
+
+        async function exportCsv() {
+            exportButton.classList.add('is-loading');
+            let transactions;
+            try {
+                transactions = await allMatching();
+            } catch (error) {
+                W.showToast(`The export couldn’t be prepared: ${error.message}`, 'error');
+                return;
+            } finally {
+                exportButton.classList.remove('is-loading');
+            }
             const rows = [['Date', 'Reference', 'Description', 'Counterparty', 'Category', 'Type', 'Status', 'Direction', 'Amount', 'Currency']];
-            lastPage.forEach(txn => rows.push([txn.created_at, txn.reference, txn.description || '', txn.counterparty || '', txn.categoryLabel || '', txn.type, txn.status, txn.direction, (txn.amount / 100).toFixed(2), txn.currency || 'USD']));
-            const csv = rows.map(row => row.map(value => `"${String(value ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
+            transactions.forEach(txn => rows.push([txn.created_at, txn.reference, txn.description || '', txn.counterparty || '', txn.categoryLabel || '', txn.type, txn.status, txn.direction, (txn.amount / 100).toFixed(2), txn.currency || 'USD']));
+            const csv = rows.map(row => row.map(csvCell).join(',')).join('\r\n');
             const url = URL.createObjectURL(new Blob([`﻿${csv}`], { type: 'text/csv;charset=utf-8' }));
-            const link = W.el('a', { href: url, download: `willow-demo-transactions-${new Date().toISOString().slice(0, 10)}.csv` });
+            const link = W.el('a', { href: url, download: `willow-transactions-${new Date().toISOString().slice(0, 10)}.csv` });
             doc.body.append(link);
             link.click();
             link.remove();
             global.setTimeout(() => URL.revokeObjectURL(url), 30000);
-            W.showToast('CSV exported for the transactions on this page.', 'success');
+            W.showToast(`CSV exported: ${transactions.length} transaction${transactions.length === 1 ? '' : 's'} matching your filters.`, 'success');
         }
 
         let searchTimer = null;

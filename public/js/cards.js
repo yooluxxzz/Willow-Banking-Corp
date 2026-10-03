@@ -50,7 +50,7 @@
         try {
             const { transactions } = await W.api(`/api/cards/${cardId}/activity`);
             if (!transactions.length) {
-                box.replaceChildren(W.empty({ iconName: 'card', title: 'No card payments yet', text: 'Purchases made with this card will show here.', compact: true }));
+                box.replaceChildren(W.empty({ iconName: 'card', title: 'No spending yet', text: 'Payments and withdrawals from the account this card uses will show here.', compact: true }));
                 return;
             }
             const currency = doc.querySelector(`[data-card-panel="${cardId}"]`).dataset.currency;

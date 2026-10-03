@@ -16,8 +16,8 @@
                 <input class="range" type="range" min="0" max="50" step="1" value="20" aria-label="Down payment percentage" data-calc-down-range>
             </div>
             <div class="field">
-                <label for="<%= id %>-term">Term</label>
-                <div class="segmented" role="group" aria-label="Mortgage term">
+                <label id="<%= id %>-term-label">Term</label>
+                <div class="segmented" role="group" aria-labelledby="<%= id %>-term-label">
                     <% [15, 20, 30].forEach(years => { %><button type="button" data-calc-term="<%= years * 12 %>" aria-pressed="<%= years === 30 %>"><%= years %> years</button><% }) %>
                 </div>
                 <input type="hidden" name="termMonths" value="360">

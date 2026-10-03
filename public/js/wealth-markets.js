@@ -146,6 +146,15 @@
                     compact: true,
                     action: { label: 'Clear search', primary: false, onClick: () => { search.value = ''; setQuery(''); search.focus(); } },
                 }));
+            } else if (state.filter === 'watchlist' && state.watchlistFailed) {
+                list.replaceChildren(W.empty({
+                    iconName: 'alert',
+                    title: 'Your watchlist couldn’t load',
+                    text: 'It hasn’t been changed. Try again in a moment.',
+                    compact: true,
+                    error: true,
+                    action: { label: 'Try again', primary: false, onClick: () => global.location.reload() },
+                }));
             } else if (state.filter === 'watchlist') {
                 list.replaceChildren(W.empty({
                     iconName: 'star',
@@ -330,6 +339,7 @@
         if (instruments.status === 'fulfilled') state.instruments = instruments.value.instruments || [];
         if (watch.status === 'fulfilled') WW.setWatchlist(watch.value.watchlist);
         else WW.setWatchlist([]);
+        state.watchlistFailed = watch.status !== 'fulfilled';
         if (!state.instruments.length) {
             list.setAttribute('aria-busy', 'false');
             list.replaceChildren(W.empty({ iconName: 'chart', title: 'Markets couldn’t be loaded', text: 'Please check your connection and try again.', error: true, compact: true, action: { label: 'Retry', primary: false, onClick: () => global.location.reload() } }));

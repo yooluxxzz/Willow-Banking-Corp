@@ -1,6 +1,9 @@
 <%
+  const isGuest = Boolean(user && user.is_guest);
   const checks = [
-    { label: 'Strong password', done: true, text: 'Set when you opened your account.' },
+    isGuest
+      ? { label: 'Your own sign-in', done: false, text: 'Guest profiles have no password. Save your own email and password in Settings.' }
+      : { label: 'Strong password', done: true, text: 'Set when you opened your account.' },
     { label: 'Two-step verification', done: twoFactor.enabled, text: twoFactor.enabled ? 'Codes required at every sign-in.' : 'Add a code from an authenticator app.' },
     { label: 'Recovery codes saved', done: recoveryCount > 0, text: recoveryCount > 0 ? `${recoveryCount} unused code${recoveryCount === 1 ? '' : 's'} left.` : 'Create backup codes in Settings.' },
     { label: 'Security alerts', done: prefs.alertSecurity, text: prefs.alertSecurity ? 'You’re notified about sign-in and security changes.' : 'Turn on in Settings.' },
@@ -47,6 +50,8 @@
             <div class="form-actions">
                 <% if (twoFactor.enabled) { %>
                 <button type="button" class="btn btn-secondary" data-tf-disable>Turn off</button>
+                <% } else if (isGuest) { %>
+                <a class="btn btn-primary" href="/settings#keep"><%- icon('key') %> Save your sign-in details first</a>
                 <% } else { %>
                 <button type="button" class="btn btn-primary" data-tf-enable><%- icon('shield-check') %> Set up two-step verification</button>
                 <% } %>
@@ -54,7 +59,7 @@
         </section>
 
         <section class="panel" aria-labelledby="sessionsTitle">
-            <div class="panel-head"><h2 id="sessionsTitle">Where you’re signed in</h2><button type="button" class="btn btn-ghost btn-sm" data-revoke-others><%- icon('logout', 'icon-sm') %> Sign out everywhere else</button></div>
+            <div class="panel-head"><h2 id="sessionsTitle">Where you’re signed in</h2><% if (!isGuest) { %><button type="button" class="btn btn-ghost btn-sm" data-revoke-others><%- icon('logout', 'icon-sm') %> Sign out everywhere else</button><% } %></div>
             <% if (sessionsUnavailable) { %>
             <p class="muted text-sm">Session details are unavailable right now. You can still sign out everywhere else.</p>
             <% } else { %>

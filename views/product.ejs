@@ -3,10 +3,12 @@
   // Signed-in visitors go straight to the feature instead of being asked to sign in or register.
   const [primaryCta, secondaryCta] = (() => {
     if (!user) return [product.primaryCta, product.secondaryCta];
-    const destination = decodeURIComponent(product.secondaryCta.href.split('returnTo=')[1] || '%2Fdashboard');
-    const feature = product.secondaryCta.label.replace(/^Sign in to /, '');
+    const { label, href } = product.secondaryCta;
+    // "Sign in to Cards" becomes "Go to Cards"; links that don't ask for a sign-in keep their wording and destination.
+    const destination = href.includes('returnTo=') ? decodeURIComponent(href.split('returnTo=')[1]) : href;
+    const goLabel = /^Sign in to /.test(label) ? `Go to ${label.replace(/^Sign in to /, '')}` : label;
     const opening = product.primaryCta.href.includes('type=business') ? { label: 'Open business checking', href: '/accounts/new?type=business' } : { label: 'Open another account', href: '/accounts/new' };
-    return [{ label: `Go to ${feature}`, href: destination }, opening];
+    return [{ label: goLabel, href: destination }, opening];
   })();
   const liveLists = {
     stocks: { title: 'Popular stocks', symbols: 'AAPL,MSFT,NVDA,AMZN,GOOGL,META,TSLA,JPM', href: '/wealth/markets?type=stock' },

@@ -40,11 +40,11 @@ function loadUser(req, res, next) {
         res.set('Cache-Control', 'no-store');
         const { getDb } = require('../database');
         const db = getDb();
-        const user = db.prepare('SELECT id, email, full_name, phone, role, status, customer_id, auth_version FROM users WHERE id = ?').get(req.session.userId);
+        const user = db.prepare('SELECT id, email, full_name, phone, role, status, customer_id, auth_version, is_guest FROM users WHERE id = ?').get(req.session.userId);
         const { isRevoked } = require('../services/sessions');
         if (!user || (req.session.authVersion || 0) !== user.auth_version || isRevoked(req.sessionID)) {
             req.session.destroy(() => {});
-            res.clearCookie('willow.sid');
+            res.clearCookie(req.app.get('session cookie'));
             if (wantsJson(req)) {
                 return res.status(401).json({ error: 'Your session ended. Please sign in again.' });
             }
@@ -54,7 +54,7 @@ function loadUser(req, res, next) {
         const idleTimeout = config.session.idleTimeoutMs;
         if (idleTimeout && req.session.lastSeenAt && now - req.session.lastSeenAt > idleTimeout) {
             req.session.destroy(() => {});
-            res.clearCookie('willow.sid');
+            res.clearCookie(req.app.get('session cookie'));
             if (wantsJson(req)) {
                 return res.status(401).json({ error: 'You were signed out after a period of inactivity. Please sign in again.', code: 'session_timeout' });
             }

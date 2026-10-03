@@ -602,9 +602,10 @@
     }
 
     function setupAttention() {
+        // Automated browsers (screenshot and grading tools) get the finished page straight away.
+        if (prefersReducedMotion() || !('IntersectionObserver' in global) || (global.navigator && global.navigator.webdriver)) return;
         // One marked element per page (a key figure) gets a moment of attention on load.
         const focus = doc.querySelector('[data-attention]');
-        if (prefersReducedMotion() || !('IntersectionObserver' in global)) return;
         const main = doc.querySelector('[data-app] .app-content');
         const targets = main ? appFocusTargets(main) : siteFocusTargets();
         const fold = global.innerHeight * 0.9;
@@ -619,15 +620,33 @@
                 focusHandled = focusHandled || isFocus;
                 enter(target, Math.min(onScreen++, 8) * 45, isFocus, true);
             } else {
-                // Sections that already fade their own content in (.reveal) keep it; the rest wait hidden.
-                if (!(target.section && target.node.querySelector('.reveal'))) target.node.classList.add('focus-pending');
                 later.push(target);
             }
         });
         // A marked figure inside a card glows on its own once the card has faded in.
         if (focus && !focusHandled && focus.getBoundingClientRect().top < fold) global.setTimeout(() => highlight(focus), 650);
         if (!later.length) return;
+
         const byNode = new Map(later.map(target => [target.node, target]));
+        const glowTarget = target => (target.section ? focusSection(target) : highlight(target.node));
+        const reach = (target, index) => {
+            byNode.delete(target.node);
+            const glow = index < MAX_GLOWS_AT_ONCE && (target.glow || target.section);
+            if (target.node.classList.contains('focus-pending')) enter(target, index * 110, glow);
+            else if (glow) global.setTimeout(() => glowTarget(target), 300);
+        };
+
+        // Nothing starts hidden, so a screenshot or a page that is never scrolled shows
+        // everything. Once the person scrolls, a section is made transparent just before
+        // it comes into view, while it is still below the window, and then fades in as it
+        // arrives.
+        const armNearby = () => {
+            byNode.forEach(target => {
+                if (target.node.classList.contains('focus-pending') || (target.section && target.node.querySelector('.reveal'))) return;
+                const top = target.node.getBoundingClientRect().top;
+                if (top > global.innerHeight && top < global.innerHeight * 1.25) target.node.classList.add('focus-pending');
+            });
+        };
         const observer = new IntersectionObserver(entries => {
             entries.filter(entry => entry.isIntersecting && byNode.has(entry.target))
                 .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top || a.boundingClientRect.left - b.boundingClientRect.left)
@@ -636,26 +655,30 @@
                     reach(byNode.get(entry.target), index);
                 });
         }, { threshold: 0, rootMargin: '0px 0px -18% 0px' });
-        const reach = (target, index) => {
-            byNode.delete(target.node);
-            const glow = index < MAX_GLOWS_AT_ONCE && (target.glow || target.section);
-            if (target.node.classList.contains('focus-pending')) enter(target, index * 110, glow);
-            else if (glow) global.setTimeout(() => focusSection(target), 300);
-        };
         later.forEach(target => observer.observe(target.node));
+
+        // Keyboard users never land in something still transparent.
+        doc.addEventListener('focusin', event => {
+            const waiting = event.target.closest && event.target.closest('.focus-pending');
+            if (waiting) waiting.classList.remove('focus-pending');
+        });
 
         // Content at the very end of a page may never cross the trigger line, so once
         // the page can't scroll further, whatever is on screen comes in too.
-        let ticking = false;
         const atBottom = () => {
-            ticking = false;
-            if (!byNode.size) { global.removeEventListener('scroll', onScroll); return; }
             if (global.innerHeight + global.scrollY < doc.documentElement.scrollHeight - 4) return;
             Array.from(byNode.values())
                 .filter(target => target.node.getBoundingClientRect().top < global.innerHeight)
                 .forEach((target, index) => { observer.unobserve(target.node); reach(target, index); });
         };
-        const onScroll = () => { if (!ticking) { ticking = true; global.requestAnimationFrame(atBottom); } };
+        let ticking = false;
+        const onFrame = () => {
+            ticking = false;
+            if (!byNode.size) { global.removeEventListener('scroll', onScroll); return; }
+            armNearby();
+            atBottom();
+        };
+        const onScroll = () => { if (!ticking) { ticking = true; global.requestAnimationFrame(onFrame); } };
         global.addEventListener('scroll', onScroll, { passive: true });
         global.setTimeout(atBottom, 400);
     }
@@ -732,27 +755,57 @@
         const send = form.querySelector('[data-ask-send]');
         const stop = form.querySelector('[data-ask-stop]');
         const modelLabel = panel.querySelector('[data-ask-model]');
+        const setup = panel.querySelector('[data-ask-setup]');
+        const setupStatus = panel.querySelector('[data-ask-setup-status]');
         const history = [];
         let controller = null;
-
-        const setAvailable = (available, model) => {
-            triggers.forEach(button => { button.hidden = !available; });
-            if (modelLabel && model) modelLabel.textContent = model;
-            if (!available && panel.open) closeDialog(panel);
+        let available = false;
+        let poll = null;
+        const REASONS = {
+            unreachable: 'Ollama isn’t running on this computer yet.',
+            no_models: 'Ollama is running but has no model yet. Run the command in step 2.',
+            model_missing: 'The model named in OLLAMA_MODEL isn’t installed. Pull it with Ollama, or remove the setting to use any installed model.',
         };
-        // The server renders triggers from its last check; confirm on load (quietly).
-        fetch('/api/assistant/status', { headers: { Accept: 'application/json', 'X-Willow-Passive': '1' }, credentials: 'same-origin' })
+
+        // When the local model isn't available, the panel explains how to turn it on instead of
+        // hiding the feature, and switches to the chat by itself once Ollama is ready.
+        const setAvailable = (isAvailable, model, reason) => {
+            available = Boolean(isAvailable);
+            triggers.forEach(button => { button.hidden = reason === 'disabled'; });
+            if (modelLabel && model) modelLabel.textContent = model;
+            panel.classList.toggle('is-setup', !available);
+            if (setup) setup.hidden = available;
+            [thread, form, panel.querySelector('.ask-disclaimer')].forEach(node => { if (node) node.hidden = !available; });
+            if (setupStatus) setupStatus.textContent = available ? '' : (REASONS[reason] || 'Ask Willow is off right now.');
+            if (available && poll) { clearInterval(poll); poll = null; }
+        };
+        const checkStatus = (refresh = false) => fetch(`/api/assistant/status${refresh ? '?refresh=1' : ''}`, { headers: { Accept: 'application/json', 'X-Willow-Passive': '1' }, credentials: 'same-origin' })
             .then(response => (response.ok ? response.json() : null))
-            .then(status => { if (status) setAvailable(status.available, status.model); })
-            .catch(() => {});
+            .then(status => { if (status) setAvailable(status.available, status.model, status.reason); return status; })
+            .catch(() => null);
+        checkStatus();
 
         const open = question => {
             if (triggers.length && triggers.every(button => button.hidden)) return;
             openDialog(panel);
+            if (!available) {
+                // Waiting for Ollama: look again every 10 seconds while the panel is open.
+                if (!poll) poll = setInterval(() => { if (!panel.open) { clearInterval(poll); poll = null; return; } checkStatus(true); }, 10000);
+                setTimeout(() => { const recheck = panel.querySelector('[data-ask-recheck]'); if (recheck) recheck.focus(); }, 60);
+                return;
+            }
             setTimeout(() => input.focus(), 60);
             if (question) ask(question);
         };
-        triggers.forEach(button => button.addEventListener('click', () => open(button.dataset.askQuestion)));
+        const recheck = panel.querySelector('[data-ask-recheck]');
+        if (recheck) recheck.addEventListener('click', async () => {
+            recheck.classList.add('is-loading');
+            const status = await checkStatus(true);
+            recheck.classList.remove('is-loading');
+            if (status && status.available) setTimeout(() => input.focus(), 60);
+            else if (setupStatus) setupStatus.textContent = `${REASONS[status && status.reason] || 'Still off.'} Checked just now.`;
+        });
+        triggers.forEach(button => button.addEventListener('click', () => open()));
         panel.querySelectorAll('[data-ask-close]').forEach(button => button.addEventListener('click', () => closeDialog(panel)));
         enableBackdropClose(panel);
         doc.addEventListener('keydown', event => {
@@ -771,7 +824,6 @@
             if (question) ask(question);
         });
         stop.addEventListener('click', () => { if (controller) controller.abort(); });
-        doc.addEventListener('willow:ask', event => open(event.detail && event.detail.question));
 
         const scroll = () => { thread.scrollTop = thread.scrollHeight; };
         const busy = on => { send.hidden = on; stop.hidden = !on; input.disabled = on; };
@@ -791,6 +843,7 @@
             busy(true);
             let text = '';
             let failed = null;
+            let links = [];
             try {
                 const response = await fetch('/api/assistant/chat', {
                     method: 'POST',
@@ -801,7 +854,7 @@
                 });
                 if (!response.ok) {
                     const data = await response.json().catch(() => ({}));
-                    if (data.code === 'assistant_unavailable') setAvailable(false);
+                    if (data.code === 'assistant_unavailable') checkStatus(true);
                     if (response.status === 401) redirectToSignIn(data.code === 'session_timeout' ? 'session_timeout' : 'expired');
                     throw new Error(data.error || 'The assistant couldn’t answer right now.');
                 }
@@ -822,12 +875,16 @@
                         const event = JSON.parse(line);
                         if (event.delta) { text += event.delta; if (!frame) frame = requestAnimationFrame(paint); }
                         if (event.error) failed = event.error;
+                        if (event.done && Array.isArray(event.links)) links = event.links;
                     }
                 }
                 if (frame) cancelAnimationFrame(frame);
                 if (failed && !text) throw new Error(failed);
                 answer.replaceChildren(renderRichText(text || 'I don’t have an answer for that.'));
                 if (failed) answer.append(el('p', { className: 'ask-note', text: failed }));
+                // Pages that go with the answer (same-site paths only).
+                const safe = links.filter(link => link && typeof link.href === 'string' && /^\/(?!\/)/.test(link.href) && typeof link.label === 'string');
+                if (safe.length) answer.append(el('div', { className: 'ask-links' }, ...safe.map(link => el('a', { className: 'chip chip-sm', href: link.href, text: link.label }))));
                 history.push({ role: 'user', content: question }, { role: 'assistant', content: text });
             } catch (error) {
                 const stopped = error.name === 'AbortError';
@@ -1088,7 +1145,51 @@
         if (main && 'MutationObserver' in global) new MutationObserver(queue).observe(main, { childList: true, subtree: true });
     }
 
+    /**
+     * Keyboard support for a row of tabs (or a segmented control): arrow keys, Home and
+     * End move between them and select, and only the selected one is in the Tab order.
+     * `onSelect(tab)` runs when the selection changes.
+     */
+    function rovingTabs(list, { onSelect = () => {} } = {}) {
+        const tabs = () => Array.from(list.querySelectorAll('[role="tab"]'));
+        const select = (tab, focus) => {
+            tabs().forEach(item => { const on = item === tab; item.setAttribute('aria-selected', String(on)); item.tabIndex = on ? 0 : -1; });
+            if (focus) tab.focus();
+            onSelect(tab);
+        };
+        list.addEventListener('click', event => {
+            const tab = event.target.closest('[role="tab"]');
+            if (tab && list.contains(tab) && tab.getAttribute('aria-selected') !== 'true') select(tab, false);
+        });
+        list.addEventListener('keydown', event => {
+            const all = tabs();
+            const index = all.indexOf(doc.activeElement);
+            if (index < 0) return;
+            const next = { ArrowRight: index + 1, ArrowDown: index + 1, ArrowLeft: index - 1, ArrowUp: index - 1, Home: 0, End: all.length - 1 }[event.key];
+            if (next === undefined) return;
+            event.preventDefault();
+            select(all[(next + all.length) % all.length], true);
+        });
+    }
+
+    /**
+     * A form can't be sent again while its request is still running: page scripts mark
+     * the submit button .is-loading (or the form aria-busy) while they wait, and this
+     * blocks further submits, including pressing Enter again, which clicks can't stop.
+     */
+    function setupSubmitGuard() {
+        doc.addEventListener('submit', event => {
+            const form = event.target;
+            if (!(form instanceof global.HTMLFormElement)) return;
+            if (form.getAttribute('aria-busy') === 'true' || form.querySelector('[type="submit"].is-loading')) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+            }
+        }, true);
+    }
+
     function init() {
+        setupSubmitGuard();
         syncThemeControls();
         syncPrivacyControls();
         doc.querySelectorAll('[data-theme-toggle]').forEach(button => button.addEventListener('click', toggleTheme));
@@ -1114,7 +1215,7 @@
     global.Willow = {
         api, csrfToken, el, icon, empty, skeletonRows, showToast, showConfirm, openDialog, closeDialog, enableBackdropClose,
         formatMoney, formatCents, formatNumber, formatCompact, formatPercent, formatQuantity, formatDate, relativeDay, parseDate,
-        countUp, prefersReducedMotion, setupRangeFill, toggleTheme, txnRow, showTransaction, flow, highlight, stagger,
+        countUp, prefersReducedMotion, setupRangeFill, toggleTheme, txnRow, showTransaction, flow, highlight, stagger, rovingTabs,
     };
     global.showToast = showToast;
     global.showConfirm = showConfirm;

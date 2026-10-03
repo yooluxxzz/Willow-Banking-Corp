@@ -61,7 +61,7 @@ router.get('/users', requireAdmin, (req, res) => {
 
         if (search) {
             const safeSearch = search.replace(/[%_]/g, '\\$&');
-            conditions.push('(full_name LIKE ? OR email LIKE ? OR customer_id LIKE ?)');
+            conditions.push("(full_name LIKE ? ESCAPE '\\' OR email LIKE ? ESCAPE '\\' OR customer_id LIKE ? ESCAPE '\\')");
             params.push(`%${safeSearch}%`, `%${safeSearch}%`, `%${safeSearch}%`);
         }
         if (status) {

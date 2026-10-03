@@ -15,17 +15,17 @@
         if (form && form.elements.fromAccountId) {
             Array.from(form.elements.fromAccountId.options).forEach(option => currencyById.set(Number(option.value), option.dataset.currency));
         }
-        const label = (nickname, type, lastFour) => `${nickname || (type === 'savings' ? 'Savings' : 'Checking')} ••${lastFour}`;
+        const label = (nickname, type, purpose, lastFour) => `${nickname || (purpose === 'business' ? 'Business checking' : type === 'savings' ? 'Savings' : 'Checking')} ••${lastFour}`;
         const dateLabel = value => new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }).format(new Date(value));
 
         function row(transfer) {
-            const currency = currencyById.get(transfer.from_account_id) || 'USD';
+            const currency = transfer.currency || currencyById.get(transfer.from_account_id) || 'USD';
             const pending = transfer.status === 'pending';
             const item = W.el('li', { className: 'list-row' },
                 W.el('span', { className: 'icon-tile icon-tile-sm' }, W.icon(pending ? 'calendar' : transfer.status === 'completed' ? 'check-circle' : 'x-circle')),
                 W.el('span', { className: 'list-row-main' },
                     W.el('span', { className: 'list-row-title', text: transfer.description || 'Transfer between your accounts' }),
-                    W.el('span', { className: 'list-row-sub', text: `${label(transfer.from_nickname, transfer.from_type, transfer.from_last_four)} → ${label(transfer.to_nickname, transfer.to_type, transfer.to_last_four)} · ${dateLabel(transfer.scheduled_for)}` }),
+                    W.el('span', { className: 'list-row-sub', text: `${label(transfer.from_nickname, transfer.from_type, transfer.from_purpose, transfer.from_last_four)} → ${label(transfer.to_nickname, transfer.to_type, transfer.to_purpose, transfer.to_last_four)} · ${dateLabel(transfer.scheduled_for)}` }),
                     transfer.result_message && !pending ? W.el('span', { className: 'list-row-sub', text: transfer.result_message }) : null),
                 W.el('span', { className: 'list-row-end' },
                     W.el('strong', { 'data-private': '', text: W.formatCents(transfer.amount, currency) }),

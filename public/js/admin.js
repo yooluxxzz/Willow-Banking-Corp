@@ -47,7 +47,7 @@
                 return;
             }
             box.replaceChildren(W.el('div', { className: 'table-wrap' }, W.el('table', { className: 'table' },
-                W.el('thead', null, W.el('tr', null, ['Customer', 'Customer ID', 'Joined', 'Status', ''].map(label => W.el('th', { scope: 'col', text: label })))),
+                W.el('thead', null, W.el('tr', null, ['Customer', 'Customer ID', 'Joined', 'Status'].map(label => W.el('th', { scope: 'col', text: label })).concat(W.el('th', { scope: 'col' }, W.el('span', { className: 'visually-hidden', text: 'Actions' }))))),
                 W.el('tbody', null, data.users.map(user => {
                     const open = W.el('button', { type: 'button', className: 'btn btn-secondary btn-sm', text: 'Manage', 'aria-label': `Manage ${user.full_name}` });
                     open.addEventListener('click', () => openUser(user.id));

@@ -10,14 +10,26 @@
         </div>
         <button type="button" class="btn btn-ghost btn-icon" data-ask-close aria-label="Close Ask Willow"><%- icon('x', 'icon-md') %></button>
     </div>
+    <div class="ask-setup" data-ask-setup hidden>
+        <span class="ask-setup-art" aria-hidden="true"><%- icon('sparkle', 'icon-lg') %></span>
+        <h3>Turn on Ask Willow</h3>
+        <p>Ask Willow runs a language model on this computer through Ollama, so your questions and your records never leave it.</p>
+        <ol class="ask-setup-steps">
+            <li><span class="ask-setup-num" aria-hidden="true">1</span><span><strong>Install Ollama</strong> from <a class="text-link" href="https://ollama.com/download" target="_blank" rel="noopener">ollama.com/download</a> and start it.</span></li>
+            <li><span class="ask-setup-num" aria-hidden="true">2</span><span><strong>Download a model.</strong> In a terminal, run <code>ollama pull llama3.2</code> (about 2 GB).</span></li>
+            <li><span class="ask-setup-num" aria-hidden="true">3</span><span><strong>That’s it.</strong> Willow notices within about 30 seconds and this panel switches to the chat by itself.</span></li>
+        </ol>
+        <p class="ask-setup-status" data-ask-setup-status role="status"></p>
+        <button type="button" class="btn btn-secondary btn-sm" data-ask-recheck><%- icon('refresh', 'icon-sm') %> Check again</button>
+    </div>
     <div class="ask-thread" data-ask-thread aria-live="polite">
         <div class="ask-welcome" data-ask-welcome>
             <p class="ask-welcome-title">What would you like to know?</p>
-            <div class="ask-suggestions" role="list">
+            <ul class="ask-suggestions" role="list">
                 <% ['How much have I spent this month?', 'Am I on track with my budgets?', 'What is my net worth made of?', 'Which debt should I pay off first?', 'Summarize my last 10 transactions.', 'How is my business doing this month?'].forEach(prompt => { %>
-                <button type="button" class="chip" role="listitem" data-ask-prompt="<%= prompt %>"><%= prompt %></button>
+                <li><button type="button" class="chip" data-ask-prompt="<%= prompt %>"><%= prompt %></button></li>
                 <% }) %>
-            </div>
+            </ul>
         </div>
     </div>
     <form class="ask-form" data-ask-form>

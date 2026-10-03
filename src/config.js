@@ -46,6 +46,8 @@ const config = {
     // Empty: use the first model installed in Ollama.
     model: process.env.OLLAMA_MODEL || '',
     timeoutMs: parseInt(process.env.OLLAMA_TIMEOUT_MS, 10) || 120000,
+    // Context window requested from Ollama. Kept constant: changing it makes Ollama reload the model.
+    contextTokens: parseInt(process.env.OLLAMA_NUM_CTX, 10) || 8192,
   },
 
   // Only trust X-Forwarded-For when a reverse proxy is in front (TRUST_PROXY=1, 'loopback', …).

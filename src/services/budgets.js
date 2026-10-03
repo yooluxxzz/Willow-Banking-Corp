@@ -11,6 +11,7 @@ const { getDb } = require('../database');
 const { categorize, categoryMeta } = require('./categories');
 const { formatCurrency, parseCents } = require('../middleware/validation');
 const { createNotification } = require('./notification');
+const { ledgerRows, isSpending, total } = require('./spending');
 const { ValidationError } = require('../errors');
 
 const PERIODS = ['daily', 'weekly', 'monthly'];
@@ -59,20 +60,10 @@ function categoryLabel(scope, key) {
 }
 
 // ── Spending ─────────────────────────────────────────────────────────────
-/** Personal spending between two instants: debits that leave the customer's personal accounts. */
+/** Personal spending between two instants (the shared definition in ./spending, personal accounts only). */
 function personalSpending(userId, from, to, category = null) {
-    const rows = getDb().prepare(`SELECT t.amount, t.type, t.direction, t.description, t.category, t.reference, t.related_account_id,
-            (SELECT r.user_id FROM accounts r WHERE r.id = t.related_account_id) AS related_owner
-        FROM transactions t JOIN accounts a ON a.id = t.account_id
-        WHERE a.user_id = ? AND a.purpose = 'personal' AND COALESCE(t.currency, 'USD') = 'USD'
-          AND t.status = 'completed' AND t.direction = 'debit' AND t.created_at >= ? AND t.created_at < ?`).all(userId, sqlUtc(from), sqlUtc(to));
-    return rows.reduce((sum, row) => {
-        if (row.related_owner === userId) return sum; // between the customer's own accounts
-        if (row.category === 'investing' || /^CNV-/.test(row.reference)) return sum; // investing cash and conversions stay theirs
-        const key = categorize(row);
-        if (category && key !== category) return sum;
-        return sum + row.amount;
-    }, 0);
+    return total(ledgerRows(userId, sqlUtc(from), sqlUtc(to), { purpose: 'personal' })
+        .filter(row => isSpending(row, userId) && (!category || categorize(row) === category)));
 }
 
 function businessSpending(userId, fromDay, toDay, category = null) {

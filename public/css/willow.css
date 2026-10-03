@@ -2800,16 +2800,33 @@ dialog.modal[open]::backdrop {
     border: 1px solid var(--border);
     box-shadow: var(--shadow-lg);
     opacity: 0;
+    /* Hidden from keyboard and screen readers while closed; visibility flips after the fade. */
+    visibility: hidden;
     transform: translateY(-4px) scale(0.98);
     transform-origin: top right;
     pointer-events: none;
-    transition: opacity var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out);
+    transition: opacity var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out), visibility 0s linear var(--dur-2);
 }
 
 .menu.is-open {
     opacity: 1;
+    visibility: visible;
     transform: none;
     pointer-events: auto;
+    transition-delay: 0s;
+}
+
+/* Theme toggle: show the moon in light mode and the sun in dark mode (site header and app top bar). */
+.theme-icon-light {
+    display: none;
+}
+
+[data-theme="dark"] .theme-icon-dark {
+    display: none;
+}
+
+[data-theme="dark"] .theme-icon-light {
+    display: block;
 }
 
 .menu a,

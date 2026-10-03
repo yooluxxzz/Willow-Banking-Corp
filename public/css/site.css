@@ -188,18 +188,6 @@
     display: block;
 }
 
-.theme-icon-light {
-    display: none;
-}
-
-[data-theme="dark"] .theme-icon-dark {
-    display: none;
-}
-
-[data-theme="dark"] .theme-icon-light {
-    display: block;
-}
-
 /* Overlay variant: transparent over the cinematic hero until scrolled */
 .site-header[data-variant='overlay']:not(.is-scrolled):not(.is-menu-open) {
     color: #F4F2EB;

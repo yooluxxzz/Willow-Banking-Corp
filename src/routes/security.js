@@ -35,6 +35,8 @@ router.get('/overview', (req, res) => {
 });
 
 router.post('/2fa/setup', limiter, async (req, res) => {
+    // A guest has no password, so two-step verification could never be turned off again.
+    if (res.locals.user.is_guest) return res.status(400).json({ error: 'Save your own email and password in Settings before turning on two-step verification.', code: 'guest_profile' });
     try {
         const setup = twoFactor.beginSetup(req.session.userId, res.locals.user.email);
         const qrSvg = await QRCode.toString(setup.otpauthUrl, { type: 'svg', margin: 1, errorCorrectionLevel: 'M', color: { dark: '#0D2219', light: '#FFFFFF' } });

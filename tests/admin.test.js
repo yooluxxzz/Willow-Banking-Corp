@@ -147,6 +147,15 @@ describe('Admin & Authorization', () => {
             assert.equal(audit.body.logs.length, 1);
         });
 
+        it('treats % and _ in customer search as plain characters', async () => {
+            await registerAgent(supertest, app, { email: 'under_score@test.com', password: 'Password123', fullName: 'Under Score' });
+            await registerAgent(supertest, app, { email: 'underxscore@test.com', password: 'Password123', fullName: 'Under X Score' });
+            const exact = await adminAgent.get('/api/admin/users?search=under_score');
+            assert.deepEqual(exact.body.users.map(u => u.email), ['under_score@test.com'], '_ is not a wildcard');
+            const percent = await adminAgent.get('/api/admin/users?search=%25');
+            assert.equal(percent.body.users.length, 0, '% is not a wildcard');
+        });
+
         it('only offers audit filters for actions Willow really records', () => {
             const fs = require('node:fs');
             const path = require('node:path');

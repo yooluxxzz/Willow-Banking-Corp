@@ -118,7 +118,7 @@
 
     <aside class="col-stack" aria-label="Highlights">
         <section class="panel" aria-labelledby="insightsTitle">
-            <div class="panel-head"><h2 id="insightsTitle">Insights</h2><button type="button" class="btn btn-ghost btn-sm" data-ask-open<%= assistant && assistant.available ? '' : ' hidden' %>><%- icon('sparkle', 'icon-sm') %> Ask Willow</button></div>
+            <div class="panel-head"><h2 id="insightsTitle">Insights</h2><button type="button" class="btn btn-ghost btn-sm" data-ask-open<%= assistant && assistant.reason === 'disabled' ? ' hidden' : '' %>><%- icon('sparkle', 'icon-sm') %> Ask Willow</button></div>
             <% if (insights.length) { %>
             <div class="insight-list">
                 <% insights.slice(0, 3).forEach(item => { %>
@@ -171,7 +171,7 @@
             <% if (summary.scheduledTransfers.length) { %>
             <ul class="list-plain" role="list">
                 <% summary.scheduledTransfers.slice(0, 3).forEach(item => { %>
-                <li class="list-row"><span class="icon-tile icon-tile-sm"><%- icon('calendar') %></span><span class="list-row-main"><span class="list-row-title"><%= item.description || 'Scheduled transfer' %></span><span class="list-row-sub"><%= formatDate(item.scheduled_for) %> · to <%= item.to_nickname || '••' + item.to_last_four %></span></span><span class="list-row-end"><strong data-private><%= money(item.amount) %></strong></span></li>
+                <li class="list-row"><span class="icon-tile icon-tile-sm"><%- icon('calendar') %></span><span class="list-row-main"><span class="list-row-title"><%= item.description || 'Scheduled transfer' %></span><span class="list-row-sub"><%= formatDate(item.scheduled_for) %> · to <%= item.to_nickname || '••' + item.to_last_four %></span></span><span class="list-row-end"><strong data-private><%= money(item.amount, item.currency) %></strong></span></li>
                 <% }) %>
             </ul>
             <% } else { %>

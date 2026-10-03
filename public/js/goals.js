@@ -43,12 +43,13 @@
                 const value = Number(input.value.replace(/[,\s$]/g, ''));
                 if (!Number.isFinite(value) || value <= 0) { input.setAttribute('aria-invalid', 'true'); input.focus(); return; }
                 const next = Math.min(goal.target_cents, goal.current_cents + Math.round(value * 100));
+                quick.setAttribute('aria-busy', 'true'); // one update at a time
                 try {
                     const result = await W.api(`/api/goals/${goal.id}`, { method: 'PATCH', body: { currentAmount: (next / 100).toFixed(2) } });
                     Object.assign(goal, result.goal);
                     W.showToast(next >= goal.target_cents ? `“${goal.name}” reached its target.` : 'Progress updated.', 'success');
                     render();
-                } catch (err) { W.showToast(err.message, 'error'); }
+                } catch (err) { W.showToast(err.message, 'error'); } finally { quick.removeAttribute('aria-busy'); }
             });
             const edit = W.el('button', { type: 'button', className: 'btn btn-ghost btn-icon btn-sm', 'aria-label': `Edit ${goal.name}` }, W.icon('settings'));
             edit.addEventListener('click', () => open(goal));

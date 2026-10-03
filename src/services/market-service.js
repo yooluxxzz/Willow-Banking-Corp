@@ -19,7 +19,7 @@
  *
  * Disable with MARKET_SERVICE_AUTOSTART=false. Only local service URLs are managed.
  */
-const { spawn, spawnSync } = require('child_process');
+const { spawn, execFile } = require('child_process');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -94,18 +94,25 @@ async function healthy(timeoutMs = 1500) {
  * Finds a Python 3 interpreter that can import yfinance. Tries PYTHON, then
  * python3 and python, and on Windows the `py -3` launcher.
  */
-function findPython() {
+async function findPython() {
     const candidates = [
         process.env.PYTHON && [process.env.PYTHON, []],
         ['python3', []],
         ['python', []],
         process.platform === 'win32' && ['py', ['-3']],
     ].filter(Boolean);
+    // Runs asynchronously: importing yfinance (and pandas) can take a while on first use,
+    // and Willow keeps serving pages meanwhile.
+    const probe = (command, args) => new Promise(resolve => {
+        execFile(command, [...args, '-c', 'import sys; assert sys.version_info >= (3, 9); import yfinance; print(sys.version.split()[0])'], { timeout: 30000, windowsHide: true }, (error, stdout, stderr) => {
+            resolve({ ok: !error, stdout: String(stdout || ''), stderr: String(stderr || '') });
+        });
+    });
     let missing = null;
     for (const [command, args] of candidates) {
-        const probe = spawnSync(command, [...args, '-c', 'import sys; assert sys.version_info >= (3, 9); import yfinance; print(sys.version.split()[0])'], { encoding: 'utf8', timeout: 20000, windowsHide: true });
-        if (probe.status === 0) return { command, args, version: probe.stdout.trim() };
-        if (!missing && /No module named/.test(probe.stderr || '')) missing = { command, args, missing: 'yfinance' };
+        const result = await probe(command, args);
+        if (result.ok) return { command, args, version: result.stdout.trim() };
+        if (!missing && /No module named/.test(result.stderr)) missing = { command, args, missing: 'yfinance' };
     }
     return missing;
 }
@@ -171,7 +178,7 @@ async function start() {
         }
         return status();
     }
-    const python = findPython();
+    const python = await findPython();
     if (!python) {
         log('Python 3 was not found, so live market data uses the Yahoo chart fallback. Install Python 3.9+ to enable the yfinance service.');
         state.lastError = 'python_missing';

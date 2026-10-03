@@ -23,7 +23,8 @@ function allow(userId, now = Date.now()) {
 }
 
 router.get('/status', async (req, res) => {
-    const status = await assistant.getStatus();
+    // ?refresh=1 asks Ollama again now (the "Check again" button) instead of using the last answer.
+    const status = req.query.refresh === '1' ? await assistant.refreshStatus() : await assistant.getStatus();
     res.json({ available: status.available, model: status.available ? status.model : null, reason: status.reason });
 });
 
@@ -42,7 +43,7 @@ router.post('/chat', async (req, res) => {
     const send = payload => { if (!res.writableEnded) res.write(`${JSON.stringify(payload)}\n`); };
     try {
         await assistant.chat(userId, { question, history }, { onToken: delta => send({ delta }), signal: controller.signal });
-        send({ done: true, model: status.model });
+        send({ done: true, model: status.model, links: assistant.relatedLinks(question) });
     } catch (error) {
         if (!controller.signal.aborted) send({ error: error.message, code: error.code || null });
     }

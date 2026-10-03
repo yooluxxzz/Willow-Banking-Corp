@@ -51,8 +51,8 @@ router.get('/:id/activity', requireAuth, (req, res) => {
     const card = getCardById(Number(req.params.id), req.session.userId);
     if (!card) return res.status(404).json({ error: 'Card not found.' });
     const rows = getDb().prepare(`SELECT id, reference, type, amount, currency, direction, status, description, created_at, category, card_id
-        FROM transactions WHERE account_id = ? AND (card_id = ? OR (card_id IS NULL AND type IN ('payment', 'withdrawal') AND direction = 'debit'))
-        ORDER BY created_at DESC, id DESC LIMIT 12`).all(card.account_id, card.id);
+        FROM transactions WHERE account_id = ? AND type IN ('payment', 'withdrawal') AND direction = 'debit'
+        ORDER BY created_at DESC, id DESC LIMIT 12`).all(card.account_id);
     const { categorize, categoryMeta } = require('../services/categories');
     res.set('Cache-Control', 'no-store');
     res.json({ transactions: rows.map(row => ({ ...row, categoryKey: categorize(row), categoryLabel: categoryMeta(categorize(row)).label, categoryIcon: categoryMeta(categorize(row)).icon })) });

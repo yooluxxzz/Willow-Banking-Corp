@@ -17,6 +17,7 @@ function createApp({ sessionStore, sessionSecret = config.session.secret, cookie
     app.set('view engine', 'ejs');
     app.set('views', config.paths.views);
     app.disable('x-powered-by');
+    app.set('session cookie', cookieName); // so sign-out and expiry clear the right cookie
 
     app.use(express.static(config.paths.public, {
         maxAge: config.isDev ? 0 : '7d',

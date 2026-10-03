@@ -24,9 +24,11 @@
 
         function row(note) {
             const unread = !note.is_read;
-            const button = W.el('button', { type: 'button', className: `notification${unread ? ' is-unread' : ''}`, 'aria-label': `${note.title}${unread ? ', unread' : ''}` },
-                W.el('span', { className: 'icon-tile icon-tile-sm' }, W.icon(ICONS[note.type] || 'bell')),
+            // The visible text (title, message, time) is the accessible name; unread is announced first.
+            const button = W.el('button', { type: 'button', className: `notification${unread ? ' is-unread' : ''}` },
+                W.el('span', { className: 'icon-tile icon-tile-sm', 'aria-hidden': 'true' }, W.icon(ICONS[note.type] || 'bell')),
                 W.el('span', { className: 'notification-main' },
+                    unread ? W.el('span', { className: 'visually-hidden', text: 'Unread: ' }) : null,
                     W.el('strong', { text: note.title }),
                     W.el('span', { text: note.message }),
                     W.el('small', { text: `${W.relativeDay(note.created_at)} · ${W.formatDate(note.created_at, 'time')}` })),
@@ -66,11 +68,7 @@
             }
         }
 
-        doc.querySelectorAll('[data-filter]').forEach(tab => tab.addEventListener('click', () => {
-            filter = tab.dataset.filter;
-            doc.querySelectorAll('[data-filter]').forEach(item => { item.setAttribute('aria-selected', String(item === tab)); item.tabIndex = item === tab ? 0 : -1; });
-            load();
-        }));
+        W.rovingTabs(doc.querySelector('[role="tablist"]'), { onSelect: tab => { filter = tab.dataset.filter; load(); } });
         more.querySelector('[data-load-more]').addEventListener('click', () => { page += 1; load(false); });
         readAll.addEventListener('click', async () => {
             readAll.classList.add('is-loading');

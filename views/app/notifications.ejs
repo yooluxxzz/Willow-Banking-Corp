@@ -9,11 +9,11 @@
 </header>
 
 <div class="segmented mb-6" role="tablist" aria-label="Filter notifications">
-    <button type="button" role="tab" aria-selected="true" data-filter="all">All</button>
-    <button type="button" role="tab" aria-selected="false" data-filter="unread" tabindex="-1">Unread</button>
+    <button type="button" role="tab" aria-selected="true" aria-controls="notificationsPanel" data-filter="all">All</button>
+    <button type="button" role="tab" aria-selected="false" aria-controls="notificationsPanel" data-filter="unread" tabindex="-1">Unread</button>
 </div>
 
-<section class="panel" aria-labelledby="listTitle">
+<section class="panel" id="notificationsPanel" role="tabpanel" aria-labelledby="listTitle">
     <h2 class="visually-hidden" id="listTitle">Notification list</h2>
     <div data-notification-list aria-live="polite"></div>
     <div class="pagination" data-notification-more hidden><button type="button" data-load-more>Show more</button></div>

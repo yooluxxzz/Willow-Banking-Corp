@@ -11,7 +11,8 @@
         "test:python": "python3 -m unittest discover -s market-data-service/tests",
         "test:all": "npm test && npm run test:python",
         "db:save": "node scripts/db.js save",
-        "db:restore": "node scripts/db.js restore"
+        "db:restore": "node scripts/db.js restore",
+        "assistant:check": "node scripts/assistant-check.js"
     },
     "keywords": [
         "banking",

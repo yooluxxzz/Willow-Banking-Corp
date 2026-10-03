@@ -287,6 +287,7 @@
                 el('span', { className: 'list-row-main' }, el('span', { className: 'list-row-title', text: move.direction === 'in' ? `From ${move.account}` : `To ${move.account}` }), el('span', { className: 'list-row-sub', text: W.formatDate(move.createdAt) })),
                 el('span', { className: 'list-row-end' }, el('strong', { className: move.direction === 'in' ? 'positive' : '', 'data-private': '', text: `${move.direction === 'in' ? '+' : '−'}${W.formatCents(move.amountCents)}` }))))));
         } catch (error) {
+            cashInfo = null;
             box.replaceChildren(el('p', { className: 'muted text-sm', text: 'Cash movements couldn’t load.' }));
         }
     }
@@ -302,7 +303,9 @@
         const current = select.value;
         select.replaceChildren(...accounts.map(account => el('option', { value: account.id, text: direction === 'in' ? `${account.name} · ${W.formatCents(account.availableCents)} available` : account.name })));
         if (accounts.some(account => String(account.id) === current)) select.value = current;
-        if (!accounts.length) help.textContent = 'Open a US dollar account first.';
+        cashForm.querySelector('[data-cash-submit]').disabled = !cashInfo;
+        if (!cashInfo) help.textContent = 'Your accounts couldn’t be loaded just now. Close this and try again in a moment.';
+        else if (!accounts.length) help.textContent = 'Open a US dollar account first.';
         else if (direction === 'in') {
             const account = accounts.find(item => String(item.id) === select.value) || accounts[0];
             help.textContent = account.availableCents ? `Up to ${W.formatCents(account.availableCents)} from this account.` : 'This account has no money yet — add money to it first.';

@@ -42,7 +42,7 @@
             <div class="app-topbar-start">
                 <%- include('brand', { href: isAdmin ? '/admin' : '/dashboard', inverse: false, label: 'Willow home' }) %>
                 <% if (!isAdmin) { %>
-                <button type="button" class="ask-trigger" data-ask-open aria-haspopup="dialog" aria-controls="askPanel"<%= assistant && assistant.available ? '' : ' hidden' %>>
+                <button type="button" class="ask-trigger" data-ask-open aria-haspopup="dialog" aria-controls="askPanel"<%= assistant && assistant.reason === 'disabled' ? ' hidden' : '' %>>
                     <%- icon('sparkle', 'icon-md') %>
                     <span class="ask-trigger-text">Ask Willow about your money</span>
                     <span class="ask-trigger-keys" aria-hidden="true"><span class="kbd">⌘</span><span class="kbd">K</span></span>
@@ -51,7 +51,7 @@
             </div>
             <div class="app-topbar-actions">
                 <% if (!isAdmin) { %>
-                <button type="button" class="btn btn-ghost btn-icon ask-trigger-compact" data-ask-open aria-label="Ask Willow" aria-haspopup="dialog" aria-controls="askPanel"<%= assistant && assistant.available ? '' : ' hidden' %>><%- icon('sparkle', 'icon-md') %></button>
+                <button type="button" class="btn btn-ghost btn-icon ask-trigger-compact" data-ask-open aria-label="Ask Willow" aria-haspopup="dialog" aria-controls="askPanel"<%= assistant && assistant.reason === 'disabled' ? ' hidden' : '' %>><%- icon('sparkle', 'icon-md') %></button>
                 <button type="button" class="btn btn-ghost btn-icon" data-privacy-toggle aria-pressed="false" aria-label="Hide balances" title="Hide balances on screen"><%- icon('eye', 'icon-md privacy-icon-show') %><%- icon('eye-off', 'icon-md privacy-icon-hide') %></button>
                 <% } %>
                 <button type="button" class="btn btn-ghost btn-icon theme-toggle" data-theme-toggle aria-label="Switch to dark theme"><%- icon('moon', 'icon-md theme-icon-dark') %><%- icon('sun', 'icon-md theme-icon-light') %></button>

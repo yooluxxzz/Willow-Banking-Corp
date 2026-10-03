@@ -16,8 +16,9 @@ function parseAccountId(value) {
 function listScheduledTransfers(userId) {
     return getDb().prepare(`SELECT s.id, s.from_account_id, s.to_account_id, s.amount, s.description, s.scheduled_for,
             s.status, s.result_message, s.created_at, s.executed_at, s.transaction_reference,
-            fa.nickname AS from_nickname, fa.account_type AS from_type, substr(fa.account_number, -4) AS from_last_four,
-            ta.nickname AS to_nickname, ta.account_type AS to_type, substr(ta.account_number, -4) AS to_last_four
+            fa.nickname AS from_nickname, fa.account_type AS from_type, fa.purpose AS from_purpose, substr(fa.account_number, -4) AS from_last_four,
+            ta.nickname AS to_nickname, ta.account_type AS to_type, ta.purpose AS to_purpose, substr(ta.account_number, -4) AS to_last_four,
+            fa.currency AS currency
         FROM scheduled_transfers s
         JOIN accounts fa ON fa.id = s.from_account_id
         JOIN accounts ta ON ta.id = s.to_account_id
