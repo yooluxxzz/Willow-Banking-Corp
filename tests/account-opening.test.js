@@ -11,15 +11,16 @@ describe('Optional demo account opening',()=>{
  owner=await registerAgent(supertest,app,{email:'opening@example.test',password:'OpeningDemo123',fullName:'Opening Demo'});
  other=await registerAgent(supertest,app,{email:'opening-other@example.test',password:'OpeningDemo123',fullName:'Other Demo'});});
  after(()=>close());
- it('keeps existing personal accounts and renders the optional business selection',async()=>{
-  const accounts=(await owner.agent.get('/api/accounts')).body.accounts;assert.equal(accounts.length,2);assert.ok(accounts.every(a=>a.purpose==='personal'));
+ it('opens only one empty checking account at sign-up and renders the optional business selection',async()=>{
+  const accounts=(await owner.agent.get('/api/accounts')).body.accounts;assert.equal(accounts.length,1);assert.equal(accounts[0].account_type,'checking');assert.equal(accounts[0].balance,0);assert.ok(accounts.every(a=>a.purpose==='personal'));
+  assert.equal((await owner.agent.get('/api/cards')).body.cards.length,0,'no card until the customer orders one');
   const page=await owner.agent.get('/accounts/new?type=business');assert.equal(page.status,200);assert.match(page.text,/value="business" checked/);assert.match(page.text,/starts at \$0.00/);
   assert.match((await supertest(app).get('/accounts/new')).headers.location,/returnTo=/);
  });
  it('creates all three products at zero with correct labels, ownership and no automatic card',async()=>{
   for(const product of ['checking','savings','business']){const response=await request(owner,payload(product));assert.equal(response.status,201);const a=response.body.account;opened.push(a);assert.equal(a.balance,0);assert.equal(a.available_balance,0);assert.equal(a.purpose,product==='business'?'business':'personal');assert.equal(a.account_type,product==='savings'?'savings':'checking');assert.ok(!('opening_key' in a));assert.equal((await other.agent.get('/api/accounts/'+a.id)).status,404);}
   assert.equal(opened[2].displayName,'Business checking');assert.equal(new Set(opened.map(a=>a.account_number)).size,3);
-  assert.equal((await owner.agent.get('/api/cards')).body.cards.length,1);
+  assert.equal((await owner.agent.get('/api/cards')).body.cards.length,0);
   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE action='account_opened'").get().n,3);
  });
  it('reuses a request key for retries and rejects a changed request',async()=>{

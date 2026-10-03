@@ -244,7 +244,7 @@
                 const status = doc.querySelector('[data-demo-status]');
                 button.classList.add('is-loading');
                 button.disabled = true;
-                if (status) status.textContent = 'Preparing a demo profile with sample activity…';
+                if (status) status.textContent = 'Opening your guest profile…';
                 try {
                     const result = await global.Willow.api('/auth/demo', { method: 'POST', body: {} , timeout: 45000 });
                     global.location.href = result.redirect || '/dashboard';

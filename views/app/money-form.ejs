@@ -1,8 +1,9 @@
 <%
   const deposit = mode === 'deposit';
   const copy = deposit
-    ? { label: 'Add money', heading: 'Add demo money', sub: 'Top up an account with simulated funds. No card or bank is charged.', action: 'Add money', done: 'Money added', limit: 'Up to $10,000 a day per account (scaled for other currencies).' }
-    : { label: 'Withdraw', heading: 'Withdraw', sub: 'Take simulated money out of an account. No cash is dispensed.', action: 'Withdraw', done: 'Withdrawal complete', limit: 'Daily withdrawal limits apply per account.' };
+    ? { label: 'Add money', heading: 'Add money', sub: 'Record money coming into an account, like a paycheck. In this demo no card or bank is charged.', action: 'Add money', done: 'Money added', limit: 'Up to $10,000 a day per account (scaled for other currencies).' }
+    : { label: 'Withdraw or pay', heading: 'Withdraw or pay', sub: 'Take money out of an account — cash, or a payment you made. Choose what it was for so your budgets stay accurate.', action: 'Withdraw', done: 'Withdrawal complete', limit: 'Daily withdrawal limits apply per account.' };
+  const spendCategories = [['', 'Choose a category'], ['groceries', 'Groceries'], ['dining', 'Dining'], ['transport', 'Transport'], ['housing', 'Housing'], ['bills', 'Bills & utilities'], ['shopping', 'Shopping'], ['entertainment', 'Entertainment'], ['health', 'Health'], ['travel', 'Travel'], ['cash', 'Cash'], ['other', 'Other']];
   const presets = [50, 100, 250, 500];
 %><%- include('../partials/app-start', { css: [] }) %>
 
@@ -41,6 +42,13 @@
                 <p class="field-help" id="amountHelp"><%= copy.limit %></p>
                 <p class="field-error" id="amountError" hidden></p>
             </div>
+            <% if (!deposit) { %>
+            <div class="field">
+                <label for="category">What was it for?</label>
+                <select class="select" id="category" name="category"><% spendCategories.forEach(([value, label]) => { %><option value="<%= value %>"><%= label %></option><% }) %></select>
+                <p class="field-help">Counts toward your budgets for this category.</p>
+            </div>
+            <% } %>
             <div class="field">
                 <label for="description">Note <span class="optional">· optional</span></label>
                 <input class="input" id="description" name="description" maxlength="100" placeholder="<%= deposit ? 'e.g. Paycheck' : 'e.g. Cash for the market' %>">
@@ -54,9 +62,10 @@
             <dl class="dl-rows mt-6">
                 <div><dt><%= deposit ? 'Into' : 'From' %></dt><dd data-review-account></dd></div>
                 <div><dt>Note</dt><dd data-review-note></dd></div>
+                <% if (!deposit) { %><div><dt>Category</dt><dd data-review-category></dd></div><% } %>
                 <div><dt>When</dt><dd>Now</dd></div>
             </dl>
-            <div class="notice notice-demo mt-6"><%- icon('info') %><div><%= deposit ? 'These are simulated funds. No card, bank or payment method is charged.' : 'This is a simulated withdrawal. No cash is dispensed and no real money moves.' %></div></div>
+            <div class="notice notice-demo mt-6"><%- icon('info') %><div><%= deposit ? 'Willow is a demonstration bank: no card, bank or payment method is charged.' : 'Willow is a demonstration bank: no cash is dispensed and no money leaves for a real bank.' %></div></div>
             <p class="field-error mt-4" data-submit-error role="alert" tabindex="-1" hidden></p>
             <div class="flow-actions"><button type="button" class="btn btn-ghost" data-flow-back><%- icon('arrow-left', 'icon-sm') %> Edit</button><button type="submit" class="btn btn-primary btn-lg"><%= copy.action %></button></div>
         </section>

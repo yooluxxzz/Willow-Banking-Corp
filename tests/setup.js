@@ -73,4 +73,20 @@ async function registerAgent(supertest, app, userData) {
     return { agent, csrfToken: newCsrf, regRes };
 }
 
-module.exports = { createTestApp, loginAgent, registerAgent, csrfFrom, root: path.resolve(__dirname, '..') };
+/** Opens an account the way a customer does (sign-up opens only checking). */
+async function openAccount(agent, csrfToken, product = 'savings', extra = {}) {
+    const { randomUUID } = require('crypto');
+    const res = await agent.post('/api/accounts').set('X-CSRF-Token', csrfToken).set('Accept', 'application/json')
+        .send({ product, demoAcknowledged: true, requestKey: randomUUID(), ...extra });
+    if (res.status !== 201 && res.status !== 200) throw new Error(`openAccount failed: ${res.status} ${JSON.stringify(res.body)}`);
+    return res.body.account;
+}
+
+/** Orders a card for an account (no card is issued automatically). */
+async function orderCard(agent, csrfToken, accountId, form = 'physical') {
+    const res = await agent.post('/api/cards').set('X-CSRF-Token', csrfToken).set('Accept', 'application/json').send({ accountId, form });
+    if (res.status !== 201) throw new Error(`orderCard failed: ${res.status} ${JSON.stringify(res.body)}`);
+    return res.body.card;
+}
+
+module.exports = { createTestApp, loginAgent, registerAgent, openAccount, orderCard, csrfFrom, root: path.resolve(__dirname, '..') };

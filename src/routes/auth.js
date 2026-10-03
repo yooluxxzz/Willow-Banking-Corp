@@ -13,7 +13,7 @@ const { sessionMetadata } = require('../services/sessions');
 const { safeReturnTo } = require('../services/sign-in');
 const twoFactor = require('../services/two-factor');
 const { consumeCode } = require('../services/recovery');
-const { createGuestProfile } = require('../services/demo-data');
+const { createGuestProfile } = require('../services/guests');
 
 const router = express.Router();
 
@@ -65,7 +65,7 @@ async function establishSession(req, user, returnTo) {
 
 router.post('/register', authLimiter, async (req, res) => {
     try {
-        const { email, password, fullName, phone, country, accountType, sampleData } = req.body;
+        const { email, password, fullName, phone, country, accountType } = req.body;
         if (accountType !== undefined && !['personal', 'business'].includes(accountType)) {
             return res.status(400).json({ error: 'Choose a personal or business profile.' });
         }
@@ -98,22 +98,13 @@ router.post('/register', authLimiter, async (req, res) => {
             metadata: { customerId: result.customerId, accountType: accountType || 'personal' },
         });
 
-        let sample = null;
-        if (sampleData === true) {
-            try {
-                sample = await require('../services/demo-data').loadSampleData(result.userId, { business: accountType === 'business' });
-            } catch (error) {
-                console.error('[Auth] Sample data error:', error.message);
-            }
-        }
-
         try {
             await save(req);
         } catch (err) {
             console.error('[Auth] Session save error after registration:', err.message);
             return res.status(500).json({ error: 'Account created, but sign-in failed. Please sign in.' });
         }
-        res.json({ success: true, redirect: '/dashboard?welcome=1', customerId: result.customerId, sampleData: Boolean(sample) });
+        res.json({ success: true, redirect: '/dashboard?welcome=1', customerId: result.customerId });
     } catch (err) {
         console.error('[Auth] Registration error:', err.message);
         res.status(500).json({ error: 'Registration failed. Please try again.' });
@@ -259,7 +250,7 @@ router.post('/claim-guest', authLimiter, async (req, res) => {
         if (!user || !user.is_guest) return res.status(400).json({ error: 'This profile already has its own sign-in details.' });
         const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
         const { newPassword } = req.body;
-        if (!validateEmail(email) || /@(demo|community)\.willow\.test$/.test(email)) return res.status(400).json({ error: 'Enter a valid email address you can sign in with.' });
+        if (!validateEmail(email) || /@(demo|community|guest)\.willow\.test$/i.test(email)) return res.status(400).json({ error: 'Enter a valid email address you can sign in with.' });
         if (!validatePassword(newPassword)) return res.status(400).json({ error: 'Password must be at least 8 characters with one uppercase letter, one lowercase letter, and one number.' });
         if (db.prepare('SELECT id FROM users WHERE email = ? AND id != ?').get(email, user.id)) return res.status(400).json({ error: 'An account with this email already exists.' });
         const hash = await bcrypt.hash(newPassword, config.bcryptRounds);

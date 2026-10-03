@@ -62,7 +62,7 @@ const articles = [
                     'Whichever you choose, remember that diversification can reduce the damage from any one company performing badly, but it does not remove market risk. When markets fall broadly, diversified funds fall too.',
                     'A few questions help clarify what you are actually buying. What does it hold, and how concentrated is it? What does it cost each year? How easily can you sell it? And how would you feel if its value dropped significantly in a short time?',
                     'It also helps to think about time. Money you may need in the next year or two is usually poorly suited to investments that can fall sharply, while money set aside for many years has more time to recover from downturns.',
-                    'In the Willow demo, you can explore a curated list of stocks, ETFs and funds with delayed market data and practice with simulated orders using demo cash. It is a low-pressure way to see how each type behaves, with no real money at stake. This guide is general information, not financial advice.',
+                    'In the Willow demo, you can explore a curated list of stocks, ETFs and funds with delayed market data and practice with simulated orders using cash you move in from your own accounts. It is a low-pressure way to see how each type behaves, with no real money at stake. This guide is general information, not financial advice.',
                 ],
             },
         ],
@@ -189,7 +189,7 @@ const articles = [
             {
                 heading: 'Practicing without real exposure',
                 paragraphs: [
-                    'In the Willow demo, you can follow six major cryptoassets with market data and price charts, place simulated trades with demo portfolio cash and send units to other Willow demo profiles. There is no blockchain, no keys and no real money involved, which makes it a safe place to see how volatility feels before making any real decisions.',
+                    'In the Willow demo, you can follow six major cryptoassets with market data and price charts, place simulated trades with your investing cash and send units to other Willow profiles. There is no blockchain, no keys and no real money involved, which makes it a safe place to see how volatility feels before making any real decisions.',
                     'Pay attention to how simulated gains and losses make you feel, not just to the numbers. That reaction is often the most useful thing a practice portfolio can teach.',
                     'This guide is general information, not financial advice.',
                 ],
@@ -714,11 +714,11 @@ const articles = [
                 ],
             },
             {
-                heading: 'How Willow Hub approaches it',
+                heading: 'How Willow approaches it',
                 paragraphs: [
-                    'In the Willow demo, Willow Hub brings your demo bank balances, simulated portfolio value and simulated crypto value together into a single net worth. It shows money movement across income, expenses, savings and investments, groups spending into categories inferred from transaction descriptions and displays your goals alongside.',
-                    'Ask Willow can answer questions such as how much you spent this month or what your portfolio allocation is, using only your own demo data, and it links you to the relevant section. It offers information rather than advice, and it does not make predictions or recommendations. Everything in the Hub is based on simulated activity.',
-                    'Because the picture is built from demo data, it is a safe way to explore how these views work, and what questions they can answer, before you look at your real finances the same way.',
+                    'In Willow, the Net worth page brings your account balances, your investing and crypto, and the assets and debts you record together into a single figure. It shows money movement across income, expenses, savings and investments, groups spending into categories inferred from transaction descriptions and displays your goals alongside.',
+                    'If you run Ollama on the same computer, Ask Willow can answer questions such as how much you spent this month or which debt costs you most, using only your own records. It offers information rather than advice and does not make predictions or recommendations.',
+                    'Because the picture is built only from what you record, it is a safe way to explore how these views work, and what questions they can answer, before you look at your real finances the same way.',
                 ],
             },
         ],

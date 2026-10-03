@@ -4,7 +4,7 @@
     ['alertTransactions', 'Payments and transfers', 'Money in and out of your accounts'],
     ['alertCards', 'Card activity', 'Freezes, new cards and card payments'],
     ['alertSecurity', 'Security', 'Sign-ins, password and verification changes'],
-    ['alertMarkets', 'Markets', 'Updates about your demo portfolio and watchlist'],
+    ['alertMarkets', 'Markets', 'Updates about your portfolio and watchlist'],
     ['alertProductNews', 'Willow news', 'New features in the demo'],
   ];
 %><%- include('../partials/app-start', { css: [] }) %>
@@ -115,13 +115,6 @@
             <button type="button" role="radio" aria-checked="false" data-theme-value="dark"><%- icon('moon', 'icon-sm') %> Dark</button>
         </div>
     </section>
-
-    <% if (user.role !== 'admin' && !prefs.sampleDataLoadedAt) { %>
-    <section class="settings-section" aria-labelledby="sampleTitle">
-        <div class="settings-section-intro"><h2 id="sampleTitle">Sample activity</h2><p>Fill your profile with a few months of realistic demo activity.</p></div>
-        <div><button type="button" class="btn btn-secondary" data-load-sample><%- icon('sparkle', 'icon-sm') %> Add sample activity</button></div>
-    </section>
-    <% } %>
 
     <section class="settings-section" aria-labelledby="signOutTitle">
         <div class="settings-section-intro"><h2 id="signOutTitle">Sign out</h2><p>Sign out of Willow on this device.</p></div>

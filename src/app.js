@@ -77,9 +77,12 @@ function createApp({ sessionStore, sessionSecret = config.session.secret, cookie
     app.use('/api/preferences', require('./routes/preferences'));
     app.use('/api/security', require('./routes/security'));
     app.use('/api/business', require('./routes/business'));
+    app.use('/api/budgets', require('./routes/budgets'));
+    app.use('/api/assistant', require('./routes/assistant'));
+    app.use('/api/networth', require('./routes/networth').worth);
+    app.use('/api/debts', require('./routes/networth').debts);
     app.use('/api/loans', require('./routes/loans'));
     app.use('/api/support', require('./routes/support'));
-    app.use('/api/demo', require('./routes/demo'));
     app.use('/api/admin', require('./routes/admin'));
     app.use('/health', require('./routes/health'));
 

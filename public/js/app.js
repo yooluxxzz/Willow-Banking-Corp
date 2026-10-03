@@ -126,6 +126,8 @@
         if (!value) return null;
         if (value instanceof Date) return value;
         const text = String(value);
+        const day = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+        if (day) return new Date(Number(day[1]), Number(day[2]) - 1, Number(day[3])); // a calendar day, in local time
         const date = new Date(/Z$|[+-]\d\d:?\d\d$/.test(text) ? text : text.replace(' ', 'T') + 'Z');
         return Number.isNaN(date.getTime()) ? null : date;
     }
@@ -188,10 +190,11 @@
         return svg;
     }
 
-    function empty({ iconName = 'info', title, text, action, error = false, compact = false }) {
+    /** Empty state. `level` keeps the heading in order: 2 when it sits directly under the page title. */
+    function empty({ iconName = 'info', title, text, action, error = false, compact = false, level = 3 }) {
         return el('div', { className: `empty${error ? ' is-error' : ''}${compact ? ' is-compact' : ''}` },
             el('div', { className: 'empty-art' }, icon(iconName)),
-            el('h3', { text: title }),
+            el(`h${level}`, { text: title }),
             text ? el('p', { text }) : null,
             action ? el(action.href ? 'a' : 'button', { className: `btn ${action.primary === false ? 'btn-secondary' : 'btn-primary'} btn-sm`, href: action.href, type: action.href ? null : 'button', onclick: action.onClick, text: action.label }) : null);
     }
@@ -477,6 +480,47 @@
         targets.forEach(target => observer.observe(target));
     }
 
+    /**
+     * Draws the eye to something new or changed: a soft glow fades in, holds,
+     * then fades out (about 2.4s). Skipped for reduced motion.
+     */
+    function highlight(node, { scroll = false } = {}) {
+        if (!node || prefersReducedMotion()) return;
+        node.classList.remove('is-attention');
+        void node.offsetWidth; // restart the animation if it is already running
+        node.classList.add('is-attention');
+        node.addEventListener('animationend', () => node.classList.remove('is-attention'), { once: true });
+        if (scroll && node.scrollIntoView) node.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+
+    /** Fades children of `container` in one after another. */
+    function stagger(container, { max = 12 } = {}) {
+        if (!container || prefersReducedMotion()) return;
+        Array.from(container.children).forEach((child, index) => child.style.setProperty('--i', String(Math.min(index, max))));
+        container.classList.remove('stagger-in');
+        void container.offsetWidth;
+        container.classList.add('stagger-in');
+        container.addEventListener('animationend', event => { if (event.target.parentElement === container && event.target === container.lastElementChild) container.classList.remove('stagger-in'); });
+    }
+
+    /** Every app page heading carries its section's symbol, taken from the active navigation item. */
+    function setupPageIcon() {
+        const copy = doc.querySelector('[data-app] .page-head .page-head-copy');
+        const symbol = doc.querySelector('.app-sidebar .app-nav-link[aria-current="page"] svg');
+        if (!copy || !symbol || copy.querySelector('.page-head-icon')) return;
+        const tile = el('span', { className: 'page-head-icon', 'aria-hidden': 'true' });
+        tile.append(symbol.cloneNode(true));
+        copy.prepend(tile);
+    }
+
+    /** App pages fade in section by section; one marked element per page gets a moment of attention. */
+    function setupAttention() {
+        const main = doc.querySelector('[data-app] .app-content');
+        if (main) stagger(main, { max: 8 });
+        const focus = doc.querySelector('[data-attention]');
+        if (focus) global.setTimeout(() => highlight(focus), 650);
+    }
+
     /** Animates a number into an element. Respects reduced motion. */
     function countUp(node, to, format, duration = 900) {
         if (!node) return;
@@ -514,102 +558,154 @@
         nodes.forEach(node => observer.observe(node));
     }
 
-    // ── Ask Willow (financial intelligence) ─────────────────────────────
-    function setupAskWillow() {
+    // ── Assistant (local model via Ollama) ─────────────────────────────
+    /** Renders the model's light markdown (paragraphs, "-" / "1." lists, **bold**) as safe DOM. */
+    function renderRichText(text) {
+        const frag = doc.createDocumentFragment();
+        const inline = line => {
+            const parts = String(line).split(/(\*\*[^*]+\*\*)/g).filter(Boolean);
+            return parts.map(part => (/^\*\*[^*]+\*\*$/.test(part) ? el('strong', { text: part.slice(2, -2) }) : doc.createTextNode(part.replace(/`/g, ''))));
+        };
+        let list = null;
+        String(text).split(/\n/).forEach(raw => {
+            const line = raw.trim();
+            const bullet = /^([-*•]|\d+[.)])\s+(.*)$/.exec(line);
+            if (bullet) {
+                const ordered = /^\d/.test(bullet[1]);
+                if (!list || list.tagName !== (ordered ? 'OL' : 'UL')) { list = el(ordered ? 'ol' : 'ul'); frag.append(list); }
+                list.append(el('li', null, ...inline(bullet[2])));
+                return;
+            }
+            list = null;
+            if (!line) return;
+            frag.append(el('p', null, ...inline(line.replace(/^#+\s*/, ''))));
+        });
+        return frag;
+    }
+
+    function setupAssistant() {
         const panel = doc.querySelector('[data-ask-panel]');
+        const triggers = Array.from(doc.querySelectorAll('[data-ask-open]'));
         if (!panel) return;
         const thread = panel.querySelector('[data-ask-thread]');
         const form = panel.querySelector('[data-ask-form]');
-        const input = form.querySelector('input');
-        let busy = false;
+        const input = form.querySelector('textarea, input');
+        const send = form.querySelector('[data-ask-send]');
+        const stop = form.querySelector('[data-ask-stop]');
+        const modelLabel = panel.querySelector('[data-ask-model]');
+        const history = [];
+        let controller = null;
 
-        const open = (question) => {
+        const setAvailable = (available, model) => {
+            triggers.forEach(button => { button.hidden = !available; });
+            if (modelLabel && model) modelLabel.textContent = model;
+            if (!available && panel.open) closeDialog(panel);
+        };
+        // The server renders triggers from its last check; confirm on load (quietly).
+        fetch('/api/assistant/status', { headers: { Accept: 'application/json', 'X-Willow-Passive': '1' }, credentials: 'same-origin' })
+            .then(response => (response.ok ? response.json() : null))
+            .then(status => { if (status) setAvailable(status.available, status.model); })
+            .catch(() => {});
+
+        const open = question => {
+            if (triggers.length && triggers.every(button => button.hidden)) return;
             openDialog(panel);
             setTimeout(() => input.focus(), 60);
             if (question) ask(question);
         };
-        doc.querySelectorAll('[data-ask-open]').forEach(button => button.addEventListener('click', () => open(button.dataset.askQuestion)));
+        triggers.forEach(button => button.addEventListener('click', () => open(button.dataset.askQuestion)));
         panel.querySelectorAll('[data-ask-close]').forEach(button => button.addEventListener('click', () => closeDialog(panel)));
         enableBackdropClose(panel);
         doc.addEventListener('keydown', event => {
+            if (!triggers.some(button => !button.hidden)) return;
             const typing = /input|textarea|select/i.test((event.target && event.target.tagName) || '') || (event.target && event.target.isContentEditable);
             if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); panel.open ? closeDialog(panel) : open(); }
             else if (event.key === '/' && !typing && !panel.open) { event.preventDefault(); open(); }
         });
         panel.querySelectorAll('[data-ask-prompt]').forEach(button => button.addEventListener('click', () => ask(button.dataset.askPrompt)));
+        input.addEventListener('keydown', event => {
+            if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); form.requestSubmit(); }
+        });
         form.addEventListener('submit', event => {
             event.preventDefault();
             const question = input.value.trim();
             if (question) ask(question);
         });
+        stop.addEventListener('click', () => { if (controller) controller.abort(); });
         doc.addEventListener('willow:ask', event => open(event.detail && event.detail.question));
 
+        const scroll = () => { thread.scrollTop = thread.scrollHeight; };
+        const busy = on => { send.hidden = on; stop.hidden = !on; input.disabled = on; };
+
         async function ask(question) {
-            if (busy) return;
-            busy = true;
+            if (controller) return;
             const welcome = panel.querySelector('[data-ask-welcome]');
             if (welcome) welcome.hidden = true;
             thread.append(el('div', { className: 'ask-message is-user', text: question }));
-            const thinking = el('div', { className: 'ask-thinking', 'aria-label': 'Willow is checking your data' }, el('span'), el('span'), el('span'));
-            thread.append(thinking);
-            thread.scrollTop = thread.scrollHeight;
+            const answer = el('div', { className: 'ask-message is-answer', 'aria-busy': 'true' });
+            const thinking = el('div', { className: 'ask-thinking', 'aria-label': 'Thinking' }, el('span'), el('span'), el('span'));
+            answer.append(thinking);
+            thread.append(answer);
             input.value = '';
+            scroll();
+            controller = new AbortController();
+            busy(true);
+            let text = '';
+            let failed = null;
             try {
-                const result = await api('/api/hub/ask', { method: 'POST', body: { question } });
-                thinking.replaceWith(renderAnswer(result));
-            } catch (error) {
-                thinking.replaceWith(el('div', { className: 'ask-message is-answer' },
-                    el('p', { className: 'ask-answer-lead', text: error.sessionExpired ? 'Your session ended. Sign in again to keep asking questions.' : (error.message || 'Willow couldn’t answer right now.') })));
-            } finally {
-                busy = false;
-                thread.scrollTop = thread.scrollHeight;
-            }
-        }
-
-        function renderAnswer(result) {
-            const box = el('div', { className: 'ask-message is-answer' }, el('p', { className: 'ask-answer-lead', text: result.answer }));
-            if (result.figure) box.append(el('p', { className: 'ask-answer-figure', 'data-private': '', text: result.figure }));
-            if (result.chart && global.WillowCharts) {
-                const holder = el('div', { className: 'ask-answer-section' });
-                if (result.chart.title) holder.append(el('h3', { text: result.chart.title }));
-                const target = el('div');
-                holder.append(target);
-                box.append(holder);
-                requestAnimationFrame(() => {
-                    if (result.chart.type === 'donut') global.WillowCharts.donut(target, result.chart.series, { size: 150, currency: result.chart.currency, legend: true });
-                    else global.WillowCharts.bars(target, result.chart.series, { currency: result.chart.currency });
+                const response = await fetch('/api/assistant/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Accept: 'application/x-ndjson', 'X-CSRF-Token': csrfToken() },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ question, history: history.slice(-10) }),
+                    signal: controller.signal,
                 });
+                if (!response.ok) {
+                    const data = await response.json().catch(() => ({}));
+                    if (data.code === 'assistant_unavailable') setAvailable(false);
+                    if (response.status === 401) redirectToSignIn(data.code === 'session_timeout' ? 'session_timeout' : 'expired');
+                    throw new Error(data.error || 'The assistant couldn’t answer right now.');
+                }
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                let frame = 0;
+                const paint = () => { frame = 0; answer.replaceChildren(renderRichText(text)); scroll(); };
+                for (;;) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    let index;
+                    while ((index = buffer.indexOf('\n')) >= 0) {
+                        const line = buffer.slice(0, index).trim();
+                        buffer = buffer.slice(index + 1);
+                        if (!line) continue;
+                        const event = JSON.parse(line);
+                        if (event.delta) { text += event.delta; if (!frame) frame = requestAnimationFrame(paint); }
+                        if (event.error) failed = event.error;
+                    }
+                }
+                if (frame) cancelAnimationFrame(frame);
+                if (failed && !text) throw new Error(failed);
+                answer.replaceChildren(renderRichText(text || 'I don’t have an answer for that.'));
+                if (failed) answer.append(el('p', { className: 'ask-note', text: failed }));
+                history.push({ role: 'user', content: question }, { role: 'assistant', content: text });
+            } catch (error) {
+                const stopped = error.name === 'AbortError';
+                if (stopped && text) {
+                    answer.replaceChildren(renderRichText(text), el('p', { className: 'ask-note', text: 'Stopped.' }));
+                    history.push({ role: 'user', content: question }, { role: 'assistant', content: text });
+                } else {
+                    answer.classList.add('is-error');
+                    answer.replaceChildren(el('p', { text: stopped ? 'Stopped.' : (error.message || 'The assistant couldn’t answer right now.') }));
+                }
+            } finally {
+                answer.removeAttribute('aria-busy');
+                controller = null;
+                busy(false);
+                input.focus();
+                scroll();
             }
-            if (Array.isArray(result.accounts) && result.accounts.length) {
-                const section = el('div', { className: 'ask-answer-section' }, el('h3', { text: 'Relevant accounts' }));
-                result.accounts.slice(0, 5).forEach(account => section.append(
-                    el('a', { className: 'list-row', href: account.href || '/accounts' },
-                        el('span', { className: 'list-row-main' }, el('span', { className: 'list-row-title', text: account.name }), el('span', { className: 'list-row-sub', text: account.detail || '' })),
-                        el('span', { className: 'list-row-end' }, el('strong', { 'data-private': '', text: account.balance })))));
-                box.append(section);
-            }
-            if (Array.isArray(result.transactions) && result.transactions.length) {
-                const section = el('div', { className: 'ask-answer-section' }, el('h3', { text: result.transactionsTitle || 'Transactions' }));
-                result.transactions.slice(0, 5).forEach(txn => section.append(
-                    el('div', { className: 'list-row' },
-                        el('span', { className: 'list-row-main' }, el('span', { className: 'list-row-title', text: txn.description }), el('span', { className: 'list-row-sub', text: txn.detail || '' })),
-                        el('span', { className: 'list-row-end' }, el('strong', { 'data-private': '', className: txn.direction === 'credit' ? 'positive' : '', text: txn.amount })))));
-                box.append(section);
-            }
-            if (Array.isArray(result.items) && result.items.length) {
-                const section = el('div', { className: 'ask-answer-section' }, result.itemsTitle ? el('h3', { text: result.itemsTitle }) : null);
-                result.items.slice(0, 6).forEach(item => section.append(
-                    el('div', { className: 'list-row' },
-                        el('span', { className: 'list-row-main' }, el('span', { className: 'list-row-title', text: item.label }), item.detail ? el('span', { className: 'list-row-sub', text: item.detail }) : null),
-                        item.value ? el('span', { className: 'list-row-end' }, el('strong', { 'data-private': '', text: item.value })) : null)));
-                box.append(section);
-            }
-            if (Array.isArray(result.links) && result.links.length) {
-                const links = el('div', { className: 'ask-answer-links' });
-                result.links.forEach(link => links.append(el('a', { href: link.href }, link.label, icon('arrow-right', 'icon-sm'))));
-                box.append(links);
-            }
-            return box;
         }
     }
 
@@ -865,19 +961,21 @@
         setupAppTopbar();
         setupReveals();
         setupCountUps();
-        setupAskWillow();
+        setupAssistant();
         setupPasswordToggles();
         setupRangeFill();
         setupTransactionDetails();
         setupLocalDetails();
         setupIdleTimeout();
         setupScrollRegions();
+        setupPageIcon();
+        setupAttention();
     }
 
     global.Willow = {
         api, csrfToken, el, icon, empty, skeletonRows, showToast, showConfirm, openDialog, closeDialog, enableBackdropClose,
         formatMoney, formatCents, formatNumber, formatCompact, formatPercent, formatQuantity, formatDate, relativeDay, parseDate,
-        countUp, prefersReducedMotion, setupRangeFill, toggleTheme, txnRow, showTransaction, flow,
+        countUp, prefersReducedMotion, setupRangeFill, toggleTheme, txnRow, showTransaction, flow, highlight, stagger,
     };
     global.showToast = showToast;
     global.showConfirm = showConfirm;

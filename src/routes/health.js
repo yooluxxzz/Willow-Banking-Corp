@@ -31,6 +31,8 @@ router.get('/', (req, res) => {
                 heapTotal: `${Math.round(mem.heapTotal / 1024 / 1024)}MB`,
             },
             nodeVersion: process.version,
+            marketData: { ...require('../services/market-data').getStatus(), service: require('../services/market-service').status() },
+            assistant: (({ available, model, reason }) => ({ available, model, reason }))(require('../services/assistant').cachedStatus()),
         });
     } catch (err) {
         res.status(503).json({

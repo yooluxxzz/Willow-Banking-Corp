@@ -167,7 +167,6 @@
         emailInput.addEventListener('input', () => {
             if (state.recipient && !state.recipient.payeeId) { state.recipient = null; match.hidden = true; saveRow.hidden = true; updateRecipientNext(); }
         });
-        form.querySelectorAll('[data-suggest]').forEach(button => button.addEventListener('click', () => { emailInput.value = button.dataset.suggest; lookup(); }));
         const search = form.querySelector('[data-payee-search]');
         if (search) search.addEventListener('input', () => renderPayees(search.value));
 

@@ -9,26 +9,26 @@
                         <tr><td><strong>Cards</strong></td><td>Freeze and control settings stored on your profile</td><td>Card numbers, wallets and every card payment</td></tr>
                         <tr><td><strong>Payments</strong></td><td>Transfers between Willow profiles update both ledgers</td><td>Nothing reaches a bank, card network or payment rail</td></tr>
                         <tr><td><strong>Currencies</strong></td><td>Rates derived from delayed market data when available</td><td>Every conversion</td></tr>
-                        <tr><td><strong>Investing and crypto</strong></td><td>Delayed prices, charts, company profiles and news</td><td>$100,000 in demo funds, every order, every holding</td></tr>
+                        <tr><td><strong>Investing and crypto</strong></td><td>Delayed prices, charts, company profiles and news</td><td>Every order and holding — funded only from money you deposit</td></tr>
                         <tr><td><strong>Loans and business</strong></td><td>Calculator maths</td><td>Applications, approvals, invoices and team invitations</td></tr>
                     </tbody>
                 </table>
             </section>
             <section class="info-section" id="try">
                 <h2>Trying it out</h2>
-                <p>Open a profile with fictional details, or start a guest profile from the homepage. Guest profiles arrive with a few months of sample activity — accounts in two currencies, cards, payees, goals and, when market data is available, a small portfolio — so every screen has something to show.<% if (guestRetentionDays) { %> Unused guest profiles are deleted after <%= guestRetentionDays %> days unless you save your own email and password.<% } %></p>
-                <p>You can also load the same sample activity into a new profile during sign-up, or later from the dashboard.</p>
+                <p>Open a profile with fictional details, or start a guest profile from the homepage. Every profile — guest or not — starts empty: one checking account at $0, no cards, no history. Balances, budgets, debts and charts fill in only from what you do.<% if (guestRetentionDays) { %> Unused guest profiles are deleted after <%= guestRetentionDays %> days unless you save your own email and password.<% } %></p>
+                <p>To try payments, open a second profile (or ask a friend to) — money only moves between real Willow profiles.</p>
             </section>
             <section class="info-section" id="market">
                 <h2>Market data</h2>
                 <p>A small Python service retrieves delayed quotes, price history, company profiles and headlines through the open-source yfinance library, and caches them briefly. If it can’t reach the data source, Willow shows “Market data temporarily unavailable.” rather than an estimate. Demo trades are blocked until fresh prices return.</p>
             </section>
             <section class="info-section" id="assistant">
-                <h2>The Willow Hub assistant</h2>
-                <p>The assistant in Willow Hub answers a fixed set of questions about your money — spending, income, balances, net worth, goals, upcoming payments and investments — by calculating directly from your stored records. It does not use a language model, browse the web or make predictions, and it tells you when a question is outside what it can answer.</p>
+                <h2>The assistant</h2>
+                <p>Ask Willow uses a language model running on the same computer as Willow, through <a class="text-link" href="https://ollama.com" rel="noopener">Ollama</a>. With each question it receives a short summary of your own records — balances, recent activity, budgets, debts, net worth, investing and business figures — and nothing from anyone else. It doesn’t browse the web, predict markets or recommend trades. When Ollama isn’t running, the assistant is hidden.</p>
             </section>
             <section class="info-section" id="labels">
                 <h2>Labels you’ll see</h2>
                 <p>Look for the <span class="demo-badge">Demo</span> badge in the app, “Simulated” notes on receipts, and “Delayed” on prices. A full list is on the <a class="text-link" href="/compliance#labels">disclosures page</a>.</p>
             </section>
-<%- include('../partials/info-end', { toc: [['summary', 'At a glance'], ['try', 'Trying it out'], ['market', 'Market data'], ['assistant', 'The Hub assistant'], ['labels', 'Labels you’ll see']] }) %>
+<%- include('../partials/info-end', { toc: [['summary', 'At a glance'], ['try', 'Trying it out'], ['market', 'Market data'], ['assistant', 'The assistant'], ['labels', 'Labels you’ll see']] }) %>

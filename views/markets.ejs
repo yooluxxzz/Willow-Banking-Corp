@@ -22,7 +22,7 @@
                 <article class="ticker-card"><div class="ticker-card-head"><span class="ticker-card-name"><%= name %></span><span class="skeleton skeleton-line" style="width:60px"></span></div><span class="skeleton skeleton-line w-60" style="height:1.6em"></span><span class="skeleton skeleton-block" style="min-height:56px"></span></article>
                 <% }) %>
             </div>
-            <div class="global-strip" data-global-strip aria-label="Global indices"></div>
+            <div class="global-strip" data-global-strip role="group" aria-label="Global indices"></div>
         </div>
     </section>
 
@@ -42,8 +42,8 @@
                     </ul>
                 </div>
                 <div class="cta-band markets-cta">
-                    <h2 class="h4">Practice with $100,000 in simulated cash.</h2>
-                    <p>Build a demo portfolio of stocks, ETFs, funds and crypto using real, delayed prices. Nothing is ever bought or sold.</p>
+                    <h2 class="h4">Invest the money you move in.</h2>
+                    <p>Move cash from your Willow accounts into investing and build a portfolio of stocks, ETFs, funds and crypto at real, delayed prices. Orders are simulated.</p>
                     <div class="cta-band-actions">
                         <a class="btn btn-light" href="<%= user ? '/wealth/markets' : '/register' %>"><%= user ? 'Open Markets' : 'Open an account' %> <%- icon('arrow-right', 'icon-arrow') %></a>
                         <a class="btn btn-outline-light" href="/learn/stocks-etfs-and-funds">Learn the basics</a>

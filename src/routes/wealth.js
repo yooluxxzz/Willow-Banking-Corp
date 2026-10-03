@@ -1,6 +1,7 @@
 /**
  * Wealth API — market data (via the market-data service) and the simulated
- * demo portfolio. Prices for orders are always taken server-side.
+ * portfolio, funded from the customer's own accounts. Prices for orders are
+ * always taken server-side.
  */
 const express = require('express');
 const { requireAuth } = require('../middleware/auth');
@@ -86,6 +87,25 @@ router.get('/portfolio', async (req, res) => {
     }
 });
 
+router.get('/cash', (req, res) => {
+    const userId = req.session.userId;
+    const { getDb } = require('../database');
+    const accounts = getDb().prepare("SELECT id, account_type, nickname, account_number, available_balance, purpose FROM accounts WHERE user_id = ? AND status = 'active' AND currency = 'USD' ORDER BY id").all(userId)
+        .map(account => ({ id: account.id, name: `${account.nickname || (account.purpose === 'business' ? 'Business checking' : account.account_type === 'savings' ? 'Savings' : 'Checking')} ··${String(account.account_number).slice(-4)}`, availableCents: account.available_balance }));
+    const current = portfolio.getPortfolio(userId);
+    res.json({ cashCents: current.cashCents, contributedCents: current.contributedCents, accounts, transfers: portfolio.cashTransfers(userId) });
+});
+
+router.post('/cash', (req, res) => {
+    try {
+        const { accountId, direction, amount } = req.body || {};
+        const result = portfolio.moveCash(req.session.userId, { accountId, direction, amount });
+        res.status(201).json({ ...result, message: direction === 'in' ? 'Cash added to investing.' : 'Cash moved back to your account.' });
+    } catch (error) {
+        res.status(error.status || 400).json({ error: error.message });
+    }
+});
+
 router.get('/performance', async (req, res) => {
     try {
         res.json(await portfolio.performance(req.session.userId, req.query.range));
@@ -143,7 +163,7 @@ router.post('/trades', async (req, res) => {
             portfolio: result,
         });
     } catch (error) {
-        const code = /Not enough demo cash/.test(error.message) ? 'insufficient_cash' : /do not hold enough/.test(error.message) ? 'insufficient_units' : 'invalid_order';
+        const code = /investing cash|Add cash/.test(error.message) ? 'insufficient_cash' : /do not hold enough/.test(error.message) ? 'insufficient_units' : 'invalid_order';
         res.status(400).json({ error: error.message, code });
     }
 });

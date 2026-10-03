@@ -1,7 +1,7 @@
 const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const supertest = require('supertest');
-const { createTestApp, registerAgent } = require('./setup');
+const { createTestApp, registerAgent, orderCard } = require('./setup');
 const { generateStatementPDF } = require('../src/services/statement');
 
 describe('Demo cards and accurate statements', () => {
@@ -15,8 +15,10 @@ describe('Demo cards and accurate statements', () => {
         const env = await createTestApp(); app = env.app; db = env.getDb(); close = env.closeDatabase;
         owner = await registerAgent(supertest, app, {email:'cards@example.test', password:'CardDemo123', fullName:'Card Demo Customer'});
         other = await registerAgent(supertest, app, {email:'separate-cards@example.test', password:'CardDemo123', fullName:'Other Demo Customer'});
-        [card] = (await owner.agent.get('/api/cards')).body.cards;
-        [foreign] = (await other.agent.get('/api/cards')).body.cards;
+        // No card is issued at sign-up; each customer orders one.
+        assert.equal((await owner.agent.get('/api/cards')).body.cards.length, 0);
+        card = await orderCard(owner.agent, owner.csrfToken, (await owner.agent.get('/api/accounts')).body.accounts[0].id);
+        foreign = await orderCard(other.agent, other.csrfToken, (await other.agent.get('/api/accounts')).body.accounts[0].id);
         accountId = card.account_id;
         db.prepare('UPDATE accounts SET nickname = ?, balance = 15000, available_balance = 15000 WHERE id = ?').run('Everyday demo',accountId);
         const insert = db.prepare('INSERT INTO transactions (reference,account_id,type,amount,direction,status,description,created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');

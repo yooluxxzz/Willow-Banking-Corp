@@ -85,12 +85,12 @@ All changes are additive and applied in place at startup by `src/database.js`. E
 - **`demo_crypto_transfers`:** the symbol check now allows the supported crypto list (`length(symbol) BETWEEN 2 AND 10`, validated in code) instead of BTC/ETH only. Older databases are rebuilt once inside a transaction, copying every row.
 - **Sessions:** session JSON now carries `lastSeenAt`. Requests after `SESSION_IDLE_MINUTES` (default 30) of inactivity end the session; background requests marked `X-Willow-Passive` don’t count as activity. No table change.
 - **Ledger semantics:** currency conversions write a debit/credit pair (`CNV-…` / `CNV-…-C`) in each account’s own currency at an indicative rate, blocked when rates are stale or unavailable. Invoice “mark paid” writes one credit (`INV-PAY-…`). Simulated portfolio, watchlist and trades remain in the separate `demo_*` tables.
-- **Sample data:** `src/services/demo-data.js` creates five `@community.willow.test` customers on startup and, on request, months of consistent sample activity per profile. `npm run seed` uses the same generator.
+- **Sample data:** `src/services/demo-data.js` created five `@community.willow.test` customers on startup and, on request, months of consistent sample activity per profile. `npm run seed` used the same generator. *(Removed on 2026-10-03 — see below.)*
 - This session ran the app only against scratch databases outside the repository; no local `data/` database was migrated or backed up. Databases, session stores and backups remain ignored by Git.
 
 ## 2026-10-02: guest profile clean-up
 
-No table or column changes. `purgeStaleGuests` in `src/services/demo-data.js` runs at startup and then hourly when `GUEST_RETENTION_DAYS` is above 0 (the default is 7).
+No table or column changes. `purgeStaleGuests` (now in `src/services/guests.js`) runs at startup and then hourly when `GUEST_RETENTION_DAYS` is above 0 (the default is 7).
 
 **Which profiles are removed.** A profile qualifies when all of these hold:
 - `is_guest = 1` and `role = 'customer'`;
@@ -111,3 +111,30 @@ Profiles whose owners saved their own email and password have `is_guest = 0` and
    `support_requests.user_id` is set to NULL.
 
 Each removal writes a `guest_profile_purged` audit event with the actor `system`. Other customers’ `transactions` rows and balances are never deleted or re-balanced.
+
+## 2026-10-03: real data only, budgets, debts, net worth and snapshots
+
+All changes are applied in place at startup by `src/database.js`. Nothing invents data any more: sign-up and guest profiles create a single $0 checking account, no card, no savings account and no investing cash. `src/seed.js`, `src/services/demo-data.js` and the `/demo` sample-activity route are deleted.
+
+- **New tables** (user-owned, `ON DELETE CASCADE`):
+  - `app_meta(key, value)` — records one-time migrations (not user-owned).
+  - `portfolio_transfers` — investing cash moved in (`in`) or out (`out`) from a US dollar account, with the matching ledger reference (`INV-IN-…` / `INV-OUT-…`, category `investing`). Every move debits or credits the account in the same transaction.
+  - `budgets` — `scope` (`personal` | `business`), name, optional category, `period` (`daily` | `weekly` | `monthly`), `limit_cents`, `status` (`active` | `archived`).
+  - `budget_checks` — one row per budget per local day (`UNIQUE(budget_id, day)`): period start, spent, limit, `status` (`under` | `near` | `over`) and `notified` (`''` | `near` | `over`, so each level is notified once per period).
+  - `business_expenses` — date, vendor, category, amount, note; optionally paid from an account, in which case the debit’s reference (`EXP-…`, category `business`) is stored in `transaction_reference`. Deleting a paid expense refunds the account with a ledger credit.
+  - `assets` — what a customer owns outside Willow (`cash`, `property`, `vehicle`, `investment`, `retirement`, `business`, `other`) with its current value.
+  - `debts` and `debt_payments` — balance, original amount, APR (basis points), minimum, due day, status (`open` | `paid_off`); payments optionally debit a Willow account (`DBT-…`, category `debt`).
+  - `net_worth_snapshots` — one row per customer per local day (accounts, investing, assets, debts, net). Written nightly and whenever assets or debts change.
+- **Indexes:** `portfolio_transfers(user_id, created_at)`, `budgets(user_id, scope, status)`, `budget_checks(user_id, day)`, `business_expenses(user_id, spent_on)`, `assets(user_id)`, `debts(user_id, status)`, `debt_payments(debt_id, paid_on)`.
+- **Changed defaults:** `demo_portfolios.cash_cents` defaults to 0 (new portfolios are created with 0 explicitly, so older databases behave the same). Withdrawals may carry a spending `category` so they count against the right budget.
+- **One-time clean-up** (`src/services/data-cleanup.js`, key `fabricated_data_removed_v1` in `app_meta`, audit event `fabricated_data_removed` with counts), in one transaction:
+  1. removes the `@community.willow.test` customers and every guest profile (they were created with sample data) with `removeUserRecords`, which keeps other customers’ ledger rows and clears links to the removed accounts;
+  2. deletes sample ledger rows (references `DEP|WDR|TRF|PAY-S…`) and reverses their net effect on each account’s balance, floored at zero;
+  3. deletes the other records the sample loader created, matched on their exact values (goals, the monthly savings schedule, the studio business profile, invoices and team, sample cards that were never used, watchlist entries, empty unused sample accounts) and the welcome notifications;
+  4. deletes debit cards issued automatically at sign-up that were never used;
+  5. resets investing: holdings, trades and internal crypto transfers bought with the old $100,000 practice cash are deleted and every portfolio’s cash is set to 0.
+
+  On this session’s scratch preview database it removed 5 community customers, 14 guest profiles, 113 sample transactions, 11 other sample records, 1 automatic card and reset 1 portfolio. Customers’ own deposits, payments and accounts were kept.
+- **Nightly job:** `server.js` runs budget checks and net-worth snapshots at start-up (catching up on up to 31 missed days, notifying only for the latest) and then every night at `NIGHTLY_CHECK_TIME` (default 23:55 local time).
+- **Snapshot in Git:** `src/services/snapshot.js` exports the whole database as deterministic SQL (schema, then rows in rowid order; `revoked_sessions` is skipped because those rows only matter to the live session store). `npm run db:save` writes `data/willow-snapshot.sql`; `npm run db:restore -- --force` replaces the database file and keeps the old one as `willow.db.bak-<timestamp>`. When no database file exists, start-up restores the snapshot before migrating (`SNAPSHOT_AUTO_RESTORE=false` disables this). `.gitignore` ignores `data/*` except the snapshot, plus `*.bak-*` and `*.tmp`. The snapshot holds password hashes and recovery-code digests, so the repository must stay private.
+- **Backups:** this session ran the app only against a scratch database outside the repository that held test data, so no backup was taken. Before upgrading a database you care about, stop Willow and copy it (or run `npm run db:save`) first. Tests use in-memory or temporary databases only.

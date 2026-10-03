@@ -1,7 +1,7 @@
 const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const supertest = require('supertest');
-const { createTestApp, registerAgent } = require('./setup');
+const { createTestApp, registerAgent, openAccount } = require('./setup');
 describe('Account names, details and transaction filters', () => {
     let app, db, closeDatabase, owner, other, checking, savings, foreign;
     const patch = (id, nickname, csrf = true) => {
@@ -13,7 +13,8 @@ describe('Account names, details and transaction filters', () => {
         const env = await createTestApp(); app = env.app; db = env.getDb(); closeDatabase = env.closeDatabase;
         owner = await registerAgent(supertest, app, { email: 'accounts@test.example', fullName: 'Account Owner', password: 'AccountTest123' });
         other = await registerAgent(supertest, app, { email: 'foreign@test.example', fullName: 'Other Owner', password: 'AccountTest123' });
-        [checking,savings] = (await owner.agent.get('/api/accounts')).body.accounts;
+        [checking] = (await owner.agent.get('/api/accounts')).body.accounts;
+        savings = await openAccount(owner.agent, owner.csrfToken, 'savings');
         [foreign] = (await other.agent.get('/api/accounts')).body.accounts;
         for (let i = 0; i < 18; i++) db.prepare("INSERT INTO transactions (reference, account_id, type, amount, direction, status, description, created_at) VALUES (?, ?, 'deposit', 100, 'credit', 'completed', ?, '2026-09-30 12:00:00')").run('OWN-'+i, savings.id, 'Savings contribution '+i);
         db.prepare("INSERT INTO transactions (reference, account_id, type, amount, direction, description) VALUES ('PRIVATE-OTHER', ?, 'deposit', 100, 'credit', 'Other customer only')").run(foreign.id);

@@ -126,6 +126,12 @@
     flex-wrap: wrap;
 }
 
+/* On the narrowest phones the long badge wraps instead of running off the card. */
+.wl-hero-label .demo-badge {
+    max-width: 100%;
+    white-space: normal;
+}
+
 .wl-hero-value {
     margin-top: var(--s-3);
     min-height: 1.02em;

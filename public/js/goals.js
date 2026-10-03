@@ -69,7 +69,7 @@
         function render() {
             summary();
             if (!goals.length) {
-                list.replaceChildren(W.el('div', { className: 'panel goal-empty' }, W.empty({ iconName: 'target', title: 'Set your first goal', text: 'A trip, a home, a safety net — name it, set a target and track your progress.', action: { label: 'Create a goal', onClick: () => open() } })));
+                list.replaceChildren(W.el('div', { className: 'panel goal-empty' }, W.empty({ level: 2, iconName: 'target', title: 'Set your first goal', text: 'A trip, a home, a safety net — name it, set a target and track your progress.', action: { label: 'Create a goal', onClick: () => open() } })));
                 return;
             }
             list.replaceChildren(...goals.map(card));
@@ -81,7 +81,7 @@
                 goals = (await W.api('/api/goals')).goals;
                 render();
             } catch (err) {
-                list.replaceChildren(W.el('div', { className: 'panel' }, W.empty({ iconName: 'alert', title: 'Goals couldn’t load', text: err.message, error: true, action: { label: 'Try again', onClick: load } })));
+                list.replaceChildren(W.el('div', { className: 'panel' }, W.empty({ level: 2, iconName: 'alert', title: 'Goals couldn’t load', text: err.message, error: true, action: { label: 'Try again', onClick: load } })));
             }
         }
 

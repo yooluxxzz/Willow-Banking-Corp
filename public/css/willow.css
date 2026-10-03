@@ -1778,6 +1778,48 @@ select.form-control {
     box-shadow: var(--shadow-sm);
 }
 
+/* Radio-input variant: <label class="segmented-option"><input type="radio"> Label</label> */
+.segmented-option {
+    position: relative;
+    min-height: 34px;
+    padding: 0 14px;
+    border-radius: var(--r-pill);
+    font-size: var(--fs-sm);
+    font-weight: 580;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color var(--dur-2), color var(--dur-2), box-shadow var(--dur-2);
+}
+
+.segmented-option input {
+    position: absolute;
+    opacity: 0;
+    inset: 0;
+    margin: 0;
+    cursor: pointer;
+}
+
+.segmented-option:hover {
+    color: var(--text);
+}
+
+.segmented-option:has(input:checked) {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow-sm);
+}
+
+.segmented-option:has(input:focus-visible) {
+    box-shadow: var(--ring);
+}
+
+[data-theme="dark"] .segmented-option:has(input:checked) {
+    background: var(--surface-raised);
+}
+
 [data-theme="dark"] .segmented [aria-pressed='true'],
 [data-theme="dark"] .segmented [aria-selected='true'],
 [data-theme="dark"] .segmented [aria-checked='true'],
@@ -3429,6 +3471,38 @@ html.is-private [data-private]:hover {
 @keyframes w-grow-x {
     from { transform: scaleX(0); }
     to { transform: scaleX(1); }
+}
+
+/* ── Attention: content fades in, then a soft glow fades in and out ──── */
+:root {
+    --attention-ring: color-mix(in srgb, var(--accent) 42%, transparent);
+    --attention-glow: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+@keyframes w-attention {
+    0% { box-shadow: 0 0 0 0 transparent, 0 0 0 0 transparent; }
+    20%, 55% { box-shadow: 0 0 0 3px var(--attention-ring), 0 10px 32px var(--attention-glow); }
+    100% { box-shadow: 0 0 0 0 transparent, 0 0 0 0 transparent; }
+}
+
+@keyframes w-attention-text {
+    0% { text-shadow: none; }
+    20%, 55% { text-shadow: 0 0 22px var(--attention-ring); }
+    100% { text-shadow: none; }
+}
+
+.is-attention {
+    animation: w-attention 2.4s var(--ease-in-out) 1;
+}
+
+.figure.is-attention,
+.is-attention-text {
+    animation: w-attention-text 2.4s var(--ease-in-out) 1;
+}
+
+.stagger-in > * {
+    animation: w-fade-up 560ms var(--ease-out) both;
+    animation-delay: calc(var(--i, 0) * 70ms);
 }
 
 @keyframes w-pop {

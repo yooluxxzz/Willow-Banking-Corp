@@ -28,6 +28,11 @@ symbol (404) instead of a 503.
 
 ## Run
 
+You usually don't need to: when Willow starts (`npm start`) it checks `/health`, and if nothing
+answers it launches this service itself with a generated `MARKET_DATA_TOKEN`, restarts it if it
+exits and stops it when Willow stops (`src/services/market-service.js`; turn off with
+`MARKET_SERVICE_AUTOSTART=false`). To run it on its own:
+
 ```bash
 python3 market-data-service/server.py
 # listening on 127.0.0.1:8765

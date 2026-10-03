@@ -12,9 +12,21 @@
                     <p class="eyebrow"><%= kind === 'guide' ? 'Willow Education' : 'Willow Insights' %></p>
                     <h1 class="h1"><%= heading %></h1>
                 </div>
-                <div class="stack">
+                <div class="collection-aside">
                     <p class="lede"><%= intro %></p>
-                    <a class="link-arrow" href="<%= other.href %>">Browse <%= other.label.toLowerCase() %> <%- icon('arrow-right') %></a>
+                    <a class="collection-switch" href="<%= other.href %>">
+                        <span class="collection-switch-art" aria-hidden="true"><%- icon(other.icon, 'icon-lg') %></span>
+                        <span class="collection-switch-copy">
+                            <span class="eyebrow no-dot">Also from Willow</span>
+                            <strong>Browse <%= other.label.toLowerCase() %></strong>
+                            <span><%= other.blurb %></span>
+                            <span class="collection-switch-meta">
+                                <% if (other.topics && other.topics.length) { %><span class="collection-switch-topics" aria-hidden="true"><% other.topics.forEach(topic => { %><span><%- icon(topic, 'icon-sm') %></span><% }) %></span><% } %>
+                                <span class="collection-switch-count"><%= other.count %> <%= other.noun %><%= other.count === 1 ? '' : 's' %></span>
+                            </span>
+                        </span>
+                        <span class="collection-switch-arrow" aria-hidden="true"><%- icon('arrow-right', 'icon-md') %></span>
+                    </a>
                 </div>
             </div>
         </div>

@@ -10,7 +10,7 @@
   ];
   const goals = [
     { key: 'savings', icon: 'savings', label: 'Build savings', title: 'A cushion that grows quietly.', body: 'Separate savings accounts, goals that track your progress and scheduled transfers that move money on the days you choose.', products: [['Savings', '/money/savings'], ['Scheduled transfers', '/money/transfers'], ['Goals', '/money/savings']], cta: ['Explore savings', '/money/savings'], stat: ['Emergency fund', '72%'] },
-    { key: 'invest', icon: 'trend', label: 'Invest', title: 'Learn the markets with real data.', body: 'Explore stocks, ETFs, funds and crypto with delayed market data, then practice with $100,000 in simulated cash.', products: [['Stocks', '/invest/stocks'], ['ETFs', '/invest/etfs'], ['Portfolio', '/invest/portfolio']], cta: ['Explore investing', '/invest/stocks'], stat: ['Demo cash', '$100,000'] },
+    { key: 'invest', icon: 'trend', label: 'Invest', title: 'Learn the markets with real data.', body: 'Explore stocks, ETFs, funds and crypto with delayed market data, then invest money you move in from your own Willow accounts.', products: [['Stocks', '/invest/stocks'], ['ETFs', '/invest/etfs'], ['Portfolio', '/invest/portfolio']], cta: ['Explore investing', '/invest/stocks'], stat: ['Starts at', '$0'] },
     { key: 'home', icon: 'house', label: 'Buy a home', title: 'See the numbers before the keys.', body: 'Estimate a mortgage payment with taxes and insurance included, track your down payment goal and keep the plan in view.', products: [['Mortgage calculator', '/borrow/mortgages'], ['Savings', '/money/savings'], ['Education', '/learn/mortgage-basics']], cta: ['Estimate a mortgage', '/borrow/mortgages'], stat: ['Home deposit', '64%'] },
     { key: 'business', icon: 'briefcase', label: 'Start a business', title: 'Banking that keeps up with the work.', body: 'Business checking, cards for your team, invoices and a clear view of cash flow — kept separate from personal money.', products: [['Business banking', '/business'], ['Business cards', '/business/cards'], ['Expenses', '/business/expenses']], cta: ['Explore business', '/business'], stat: ['Invoices paid', '12'] },
     { key: 'everyday', icon: 'wallet', label: 'Manage everyday money', title: 'A calmer rhythm for daily spending.', body: 'Accounts, cards with instant controls, payments to friends and a spending view that sorts itself into categories.', products: [['Accounts', '/money/accounts'], ['Cards', '/money/cards'], ['Payments', '/money/payments']], cta: ['Explore accounts', '/money/accounts'], stat: ['Categories', '9'] },
@@ -240,19 +240,19 @@
         </div>
     </section>
 
-    <!-- ── 04 Willow Hub ─────────────────────────────────────────────── -->
+    <!-- ── 04 Net worth ───────────────────────────────────────────────── -->
     <section class="section section-muted home-hub" id="hub" aria-labelledby="hubTitle">
         <div class="container">
             <div class="section-intro is-split reveal">
                 <div>
-                    <p class="eyebrow"><span class="section-number">04</span> Willow Hub</p>
+                    <p class="eyebrow"><span class="section-number">04</span> Net worth</p>
                     <h2 class="h2" id="hubTitle">Your complete financial picture.</h2>
                 </div>
-                <p class="lede">Cash, savings, investments and crypto in one calm view — with insights that explain what changed, and an assistant that answers from your own data.</p>
+                <p class="lede">Cash, savings, investments and crypto in one calm view — with budgets checked every night, net worth you can log, and an optional assistant that runs on your own computer.</p>
             </div>
-            <div class="hub-showcase reveal" aria-label="Illustrative Willow Hub dashboard">
+            <div class="hub-showcase reveal" aria-label="Illustrative net worth dashboard">
                 <div class="hub-frame">
-                    <div class="hub-frame-bar"><span></span><span></span><span></span><p>Willow Hub</p><span class="illustrative-tag">Illustrative data</span></div>
+                    <div class="hub-frame-bar"><span></span><span></span><span></span><p>Net worth</p><span class="illustrative-tag">Illustrative data</span></div>
                     <div class="hub-frame-body">
                         <div class="hub-card hub-networth">
                             <p class="label">Net worth</p>
@@ -304,7 +304,7 @@
                 </div>
             </div>
             <div class="hub-cta reveal">
-                <p>Willow Intelligence answers only from your own demo data — and never predicts markets or gives advice.</p>
+                <p>The assistant runs locally with Ollama, answers only from your own records — and never predicts markets or gives advice.</p>
                 <a href="/login?returnTo=%2Fhub" class="link-arrow">Sign in to see your picture <%- icon('arrow-right') %></a>
             </div>
         </div>
@@ -394,10 +394,10 @@
         <div class="home-final-inner container reveal">
             <p class="eyebrow">Willow</p>
             <h2 class="display" id="finalTitle">Where will your money take you?</h2>
-            <p class="lede">Open a Willow demo account in minutes — or step straight into a sample profile and explore everything.</p>
+            <p class="lede">Open a Willow account in minutes — or start an empty guest profile and try everything yourself.</p>
             <div class="cluster">
                 <a href="/register" class="btn btn-light btn-lg">Join Willow <%- icon('arrow-right', 'icon-arrow') %></a>
-                <button type="button" class="btn btn-outline-light btn-lg" data-demo-start>Explore a demo profile</button>
+                <button type="button" class="btn btn-outline-light btn-lg" data-demo-start>Try it as a guest</button>
             </div>
             <p class="home-final-note" data-demo-status role="status" aria-live="polite"></p>
         </div>

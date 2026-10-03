@@ -16,7 +16,9 @@ describe('Wealth screens render with required disclosures', () => {
     it('renders portfolio, markets, asset and crypto pages with simulated-order copy and safe query handling', async () => {
         const wealth = await user.agent.get('/wealth');
         assert.equal(wealth.status, 200);
-        assert.match(wealth.text, /DEMO · NOT A BROKERAGE/);
+        assert.match(wealth.text, /SIMULATED ORDERS · NOT A BROKERAGE/);
+        assert.match(wealth.text, /Investing cash starts at <strong>\$0<\/strong>/);
+        assert.match(wealth.text, /data-cash-open="in"/);
         assert.match(wealth.text, /Simulated order/);
         const markets = await user.agent.get('/wealth/markets?type=etf&q=%3Cscript%3E');
         assert.equal(markets.status, 200);

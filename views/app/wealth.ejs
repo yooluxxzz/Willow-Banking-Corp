@@ -4,11 +4,11 @@
     <div class="page-head-copy">
         <p class="label">Wealth · <span class="wl-label-sim">Simulated</span></p>
         <h1 class="page-head-title">Portfolio</h1>
-        <p class="page-head-sub">Practice investing with $100,000 in simulated cash. Prices are delayed market data; every order is simulated.</p>
+        <p class="page-head-sub">Invest money you move in from your Willow accounts. Prices are delayed market data; orders are simulated and never reach a market.</p>
     </div>
     <div class="page-head-actions">
-        <a class="btn btn-secondary" href="/crypto"><%- icon('bitcoin') %> Crypto</a>
-        <a class="btn btn-primary" href="/wealth/markets"><%- icon('search') %> Explore markets</a>
+        <button type="button" class="btn btn-secondary" data-cash-open="out"><%- icon('arrow-up-right') %> Withdraw cash</button>
+        <button type="button" class="btn btn-primary" data-cash-open="in"><%- icon('plus') %> Add cash</button>
     </div>
 </header>
 
@@ -23,10 +23,10 @@
         <div class="wl-hero-top">
             <div class="wl-hero-copy">
                 <div class="wl-hero-label">
-                    <p class="label" id="portfolioValueLabel">Demo portfolio value</p>
-                    <span class="demo-badge">DEMO · NOT A BROKERAGE</span>
+                    <p class="label" id="portfolioValueLabel">Portfolio value</p>
+                    <span class="demo-badge">SIMULATED ORDERS · NOT A BROKERAGE</span>
                 </div>
-                <p class="figure figure-xl wl-hero-value" data-private data-portfolio-total><span class="skeleton skeleton-figure" style="width:5.5ch"></span></p>
+                <p class="figure figure-xl wl-hero-value" data-private data-portfolio-total data-attention><span class="skeleton skeleton-figure" style="width:5.5ch"></span></p>
                 <p class="wl-hero-change" data-portfolio-day><span class="skeleton skeleton-line" style="width:180px"></span></p>
             </div>
             <p class="wl-updated" data-updated aria-live="polite"><span class="badge badge-outline"><%- icon('clock') %> Delayed prices</span></p>
@@ -36,7 +36,7 @@
             <div>
                 <dt class="label">Total return</dt>
                 <dd><span class="figure figure-sm" data-private data-metric="return"><span class="skeleton skeleton-line" style="width:96px"></span></span></dd>
-                <dd class="wl-metric-sub" data-metric-sub="return">vs $100,000 starting cash</dd>
+                <dd class="wl-metric-sub" data-metric-sub="return">vs money you moved in</dd>
             </div>
             <div>
                 <dt class="label">Invested</dt>
@@ -46,7 +46,7 @@
             <div>
                 <dt class="label">Cash available</dt>
                 <dd><span class="figure figure-sm" data-private data-metric="cash"><span class="skeleton skeleton-line" style="width:96px"></span></span></dd>
-                <dd class="wl-metric-sub">Simulated cash to invest</dd>
+                <dd class="wl-metric-sub" data-metric-sub="cash">Moved in, not yet invested</dd>
             </div>
         </dl>
 
@@ -54,7 +54,7 @@
             <div class="wl-chart-head">
                 <div>
                     <h2 class="wl-chart-title" id="performanceTitle">Performance</h2>
-                    <p class="text-xs muted" data-perf-note>Portfolio value over time, including cash. Dashed line: $100,000 starting cash.</p>
+                    <p class="text-xs muted" data-perf-note>Portfolio value over time, including cash.</p>
                 </div>
                 <div class="segmented" role="radiogroup" aria-label="Performance range" data-range-group>
                     <button type="button" role="radio" aria-checked="false" data-range="1m">1M</button>
@@ -90,7 +90,7 @@
             <section class="panel wl-about" aria-labelledby="aboutDemoTitle">
                 <div class="panel-head"><h2 id="aboutDemoTitle">How this portfolio works</h2></div>
                 <ul class="wl-points" role="list">
-                    <li><span class="icon-tile icon-tile-sm"><%- icon('banknote') %></span><span>You start with <strong>$100,000 in simulated cash</strong>, kept separate from your Willow accounts.</span></li>
+                    <li><span class="icon-tile icon-tile-sm"><%- icon('banknote') %></span><span>Investing cash starts at <strong>$0</strong>. Move money in from a US dollar Willow account, and back out whenever you like.</span></li>
                     <li><span class="icon-tile icon-tile-sm"><%- icon('clock') %></span><span>Prices come from delayed market data. If they can’t be retrieved, Willow says so — it never estimates a price.</span></li>
                     <li><span class="icon-tile icon-tile-sm"><%- icon('shield-check') %></span><span>Every trade is a Simulated order. No real securities or crypto are bought or sold, and nothing here is investment advice.</span></li>
                 </ul>
@@ -103,6 +103,11 @@
                 <div class="wl-allocation" data-allocation><div class="skeleton skeleton-block" style="min-height:168px" aria-hidden="true"></div></div>
             </section>
 
+            <section class="panel" aria-labelledby="cashMovesTitle">
+                <div class="panel-head"><h2 id="cashMovesTitle">Cash in and out</h2><button type="button" class="btn btn-ghost btn-sm" data-cash-open="in"><%- icon('plus', 'icon-sm') %> Add</button></div>
+                <div data-cash-moves><p class="muted text-sm">Loading…</p></div>
+            </section>
+
             <section class="panel" aria-labelledby="watchlistTitle">
                 <div class="panel-head"><h2 id="watchlistTitle">Watchlist</h2><a class="link-arrow" href="/wealth/markets?type=watchlist">Manage <%- icon('arrow-right') %></a></div>
                 <div data-watchlist aria-busy="true"><% for (let i = 0; i < 3; i++) { %><div class="wl-skel-row is-compact" aria-hidden="true"><span class="skeleton wl-skel-mark"></span><span class="wl-skel-main"><span class="skeleton skeleton-line w-60"></span><span class="skeleton skeleton-line w-40"></span></span><span class="skeleton skeleton-line wl-skel-end"></span></div><% } %></div>
@@ -110,5 +115,22 @@
         </aside>
     </div>
 </div>
+
+<dialog class="modal" id="cashDialog" aria-labelledby="cashDialogTitle">
+    <form id="cashForm" novalidate>
+        <div class="modal-head"><h2 id="cashDialogTitle">Add cash to investing</h2><button type="button" class="btn btn-ghost btn-icon" data-dialog-close aria-label="Close"><%- icon('x', 'icon-md') %></button></div>
+        <div class="modal-body">
+            <div class="segmented" role="radiogroup" aria-label="Direction">
+                <label class="segmented-option"><input type="radio" name="direction" value="in" checked> Add cash</label>
+                <label class="segmented-option"><input type="radio" name="direction" value="out"> Withdraw cash</label>
+            </div>
+            <div class="field mt-5"><label for="cashAccount" data-cash-account-label>From</label><select class="select" id="cashAccount" name="accountId"></select></div>
+            <div class="field mt-5"><label for="cashAmount">Amount</label><div class="input-group has-prefix"><span class="input-prefix">$</span><input class="input num" id="cashAmount" name="amount" inputmode="decimal" required autocomplete="off"></div>
+                <p class="field-help" data-cash-help></p></div>
+            <p class="field-error mt-3" data-cash-error role="alert" hidden></p>
+        </div>
+        <div class="modal-foot"><button type="button" class="btn btn-secondary" data-dialog-close>Cancel</button><button type="submit" class="btn btn-primary" data-cash-submit>Add cash</button></div>
+    </form>
+</dialog>
 
 <%- include('../partials/app-end', { js: ['wealth-app', 'wealth-portfolio'] }) %>

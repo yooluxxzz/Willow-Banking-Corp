@@ -268,7 +268,7 @@
             button.setAttribute('aria-busy', 'true');
             const description = button.querySelector('.auth-method-text span');
             const original = description.textContent;
-            description.textContent = 'Preparing a guest profile with sample activity…';
+            description.textContent = 'Opening your guest profile…';
             try {
                 const result = await global.Willow.api('/auth/demo', { method: 'POST', body: {}, timeout: 45000 });
                 succeed(result.redirect || '/dashboard');
@@ -444,7 +444,6 @@
                     country: field('country').value,
                     password: field('password').value,
                     accountType: type ? type.value : 'personal',
-                    sampleData: field('sampleData').checked,
                 };
                 const [result] = await Promise.all([
                     global.Willow.api('/auth/register', { method: 'POST', body, timeout: 45000 }),
@@ -456,7 +455,6 @@
                 const first = body.fullName.split(/\s+/)[0];
                 root.querySelector('[data-done-name]').textContent = first ? `, ${first}` : '';
                 root.querySelector('[data-done-customer-id]').textContent = result.customerId || '';
-                root.querySelector('[data-done-sample]').hidden = !result.sampleData;
                 root.querySelector('[data-done-continue]').href = result.redirect || '/dashboard?welcome=1';
                 field('password').value = '';
                 field('confirmPassword').value = '';

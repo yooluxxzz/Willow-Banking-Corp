@@ -17,6 +17,7 @@ const CATEGORIES = {
     business: { label: 'Business', icon: 'briefcase', color: 'var(--chart-8)' },
     transfers: { label: 'Transfers', icon: 'transfer', color: 'var(--chart-8)' },
     investing: { label: 'Investing', icon: 'trend', color: 'var(--chart-1)' },
+    debt: { label: 'Debt payments', icon: 'card', color: 'var(--chart-6)' },
     cash: { label: 'Cash', icon: 'banknote', color: 'var(--chart-8)' },
     other: { label: 'Other', icon: 'receipt', color: 'var(--chart-8)' },
 };

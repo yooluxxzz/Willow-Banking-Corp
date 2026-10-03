@@ -9,9 +9,9 @@ const config = {
   session: {
     secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    // Signed-in sessions end after this long without a request (0 disables).
-    // Guest demo profiles unused for this many days are removed (0 keeps them).
+    // Guest profiles unused for this many days are removed (0 keeps them).
     guestRetentionDays: process.env.GUEST_RETENTION_DAYS === undefined ? 7 : Math.max(0, parseInt(process.env.GUEST_RETENTION_DAYS, 10) || 0),
+    // Signed-in sessions end after this long without a request (0 disables).
     idleTimeoutMs: (process.env.SESSION_IDLE_MINUTES === undefined ? 30 : Math.max(0, parseInt(process.env.SESSION_IDLE_MINUTES, 10) || 0)) * 60 * 1000,
   },
 
@@ -22,6 +22,23 @@ const config = {
 
   database: {
     path: process.env.DATABASE_PATH || './data/willow.db',
+    // Versioned SQL copy of the data (npm run db:save). Restored automatically when no database exists yet.
+    snapshotPath: process.env.DATABASE_SNAPSHOT_PATH || './data/willow-snapshot.sql',
+    autoRestore: process.env.SNAPSHOT_AUTO_RESTORE !== 'false',
+  },
+
+  jobs: {
+    // Daily budget checks and net-worth snapshots run at this local time (24-hour HH:MM).
+    nightlyTime: /^([01]?\d|2[0-3]):[0-5]\d$/.test(process.env.NIGHTLY_CHECK_TIME || '') ? process.env.NIGHTLY_CHECK_TIME : '23:55',
+  },
+
+  assistant: {
+    // The assistant runs on a local Ollama server and only appears while it is reachable.
+    enabled: process.env.ASSISTANT_ENABLED !== 'false',
+    ollamaUrl: (process.env.OLLAMA_URL || 'http://127.0.0.1:11434').replace(/\/+$/, ''),
+    // Empty: use the first model installed in Ollama.
+    model: process.env.OLLAMA_MODEL || '',
+    timeoutMs: parseInt(process.env.OLLAMA_TIMEOUT_MS, 10) || 120000,
   },
 
   rateLimit: {

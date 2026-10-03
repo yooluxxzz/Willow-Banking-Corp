@@ -3,15 +3,17 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const supertest = require('supertest');
-const { createTestApp, registerAgent } = require('./setup');
+const { createTestApp, registerAgent, openAccount } = require('./setup');
 
 describe('Banking experience and transfer boundaries', () => {
-    let app, db, closeDatabase, agent, csrf, accounts, otherAccount;
+    let app, db, closeDatabase, agent, csrf, accounts, otherAccount, signupAccounts;
     before(async () => {
         const env = await createTestApp();
         app = env.app; db = env.getDb(); closeDatabase = env.closeDatabase;
         const first = await registerAgent(supertest, app, { email: 'review@test.com', password: 'Password123', fullName: 'Review Customer' });
         agent = first.agent; csrf = first.csrfToken;
+        signupAccounts = (await agent.get('/api/accounts')).body.accounts;
+        await openAccount(agent, csrf, 'savings');
         accounts = (await agent.get('/api/accounts')).body.accounts;
         db.prepare('UPDATE accounts SET balance = 100000, available_balance = 100000 WHERE id = ?').run(accounts[0].id);
         const other = await registerAgent(supertest, app, { email: 'other@test.com', password: 'Password123', fullName: 'Other Customer' });
@@ -126,7 +128,8 @@ describe('Banking experience and transfer boundaries', () => {
         assert.equal(options[1].getAttribute('aria-selected'), 'true');
         dom.window.close();
     });
-    it('creates checking and savings destinations for new demo customers', () => {
+    it('opens a single empty checking account at sign-up; savings is opened on request', () => {
+        assert.deepEqual(signupAccounts.map(a => [a.account_type, a.balance]), [['checking', 0]]);
         assert.deepEqual(accounts.map(a => a.account_type).sort(), ['checking', 'savings']);
     });
     it('atomically moves funds between owned accounts with matching ledger entries', async () => {

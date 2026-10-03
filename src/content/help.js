@@ -260,14 +260,14 @@ const categories = [
         slug: 'investing',
         title: 'Investing',
         icon: 'chart',
-        summary: 'Simulated investing, demo portfolio cash, order pricing, watchlists and market data.',
+        summary: 'Simulated investing, adding investing cash, order pricing, watchlists and market data.',
         articles: [
             {
-                slug: 'demo-portfolio-cash',
-                question: 'How does the $100,000 of demo cash work?',
+                slug: 'investing-cash',
+                question: 'How do I get cash to invest?',
                 answer: [
-                    'Every Willow profile receives $100,000 of simulated cash in a separate demo portfolio. Use it to place simulated orders for stocks, ETFs and funds, and watch the value of your holdings move with available market data.',
-                    'Portfolio cash is completely separate from your bank balances. It cannot be moved into or out of your accounts, and buying or selling never changes an account balance.',
+                    'Investing cash starts at $0. On the Portfolio page, choose Add cash and move money in from one of your US dollar Willow accounts — the account is debited and the move appears in its history.',
+                    'Orders then use that investing cash and never touch your account balances. Choose Withdraw cash to move uninvested cash back; sell holdings first to free up more.',
                 ],
                 links: [{ label: 'Go to Wealth', href: '/wealth' }],
             },
@@ -341,7 +341,7 @@ const categories = [
                 slug: 'buy-and-sell-crypto',
                 question: 'How do I buy or sell crypto in the demo?',
                 answer: [
-                    'Open Crypto, choose an asset and place a simulated buy or sell order. Orders use the demo cash in your separate portfolio and are priced at the latest available price.',
+                    'Open Crypto, choose an asset and place a simulated buy or sell order. Orders use your investing cash and are priced at the latest available price.',
                     'Your bank account balances are never used for simulated crypto trades.',
                 ],
                 links: [{ label: 'Go to Crypto', href: '/crypto' }],

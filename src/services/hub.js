@@ -1,15 +1,14 @@
 /**
- * Willow Hub — "Your financial picture" — and Willow Intelligence.
+ * Net worth page — "Your financial picture".
  *
- * Everything here is derived from the requesting user's own records: demo bank
- * accounts and ledger, the separate simulated portfolio, goals and scheduled
- * transfers. Insights are informational; nothing here is financial advice.
+ * Everything here is derived from the requesting user's own records: bank
+ * accounts and ledger, the investing portfolio, the assets and debts they log,
+ * goals and scheduled transfers. Insights are informational, not advice.
  */
 const { getDb } = require('../database');
 const demoPortfolio = require('./demo-portfolio');
 const goalService = require('./goals');
 const scheduledTransfers = require('./scheduled-transfers');
-const marketData = require('./market-data');
 const { categorize, categoryMeta } = require('./categories');
 const { formatCurrency } = require('../middleware/validation');
 
@@ -113,38 +112,20 @@ function cashflowSeries(userId, months = 6) {
     return series;
 }
 
-/** Net worth and composition, including the simulated portfolio at live prices where available. */
+/** Net worth, composition, cash flow and insights from the customer's own records. */
 async function getPicture(userId) {
     const summary = getSummary(userId);
     let valuation = null;
     try { valuation = await demoPortfolio.valuePortfolio(userId); } catch (error) { valuation = null; }
-    let rates = null;
-    if (summary.foreignBalances.length) {
-        try { rates = await marketData.getFxRates(); } catch (error) { rates = null; }
-    }
-    const convertedForeign = summary.foreignBalances.map(item => {
-        const converted = rates ? marketData.convertAmount(item.cents / 100, item.currency, 'USD', rates) : null;
-        return { ...item, usdCents: converted === null ? null : Math.round(converted * 100) };
-    });
-    const checkingCents = summary.accounts.filter(account => account.currency === 'USD' && account.account_type !== 'savings').reduce((sum, account) => sum + account.balance, 0)
-        + convertedForeign.reduce((sum, item) => sum + (item.usdCents || 0), 0);
-    const cryptoValue = valuation ? valuation.holdings.filter(holding => holding.type === 'crypto').reduce((sum, holding) => sum + holding.marketValue, 0) : 0;
-    const investmentValue = valuation ? valuation.total - cryptoValue : summary.demoPortfolioCashCents / 100 + summary.demoInvestmentsAtCostCents / 100;
-    const composition = [
-        { key: 'cash', label: 'Cash', cents: checkingCents, color: 'var(--chart-1)', note: 'Checking and currency accounts' },
-        { key: 'savings', label: 'Savings', cents: summary.savingsCents, color: 'var(--chart-2)', note: 'Savings accounts' },
-        { key: 'investments', label: 'Investments', cents: Math.round(investmentValue * 100), color: 'var(--chart-3)', note: 'Simulated portfolio, incl. demo cash' },
-        { key: 'crypto', label: 'Crypto', cents: Math.round(cryptoValue * 100), color: 'var(--chart-5)', note: 'Simulated crypto holdings' },
-    ];
-    const netWorthCents = composition.reduce((sum, item) => sum + item.cents, 0);
+    const worth = await require('./networth').recordSnapshot(userId);
     return {
         summary,
-        composition,
-        creditCents: 0,
-        netWorthCents,
+        worth,
+        composition: worth.composition,
+        netWorthCents: worth.netCents,
         valuation,
-        foreign: convertedForeign,
-        fxUnavailable: Boolean(summary.foreignBalances.length && (!rates || convertedForeign.some(item => item.usdCents === null))),
+        history: require('./networth').history(userId),
+        fxUnavailable: worth.fxUnavailable,
         cashflow: cashflowSeries(userId),
         insights: buildInsights(summary, valuation),
     };
@@ -163,7 +144,7 @@ function buildInsights(summary, valuation) {
     if (summary.categories.length) {
         const top = summary.categories[0];
         const share = spend ? Math.round(top.cents / spend * 100) : 0;
-        insights.push({ icon: top.icon, tone: 'neutral', text: `${top.label} is your largest spending category this month.`, detail: `${usd(top.cents)} · ${share}% of spending`, href: '/hub#spending' });
+        insights.push({ icon: top.icon, tone: 'neutral', text: `Your largest spending category this month is ${top.label.toLowerCase()}.`, detail: `${usd(top.cents)} · ${share}% of spending`, href: '/hub#spending' });
     }
     if (summary.savingsMovementCents > 0) {
         insights.push({ icon: 'savings', tone: 'positive', text: `You’ve moved ${usd(summary.savingsMovementCents)} into savings this month.`, detail: 'Net change across your savings accounts.', href: '/accounts' });
@@ -181,204 +162,4 @@ function buildInsights(summary, valuation) {
     return insights.slice(0, 5);
 }
 
-// ── Willow Intelligence ──────────────────────────────────────────────
-const link = (label, href) => ({ label, href });
-const txnView = item => ({ description: item.description || item.type, detail: `${String(item.created_at).slice(0, 10)} · ${categoryMeta(categorize(item)).label}`, amount: `${item.direction === 'credit' ? '+' : '−'}${formatCurrency(item.amount, item.currency || 'USD')}`, direction: item.direction });
-const accountView = account => ({ name: accountName(account), detail: `${account.currency} · ••••${String(account.account_number || '').slice(-4)}`, balance: formatCurrency(account.balance, account.currency), href: `/accounts/${account.id}` });
-
-const CATEGORY_WORDS = {
-    groceries: /grocer|supermarket|food shop/, dining: /dining|restaurant|eating out|coffee|caf/, transport: /transport|travel to work|taxi|uber|transit|fuel/, housing: /rent|housing|mortgage/,
-    bills: /bills?|utilit|internet|phone/, shopping: /shopping|clothes|books/, entertainment: /entertainment|movies|streaming|cinema/, health: /health|gym|fitness|pharmacy/, travel: /travel|flights?|hotels?/,
-};
-
-async function answerQuestion(userId, question) {
-    if (typeof question !== 'string' || question.trim().length < 2 || question.length > 200) {
-        return { answer: 'Enter a question using 2 to 200 characters.', links: [], invalid: true };
-    }
-    const query = question.trim().toLowerCase();
-    const summary = getSummary(userId);
-
-    if (/\b(return|forecast|predict|recommend|should i|buy now|sell now|will .* (earn|gain|go up|rise|fall)|best (stock|investment|crypto)|tip)\b/.test(query)) {
-        return { kind: 'refusal', answer: 'I can’t predict investment performance or recommend a trade. I can show what your simulated portfolio holds, how it’s allocated and how it has moved so far.', links: [link('Open your portfolio', '/wealth'), link('Learn: stocks, ETFs and funds', '/learn/stocks-etfs-and-funds')] };
-    }
-
-    const categoryKey = Object.keys(CATEGORY_WORDS).find(key => CATEGORY_WORDS[key].test(query));
-    if (categoryKey && /spend|spent|cost|much/.test(query)) {
-        const meta = categoryMeta(categoryKey);
-        const match = summary.categories.find(item => item.key === categoryKey);
-        const db = getDb();
-        const month = monthBounds(0);
-        const rows = db.prepare(`SELECT t.* FROM transactions t JOIN accounts a ON a.id = t.account_id WHERE a.user_id = ? AND t.status = 'completed' AND t.direction = 'debit' AND t.type != 'transfer' AND t.created_at >= ? AND t.created_at < ? ORDER BY t.created_at DESC`).all(userId, month.start, month.end)
-            .filter(item => categorize(item) === categoryKey);
-        return {
-            kind: 'category',
-            answer: match ? `You’ve spent ${usd(match.cents)} on ${meta.label.toLowerCase()} this month across ${rows.length} transaction${rows.length === 1 ? '' : 's'}.` : `I didn’t find any ${meta.label.toLowerCase()} spending in your USD accounts this month.`,
-            figure: match ? usd(match.cents) : null,
-            transactions: rows.slice(0, 5).map(txnView),
-            transactionsTitle: `${meta.label} this month`,
-            links: [link('Review transactions', '/transactions'), link('Spending by category', '/hub#spending')],
-        };
-    }
-
-    if (/(biggest|largest|top|most)/.test(query) && /(expense|spend|purchase|cost)/.test(query)) {
-        if (!summary.topExpenses.length) return { kind: 'expenses', answer: 'There are no completed purchases or payments in your USD accounts this month yet.', links: [link('View transactions', '/transactions')] };
-        return {
-            kind: 'expenses',
-            answer: `Your largest expense this month is ${summary.topExpenses[0].description} at ${usd(summary.topExpenses[0].amountCents)}. Transfers between your own accounts aren’t counted.`,
-            chart: { type: 'bars', title: 'Top expenses this month', currency: 'USD', series: summary.topExpenses.map(item => ({ label: item.description, value: item.amountCents / 100 })) },
-            links: [link('Review transactions', '/transactions'), link('Your financial picture', '/hub')],
-        };
-    }
-
-    if (/(spend|spent|spending|expenses?)/.test(query)) {
-        const previous = summary.previousMonthSpendingCents;
-        const toDate = summary.previousMonthToDateSpendingCents;
-        const comparison = previous ? ` By this point last month you’d spent ${usd(toDate)}, and ${usd(previous)} over the whole month.` : '';
-        return {
-            kind: 'spending',
-            answer: `You’ve spent ${usd(summary.month.spendingCents)} this month across ${summary.spendingCount} completed purchases and payments.${comparison}`,
-            figure: usd(summary.month.spendingCents),
-            chart: summary.categories.length ? { type: 'donut', title: 'Spending by category', currency: 'USD', series: summary.categories.slice(0, 6).map(item => ({ label: item.label, value: item.cents / 100, color: item.color })) } : null,
-            links: [link('Spending breakdown', '/hub#spending'), link('Review transactions', '/transactions')],
-        };
-    }
-
-    if (/(income|earn|earned|salary|paid me|received)/.test(query)) {
-        return { kind: 'income', answer: `You’ve received ${usd(summary.month.earnedCents)} in income and deposits this month, not counting transfers between your accounts.`, figure: usd(summary.month.earnedCents), links: [link('Review transactions', '/transactions')] };
-    }
-
-    if (/(net worth|worth|everything i (own|have)|total wealth)/.test(query)) {
-        const picture = await getPicture(userId);
-        return {
-            kind: 'net_worth',
-            answer: `Your Willow net worth is ${usd(picture.netWorthCents)}. It combines your demo bank balances with your separate simulated portfolio and crypto.${picture.fxUnavailable ? ' Some currency balances are excluded because exchange rates are unavailable.' : ''}`,
-            figure: usd(picture.netWorthCents),
-            chart: { type: 'donut', title: 'Composition', currency: 'USD', series: picture.composition.filter(item => item.cents > 0).map(item => ({ label: item.label, value: item.cents / 100, color: item.color })) },
-            links: [link('Your financial picture', '/hub')],
-        };
-    }
-
-    if (/(allocation|allocated|diversif|split|mix|spread)/.test(query) || (/portfolio/.test(query) && /how|what/.test(query) && !/worth|value/.test(query) && /alloc|split/.test(query))) {
-        const valuation = await demoPortfolio.valuePortfolio(userId);
-        if (!valuation.holdings.length) return { kind: 'allocation', answer: `Your simulated portfolio is entirely demo cash (${formatCurrency(Math.round(valuation.cash * 100))}). Buy a demo asset to see an allocation.`, links: [link('Explore markets', '/wealth/markets')] };
-        const parts = valuation.allocation.map(item => `${item.label} ${(item.value / valuation.total * 100).toFixed(0)}%`).join(', ');
-        return {
-            kind: 'allocation',
-            answer: `Your simulated portfolio is allocated ${parts}.${valuation.pricing !== 'live' ? ' Some prices are unavailable, so those holdings use cost basis.' : ''}`,
-            chart: { type: 'donut', title: 'Portfolio allocation', currency: 'USD', series: valuation.allocation.map((item, index) => ({ label: item.label, value: item.value, color: `var(--chart-${index + 1})` })) },
-            links: [link('Open your portfolio', '/wealth')],
-        };
-    }
-
-    if (/(crypto|bitcoin|btc|ethereum|eth\b|solana)/.test(query)) {
-        const valuation = await demoPortfolio.valuePortfolio(userId);
-        const crypto = valuation.holdings.filter(holding => holding.type === 'crypto');
-        if (!crypto.length) return { kind: 'crypto', answer: 'You don’t hold any simulated crypto right now.', links: [link('Explore crypto', '/crypto')] };
-        const total = crypto.reduce((sum, holding) => sum + holding.marketValue, 0);
-        return {
-            kind: 'crypto',
-            answer: `Your simulated crypto holdings are worth ${formatCurrency(Math.round(total * 100))} across ${crypto.length} asset${crypto.length === 1 ? '' : 's'}.`,
-            figure: formatCurrency(Math.round(total * 100)),
-            items: crypto.map(holding => ({ label: `${holding.name} · ${holding.symbol}`, detail: `${holding.quantity} units${holding.priceAvailable ? '' : ' · cost basis'}`, value: formatCurrency(Math.round(holding.marketValue * 100)) })),
-            itemsTitle: 'Crypto holdings',
-            links: [link('Open Crypto', '/crypto')],
-        };
-    }
-
-    if (/(invest|portfolio|holdings|stocks?|shares|etf|fund)/.test(query)) {
-        const valuation = await demoPortfolio.valuePortfolio(userId);
-        if (!valuation.holdings.length) return { kind: 'investments', answer: `Your simulated portfolio holds ${formatCurrency(Math.round(valuation.cash * 100))} in demo cash and no assets yet.`, links: [link('Explore markets', '/wealth/markets')] };
-        return {
-            kind: 'investments',
-            answer: `Your simulated portfolio is worth ${formatCurrency(Math.round(valuation.total * 100))}, including ${formatCurrency(Math.round(valuation.cash * 100))} in demo cash. Total return since your $100,000 start: ${valuation.totalReturn >= 0 ? '+' : '−'}${formatCurrency(Math.round(Math.abs(valuation.totalReturn) * 100))}.`,
-            figure: formatCurrency(Math.round(valuation.total * 100)),
-            items: valuation.holdings.slice(0, 6).map(holding => ({ label: `${holding.name} · ${holding.symbol}`, detail: `${holding.weight.toFixed(1)}% of portfolio${holding.priceAvailable ? '' : ' · cost basis'}`, value: formatCurrency(Math.round(holding.marketValue * 100)) })),
-            itemsTitle: 'Largest holdings',
-            links: [link('Open your portfolio', '/wealth'), link('Markets', '/wealth/markets')],
-        };
-    }
-
-    if (/saving/.test(query)) {
-        const savings = summary.accounts.filter(account => account.account_type === 'savings');
-        return {
-            kind: 'savings',
-            answer: `You have ${usd(summary.savingsCents)} in ${savings.length} savings account${savings.length === 1 ? '' : 's'}.${summary.savingsMovementCents > 0 ? ` That includes ${usd(summary.savingsMovementCents)} added this month.` : ''}`,
-            figure: usd(summary.savingsCents),
-            accounts: savings.map(accountView),
-            links: [link('View accounts', '/accounts'), link('Your goals', '/goals')],
-        };
-    }
-
-    if (/(scheduled|upcoming|due|bills? this week|payments? this week)/.test(query)) {
-        if (!summary.scheduledTransferCount) return { kind: 'scheduled', answer: 'You have no pending scheduled transfers.', links: [link('Schedule a transfer', '/scheduled-transfers')] };
-        return {
-            kind: 'scheduled',
-            answer: `You have ${summary.scheduledTransferCount} scheduled transfer${summary.scheduledTransferCount === 1 ? '' : 's'}, ${summary.scheduledThisWeek} due in the next seven days. Nothing moves until the scheduled date.`,
-            items: summary.scheduledTransfers.map(transfer => ({ label: transfer.description || 'Scheduled transfer', detail: `${String(transfer.scheduled_for).slice(0, 10)} (UTC)`, value: usd(transfer.amount) })),
-            itemsTitle: 'Scheduled',
-            links: [link('Review scheduled transfers', '/scheduled-transfers')],
-        };
-    }
-
-    if (/goal/.test(query)) {
-        if (!summary.goals.length) return { kind: 'goals', answer: 'You haven’t saved any goals yet.', links: [link('Create a goal', '/goals')] };
-        return {
-            kind: 'goals',
-            answer: `You’re tracking ${summary.goals.length} goal${summary.goals.length === 1 ? '' : 's'}. Progress is self-reported and doesn’t move money.`,
-            items: summary.goals.map(goal => ({ label: goal.name, detail: `${Math.round(goal.current_cents / goal.target_cents * 100)}% of ${usd(goal.target_cents)}`, value: usd(goal.current_cents) })),
-            itemsTitle: 'Goals',
-            links: [link('Manage goals', '/goals')],
-        };
-    }
-
-    if (/card/.test(query)) {
-        const cards = getDb().prepare("SELECT c.status, c.form, c.last_four, c.nickname FROM cards c JOIN accounts a ON a.id = c.account_id WHERE a.user_id = ? AND c.status IN ('active', 'frozen')").all(userId);
-        return {
-            kind: 'cards',
-            answer: cards.length ? `You have ${cards.length} demo card${cards.length === 1 ? '' : 's'}: ${cards.filter(card => card.status === 'active').length} active and ${cards.filter(card => card.status === 'frozen').length} frozen.` : 'You don’t have an active demo card.',
-            items: cards.map(card => ({ label: card.nickname || (card.form === 'virtual' ? 'Virtual card' : 'Debit card'), detail: `•••• ${card.last_four}`, value: card.status === 'frozen' ? 'Frozen' : 'Active' })),
-            links: [link('Manage cards', '/cards')],
-        };
-    }
-
-    if (/(euro|currenc|exchange|fx|pound|rand|metical|gbp|eur|zar|mzn)/.test(query)) {
-        if (!summary.foreignBalances.length) return { kind: 'currency', answer: 'You don’t have a currency account yet. You can open EUR, GBP, MZN or ZAR accounts.', links: [link('International', '/international'), link('Open an account', '/accounts/new?type=currency')] };
-        return {
-            kind: 'currency',
-            answer: `You hold ${summary.foreignBalances.map(item => formatCurrency(item.cents, item.currency)).join(', ')} in currency accounts.`,
-            accounts: summary.accounts.filter(account => account.currency !== 'USD').map(accountView),
-            links: [link('International', '/international')],
-        };
-    }
-
-    if (/(business|invoice|revenue|cash ?flow)/.test(query)) {
-        const { getDashboard } = require('./business');
-        const dashboard = getDashboard(userId);
-        if (!dashboard.accounts.length) return { kind: 'business', answer: 'You don’t have a business account yet.', links: [link('Open business checking', '/accounts/new?type=business')] };
-        const openInvoices = dashboard.invoices.filter(invoice => ['open', 'overdue'].includes(invoice.displayStatus));
-        return {
-            kind: 'business',
-            answer: `This month your business accounts received ${usd(dashboard.revenueCents)} and spent ${usd(dashboard.expensesCents)}. You have ${openInvoices.length} open invoice${openInvoices.length === 1 ? '' : 's'}.`,
-            links: [link('Business dashboard', '/business/dashboard'), link('Invoices', '/business/invoices')],
-        };
-    }
-
-    if (/(balance|how much (money )?do i have|accounts?|cash|available)/.test(query)) {
-        const foreign = summary.foreignBalances.length ? ` You also hold ${summary.foreignBalances.map(item => formatCurrency(item.cents, item.currency)).join(', ')} in currency accounts.` : '';
-        return {
-            kind: 'balance',
-            answer: `Your USD accounts hold ${usd(summary.bankBalanceCents)} across ${summary.accounts.filter(account => account.currency === 'USD').length} accounts.${foreign} This is separate from your simulated investment cash.`,
-            figure: usd(summary.bankBalanceCents),
-            accounts: summary.accounts.map(accountView),
-            links: [link('View accounts', '/accounts')],
-        };
-    }
-
-    return {
-        kind: 'help',
-        answer: 'I can answer questions about your spending, income, savings, balances, investments, portfolio allocation, crypto, goals, cards, currency accounts, business activity and scheduled transfers — using only your Willow demo data.',
-        links: [link('Your financial picture', '/hub'), link('Help center', '/help')],
-    };
-}
-
-module.exports = { getSummary, getPicture, cashflowSeries, answerQuestion, buildInsights };
+module.exports = { getSummary, getPicture, cashflowSeries, buildInsights };

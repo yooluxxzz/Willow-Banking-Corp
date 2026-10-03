@@ -1,0 +1,22 @@
+<dialog class="modal" id="budgetDialog" aria-labelledby="budgetDialogTitle">
+    <form id="budgetForm" novalidate>
+        <div class="modal-head"><h2 id="budgetDialogTitle">New budget</h2><button type="button" class="btn btn-ghost btn-icon" data-dialog-close aria-label="Close"><%- icon('x', 'icon-md') %></button></div>
+        <div class="modal-body">
+            <input type="hidden" name="id">
+            <div class="field"><label for="budgetName">Name</label><input class="input" id="budgetName" name="name" required minlength="1" maxlength="60" autocomplete="off" placeholder="<%= scope === 'business' ? 'e.g. Monthly software' : 'e.g. Groceries' %>"></div>
+            <div class="field mt-5"><label for="budgetCategory">What it covers</label><select class="select" id="budgetCategory" name="category" data-budget-categories><option value=""><%= scope === 'business' ? 'All business expenses' : 'All spending' %></option></select></div>
+            <fieldset class="mt-5">
+                <legend class="field-label">How often it resets</legend>
+                <div class="segmented" role="radiogroup" aria-label="Budget period">
+                    <label class="segmented-option"><input type="radio" name="period" value="daily"> Daily</label>
+                    <label class="segmented-option"><input type="radio" name="period" value="weekly"> Weekly</label>
+                    <label class="segmented-option"><input type="radio" name="period" value="monthly" checked> Monthly</label>
+                </div>
+            </fieldset>
+            <div class="field mt-5"><label for="budgetLimit">Limit</label><div class="input-group has-prefix"><span class="input-prefix">$</span><input class="input num" id="budgetLimit" name="limit" inputmode="decimal" required autocomplete="off"></div>
+                <p class="field-help"><%= scope === 'business' ? 'Measured against the business expenses you log.' : 'Measured against money leaving your personal accounts: payments, withdrawals, money you send and debt payments. Moves between your own accounts and into investing don’t count.' %></p></div>
+            <p class="field-error mt-3" data-budget-error role="alert" hidden></p>
+        </div>
+        <div class="modal-foot"><button type="button" class="btn btn-ghost btn-danger-text" data-budget-delete hidden>Delete budget</button><button type="button" class="btn btn-secondary" data-dialog-close>Cancel</button><button type="submit" class="btn btn-primary">Save budget</button></div>
+    </form>
+</dialog>

@@ -268,7 +268,7 @@
         if (!holding) {
             box.replaceChildren(
                 el('p', { className: 'wl-position-empty', text: `You don’t own ${display} yet.` }),
-                el('p', { className: 'text-sm muted mt-2', text: 'Buy with simulated cash — as little as $1.' }));
+                el('p', { className: 'text-sm muted mt-2', text: 'Buy with your investing cash — as little as $1.' }));
             return;
         }
         const cost = holding.quantity * holding.averagePrice;
@@ -402,7 +402,7 @@
         }
         result.total = result.quantity * price;
         if (trade.side === 'buy' && state.cash !== null && Math.round(result.total * 100) > Math.round(state.cash * 100)) {
-            result.error = `Not enough demo cash. You have ${W.formatMoney(state.cash, 'USD', { digits: 2 })} available.`;
+            result.error = state.cash > 0 ? `Not enough investing cash. You have ${W.formatMoney(state.cash, 'USD', { digits: 2 })} available — add more from your accounts on the Portfolio page.` : 'You have no investing cash yet. Add cash from one of your accounts on the Portfolio page.';
             result.code = 'insufficient_cash';
         }
         if (trade.side === 'sell' && result.quantity > holdingQty + 1e-6) {

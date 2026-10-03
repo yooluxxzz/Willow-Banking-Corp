@@ -46,4 +46,15 @@ describe('Responsive CSS guards', () => {
         const tableWrap = rules(willow).find(rule => rule.selector === '.table-wrap');
         assert.match(tableWrap.body, /position:\s*relative/);
     });
+
+    it('sizes split-intro ledes only as direct row items, never inside a column stack', () => {
+        // A flex-basis meant for the row's width becomes a height in a nested column,
+        // which once left a 440px gap in the Education and Insights headers.
+        const offenders = sheets.flatMap(({ file, css }) => rules(css)
+            .filter(rule => /flex(-basis)?\s*:/.test(rule.body))
+            .flatMap(rule => rule.selector.split(',').map(s => s.trim()))
+            .filter(selector => /\.section-intro\.is-split\s+(?!>)[^,]*\.lede\b/.test(selector))
+            .map(selector => `${file}: ${selector}`));
+        assert.deepEqual(offenders, [], 'use `.section-intro.is-split > .lede`');
+    });
 });
