@@ -70,8 +70,9 @@ Buttons (primary, secondary, ghost, light/outline-light on dark, danger; small/l
 
 * Durations `--dur-1…4` (120–560ms) and a cinematic 1.8s crossfade for hero imagery; easing `--ease-out` for entrances.
 * Micro-interactions: button press, card hover lift, count-up balances, success check drawing, flow-step fades, shake on invalid sign-in.
-* Attention: key figures and new results fade in, hold a soft copper glow and fade back out over about 2.4 seconds (`W.highlight`, `[data-attention]`); lists and cards enter with a short stagger (`W.stagger`). Used sparingly — one highlight per screen load or user action.
-* `prefers-reduced-motion` removes autoplay, drift, count-ups, attention glows and transitions (instant state changes); the hero shows a still scene and its play button is disabled.
+* Attention: key figures and new results fade in, hold a soft copper glow and fade back out over about 2.4 seconds (`W.highlight`, `[data-attention]`); lists and cards enter with a short stagger (`W.stagger`).
+* Scroll focus: every section fades up the first time it is scrolled to, then gets a moment of focus that fades in and out. Public sections get a soft copper wash with a glowing heading, or a glow on their first cards when they have no heading. App cards get the copper ring. What is on screen at load only fades in, no more than three glows play at once, and each section does this once per visit (`setupAttention` in `app.js`).
+* `prefers-reduced-motion` removes autoplay, drift, count-ups, attention glows, scroll focus and transitions (instant state changes); the hero shows a still scene and its play button is disabled.
 
 ## 8. Imagery
 

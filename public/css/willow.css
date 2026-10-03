@@ -3480,9 +3480,8 @@ html.is-private [data-private]:hover {
 }
 
 @keyframes w-attention {
-    0% { box-shadow: 0 0 0 0 transparent, 0 0 0 0 transparent; }
+    0%, 100% { box-shadow: var(--attention-base, 0 0 0 0 transparent); }
     20%, 55% { box-shadow: 0 0 0 3px var(--attention-ring), 0 10px 32px var(--attention-glow); }
-    100% { box-shadow: 0 0 0 0 transparent, 0 0 0 0 transparent; }
 }
 
 @keyframes w-attention-text {
@@ -3498,6 +3497,36 @@ html.is-private [data-private]:hover {
 .figure.is-attention,
 .is-attention-text {
     animation: w-attention-text 2.4s var(--ease-in-out) 1;
+}
+
+/* Scroll focus (setupAttention in app.js): sections wait hidden until they are
+   scrolled to, fade up, then a glow or a soft colour wash fades in and out. */
+.focus-pending {
+    opacity: 0;
+}
+
+.focus-enter {
+    animation: w-focus-in 700ms var(--ease-out) var(--focus-delay, 0ms) both;
+}
+
+@keyframes w-focus-in {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: none; }
+}
+
+.is-spotlit {
+    animation: w-spotlight 2.6s var(--ease-in-out) 1;
+}
+
+@keyframes w-spotlight {
+    0%, 100% { background-color: var(--focus-base, transparent); }
+    25%, 55% { background-color: color-mix(in srgb, var(--accent) 9%, var(--focus-base, transparent)); }
+}
+
+@media print {
+    .focus-pending {
+        opacity: 1;
+    }
 }
 
 .stagger-in > * {

@@ -487,9 +487,16 @@
     function highlight(node, { scroll = false } = {}) {
         if (!node || prefersReducedMotion()) return;
         node.classList.remove('is-attention');
+        // The glow starts and ends on the element's own shadow, so cards don't flicker.
+        const shadow = global.getComputedStyle(node).boxShadow;
+        node.style.setProperty('--attention-base', shadow && shadow !== 'none' ? shadow : '0 0 0 0 transparent');
         void node.offsetWidth; // restart the animation if it is already running
         node.classList.add('is-attention');
-        node.addEventListener('animationend', () => node.classList.remove('is-attention'), { once: true });
+        node.addEventListener('animationend', function done(event) {
+            if (event.target !== node) return; // a child's animation ending doesn't count
+            node.removeEventListener('animationend', done);
+            node.classList.remove('is-attention');
+        });
         if (scroll && node.scrollIntoView) node.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
 
@@ -513,12 +520,143 @@
         copy.prepend(tile);
     }
 
-    /** App pages fade in section by section; one marked element per page gets a moment of attention. */
+    // ── Scroll focus ─────────────────────────────────────────────────────
+    // Every section fades in the first time it is scrolled to, then a soft light
+    // fades in and back out over it (about 2.4s) to draw the eye. Sections already
+    // on screen when the page opens only fade in. Once per section per visit;
+    // nothing moves with reduced motion.
+    const FOCUS_SKIP = 'dialog, script, template, style, [hidden], [data-focus="off"], .page-head, .skip-link';
+    const MAX_GLOWS_AT_ONCE = 3;
+
+    const isBoxed = node => {
+        const cs = global.getComputedStyle(node);
+        const background = cs.backgroundColor;
+        return Boolean((background && background !== 'rgba(0, 0, 0, 0)' && background !== 'transparent')
+            || parseFloat(cs.borderTopWidth) > 0 || (cs.boxShadow && cs.boxShadow !== 'none'));
+    };
+    const isShown = node => node.getClientRects().length > 0;
+
+    /** App pages: each card-like block, found by looking inside plain layout wrappers. */
+    function appFocusTargets(main) {
+        const targets = [];
+        const containsCards = (node, depth) => Array.from(node.children).some(child => !child.matches(FOCUS_SKIP) && isShown(child)
+            && (isBoxed(child) || (depth > 0 && containsCards(child, depth - 1))));
+        const visit = (node, depth) => {
+            // .reveal blocks already animate themselves on scroll.
+            if (node.matches(FOCUS_SKIP) || node.matches('.reveal') || !isShown(node)) return;
+            if (depth < 3 && !isBoxed(node) && containsCards(node, 2)) {
+                Array.from(node.children).forEach(child => visit(child, depth + 1));
+                return;
+            }
+            targets.push({ node, glow: isBoxed(node) });
+        };
+        Array.from(main.children).forEach(child => visit(child, 0));
+        return targets;
+    }
+
+    /** Public pages: each page section, plus the numbered sections of the info pages. */
+    function siteFocusTargets() {
+        return Array.from(doc.querySelectorAll('main > section, main .info-section'))
+            .filter(node => !node.matches(FOCUS_SKIP) && isShown(node))
+            .map(node => ({ node, section: true, wash: parseFloat(global.getComputedStyle(node).paddingTop) >= 32 }));
+    }
+
+    function focusSection(target) {
+        const { node } = target;
+        if (target.wash) {
+            node.style.setProperty('--focus-base', global.getComputedStyle(node).backgroundColor);
+            node.classList.add('is-spotlit');
+            node.addEventListener('animationend', event => { if (event.target === node) node.classList.remove('is-spotlit'); });
+        }
+        const heading = node.querySelector('h1, h2, .h1, .h2');
+        if (heading) {
+            heading.classList.add('is-attention-text');
+            heading.addEventListener('animationend', function done(event) {
+                if (event.target !== heading) return;
+                heading.removeEventListener('animationend', done);
+                heading.classList.remove('is-attention-text');
+            });
+            return;
+        }
+        // No section heading (a grid of cards, say): the first cards on screen glow instead.
+        Array.from(node.querySelectorAll('.card, .card-interactive, .panel, .ticker-card'))
+            .filter(card => { const box = card.getBoundingClientRect(); return box.height && box.top < global.innerHeight && box.bottom > 0; })
+            .slice(0, MAX_GLOWS_AT_ONCE)
+            .forEach((card, index) => global.setTimeout(() => highlight(card), index * 120));
+    }
+
+    function enter(target, delay, glow) {
+        const { node } = target;
+        node.style.setProperty('--focus-delay', `${delay}ms`);
+        node.classList.remove('focus-pending');
+        node.classList.add('focus-enter');
+        node.addEventListener('animationend', function done(event) {
+            if (event.target !== node) return;
+            node.removeEventListener('animationend', done);
+            node.classList.remove('focus-enter');
+            if (!glow) return;
+            if (target.section) focusSection(target);
+            else highlight(node);
+        });
+    }
+
     function setupAttention() {
-        const main = doc.querySelector('[data-app] .app-content');
-        if (main) stagger(main, { max: 8 });
+        // One marked element per page (a key figure) gets a moment of attention on load.
         const focus = doc.querySelector('[data-attention]');
-        if (focus) global.setTimeout(() => highlight(focus), 650);
+        if (prefersReducedMotion() || !('IntersectionObserver' in global)) return;
+        const main = doc.querySelector('[data-app] .app-content');
+        const targets = main ? appFocusTargets(main) : siteFocusTargets();
+        const fold = global.innerHeight * 0.9;
+        const later = [];
+        let onScreen = 0;
+        let focusHandled = false;
+        targets.forEach(target => {
+            if (target.node.getBoundingClientRect().top < fold) {
+                // Already visible: app cards fade in one after another; public sections are left as they are.
+                if (!main) return;
+                const isFocus = target.node === focus;
+                focusHandled = focusHandled || isFocus;
+                enter(target, Math.min(onScreen++, 8) * 70, isFocus);
+            } else {
+                // Sections that already fade their own content in (.reveal) keep it; the rest wait hidden.
+                if (!(target.section && target.node.querySelector('.reveal'))) target.node.classList.add('focus-pending');
+                later.push(target);
+            }
+        });
+        // A marked figure inside a card glows on its own once the card has faded in.
+        if (focus && !focusHandled && focus.getBoundingClientRect().top < fold) global.setTimeout(() => highlight(focus), 650);
+        if (!later.length) return;
+        const byNode = new Map(later.map(target => [target.node, target]));
+        const observer = new IntersectionObserver(entries => {
+            entries.filter(entry => entry.isIntersecting && byNode.has(entry.target))
+                .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top || a.boundingClientRect.left - b.boundingClientRect.left)
+                .forEach((entry, index) => {
+                    observer.unobserve(entry.target);
+                    reach(byNode.get(entry.target), index);
+                });
+        }, { threshold: 0, rootMargin: '0px 0px -18% 0px' });
+        const reach = (target, index) => {
+            byNode.delete(target.node);
+            const glow = index < MAX_GLOWS_AT_ONCE && (target.glow || target.section);
+            if (target.node.classList.contains('focus-pending')) enter(target, index * 110, glow);
+            else if (glow) global.setTimeout(() => focusSection(target), 300);
+        };
+        later.forEach(target => observer.observe(target.node));
+
+        // Content at the very end of a page may never cross the trigger line, so once
+        // the page can't scroll further, whatever is on screen comes in too.
+        let ticking = false;
+        const atBottom = () => {
+            ticking = false;
+            if (!byNode.size) { global.removeEventListener('scroll', onScroll); return; }
+            if (global.innerHeight + global.scrollY < doc.documentElement.scrollHeight - 4) return;
+            Array.from(byNode.values())
+                .filter(target => target.node.getBoundingClientRect().top < global.innerHeight)
+                .forEach((target, index) => { observer.unobserve(target.node); reach(target, index); });
+        };
+        const onScroll = () => { if (!ticking) { ticking = true; global.requestAnimationFrame(atBottom); } };
+        global.addEventListener('scroll', onScroll, { passive: true });
+        global.setTimeout(atBottom, 400);
     }
 
     /** Animates a number into an element. Respects reduced motion. */

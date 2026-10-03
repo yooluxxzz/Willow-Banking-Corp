@@ -481,3 +481,41 @@ The user asked for Willow to be upgraded into one premium digital bank, investin
   - Re-check on a populated profile and a brand-new empty profile: 30 pages at 390 and 1280, 0 violations.
 - Python bridge, end to end: Willow started the service itself; requests without the token got 401; the service restarted after being killed; it stopped with Willow. This environment blocks Yahoo, so quotes correctly show as unavailable.
 - Ollama isn’t installed here, so the assistant was tested only against the stand-in server, not a real model.
+
+## Scroll focus on every section — 2026-10-03
+
+**Requested**
+- Every section people scroll down to should fade in, then fade out briefly to catch their attention.
+
+**Implemented** (`setupAttention` in `public/js/app.js`, styles in `public/css/willow.css`)
+- **Fade in.** Each section fades up (0.7 s) the first time it is scrolled to. It triggers when its top passes 82% of the window height.
+- **Focus moment.** A light then fades in and back out over the section (2.4–2.6 s):
+  - Public pages (`main > section` and the info pages’ `.info-section`): a soft copper colour wash over padded sections, plus a glow on the section heading. Sections without a heading glow their first cards on screen.
+  - Signed-in pages: each card-like block (found inside plain layout wrappers) gets the copper ring glow.
+- **Rules that keep it calm:**
+  - What is on screen at load only fades in. App cards do this one after another; public sections are left untouched.
+  - No more than three glows play at once.
+  - Each section does this once per visit.
+  - Sections whose content already reveals itself on scroll (`.reveal`, on the homepage and product pages) keep that animation and add the wash and heading glow.
+  - Content at the very end of a page, which may never cross the trigger line, comes in once the page can’t scroll further.
+  - Reduced motion and browsers without IntersectionObserver show everything immediately. Hidden content is shown when printing.
+- **Fixes to the existing glow (`W.highlight`):**
+  - It now starts and ends on the element’s own shadow, so cards don’t flicker.
+  - A child element’s animation ending no longer cuts it short.
+  - The page’s marked figure, when it is itself a card fading in, glows after the fade instead of the two animations cancelling.
+
+**Database / schema**
+- None.
+
+**Checks run**
+- New `tests/scroll-focus.test.js` (jsdom with a stand-in IntersectionObserver) covers:
+  - public sections waiting hidden, fading in, then washing and glowing their heading;
+  - headless sections glowing their cards;
+  - app cards staggering at load and glowing when reached;
+  - reduced motion.
+  - Two of its three tests fail on the previous `app.js`.
+- `npm test`: 151 tests pass. All 35 browser scripts parse. `git diff --check` is clean.
+- Browser, with motion on, scrolling top to bottom at 1280×800 and 390×844:
+  - Pages: home, a product page, Education, About, Markets, Help, an article, Net worth, Dashboard, Budgets, Debts, Business expenses, Wealth, Settings and Security.
+  - Every page ended with nothing hidden and no animation classes left behind, and there were no script errors.
+  - Mid-animation screenshots, in light and dark, show the wash with the heading glow and the card ring.
