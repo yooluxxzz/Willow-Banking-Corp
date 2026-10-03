@@ -69,4 +69,16 @@ describe('Net worth page and its financial summary', () => {
         assert.doesNotMatch(others, /Market groceries|12\.34/);
         assert.equal((await owner.agent.post('/api/hub/ask').set('X-CSRF-Token', owner.csrfToken).send({ question: 'Spending?' })).status, 404);
     });
+
+    it('says plainly when most spending was money sent to other people', () => {
+        const summary = { month: { spendingCents: 12500 }, previousMonthToDateSpendingCents: 0, categories: [{ key: 'transfers', label: 'Transfers', icon: 'transfer', cents: 12500 }], savingsMovementCents: 0, scheduledThisWeek: 0, goals: [] };
+        const [first] = hub.buildInsights(summary, null);
+        assert.equal(first.text, 'Most of your spending this month was money sent to other people.');
+        assert.equal(first.detail, '$125.00 · 100% of spending');
+    });
+
+    it('keeps amounts out of insight sentences so hiding balances covers them', () => {
+        const summary = { month: { spendingCents: 0 }, previousMonthToDateSpendingCents: 0, categories: [], savingsMovementCents: 40000, scheduledThisWeek: 0, goals: [{ name: 'Car', target_cents: 100000, current_cents: 40000 }] };
+        for (const insight of hub.buildInsights(summary, null)) assert.doesNotMatch(insight.text, /\$\d/, insight.text);
+    });
 });

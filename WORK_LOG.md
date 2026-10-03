@@ -519,3 +519,105 @@ The user asked for Willow to be upgraded into one premium digital bank, investin
   - Pages: home, a product page, Education, About, Markets, Help, an article, Net worth, Dashboard, Budgets, Debts, Business expenses, Wealth, Settings and Security.
   - Every page ended with nothing hidden and no animation classes left behind, and there were no script errors.
   - Mid-animation screenshots, in light and dark, show the wash with the heading glow and the card ring.
+
+## Submission readiness: full review, fixes, tooling and a tester guide — 2026-10-03
+
+**Requested**
+- Finalize everything for submission, aiming for at least 9/10 in Code Structure & Technical Quality, UI/UX & Responsiveness, Theme Impact & Utility, Innovation and Completeness, with careful full-scan testing.
+- Someone else will test it, so the guide must be careful and very clear.
+- Make sure the Ollama assistant works well.
+- Commit, push and sync when done.
+
+**Implemented**
+- **Full review.** Three independent reviews (backend and security, frontend and accessibility, structure and tooling) were followed by dynamic tests. Every finding below was fixed and, where possible, covered by a test.
+- **Data integrity**
+  - Foreign keys stay enforced (sql.js switched them off on every save), and orphaned rows are repaired at start-up.
+  - Saves only when something changed, with an atomic file replace that retries while Windows holds the file.
+  - Rounding in trades and conversions favours the bank, so tiny round trips can't create money.
+  - Admin adjustments use the account's own currency.
+  - `db:restore` loads the snapshot explicitly.
+- **Security**
+  - `TRUST_PROXY`, so clients can't pick their own IP to skip rate limits.
+  - CSRF tokens are created only when a page renders, so API and public responses don't start sessions.
+  - `/health` details are shown to admins only.
+  - Typed `ValidationError` for expected failures; anything unexpected returns a generic 500 and is logged.
+  - Strict cent parsing and type checks.
+  - CSV export guards against spreadsheet formulas.
+  - Sign-out and expiry clear the configured cookie.
+  - Guests can't set up two-step verification.
+  - The sign-in rate limit now counts failed attempts only.
+- **Zero-config start for reviewers**
+  - In development an admin login is generated, printed once and saved to `data/admin-credentials.txt`.
+  - The Python bridge keeps its secret with the data, refuses a foreign service, finds `py -3` on Windows and exits with Willow.
+  - Clear messages when the port is taken.
+  - Sessions are stored next to the database.
+- **Budgets and alerts**
+  - Nightly checks never skip a day, and alerts name past days.
+  - The alert switches now apply, with a new Budgets switch.
+  - One definition of spending (`src/services/spending.js`) is shared by budgets, Net worth and the assistant.
+  - An admin System panel with **Run daily checks now**.
+- **UI/UX**
+  - Pressing Enter twice no longer submits a form twice.
+  - Scroll focus never hides content from screenshots or keyboard users.
+  - "Hide balances" now covers chart axes and tooltips, account pickers and insight sentences.
+  - The theme icon shows correctly on app pages; the closed profile menu is out of the Tab order.
+  - Notifications tabs work with the arrow keys.
+  - Correct button labels for signed-in visitors on product pages.
+  - The Security center handles guests.
+  - Activity is grouped by local day.
+  - Invoices offer to open business checking.
+  - Retry states for Net worth, investing cash and the watchlist.
+  - Labels fixed for the loan calculator, assistant suggestions, admin tables and the admin reason field.
+  - Scheduled transfers show the right currency and account type.
+  - Guest access is on the first sign-in screen and on sign-up.
+  - The mobile tab bar highlights More on pages like Goals and Loans.
+  - The payments page has one name, "Payments".
+  - Copy fixes on Home, Markets, account opening and "Willow demo".
+- **Ask Willow (Ollama)**
+  - Picks the best installed chat model (never an embedding model) and warms it up.
+  - Stops a stalled answer after 45 s and strips `<think>` blocks.
+  - Shows Ollama's own error (for example, out of memory).
+  - Gives the model precomputed key figures, and links answers to the related pages.
+  - A setup card with **Check again** and status polling while Ollama is off.
+  - `npm run assistant:check` diagnoses a real install end to end.
+- **Structure**
+  - Background jobs (`src/services/jobs.js`), identifiers and references (`src/services/ids.js`), errors (`src/errors.js`) and route helpers (`src/routes/helpers.js`).
+  - Net worth lives at `/net-worth`, and `/hub` redirects permanently there; the picture API no longer recomputes net worth.
+  - Removed five unused endpoints, the unused `/api/wealth/fx`, about 400 lines of dead CSS and JS, `src/logger.js` and the `uuid` dependency.
+- **Tooling**
+  - ESLint (`npm run lint`), and the codebase is lint-clean; `npm run check` runs lint plus tests; `npm run test:coverage`.
+  - Cross-platform Python scripts (`scripts/python.js`, `npm run setup:python`).
+  - `engines` and `private` in package.json.
+  - pdfkit 0.20 and jsdom 29, so clean installs show no deprecation warnings.
+  - `.gitattributes` and `.editorconfig`.
+  - GitHub Actions CI on Linux (Node 20, 22, 24), Windows and macOS, plus the Python tests.
+  - Old test logs removed from the root; design notes and the original brief moved to `docs/`.
+- **Docs**
+  - New `docs/TESTING_GUIDE.md`: install on each OS, a 14-part guided test with expected results, Python and Ollama, automated checks and troubleshooting.
+  - README quick start is now zero-config.
+  - `.env.example` matches the code.
+  - `docs/DATABASE_CHANGES.md` is updated.
+
+**Database / schema** (details in `docs/DATABASE_CHANGES.md`)
+- New column `user_preferences.alert_budgets` (default on).
+- Foreign-key enforcement after every save and a start-up repair of orphaned rows.
+- Sessions are stored next to `DATABASE_PATH`.
+- Ledger references use 10 random hex digits; prefixes are unchanged.
+- No backup was needed: only scratch databases outside the repository were used.
+
+**Checks run**
+- `npm run check`: ESLint clean and 181 Node tests pass. `npm run test:python`: 42 tests pass. Coverage is about 87.5% of lines.
+- GitHub Actions: all six jobs green — Node 20, 22 and 24 on Ubuntu, Node 22 on Windows and macOS, and Python.
+- Fresh clone with no `.env`:
+  - `npm ci` shows no warnings and 0 vulnerabilities.
+  - `npm start` printed the admin box, created `data/` and started the Python service.
+  - The service exited with Willow.
+- Playwright end-to-end runs against a live server:
+  - **Journey 2** (15 steps): guest access, paying another customer, scheduling, business account and expense, investing cash, PDF statement, CSV export, privacy, sign-out and sign-in, the assistant setup card, the admin console and the phone layout.
+  - **Journey 3**: the guide's Part B, steps B2–B13, through the UI with every promised figure checked (for example, net worth $10,535.00).
+  - No page errors or server errors in either run.
+- axe-core: 0 violations on 47 pages, in light and dark, at 1280 and 390 px. The admin console is clean too, with the Manage dialog open.
+- Responsive audit: 69 pages at 320, 390, 768, 1024 and 1440 px. The only finding is the decorative phone tile on the home page at 320 px.
+- Not testable in this environment:
+  - A real Ollama model: downloads are blocked. Covered by protocol-faithful tests and `assistant:check` against a stand-in server.
+  - Live stock prices: Yahoo is blocked by the sandbox proxy. The unavailable states were verified.

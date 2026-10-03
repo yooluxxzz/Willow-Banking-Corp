@@ -112,6 +112,7 @@ async function getPicture(userId) {
     };
 }
 
+/** Short observations for Home and Net worth. Amounts go in `detail`, which "Hide balances" blurs. */
 function buildInsights(summary, valuation) {
     const insights = [];
     const spend = summary.month.spendingCents;
@@ -125,10 +126,14 @@ function buildInsights(summary, valuation) {
     if (summary.categories.length) {
         const top = summary.categories[0];
         const share = spend ? Math.round(top.cents / spend * 100) : 0;
-        insights.push({ icon: top.icon, tone: 'neutral', text: `Your largest spending category this month is ${top.label.toLowerCase()}.`, detail: `${usd(top.cents)} · ${share}% of spending`, href: '/net-worth#spending' });
+        // Moves between your own accounts aren't spending, so "transfers" here means money sent to other people.
+        const text = top.key === 'transfers'
+            ? 'Most of your spending this month was money sent to other people.'
+            : `Your largest spending category this month is ${top.label.toLowerCase()}.`;
+        insights.push({ icon: top.icon, tone: 'neutral', text, detail: `${usd(top.cents)} · ${share}% of spending`, href: '/net-worth#spending' });
     }
     if (summary.savingsMovementCents > 0) {
-        insights.push({ icon: 'savings', tone: 'positive', text: `You’ve moved ${usd(summary.savingsMovementCents)} into savings this month.`, detail: 'Net change across your savings accounts.', href: '/accounts' });
+        insights.push({ icon: 'savings', tone: 'positive', text: 'You’ve added to your savings this month.', detail: `${usd(summary.savingsMovementCents)} net across your savings accounts`, href: '/accounts' });
     }
     if (summary.scheduledThisWeek) {
         insights.push({ icon: 'calendar', tone: 'neutral', text: `You have ${summary.scheduledThisWeek} scheduled payment${summary.scheduledThisWeek === 1 ? '' : 's'} this week.`, detail: 'Demo transfers run on their scheduled date (UTC).', href: '/scheduled-transfers' });

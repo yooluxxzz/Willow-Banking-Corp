@@ -34,7 +34,7 @@ The application uses sql.js with its schema and startup migrations in `src/datab
 ## 2026-10-02: demo Wealth and financial Hub
 
 - Startup creates `demo_portfolios`, `demo_holdings`, `demo_watchlist`, and `demo_trades`. These tables are user-owned and cascade on user deletion; they are separate from `accounts`, `transactions`, and the banking ledger.
-- New demo portfolios start with 10,000,000 cents ($100,000) of simulated investment cash. Trades use server-retrieved prices, validate buy/sell quantities and available demo cash, and update only demo portfolio tables. Holdings record weighted-average acquisition price.
+- New demo portfolios start with 10,000,000 cents ($100,000) of simulated investment cash *(superseded on 2026-10-03: investing cash starts at $0 and is funded from the customer's own accounts)*. Trades use server-retrieved prices, validate buy/sell quantities and available demo cash, and update only demo portfolio tables. Holdings record weighted-average acquisition price.
 - A server-side allowlisted Yahoo Finance chart adapter retrieves price/history/available quote statistics and indicative FX pairs, caches each symbol/range for five minutes, and marks fallback quotes stale after refresh errors. Stale quotes are visible but cannot be used to place simulated orders. No broker or money-transfer provider is integrated.
 - The Hub reads completed, owner-scoped ledger records. Spending summaries and expense rankings exclude transfers; portfolio amounts are at cost basis, not live market valuation. Debt, external accounts, scheduled payments, saved goals, FX execution, crypto send/receive and business team/invoice features are unavailable and are not represented as connected services.
 - This Node application has no Python/yfinance runtime. The Yahoo chart endpoint is a prototype market-data source, not a guaranteed or production-grade feed. No existing banking balances or records are backfilled or changed by this feature.
@@ -42,7 +42,7 @@ The application uses sql.js with its schema and startup migrations in `src/datab
 ## 2026-10-02: simulated Wealth workspace
 
 - Startup creates `demo_portfolios`, `demo_holdings`, `demo_watchlist`, and `demo_trades`. These user-owned tables cascade on user deletion and remain separate from `accounts`, `transactions`, and the banking ledger.
-- New demo portfolios start with 10,000,000 cents ($100,000) of simulated investment cash. Trade records contain a server-retrieved market price, quantity, side and total. Holdings use weighted-average acquisition price; sells cannot exceed owned demo units. Trade writes update only demo portfolio tables.
+- New demo portfolios start with 10,000,000 cents ($100,000) of simulated investment cash *(superseded on 2026-10-03, as above)*. Trade records contain a server-retrieved market price, quantity, side and total. Holdings use weighted-average acquisition price; sells cannot exceed owned demo units. Trade writes update only demo portfolio tables.
 - The market adapter retrieves a fixed allowlist of symbols from Yahoo Finance chart endpoints on the server, caches each supported historical range for five minutes, and marks expired cached data stale after refresh failures. Simulated orders reject stale data. This is a prototyping data source, not an execution service; this Node project has no Python/yfinance runtime, and no real orders are placed.
 - No existing account balance, banking transaction, or user record is backfilled or altered by the feature. The Hub reads completed owner-scoped ledger rows; spending totals and expense rankings exclude transfers. Investment summaries use recorded cost basis, not live valuation. Credit/debt, external accounts and scheduled payments are explicitly unavailable.
 
@@ -75,7 +75,7 @@ All changes are additive and applied in place at startup by `src/database.js`. E
 
 - **New tables** (user-owned with `ON DELETE CASCADE`, except where noted):
   - `payees` — saved recipients (`recipient_user_id`, optional `nickname`, `last_paid_at`); unique per owner and recipient.
-  - `user_preferences` — alert switches, `privacy_hide_balances`, `privacy_personalized_insights`, large-transaction threshold and `sample_data_loaded_at` (makes sample activity idempotent).
+  - `user_preferences` — alert switches, `privacy_hide_balances`, `privacy_personalized_insights`, large-transaction threshold and `sample_data_loaded_at` (makes sample activity idempotent). *(Since 2026-10-03 the threshold, sample-data and hide-balances columns are no longer used; they stay so older databases keep working.)*
   - `two_factor` — TOTP secret encrypted with AES-256-GCM (key from `TWO_FACTOR_KEY` or the session secret), `enabled_at` and `last_used_step` to reject code reuse.
   - `business_profiles`, `business_invoices` (`open` | `paid` | `void`, paid account and transaction reference), `business_team_members` (`admin` | `approver` | `cardholder` | `viewer`; invitations only, no access granted).
   - `loan_estimates` — saved calculator results (estimates only).
@@ -135,6 +135,18 @@ All changes are applied in place at startup by `src/database.js`. Nothing invent
   5. resets investing: holdings, trades and internal crypto transfers bought with the old $100,000 practice cash are deleted and every portfolio’s cash is set to 0.
 
   On this session’s scratch preview database it removed 5 community customers, 14 guest profiles, 113 sample transactions, 11 other sample records, 1 automatic card and reset 1 portfolio. Customers’ own deposits, payments and accounts were kept.
-- **Nightly job:** `server.js` runs budget checks and net-worth snapshots at start-up (catching up on up to 31 missed days, notifying only for the latest) and then every night at `NIGHTLY_CHECK_TIME` (default 23:55 local time).
+- **Nightly job:** `src/services/jobs.js` (started by `server.js`) runs budget checks and net-worth snapshots at start-up (catching up on up to 31 missed days, notifying only for the latest) and then every night at `NIGHTLY_CHECK_TIME` (default 23:55 local time).
 - **Snapshot in Git:** `src/services/snapshot.js` exports the whole database as deterministic SQL (schema, then rows in rowid order; `revoked_sessions` is skipped because those rows only matter to the live session store). `npm run db:save` writes `data/willow-snapshot.sql`; `npm run db:restore -- --force` replaces the database file and keeps the old one as `willow.db.bak-<timestamp>`. When no database file exists, start-up restores the snapshot before migrating (`SNAPSHOT_AUTO_RESTORE=false` disables this). `.gitignore` ignores `data/*` except the snapshot, plus `*.bak-*` and `*.tmp`. The snapshot holds password hashes and recovery-code digests, so the repository must stay private.
 - **Backups:** this session ran the app only against a scratch database outside the repository that held test data, so no backup was taken. Before upgrading a database you care about, stop Willow and copy it (or run `npm run db:save`) first. Tests use in-memory or temporary databases only.
+
+## 2026-10-03: integrity repair, budget alerts switch and storage tidy-up
+
+Applied in place at start-up by `src/database.js`; nothing is rewritten except the repair below.
+
+- **New column:** `user_preferences.alert_budgets INTEGER NOT NULL DEFAULT 1` — the *Budgets* switch in Settings → Alerts. Existing profiles get it switched on. The alert switches are now enforced: a notification whose type is switched off is not created (`deposit`/`withdrawal`/`transfer` → `alert_transactions`, `card` → `alert_cards`, `budget` → `alert_budgets`, `security` → `alert_security`).
+- **Foreign keys were not being enforced after saves.** sql.js reopens the database when it exports it, which resets `PRAGMA foreign_keys` to off, so deleting a profile or account could leave rows pointing at nothing. Enforcement is now switched back on after every export, and a one-pass repair (`repairForeignKeys`) runs at every start-up: it checks `PRAGMA foreign_key_check` and, inside a transaction, clears links that may be empty (`ON DELETE SET NULL`, or a nullable column) and deletes rows that can't exist without their parent. It logs how many records it repaired; `tests/database-integrity.test.js` covers a deliberately damaged database.
+- **Saves:** the database file is only rewritten when something changed (`total_changes()`), and is replaced atomically, retrying briefly if Windows reports the file busy.
+- **Sessions** are stored in `sessions.db` next to the database (`DATABASE_PATH`) instead of always in `./data`, so a second database never shares sign-ins with the first. For the default setup the location is unchanged (`data/sessions.db`).
+- **Ledger references** now use 10 random hex digits (`TRF-3F9A1C0B7E`) instead of 8, generated in one place (`src/services/ids.js`). Prefixes are unchanged and still meaningful (see `src/services/spending.js`); existing references are kept.
+- **Hide balances** is a per-device setting (the eye icon), so the unused `privacy_hide_balances` field was removed from the preferences API; the column stays.
+- **Backups:** this session ran Willow only against scratch databases outside the repository, so no backup was taken. Before upgrading a database you care about, stop Willow and copy it, or run `npm run db:save`.

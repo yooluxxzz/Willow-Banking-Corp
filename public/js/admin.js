@@ -77,7 +77,7 @@
             const data = await W.api(`/api/admin/users/${id}`);
             const user = data.user;
             doc.getElementById('userDialogTitle').textContent = user.full_name;
-            const reason = W.el('textarea', { className: 'textarea', id: 'statusReason', rows: 2, maxlength: 200, placeholder: 'Reason (required to suspend or delete)' });
+            const reason = W.el('textarea', { className: 'textarea', id: 'statusReason', rows: 2, maxlength: 200 });
             const actions = W.el('div', { className: 'cluster' });
             const act = (label, status, deletionType, tone) => {
                 const button = W.el('button', { type: 'button', className: `btn btn-sm ${tone || 'btn-secondary'}`, text: label });
@@ -96,7 +96,7 @@
                     W.el('span', { className: 'list-row-main' }, W.el('span', { className: 'list-row-title', text: account.nickname || `${account.account_type} account` }), W.el('span', { className: 'list-row-sub', text: `#${account.id} · ${account.account_number} · ${account.currency || 'USD'} · ${account.status}` })),
                     W.el('span', { className: 'list-row-end' }, W.el('strong', { text: W.formatCents(account.balance, account.currency || 'USD') }))))) : W.el('p', { className: 'muted text-sm', text: 'No accounts.' }),
                 W.el('h3', { className: 'label mt-6 mb-2', text: 'Account status' }),
-                reason,
+                W.el('div', { className: 'field' }, W.el('label', { for: 'statusReason', text: 'Reason (required to suspend or delete)' }), reason),
                 W.el('div', { className: 'mt-3' }, actions),
                 W.el('p', { className: 'field-error mt-3', 'data-status-error': '', hidden: true }));
         } catch (error) {
