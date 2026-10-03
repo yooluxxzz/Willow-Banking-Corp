@@ -63,9 +63,9 @@
             <p data-amount-to></p>
             <div class="field mt-6">
                 <label for="amount" class="visually-hidden">Amount</label>
-                <div class="amount-input"><span class="amount-currency" data-amount-symbol>$</span><input class="input amount-field" id="amount" inputmode="decimal" autocomplete="off" placeholder="0.00" aria-describedby="amountError"></div>
+                <div class="amount-input"><span class="currency" data-amount-symbol aria-hidden="true">$</span><input id="amount" inputmode="decimal" autocomplete="off" placeholder="0.00" aria-describedby="amountError"></div>
                 <div class="cluster mt-3" role="group" aria-label="Quick amounts">
-                    <% [20, 50, 100, 250].forEach(value => { %><button type="button" class="chip chip-sm" data-preset="<%= value %>"><span data-amount-symbol>$</span><%= value %></button><% }) %>
+                    <% [20, 50, 100, 250].forEach(value => { %><button type="button" class="chip chip-sm" data-preset="<%= value %>"><span><span data-amount-symbol>$</span><%= value %></span></button><% }) %>
                 </div>
                 <p class="field-error" id="amountError" hidden></p>
             </div>

@@ -32,11 +32,11 @@
             <div class="field">
                 <label for="amount">Amount</label>
                 <div class="amount-input">
-                    <span class="amount-currency" data-amount-symbol>$</span>
-                    <input class="input amount-field" id="amount" name="amount" inputmode="decimal" autocomplete="off" placeholder="0.00" aria-describedby="amountHelp amountError">
+                    <span class="currency" data-amount-symbol aria-hidden="true">$</span>
+                    <input id="amount" name="amount" inputmode="decimal" autocomplete="off" placeholder="0.00" aria-describedby="amountHelp amountError">
                 </div>
                 <div class="cluster mt-3" role="group" aria-label="Quick amounts">
-                    <% presets.forEach(value => { %><button type="button" class="chip chip-sm" data-preset="<%= value %>"><span data-amount-symbol>$</span><%= value %></button><% }) %>
+                    <% presets.forEach(value => { %><button type="button" class="chip chip-sm" data-preset="<%= value %>"><span><span data-amount-symbol>$</span><%= value %></span></button><% }) %>
                 </div>
                 <p class="field-help" id="amountHelp"><%= copy.limit %></p>
                 <p class="field-error" id="amountError" hidden></p>

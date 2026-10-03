@@ -262,13 +262,19 @@ html.is-private .privacy-icon-show {
     height: 18px;
     padding: 0 5px;
     border-radius: var(--r-pill);
-    background: var(--accent);
+    background: var(--copper-600);
     color: #FFFFFF;
     font-size: 0.625rem;
     font-weight: 700;
     display: grid;
     place-items: center;
     border: 2px solid var(--bg);
+}
+
+/* Light copper needs dark text to stay readable at this size. */
+[data-theme="dark"] .app-bell-count {
+    background: var(--accent);
+    color: #1A0D06;
 }
 
 .app-bell[aria-current='page'] {
@@ -900,6 +906,7 @@ html.is-private .privacy-icon-show {
 
 .panel-head {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: var(--s-3);
@@ -1086,7 +1093,7 @@ html.is-private .privacy-icon-show {
 /* ── Account tiles ──────────────────────────────────────────────────── */
 .account-tiles {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
     gap: var(--s-4);
 }
 
@@ -1500,6 +1507,7 @@ a.insight:hover {
 
 .pick-list {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 8px;
     margin-top: var(--s-5);
 }
@@ -1683,7 +1691,7 @@ a.insight:hover {
 
 @media (max-width: 860px) {
     .settings-section {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
 }
 
@@ -2183,30 +2191,6 @@ a.insight:hover {
 }
 
 /* ── Money input ────────────────────────────────────────────────────── */
-.amount-input {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.amount-currency {
-    position: absolute;
-    left: 18px;
-    font-size: var(--fs-2xl);
-    font-weight: 540;
-    color: var(--text-muted);
-    pointer-events: none;
-}
-
-.amount-field {
-    min-height: 72px;
-    padding-left: 56px;
-    font-size: clamp(1.75rem, 3vw, 2.25rem);
-    font-weight: 560;
-    letter-spacing: -0.03em;
-    font-variant-numeric: tabular-nums;
-}
-
 .review-amount {
     margin-top: var(--s-4);
     font-size: clamp(2.25rem, 4vw, 3rem);
@@ -2419,6 +2403,16 @@ ul.account-rows.panel {
 
 .review-hero .review-amount {
     margin-top: var(--s-2);
+}
+
+.review-hero > * {
+    max-width: 100%;
+}
+
+.review-to-email {
+    display: block;
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
 }
 
 .review-hero .avatar[hidden] {
@@ -2670,7 +2664,7 @@ ul.account-rows.panel {
 /* ── International ──────────────────────────────────────────────────── */
 .currency-tiles {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
     gap: var(--s-4);
 }
 
@@ -2787,7 +2781,7 @@ ul.account-rows.panel {
 /* ── Goals ──────────────────────────────────────────────────────────── */
 .goal-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
     gap: var(--s-5);
 }
 

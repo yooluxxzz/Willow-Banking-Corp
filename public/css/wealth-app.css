@@ -961,7 +961,7 @@ a.wl-popular-card:hover {
 
 .wl-stats {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(180px, 100%), 1fr));
     gap: var(--s-5) var(--s-6);
 }
 
@@ -1096,7 +1096,7 @@ a.wl-popular-card:hover {
 
 .wl-position-actions {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(120px, 100%), 1fr));
     gap: var(--s-2);
     margin-top: var(--s-5);
 }
@@ -1473,7 +1473,7 @@ dialog.wl-send .field-error .icon {
     .wl-asset-actions {
         width: 100%;
         display: grid;
-        grid-template-columns: auto 1fr 1fr;
+        grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr);
     }
 
     .wl-asset-actions .btn[hidden] {
@@ -1481,7 +1481,7 @@ dialog.wl-send .field-error .icon {
     }
 
     .wl-asset-actions:has(.btn[data-trade-open="sell"][hidden]) {
-        grid-template-columns: auto 1fr;
+        grid-template-columns: auto minmax(0, 1fr);
     }
 
     .wl-quote-status {

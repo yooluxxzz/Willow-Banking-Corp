@@ -48,7 +48,7 @@
                         <label for="convertFrom">From</label>
                         <select class="select" id="convertFrom" name="fromAccountId"></select>
                     </div>
-                    <div class="amount-input mt-3"><span class="amount-currency" data-from-symbol>$</span><input class="input amount-field" id="convertAmount" name="amount" inputmode="decimal" autocomplete="off" placeholder="0.00" aria-label="Amount to convert" aria-describedby="convertError"></div>
+                    <div class="amount-input mt-3"><span class="currency" data-from-symbol aria-hidden="true">$</span><input id="convertAmount" name="amount" inputmode="decimal" autocomplete="off" placeholder="0.00" aria-label="Amount to convert" aria-describedby="convertError"></div>
                     <p class="text-xs muted mt-2" data-from-available></p>
                 </div>
                 <button type="button" class="convert-swap" data-swap aria-label="Swap accounts"><%- icon('swap') %></button>

@@ -285,6 +285,8 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    /* Long unbroken strings (emails, references) wrap instead of widening narrow screens. */
+    overflow-wrap: break-word;
 }
 
 img,
@@ -1547,6 +1549,10 @@ select.form-control {
     border-color: var(--focus);
 }
 
+.amount-input:has(input[aria-invalid='true']) {
+    border-color: var(--negative);
+}
+
 .amount-input .currency {
     font-size: clamp(1.75rem, 3vw, 2.5rem);
     font-weight: 500;
@@ -1984,7 +1990,7 @@ select.form-control {
 
 @media (max-width: 520px) {
     .field-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
 }
 
@@ -2130,7 +2136,7 @@ a.list-row:hover {
 
 .dl-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
     gap: var(--s-1);
 }
 
@@ -2177,9 +2183,18 @@ a.list-row:hover {
 
 /* ── Tables ─────────────────────────────────────────────────────────── */
 .table-wrap {
+    position: relative;
     width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+}
+
+/* Horizontal scrollers are the containing block for visually hidden labels inside them,
+   so those labels scroll with the content instead of widening the page. */
+.segmented,
+.tabs,
+.card-switcher {
+    position: relative;
 }
 
 .table {

@@ -333,3 +333,53 @@ The user asked for Willow to be upgraded into one premium digital bank, investin
 **Known limitations**
 - Real-time data still depends on running `npm run market-service` with internet access.
 - There is no self-service account deletion. Admin deletion is a soft delete.
+
+## Responsive layout pass — 2026-10-03
+
+**Reported problems**
+- **Homepage hero scene tabs.** On short or zoomed laptop windows (for example 1307×620), the demo note and the illustrative card ran into the scene tab row, and the tab progress line crossed the note.
+  - Cause: the hero had a fixed height while the tabs were absolutely positioned at its bottom.
+  - The hero is now a flex column with a minimum height and the tabs in normal flow, so it grows with its content.
+  - On short wide screens the headline also scales with viewport height and the spacing tightens, so the tabs stay on screen.
+
+**Found by the audit and fixed**
+- **Mobile menu.** On every public page, at 1120px and narrower, the menu panel opened 0px tall, so it never appeared. The desktop mega-menu scrim had collapsed the same way.
+  - Cause: `backdrop-filter` on `.site-header` made the header the containing block for those fixed-position children.
+  - The frosted background now lives on `.site-header::before`.
+- **Help category pages** (`/help/<topic>`) were about 1230px wide on phones and tablets.
+  - Cause: bare `1fr` grid tracks grow to fit non-wrapping content.
+  - All 47 such declarations across the stylesheets now use `minmax(0, …fr)`. `auto-fill` / `auto-fit` minimums are capped with `min(…, 100%)`.
+  - Before/after screenshots of 65 pages at 390px and 1440px show no other changes.
+- **Horizontal overflow on phones:**
+  - Business invoices: a visually hidden column label escaped the table scroller. `.table-wrap`, `.tabs`, `.segmented` and `.card-switcher` are now positioned.
+  - 320px: the Security panel header button, the send-money recipient list, and the homepage currency board and mortgages split layout.
+  - The forgot-password back link.
+  - `body` now sets `overflow-wrap: break-word`, panel headers wrap, and emails wrap after the “@”.
+- **Amount fields.** On send money, deposit/withdraw and convert, the “$” overlapped the typed amount at every width.
+  - Cause: two conflicting `.amount-input` definitions.
+  - These forms now use the design-system field, the same one the order dialog uses, and the app copy was removed. The underline turns red when the amount is invalid.
+  - The quick-amount chips now read “$20” instead of “$ 20”.
+- **Demo strip.** It is shortened on mid-size screens so it stays on one line, and the 1px gap under the open mobile menu is closed.
+- **Accessibility** (found by axe once the test profile had unread notifications and wide tables):
+  - The notification badge contrast is now 5.5:1 in light mode and 7.8:1 in dark mode.
+  - Horizontal scrollers that overflow and contain nothing focusable become keyboard-focusable, and plain wrappers get a named region (`setupScrollRegions` in `app.js`).
+  - The shortened sign-in back links keep their full accessible names.
+
+**Database / schema**
+- None.
+
+**Checks run**
+- Playwright audit scripts, kept outside the repo, flagging horizontal page overflow, off-screen elements, overlapping controls and clipped text:
+  - 65 public and signed-in pages at 17 widths (320–2560), light and dark: no issues remaining. The one flag left is the intentional phone illustration bleed on the homepage tile.
+  - Interactive states at 6 sizes, including 844×390 landscape: mega menus, mobile menu, profile menu, More sheet, Ask Willow and every dialog trigger, 413 states with 0 issues. Every surface fits the screen or scrolls.
+  - Full flows at 320×568, 390×844, 768×1024 and 844×390: send money (5 steps), stock order (with a local fake price feed kept outside the repo), Ask Willow, sign-up and sign-in. Screenshots reviewed.
+  - Hero: 120 checks across window sizes, 125% zoom and all five scenes. The tabs never overlap the content.
+- axe-core: 0 violations on 30 pages at 390px and 1280px, light and dark.
+- `npm test`: 129 tests pass. New `tests/responsive-css.test.js` adds static guards:
+  - no bare `fr` grid tracks;
+  - no containing-block-creating effects on `.site-header`;
+  - a single `.amount-input` definition;
+  - positioned table scrollers.
+  - All four were confirmed to fail on the previous stylesheets.
+- `python3 -m unittest`: 41 tests pass.
+- All 61 EJS templates compile, all 32 browser scripts parse, and `git diff --check` is clean.

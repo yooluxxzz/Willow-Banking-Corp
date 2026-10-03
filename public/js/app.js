@@ -814,6 +814,45 @@
         });
     }
 
+    // Horizontal scrollers (wide tables, index rows) must be reachable by keyboard when they
+    // overflow on small screens and contain nothing focusable of their own.
+    function setupScrollRegions() {
+        const selector = '.table-wrap, .wl-indices, ul.wl-popular, .card-switcher';
+        const focusable = 'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])';
+        let queued = false;
+        const update = () => {
+            queued = false;
+            doc.querySelectorAll(selector).forEach(node => {
+                const managed = node.hasAttribute('data-scroll-region');
+                const needsFocus = node.scrollWidth > node.clientWidth + 1 && !node.querySelector(focusable);
+                if (needsFocus && !managed && !node.hasAttribute('tabindex')) {
+                    node.tabIndex = 0;
+                    node.setAttribute('data-scroll-region', '');
+                    // Plain wrappers become a named region; lists keep their list semantics.
+                    if (node.tagName === 'DIV' && !node.hasAttribute('role')) {
+                        const table = node.querySelector('table');
+                        const caption = table && (table.getAttribute('aria-label') || (table.caption && table.caption.textContent.trim()));
+                        node.setAttribute('role', 'region');
+                        node.setAttribute('aria-label', caption || 'Scrollable table');
+                    }
+                } else if (!needsFocus && managed) {
+                    node.removeAttribute('tabindex');
+                    node.removeAttribute('data-scroll-region');
+                    if (node.getAttribute('role') === 'region') { node.removeAttribute('role'); node.removeAttribute('aria-label'); }
+                }
+            });
+        };
+        const queue = () => {
+            if (queued) return;
+            queued = true;
+            (global.requestAnimationFrame || global.setTimeout)(update);
+        };
+        queue();
+        global.addEventListener('resize', queue);
+        const main = doc.getElementById('main');
+        if (main && 'MutationObserver' in global) new MutationObserver(queue).observe(main, { childList: true, subtree: true });
+    }
+
     function init() {
         syncThemeControls();
         syncPrivacyControls();
@@ -832,6 +871,7 @@
         setupTransactionDetails();
         setupLocalDetails();
         setupIdleTimeout();
+        setupScrollRegions();
     }
 
     global.Willow = {
