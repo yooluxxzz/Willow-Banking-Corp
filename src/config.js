@@ -1,6 +1,13 @@
 require('dotenv').config();
 const path = require('path');
 
+function parseTrustProxy(raw) {
+  const value = String(raw || '').trim();
+  if (!value || value === 'false' || value === '0') return false;
+  if (value === 'true') return true;
+  return /^\d+$/.test(value) ? Number(value) : value;
+}
+
 const config = {
   port: parseInt(process.env.PORT, 10) || 3000,
   nodeEnv: process.env.NODE_ENV || 'development',
@@ -41,6 +48,10 @@ const config = {
     timeoutMs: parseInt(process.env.OLLAMA_TIMEOUT_MS, 10) || 120000,
   },
 
+  // Only trust X-Forwarded-For when a reverse proxy is in front (TRUST_PROXY=1, 'loopback', …).
+  // Without one, trusting it would let any client choose its own IP and skip the rate limits.
+  trustProxy: parseTrustProxy(process.env.TRUST_PROXY),
+
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000,
     max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 100,
@@ -67,11 +78,16 @@ const config = {
   },
 };
 
+// Local, git-ignored files that belong with the database (a generated admin login, the bridge secret).
+config.paths.local = config.database.path === ':memory:'
+  ? config.paths.data
+  : path.dirname(path.resolve(config.paths.root, config.database.path));
+
 // Startup validation warnings
 if (config.session.secret === 'dev-secret-change-in-production' && !config.isDev) {
   console.warn('[Config] WARNING: Using default SESSION_SECRET in production. Set SESSION_SECRET in .env');
 }
-if (!config.admin.email || !config.admin.password) {
+if ((!config.admin.email || !config.admin.password) && !config.isDev && config.nodeEnv !== 'test') {
   console.warn('[Config] WARNING: ADMIN_EMAIL or ADMIN_PASSWORD not set. Admin account will not be initialized.');
 }
 

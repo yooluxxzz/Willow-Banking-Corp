@@ -32,6 +32,23 @@ function validateAmount(amount) {
     return true;
 }
 
+/**
+ * Strict money input: a number or numeric string with at most two decimals
+ * ("12", "12.5", 12.5). Returns integer cents, or null for anything else
+ * (including true, arrays, "1e3", negative and out-of-range values).
+ */
+function parseCents(value, { allowZero = false, max = 100000000000 } = {}) {
+    if (!['string', 'number'].includes(typeof value) || !/^\d+(\.\d{1,2})?$/.test(String(value).trim())) return null;
+    const cents = Math.round(Number(value) * 100);
+    if (!Number.isSafeInteger(cents) || cents > max || (!allowZero && cents === 0)) return null;
+    return cents;
+}
+
+/** Optional free text: absent, or a string of at most `max` characters without markup or control characters. */
+function isOptionalText(value, max) {
+    return value === undefined || value === null || (typeof value === 'string' && value.trim().length <= max && !/[<>\x00-\x1f\x7f]/.test(value));
+}
+
 function toCents(amount) {
     return Math.round(Number(amount) * 100);
 }
@@ -69,4 +86,6 @@ module.exports = {
     formatCurrency,
     sanitizeString,
     validatePhone,
+    parseCents,
+    isOptionalText,
 };

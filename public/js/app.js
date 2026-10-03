@@ -525,7 +525,7 @@
     // fades in and back out over it (about 2.4s) to draw the eye. Sections already
     // on screen when the page opens only fade in. Once per section per visit;
     // nothing moves with reduced motion.
-    const FOCUS_SKIP = 'dialog, script, template, style, [hidden], [data-focus="off"], .page-head, .skip-link';
+    const FOCUS_SKIP = 'dialog, script, template, style, footer, [hidden], [data-focus="off"], .page-head, .skip-link';
     const MAX_GLOWS_AT_ONCE = 3;
 
     const isBoxed = node => {
@@ -585,15 +585,16 @@
             .forEach((card, index) => global.setTimeout(() => highlight(card), index * 120));
     }
 
-    function enter(target, delay, glow) {
+    function enter(target, delay, glow, quick = false) {
         const { node } = target;
         node.style.setProperty('--focus-delay', `${delay}ms`);
         node.classList.remove('focus-pending');
         node.classList.add('focus-enter');
+        node.classList.toggle('is-quick', quick); // on-load fades are short so pages feel instant
         node.addEventListener('animationend', function done(event) {
             if (event.target !== node) return;
             node.removeEventListener('animationend', done);
-            node.classList.remove('focus-enter');
+            node.classList.remove('focus-enter', 'is-quick');
             if (!glow) return;
             if (target.section) focusSection(target);
             else highlight(node);
@@ -616,7 +617,7 @@
                 if (!main) return;
                 const isFocus = target.node === focus;
                 focusHandled = focusHandled || isFocus;
-                enter(target, Math.min(onScreen++, 8) * 70, isFocus);
+                enter(target, Math.min(onScreen++, 8) * 45, isFocus, true);
             } else {
                 // Sections that already fade their own content in (.reveal) keep it; the rest wait hidden.
                 if (!(target.section && target.node.querySelector('.reveal'))) target.node.classList.add('focus-pending');

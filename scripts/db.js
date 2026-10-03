@@ -40,10 +40,13 @@ async function restore(force) {
         fs.renameSync(dbPath, backup);
         console.log(`Kept the previous database as ${rel(backup)}.`);
     }
-    const { initializeDatabase, closeDatabase } = require('../src/database');
-    await initializeDatabase(); // creates the schema and loads the snapshot
+    const { initializeDatabase, closeDatabase, getDb } = require('../src/database');
+    // Restoring is the point here, whatever SNAPSHOT_AUTO_RESTORE says for normal starts.
+    config.database.autoRestore = true;
+    await initializeDatabase(); // creates the schema, loads the snapshot, then migrates it
+    const profiles = getDb().prepare('SELECT COUNT(*) AS n FROM users').get().n;
     closeDatabase();
-    console.log(`Restored ${rel(dbPath)} from ${rel(snapshotPath)}.`);
+    console.log(`Restored ${rel(dbPath)} from ${rel(snapshotPath)} (${profiles} profile(s)).`);
 }
 
 const [command, flag] = process.argv.slice(2);

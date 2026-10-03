@@ -55,6 +55,21 @@ def main() -> int:
     signal.signal(signal.SIGINT, request_shutdown)
     signal.signal(signal.SIGTERM, request_shutdown)
 
+    if os.environ.get("MARKET_DATA_EXIT_WITH_PARENT") == "1" and sys.stdin is not None:
+        # Willow starts the service with a pipe on stdin that it never writes to. The pipe
+        # closes when Willow exits for any reason (including being killed or its window
+        # being closed on Windows), and the service then stops instead of lingering.
+        def watch_parent() -> None:
+            try:
+                while sys.stdin.buffer.read(1024):
+                    pass
+            except (OSError, ValueError):
+                pass
+            logger.info("the process that started this service has ended, shutting down")
+            server.shutdown()
+
+        threading.Thread(target=watch_parent, name="parent-watch", daemon=True).start()
+
     logger.info(
         "willow market-data %s listening on %s:%d (service token %s)",
         __version__,

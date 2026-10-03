@@ -49,8 +49,12 @@ describe('Database snapshots in Git and removal of invented data', () => {
         assert.equal(fs.readFileSync(again, 'utf8'), first.sql, 'save after restore reproduces the same snapshot');
 
         assert.throws(() => run(['restore'], { DATABASE_PATH: restored, DATABASE_SNAPSHOT_PATH: snapshot }), /already exists/);
-        run(['restore', '--force'], { DATABASE_PATH: restored, DATABASE_SNAPSHOT_PATH: snapshot });
+        // An explicit restore loads the snapshot even when automatic restore on start-up is switched off.
+        assert.match(run(['restore', '--force'], { DATABASE_PATH: restored, DATABASE_SNAPSHOT_PATH: snapshot, SNAPSHOT_AUTO_RESTORE: 'false' }), /Restored .* \([1-9]\d* profile\(s\)\)/);
         assert.ok(fs.readdirSync(dir).some(name => name.startsWith('restored.db.bak-')), 'the replaced database is kept as a backup');
+        const forced = await openFile(restored);
+        assert.equal(one(forced, "SELECT COUNT(*) FROM users WHERE email = 'snapshot@example.test'")[0], 1, 'the restored database holds the snapshot, not an empty schema');
+        forced.close();
     });
 
     it('removes invented customers, sample activity, auto-issued cards and practice cash once, keeping what customers did', async () => {

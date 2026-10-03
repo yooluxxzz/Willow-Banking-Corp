@@ -29,7 +29,7 @@ router.get('/overview', (req, res) => {
         { key: 'password', label: 'Password set', done: true },
         { key: 'twoFactor', label: 'Two-step verification', done: status.enabled },
         { key: 'recovery', label: 'Backup recovery codes saved', done: codes > 0 },
-        { key: 'alerts', label: 'Security alerts on', done: true },
+        { key: 'alerts', label: 'Security alerts on', done: require('../services/preferences').getPreferences(userId).alertSecurity },
     ];
     res.json({ twoFactor: status, recoveryCodes: codes, cards: { active: activeCards, frozen }, checks, score: Math.round(checks.filter(item => item.done).length / checks.length * 100) });
 });

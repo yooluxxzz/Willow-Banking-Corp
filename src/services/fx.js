@@ -72,7 +72,8 @@ async function convertBetweenAccounts(userId, { fromAccountId, toAccountId, amou
     }
     if (fx.unavailable) throw new FxError('Exchange rates are temporarily unavailable. No conversion was made.', 503, 'rates_unavailable');
     if (fx.stale) throw new FxError('Exchange rates are out of date. Conversions are paused until a current indicative rate is available.', 503, 'rates_stale');
-    const creditCents = Math.round(fx.converted * 100);
+    // Part cents are not credited, so converting back and forth can't create money.
+    const creditCents = Math.floor(fx.converted * 100 + 1e-6);
     if (creditCents <= 0) throw new FxError('This amount is too small to convert.');
     const reference = `CNV-${uuidv4().slice(0, 8).toUpperCase()}`;
     const rateText = `1 ${source.currency} = ${fx.rate.toFixed(fx.rate < 1 ? 6 : 4)} ${destination.currency}`;

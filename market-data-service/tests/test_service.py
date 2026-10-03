@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import sys
 import threading
 import time
@@ -755,3 +756,28 @@ class HttpResilienceTests(HttpTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ExitWithParentTest(unittest.TestCase):
+    """When Willow starts the service it holds stdin open; the service stops when that pipe closes."""
+
+    def test_stops_when_the_parent_pipe_closes(self) -> None:
+        import subprocess
+        import time
+
+        server = Path(__file__).resolve().parent.parent / "server.py"
+        env = {**os.environ, "MARKET_DATA_PORT": "0", "MARKET_DATA_EXIT_WITH_PARENT": "1", "MARKET_DATA_LOG_LEVEL": "INFO"}
+        child = subprocess.Popen([sys.executable, str(server)], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, env=env)
+        try:
+            deadline = time.monotonic() + 15
+            line = b""
+            while time.monotonic() < deadline and b"listening on" not in line:
+                line = child.stderr.readline()
+            self.assertIn(b"listening on", line)
+            self.assertIsNone(child.poll(), "the service keeps running while the pipe is open")
+            child.stdin.close()
+            self.assertEqual(child.wait(timeout=10), 0)
+        finally:
+            if child.poll() is None:
+                child.kill()
+                child.wait()

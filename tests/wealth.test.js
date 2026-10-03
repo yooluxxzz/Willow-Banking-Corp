@@ -89,6 +89,27 @@ describe('Demo wealth platform', () => {
         assert.equal(portfolio.getPortfolio(userId).activity.length, 0);
     });
 
+    it('rounds part-cent order values against the customer, so tiny round trips cannot create money', () => {
+        const userId = db.prepare('SELECT id FROM users WHERE email = ?').get('wealth-two@example.test').id;
+        db.prepare('UPDATE demo_portfolios SET cash_cents = 100 WHERE user_id = ?').run(userId);
+        // 0.000149 shares at $100 are worth 1.49¢; selling 0.00015 is worth 1.5¢.
+        for (let i = 0; i < 30; i += 1) {
+            portfolio.executeTrade(userId, { symbol: 'MSFT', side: 'buy', quantity: 0.000149, price: 100 });
+            const held = portfolio.getPortfolio(userId).holdings.find(h => h.symbol === 'MSFT');
+            if (held && held.quantity >= 0.00015) portfolio.executeTrade(userId, { symbol: 'MSFT', side: 'sell', quantity: 0.00015, price: 100 });
+        }
+        const after = portfolio.getPortfolio(userId);
+        const held = after.holdings.find(h => h.symbol === 'MSFT');
+        const worthCents = after.cashCents + (held ? held.quantity * 100 * 100 : 0);
+        assert.ok(worthCents <= 100, `cash plus holdings must not grow at a constant price (got ${worthCents}¢)`);
+        const buy = db.prepare("SELECT total_cents FROM demo_trades WHERE user_id = ? AND side = 'buy' ORDER BY id LIMIT 1").get(userId);
+        assert.equal(buy.total_cents, 2, 'a 1.49¢ buy costs 2¢');
+        assert.throws(() => portfolio.executeTrade(userId, { symbol: 'MSFT', side: 'sell', quantity: 0.000001, price: 100 }), /too small/);
+        db.prepare('DELETE FROM demo_holdings WHERE user_id = ?').run(userId);
+        db.prepare('DELETE FROM demo_trades WHERE user_id = ?').run(userId);
+        db.prepare('UPDATE demo_portfolios SET cash_cents = 0 WHERE user_id = ?').run(userId);
+    });
+
     it('isolates watchlists and enforces authentication, CSRF and symbol allowlists', async () => {
         const firstId = db.prepare('SELECT id FROM users WHERE email = ?').get('wealth-one@example.test').id;
         const secondId = db.prepare('SELECT id FROM users WHERE email = ?').get('wealth-two@example.test').id;

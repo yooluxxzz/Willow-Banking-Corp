@@ -97,6 +97,50 @@ describe('Budgets measured against real activity, with nightly checks', () => {
         assert.ok(budgets.msUntil('23:55', new Date(2026, 0, 1, 23, 56)) > 23 * 3600 * 1000);
     });
 
+    it('never skips a day: today is checked again once it has ended, and past-day alerts name the day', () => {
+        const now = new Date();
+        const at = (daysAgo, h, m) => new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysAgo, h, m);
+        db.prepare("UPDATE app_meta SET value = ? WHERE key = 'budget_checks_last_day'").run(localDay(at(3, 0, 0)));
+        const late = budgets.createBudget(ownerId, { name: 'Late snacks', category: 'dining', period: 'daily', limit: '5' });
+        db.prepare('UPDATE budgets SET created_at = ? WHERE id = ?').run(at(3, 12, 0).toISOString().replace('T', ' ').slice(0, 19), late.id);
+        // The nightly run at 23:55 two days ago checks that day so far, but doesn't count it as done…
+        const nightly = budgets.runBudgetChecks({ mode: 'nightly', now: at(2, 23, 55) });
+        assert.equal(nightly.days[nightly.days.length - 1], localDay(at(2, 0, 0)));
+        assert.equal(db.prepare("SELECT value FROM app_meta WHERE key = 'budget_checks_last_day'").get().value, localDay(at(3, 0, 0)));
+        // …so spending after 23:55 still counts: the next run records the finished day again.
+        const account = db.prepare("SELECT id FROM accounts WHERE user_id = ? AND purpose = 'personal' ORDER BY id LIMIT 1").get(ownerId);
+        db.prepare("INSERT INTO transactions (reference, account_id, type, amount, currency, direction, status, description, category, created_at) VALUES ('WDR-LATE-1', ?, 'withdrawal', 900, 'USD', 'debit', 'completed', 'Midnight snack', 'dining', ?)")
+            .run(account.id, at(2, 23, 58).toISOString().replace('T', ' ').slice(0, 19));
+        const startup = budgets.runBudgetChecks({ mode: 'startup', now: at(0, 8, 0) });
+        assert.deepEqual(startup.days, [localDay(at(2, 0, 0)), localDay(at(1, 0, 0))]);
+        const row = db.prepare('SELECT spent_cents, status FROM budget_checks WHERE budget_id = ? AND day = ?').get(late.id, localDay(at(2, 0, 0)));
+        assert.deepEqual(row, { spent_cents: 900, status: 'over' });
+        assert.match(budgets.periodLabel('daily', at(2, 0, 0), now), /^on [A-Z][a-z]+day, [A-Z][a-z]+ \d+$/, 'an alert about an earlier day names it');
+        assert.equal(budgets.periodLabel('daily', at(0, 9, 0), now), 'today');
+        budgets.deleteBudget(ownerId, late.id);
+    });
+
+    it('starts checking a budget on the local day it was created, in any time zone', () => {
+        const { execFileSync } = require('node:child_process');
+        const script = `
+            process.env.DATABASE_PATH = ':memory:'; process.env.NODE_ENV = 'test';
+            (async () => {
+                const database = require('./src/database');
+                await database.initializeDatabase();
+                const db = database.getDb();
+                const user = db.prepare("INSERT INTO users (email, full_name, password_hash, customer_id) VALUES ('tz@example.test', 'Time Zone', 'x', 'WB12345678')").run().lastInsertRowid;
+                const account = db.prepare("INSERT INTO accounts (user_id, account_number, account_type, balance, available_balance, currency) VALUES (?, '42001234567890', 'checking', 0, 0, 'USD')").run(user).lastInsertRowid;
+                // 02:00 UTC on 3 October is 7 pm on 2 October in California.
+                const budget = db.prepare("INSERT INTO budgets (user_id, name, period, limit_cents, created_at) VALUES (?, 'Evening', 'daily', 1000, '2026-10-03 02:00:00')").run(user).lastInsertRowid;
+                db.prepare("INSERT INTO transactions (reference, account_id, type, amount, currency, direction, status, description, category, created_at) VALUES ('WDR-TZ-1', ?, 'withdrawal', 2000, 'USD', 'debit', 'completed', 'Dinner', 'dining', '2026-10-03 03:00:00')").run(account);
+                const result = require('./src/services/budgets').runBudgetChecks({ mode: 'nightly', now: new Date(2026, 9, 2, 23, 55) });
+                const row = db.prepare('SELECT day, status FROM budget_checks WHERE budget_id = ?').get(budget);
+                process.stdout.write(JSON.stringify({ result, row }));
+            })();`;
+        const out = JSON.parse(execFileSync(process.execPath, ['-e', script], { cwd: require('node:path').resolve(__dirname, '..'), env: { ...process.env, TZ: 'America/Los_Angeles' }, encoding: 'utf8' }));
+        assert.deepEqual(out.row, { day: '2026-10-02', status: 'over' }, 'the budget is checked on its first evening, not skipped');
+    });
+
     it('measures business budgets against the expenses the owner logs', async () => {
         const budget = (await api(owner, 'post', '/api/budgets', { scope: 'business', name: 'Software', category: 'software', period: 'monthly', limit: '100' })).body.budget;
         assert.equal(budget.scope, 'business');

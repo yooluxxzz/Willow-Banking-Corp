@@ -2,16 +2,9 @@ const express = require('express');
 const { requireAuth } = require('../middleware/auth');
 const networth = require('../services/networth');
 
-const handle = (status, fn) => async (req, res) => {
-    try {
-        res.status(status).json(await fn(req));
-    } catch (error) {
-        if (!error.status && !/^(Enter|Choose|Name|Keep|You can|The payment|This debt|Not enough|Asset|Debt)/.test(error.message)) console.error('[Net worth] Error:', error.message);
-        res.status(error.status || 400).json({ error: error.message });
-    }
-};
-const validId = (req, res, next) => (/^[1-9]\d*$/.test(req.params.id) ? next() : res.status(400).json({ error: 'Invalid identifier.' }));
-const noStore = (req, res, next) => { res.set('Cache-Control', 'no-store'); next(); };
+const { jsonRoute, validId, noStore } = require('./helpers');
+
+const handle = (status, fn) => jsonRoute(status, fn, 'Net worth');
 
 const worth = express.Router();
 worth.use(requireAuth, noStore);

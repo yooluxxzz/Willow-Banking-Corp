@@ -1,6 +1,7 @@
 const express = require('express');
 const { requireAuth } = require('../middleware/auth');
 const cryptoWallet = require('../services/crypto-wallet');
+const { sendError } = require('./helpers');
 const router = express.Router();
 
 router.use(requireAuth);
@@ -13,7 +14,7 @@ router.post('/send', (req, res) => {
         const result = cryptoWallet.sendDemoCrypto(req.session.userId, req.body);
         res.status(201).json({ message: 'Demo crypto transfer recorded. No blockchain transaction or real asset movement occurred.', transfer: result });
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        sendError(res, error, 'Crypto');
     }
 });
 

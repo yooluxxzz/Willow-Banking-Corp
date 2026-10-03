@@ -3,6 +3,7 @@ const { requireAuth } = require('../middleware/auth');
 const payees = require('../services/payees');
 const { getDb } = require('../database');
 const { validateEmail } = require('../middleware/validation');
+const { sendError } = require('./helpers');
 const router = express.Router();
 
 router.use(requireAuth);
@@ -27,7 +28,7 @@ router.post('/', (req, res) => {
     try {
         res.status(201).json({ payees: payees.addPayee(req.session.userId, req.body) });
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        sendError(res, error, 'Payees');
     }
 });
 router.delete('/:id', (req, res) => {
@@ -35,7 +36,7 @@ router.delete('/:id', (req, res) => {
     try {
         res.json({ payees: payees.removePayee(req.session.userId, Number(req.params.id)) });
     } catch (error) {
-        res.status(404).json({ error: error.message });
+        sendError(res, error, 'Payees');
     }
 });
 

@@ -8,9 +8,8 @@ const { initializeAdmin } = require('./src/services/auth');
 const { createApp } = require('./src/app');
 const SQLiteSessionStore = require('./src/session-store');
 
-const app = createApp({
-    sessionStore: new SQLiteSessionStore({ db: 'sessions.db', dir: path.resolve(config.paths.root, 'data') }),
-});
+const sessionStore = new SQLiteSessionStore({ db: 'sessions.db', dir: path.resolve(config.paths.root, 'data') });
+const app = createApp({ sessionStore });
 
 // Startup
 async function start() {
@@ -27,78 +26,14 @@ async function start() {
         marketService.start().catch(error => console.error('[Market service] Could not start:', error.message));
         // The local model for the assistant, if Ollama is running.
         require('./src/services/assistant').refreshStatus().then(status => {
-            console.log(status.available ? `[Assistant] Using ${status.model} via Ollama.` : `[Assistant] Off (${status.reason === 'unreachable' ? 'Ollama is not running' : status.reason}).`);
+            const why = { unreachable: 'Ollama is not running', no_models: 'Ollama has no model yet', model_missing: `OLLAMA_MODEL "${config.assistant.model}" is not installed`, disabled: 'ASSISTANT_ENABLED=false' }[status.reason] || status.reason;
+            console.log(status.available
+                ? `[Assistant] Ask Willow is on, using ${status.model} via Ollama.`
+                : `[Assistant] Ask Willow is off (${why}). To turn it on: install Ollama from https://ollama.com and run "ollama pull llama3.2"; Willow notices within 30 seconds.`);
         });
 
-        const { processDueScheduledTransfers } = require('./src/services/scheduled-transfers');
-        const processScheduledTransfers = () => {
-            try {
-                const result = processDueScheduledTransfers();
-                if (result.completed) console.log(`[Server] Completed ${result.completed} scheduled demo transfer(s).`);
-            } catch (error) {
-                console.error('[Server] Scheduled demo transfer check failed:', error.message);
-            }
-        };
-        processScheduledTransfers();
-        const scheduledTransferTimer = setInterval(processScheduledTransfers, 60 * 1000);
-
-        // Daily budget checks and net-worth snapshots: catch up on days missed while the
-        // app was stopped, then run every night at the configured time.
-        const budgets = require('./src/services/budgets');
-        const networth = require('./src/services/networth');
-        const nightly = async mode => {
-            try {
-                const result = budgets.runBudgetChecks({ mode });
-                const snapshots = await networth.snapshotAll();
-                if (result.checks || snapshots) console.log(`[Server] Daily checks (${mode}): ${result.checks} budget check(s) over ${result.days.length} day(s), ${result.alerts} alert(s), ${snapshots} net-worth snapshot(s).`);
-            } catch (error) {
-                console.error('[Server] Daily checks failed:', error.message);
-            }
-        };
-        nightly('startup');
-        const scheduleNightly = () => setTimeout(async () => { await nightly('nightly'); scheduleNightly(); }, budgets.msUntil(config.jobs.nightlyTime)).unref();
-        scheduleNightly();
-
-        // Background task: remove guest demo profiles nobody has used for a while
-        const purgeGuests = () => {
-            if (!config.session.guestRetentionDays) return;
-            try {
-                const { purged } = require('./src/services/guests').purgeStaleGuests({ days: config.session.guestRetentionDays });
-                if (purged) console.log(`[Server] Removed ${purged} inactive guest profile(s).`);
-            } catch (error) {
-                console.error('[Server] Guest cleanup failed:', error.message);
-            }
-        };
-        purgeGuests();
-        setInterval(purgeGuests, 60 * 60 * 1000).unref();
-
-        // Background task: process scheduled deletions every hour
-        setInterval(() => {
-            try {
-                const { getDb } = require('./src/database');
-                const { logAudit } = require('./src/services/audit');
-                const db = getDb();
-                const now = new Date().toISOString();
-                const pendingUsers = db.prepare(
-                    "SELECT id, email FROM users WHERE scheduled_deletion_at IS NOT NULL AND scheduled_deletion_at <= ? AND status != 'deleted'"
-                ).all(now);
-
-                for (const user of pendingUsers) {
-                    db.prepare("UPDATE users SET status = 'deleted', updated_at = datetime('now') WHERE id = ?").run(user.id);
-                    logAudit({
-                        actorId: null,
-                        actorEmail: 'system',
-                        action: 'user_auto_deleted',
-                        targetType: 'user',
-                        targetId: String(user.id),
-                        metadata: { reason: 'Scheduled deletion period expired' },
-                    });
-                    console.log(`[Server] Auto-deleted user ${user.email} (scheduled deletion expired).`);
-                }
-            } catch (e) {
-                console.error('[Server] Scheduled deletion check error:', e.message);
-            }
-        }, 60 * 60 * 1000); // Every hour
+        // Scheduled transfers, the nightly budget check, guest clean-up and deletions.
+        const stopJobs = require('./src/services/jobs').startJobs();
 
         const server = app.listen(config.port, () => {
             console.log(`[Server] Willow Banking Corp. running at http://localhost:${config.port}`);
@@ -113,12 +48,26 @@ async function start() {
             }
         });
 
+        server.on('error', error => {
+            if (error.code === 'EADDRINUSE') {
+                console.error(`[Server] Port ${config.port} is already in use (is Willow already running?). Stop the other program, or start on another port:`);
+                console.error('[Server]   macOS/Linux:  PORT=3001 npm start');
+                console.error('[Server]   Windows (PowerShell):  $env:PORT=3001; npm start');
+                console.error('[Server]   Windows (Command Prompt):  set PORT=3001 && npm start');
+            } else {
+                console.error('[Server] Could not start the web server:', error.message);
+            }
+            require('./src/services/market-service').stop();
+            process.exit(1);
+        });
+
         // Graceful shutdown
         const shutdown = (signal) => {
             console.log(`\n[Server] Received ${signal}. Shutting down gracefully...`);
-            clearInterval(scheduledTransferTimer);
+            stopJobs();
             require('./src/services/market-service').stop();
             server.close(() => {
+                sessionStore.close();
                 closeDatabase();
                 console.log('[Server] Shutdown complete.');
                 process.exit(0);
@@ -139,5 +88,3 @@ async function start() {
 }
 
 start();
-
-module.exports = app; // for testing

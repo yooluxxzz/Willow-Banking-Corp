@@ -17,7 +17,9 @@ function getAuditLogs({ page = 1, limit = 30, action, actorEmail, dateFrom, date
     const conditions = ['1=1'];
     const params = [];
 
-    if (action) { conditions.push('action = ?'); params.push(action); }
+    // One action, or several separated by commas (e.g. every kind of status change).
+    const actions = String(action || '').split(',').map(item => item.trim()).filter(Boolean).slice(0, 10);
+    if (actions.length) { conditions.push(`action IN (${actions.map(() => '?').join(', ')})`); params.push(...actions); }
     if (actorEmail) { conditions.push('actor_email LIKE ?'); params.push(`%${actorEmail}%`); }
     if (dateFrom) { conditions.push('created_at >= ?'); params.push(dateFrom); }
     if (dateTo) { conditions.push('created_at <= ?'); params.push(dateTo + ' 23:59:59'); }

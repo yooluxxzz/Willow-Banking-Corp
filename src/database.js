@@ -460,6 +460,7 @@ async function initializeDatabase() {
         "ALTER TABLE transactions ADD COLUMN category TEXT DEFAULT NULL",
         "ALTER TABLE transactions ADD COLUMN counterparty TEXT DEFAULT NULL",
         "ALTER TABLE transactions ADD COLUMN card_id INTEGER DEFAULT NULL",
+        "ALTER TABLE user_preferences ADD COLUMN alert_budgets INTEGER NOT NULL DEFAULT 1",
     ];
     migrations.forEach(m => { try { db.run(m); } catch (e) { /* column already exists */ } });
     db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_opening_key ON accounts(user_id, opening_key)');
@@ -489,17 +490,61 @@ async function initializeDatabase() {
         }
     }
 
+    // Rows left pointing at deleted parents by older versions, which saved the database
+    // in a way that silently switched foreign-key enforcement off.
+    const repaired = repairForeignKeys();
+    if (repaired) console.log(`[Database] Repaired ${repaired} record(s) left behind by deleted profiles or accounts.`);
+
     // One-time data migrations that need the full schema (lazy require avoids a cycle).
     const cleanup = require('./services/data-cleanup').run();
     if (cleanup && !cleanup.skipped && (cleanup.community || cleanup.guests || cleanup.sampleTransactions || cleanup.autoCards || cleanup.portfolios)) {
         console.log('[Database] Removed pre-filled demo data:', JSON.stringify(cleanup));
     }
 
-    // Auto-save to disk every 5 seconds
+    // Writes are saved right after they happen; this also catches any that weren't.
     saveTimer = setInterval(() => saveToDisk(), 5000);
-    saveToDisk();
+    saveTimer.unref();
+    saveToDisk({ force: true });
 
     return db;
+}
+
+const rows = sql => { const result = db.exec(sql); return result.length ? result[0].values : []; };
+
+/**
+ * Fixes rows whose parent no longer exists: optional links (SET NULL, or a nullable
+ * NO ACTION reference such as "paid from account") are cleared, and rows that can't
+ * exist without their parent are deleted. Runs in passes because removing an
+ * orphaned account orphans its own children. Returns the number of rows fixed.
+ */
+function repairForeignKeys() {
+    let fixed = 0;
+    db.run('PRAGMA foreign_keys = OFF');
+    try {
+        for (let pass = 0; pass < 10; pass += 1) {
+            const violations = rows('PRAGMA foreign_key_check');
+            if (!violations.length) break;
+            db.run('BEGIN');
+            try {
+                for (const [table, rowid, , fkid] of violations) {
+                    if (rowid === null) continue;
+                    const fk = rows(`PRAGMA foreign_key_list("${table}")`).find(row => row[0] === fkid);
+                    const column = fk[3];
+                    const nullable = rows(`PRAGMA table_info("${table}")`).find(col => col[1] === column)[3] === 0;
+                    if (fk[6] === 'SET NULL' || (nullable && fk[6] === 'NO ACTION')) db.run(`UPDATE "${table}" SET "${column}" = NULL WHERE rowid = ?`, [rowid]);
+                    else db.run(`DELETE FROM "${table}" WHERE rowid = ?`, [rowid]);
+                    fixed += 1;
+                }
+                db.run('COMMIT');
+            } catch (error) {
+                db.run('ROLLBACK');
+                throw error;
+            }
+        }
+    } finally {
+        db.run('PRAGMA foreign_keys = ON');
+    }
+    return fixed;
 }
 
 /**
@@ -634,14 +679,34 @@ function scheduleSave() {
     }
 }
 
-function saveToDisk() {
+/** Rows changed since the database was last written (export() reopens the connection, resetting the count). */
+function unsavedChanges() {
+    return rows('SELECT total_changes()')[0][0];
+}
+
+/** Replaces `target` with `source`, retrying briefly when Windows (often antivirus) holds the file. */
+function replaceFile(source, target) {
+    for (let attempt = 0; ; attempt += 1) {
+        try {
+            fs.renameSync(source, target);
+            return;
+        } catch (error) {
+            if (!['EPERM', 'EBUSY', 'EACCES'].includes(error.code) || attempt >= 5) throw error;
+            Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 40 * (attempt + 1));
+        }
+    }
+}
+
+function saveToDisk({ force = false } = {}) {
     if (!db || !dbPath) return;
+    if (!force && unsavedChanges() === 0) return;
     try {
         const data = db.export();
-        const buffer = Buffer.from(data);
+        // export() reopens the database, which resets every PRAGMA to its default.
+        db.run('PRAGMA foreign_keys = ON');
         const tmpPath = dbPath + '.tmp';
-        fs.writeFileSync(tmpPath, buffer);
-        fs.renameSync(tmpPath, dbPath);
+        fs.writeFileSync(tmpPath, Buffer.from(data));
+        replaceFile(tmpPath, dbPath);
     } catch (err) {
         console.error('[Database] Save error:', err.message);
     }
@@ -653,7 +718,7 @@ function closeDatabase() {
         saveTimer = null;
     }
     if (db) {
-        saveToDisk();
+        saveToDisk({ force: true });
         db.close();
         db = null;
     }
@@ -665,4 +730,4 @@ function getSqlDatabase() {
     return db;
 }
 
-module.exports = { getDb, getSqlDatabase, initializeDatabase, closeDatabase };
+module.exports = { getDb, getSqlDatabase, initializeDatabase, closeDatabase, repairForeignKeys };

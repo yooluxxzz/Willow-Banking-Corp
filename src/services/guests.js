@@ -6,16 +6,10 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { getDb } = require('../database');
 const config = require('../config');
-const { uniqueAccountNumber } = require('./account');
+const { uniqueAccountNumber, uniqueCustomerId } = require('./ids');
 const { logAudit } = require('./audit');
 
 const GUEST_NAMES = ['Alex Morgan', 'Sam Rivera', 'Jordan Lee', 'Taylor Brooks', 'Riley Chen'];
-
-function generateCustomerId(db) {
-    let id;
-    do { id = `WB${crypto.randomInt(10000000, 100000000)}`; } while (db.prepare('SELECT id FROM users WHERE customer_id = ?').get(id));
-    return id;
-}
 
 /** Creates an empty guest profile and returns the new user. */
 async function createGuestProfile() {
@@ -24,7 +18,7 @@ async function createGuestProfile() {
     const email = `guest-${crypto.randomBytes(5).toString('hex')}@guest.willow.test`;
     const hash = await bcrypt.hash(crypto.randomBytes(24).toString('hex'), config.bcryptRounds);
     const userId = db.transaction(() => {
-        const result = db.prepare("INSERT INTO users (email, full_name, phone, password_hash, role, status, customer_id, is_guest) VALUES (?, ?, '', ?, 'customer', 'active', ?, 1)").run(email, name, hash, generateCustomerId(db));
+        const result = db.prepare("INSERT INTO users (email, full_name, phone, password_hash, role, status, customer_id, is_guest) VALUES (?, ?, '', ?, 'customer', 'active', ?, 1)").run(email, name, hash, uniqueCustomerId(db));
         db.prepare("INSERT INTO accounts (user_id, account_number, account_type, balance, available_balance, currency, status) VALUES (?, ?, 'checking', 0, 0, 'USD', 'active')").run(result.lastInsertRowid, uniqueAccountNumber(db));
         return result.lastInsertRowid;
     })();
@@ -70,4 +64,4 @@ function purgeStaleGuests({ days = 7, now = new Date() } = {}) {
     return { purged: stale.length };
 }
 
-module.exports = { createGuestProfile, purgeStaleGuests, removeUserRecords, generateCustomerId };
+module.exports = { createGuestProfile, purgeStaleGuests, removeUserRecords };

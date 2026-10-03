@@ -141,6 +141,51 @@
         }
     }
 
+    /** Market data, the local assistant and the nightly budget check, in plain words. */
+    async function loadSystem() {
+        const market = doc.querySelector('[data-system-market]');
+        const assistant = doc.querySelector('[data-system-assistant]');
+        const daily = doc.querySelector('[data-system-daily]');
+        try {
+            const system = await W.api('/api/admin/system');
+            const service = system.marketData.service || {};
+            market.textContent = service.running || system.marketData.serviceAvailable
+                ? `yfinance service running${service.managed ? ' (started by Willow)' : ''}; Yahoo chart data as a fallback.`
+                : service.lastError === 'python_missing' ? 'Python not found: quotes come from the Yahoo chart fallback.'
+                    : service.lastError === 'yfinance_missing' ? 'yfinance not installed: quotes come from the Yahoo chart fallback.'
+                        : 'yfinance service unavailable: quotes come from the Yahoo chart fallback.';
+            const reasons = { unreachable: 'Ollama is not running on this computer.', no_models: 'Ollama is running but has no model. Run: ollama pull llama3.2', model_missing: 'The model named in OLLAMA_MODEL is not installed.', disabled: 'Turned off with ASSISTANT_ENABLED=false.' };
+            assistant.textContent = system.assistant.available ? `On, using ${system.assistant.model}.` : `Off. ${reasons[system.assistant.reason] || ''}`.trim();
+            const checks = system.dailyChecks;
+            const next = new Date(checks.nextRunAt).toLocaleString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+            daily.textContent = `Runs every night at ${checks.nightlyTime} and at start-up. ${checks.activeBudgets} active budget${checks.activeBudgets === 1 ? '' : 's'}. Last full day checked: ${checks.lastCompletedDay || 'none yet'}. Next run: ${next}.`;
+        } catch (error) {
+            [market, assistant, daily].forEach(node => { node.textContent = 'Unavailable right now.'; });
+        }
+    }
+
+    function setupDailyChecks() {
+        const button = doc.querySelector('[data-run-daily]');
+        const status = doc.querySelector('[data-daily-status]');
+        button.addEventListener('click', async () => {
+            button.disabled = true;
+            try {
+                const result = await W.api('/api/admin/daily-checks', { method: 'POST' });
+                status.textContent = `Checked ${result.checks} budget${result.checks === 1 ? '' : 's'} for ${result.days.join(', ')}: ${result.alerts} new alert${result.alerts === 1 ? '' : 's'} sent, ${result.snapshots} net-worth snapshot${result.snapshots === 1 ? '' : 's'} saved.`;
+                status.className = 'form-status mt-3 is-success';
+                loadSystem();
+                loadAudit();
+            } catch (error) {
+                status.textContent = error.message;
+                status.className = 'form-status mt-3 is-error';
+            } finally {
+                status.hidden = false;
+                button.disabled = false;
+            }
+        });
+        doc.querySelector('[data-system-refresh]').addEventListener('click', loadSystem);
+    }
+
     function setupAdjust() {
         const form = doc.getElementById('adjustForm');
         const status = form.querySelector('[data-adjust-status]');
@@ -171,7 +216,9 @@
         loadStats();
         loadUsers();
         loadAudit();
+        loadSystem();
         setupAdjust();
+        setupDailyChecks();
         let timer = null;
         doc.getElementById('userSearch').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => loadUsers(1), 300); });
         doc.getElementById('userStatus').addEventListener('change', () => loadUsers(1));

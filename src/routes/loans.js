@@ -1,13 +1,14 @@
 const express = require('express');
 const { requireAuth } = require('../middleware/auth');
 const loans = require('../services/loans');
+const { sendError } = require('./helpers');
 const router = express.Router();
 
 router.post('/calculate', (req, res) => {
     try {
         res.json({ estimate: loans.calculate(req.body && req.body.kind, req.body || {}), estimateOnly: true });
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        sendError(res, error, 'Loans');
     }
 });
 
@@ -20,7 +21,7 @@ router.post('/estimates', (req, res) => {
     try {
         res.status(201).json({ estimates: loans.saveEstimate(req.session.userId, req.body || {}), message: 'Estimate saved to your profile. This is not a loan offer.' });
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        sendError(res, error, 'Loans');
     }
 });
 router.delete('/estimates/:id', (req, res) => {
@@ -28,7 +29,7 @@ router.delete('/estimates/:id', (req, res) => {
     try {
         res.json({ estimates: loans.deleteEstimate(req.session.userId, Number(req.params.id)) });
     } catch (error) {
-        res.status(error.status || 400).json({ error: error.message });
+        sendError(res, error, 'Loans');
     }
 });
 

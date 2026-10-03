@@ -2,23 +2,13 @@
  * Auth service — registration, login, password hashing
  */
 const bcrypt = require('bcryptjs');
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
+const { uniqueCustomerId, uniqueAccountNumber } = require('./ids');
 const { getDb } = require('../database');
 const config = require('../config');
 const { validateEmail, validatePassword, sanitizeString } = require('../middleware/validation');
-
-function generateCustomerId() {
-    const prefix = 'WB';
-    const num = Math.floor(10000000 + Math.random() * 90000000);
-    return `${prefix}${num}`;
-}
-
-function generateAccountNumber() {
-    const prefix = '4200';
-    const num = Math.floor(10000000 + Math.random() * 90000000);
-    const suffix = Math.floor(10 + Math.random() * 90);
-    return `${prefix}${num}${suffix}`;
-}
 
 async function registerUser({ email, password, fullName, phone, country }) {
     const db = getDb();
@@ -46,8 +36,8 @@ async function registerUser({ email, password, fullName, phone, country }) {
     }
 
     const passwordHash = await bcrypt.hash(password, config.bcryptRounds);
-    const customerId = generateCustomerId();
-    const accountNumber = generateAccountNumber();
+    const customerId = uniqueCustomerId(db);
+    const accountNumber = uniqueAccountNumber(db);
 
     const insertUser = db.prepare(`
     INSERT INTO users (email, full_name, phone, password_hash, role, status, customer_id, country)
@@ -159,36 +149,110 @@ async function loginUser({ email, password }) {
     };
 }
 
+const DEV_ADMIN_EMAIL = 'admin@willow.test';
+
+/** A readable random password, e.g. Willow-7KQ4-M9TP-X2RD (no 0/O or 1/I to mistype). */
+function readablePassword() {
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const group = () => Array.from(crypto.randomBytes(4), byte => alphabet[byte % alphabet.length]).join('');
+    return `Willow-${group()}-${group()}-${group()}`;
+}
+
+/** A path relative to the current folder when it is inside it, otherwise absolute. */
+function shownPath(file) {
+    const relative = path.relative(process.cwd(), file);
+    return relative && !relative.startsWith('..') && !path.isAbsolute(relative) ? relative : file;
+}
+
+function printAdminLogin(email, password, file) {
+    const lines = [
+        'Admin sign-in for this copy of Willow',
+        `  Email:    ${email}`,
+        `  Password: ${password}`,
+        `  Sign in at http://localhost:${config.port}/login, then open /admin.`,
+        `  Saved in ${shownPath(file)} (ignored by Git).`,
+    ];
+    const width = Math.max(...lines.map(line => line.length)) + 2;
+    console.log(`[Admin] ┌${'─'.repeat(width)}┐`);
+    lines.forEach(line => console.log(`[Admin] │ ${line.padEnd(width - 1)}│`));
+    console.log(`[Admin] └${'─'.repeat(width)}┘`);
+}
+
+/**
+ * Local development without ADMIN_EMAIL/ADMIN_PASSWORD: create admin@willow.test
+ * once with a random password, save it next to the database (git-ignored) and
+ * print it, so anyone can open the admin console after a plain `npm start`.
+ */
+async function ensureDevelopmentAdmin(db) {
+    const email = config.admin.email || DEV_ADMIN_EMAIL;
+    const file = path.join(config.paths.local, 'admin-credentials.txt');
+    const existing = db.prepare('SELECT id, role FROM users WHERE email = ?').get(email);
+    if (existing && existing.role !== 'admin') {
+        console.log(`[Admin] ${email} is already a customer, so no admin login was created. Set ADMIN_EMAIL and ADMIN_PASSWORD in .env.`);
+        return;
+    }
+    if (existing) {
+        // The password was shown when it was created; after that it lives only in the file.
+        console.log(fs.existsSync(file)
+            ? `[Admin] Admin sign-in: ${email} — the password is in ${shownPath(file)}.`
+            : `[Admin] Admin sign-in: ${email}. To set its password, add ADMIN_EMAIL and ADMIN_PASSWORD to .env and restart.`);
+        return;
+    }
+    const password = readablePassword();
+    const passwordHash = await bcrypt.hash(password, config.bcryptRounds);
+    db.prepare(`INSERT INTO users (email, full_name, phone, password_hash, role, status, customer_id)
+        VALUES (?, 'System Administrator', '', ?, 'admin', 'active', ?)`).run(email, passwordHash, uniqueCustomerId(db));
+    try {
+        fs.mkdirSync(path.dirname(file), { recursive: true });
+        fs.writeFileSync(file, [
+            'Willow admin sign-in (created automatically because ADMIN_EMAIL/ADMIN_PASSWORD are not set)',
+            `Email:    ${email}`,
+            `Password: ${password}`,
+            `Sign in at http://localhost:${config.port}/login, then open /admin.`,
+            'To choose your own, set ADMIN_EMAIL and ADMIN_PASSWORD in .env.',
+            '',
+        ].join('\n'), { mode: 0o600 });
+    } catch (error) {
+        console.log('[Admin] Could not save the admin login to a file; note the password below.');
+    }
+    printAdminLogin(email, password, file);
+}
+
 async function initializeAdmin() {
     const db = getDb();
     const { email, password } = config.admin;
 
-    if (!email || typeof password !== 'string' || !password || password.length > 128) {
+    if (!email || !password) {
+        if (config.isDev) return ensureDevelopmentAdmin(db);
         console.log('[Admin] No ADMIN_EMAIL/ADMIN_PASSWORD set — skipping admin initialization.');
         return;
     }
-
-    const existing = db.prepare('SELECT id FROM users WHERE email = ? AND role = ?').get(email, 'admin');
-    if (existing) {
+    if (typeof password !== 'string' || password.length > 128) {
+        console.log('[Admin] ADMIN_PASSWORD must be at most 128 characters — skipping admin initialization.');
         return;
     }
 
-    // Check if email exists as a customer
-    const existingCustomer = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
-    if (existingCustomer) {
+    const existing = db.prepare('SELECT id, role, password_hash FROM users WHERE email = ?').get(email);
+    if (existing && existing.role !== 'admin') {
         console.log('[Admin] Email already exists as a customer account. Use a different ADMIN_EMAIL.');
+        return;
+    }
+    if (existing) {
+        // ADMIN_PASSWORD always wins, so setting it in .env works even if the admin already exists.
+        if (!(await bcrypt.compare(password, existing.password_hash))) {
+            db.prepare("UPDATE users SET password_hash = ?, updated_at = datetime('now') WHERE id = ?").run(await bcrypt.hash(password, config.bcryptRounds), existing.id);
+            console.log(`[Admin] Updated the password for ${email} from ADMIN_PASSWORD.`);
+        }
         return;
     }
 
     const passwordHash = await bcrypt.hash(password, config.bcryptRounds);
-    const customerId = 'WBADMIN001';
-
     db.prepare(`
     INSERT INTO users (email, full_name, phone, password_hash, role, status, customer_id)
     VALUES (?, 'System Administrator', '', ?, 'admin', 'active', ?)
-  `).run(email, passwordHash, customerId);
+  `).run(email, passwordHash, uniqueCustomerId(db));
 
     console.log(`[Admin] Admin account created: ${email}`);
 }
 
-module.exports = { registerUser, loginUser, initializeAdmin, generateAccountNumber, clearAttempts };
+module.exports = { registerUser, loginUser, initializeAdmin, clearAttempts };

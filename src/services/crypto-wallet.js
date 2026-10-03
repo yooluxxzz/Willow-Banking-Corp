@@ -4,6 +4,7 @@ const { createNotification } = require('./notification');
 const { logAudit } = require('./audit');
 
 const { CRYPTO } = require('../content/instruments');
+const { ValidationError } = require('../errors');
 
 const SUPPORTED_ASSETS = new Set(CRYPTO);
 const normalizeUnits = quantity => Math.round((quantity + Number.EPSILON) * 1e8) / 1e8;
@@ -37,20 +38,20 @@ function sendDemoCrypto(senderUserId, input = {}) {
     const symbol = typeof input.symbol === 'string' ? input.symbol.trim().toUpperCase() : '';
     const quantity = parseQuantity(input.quantity);
     const recipientEmail = typeof input.recipientEmail === 'string' ? input.recipientEmail.trim().toLowerCase() : '';
-    if (!SUPPORTED_ASSETS.has(symbol)) throw new Error('Choose a supported demo crypto asset.');
-    if (quantity === null) throw new Error('Enter a valid quantity with up to eight decimal places.');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail) || recipientEmail.length > 255) throw new Error('Enter a valid Willow demo customer email.');
+    if (!SUPPORTED_ASSETS.has(symbol)) throw new ValidationError('Choose a supported demo crypto asset.');
+    if (quantity === null) throw new ValidationError('Enter a valid quantity with up to eight decimal places.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail) || recipientEmail.length > 255) throw new ValidationError('Enter a valid Willow demo customer email.');
 
     const db = getDb();
     const sender = db.prepare('SELECT id, email, status FROM users WHERE id = ?').get(senderUserId);
     const recipient = db.prepare('SELECT id, email, status FROM users WHERE email = ? COLLATE NOCASE').get(recipientEmail);
-    if (!sender || sender.status !== 'active') throw new Error('An active Willow demo profile is required.');
-    if (!recipient || recipient.status !== 'active') throw new Error('An active Willow demo recipient was not found.');
-    if (recipient.id === sender.id) throw new Error('Choose a different Willow demo customer.');
+    if (!sender || sender.status !== 'active') throw new ValidationError('An active Willow demo profile is required.');
+    if (!recipient || recipient.status !== 'active') throw new ValidationError('An active Willow demo recipient was not found.');
+    if (recipient.id === sender.id) throw new ValidationError('Choose a different Willow demo customer.');
 
     const result = db.transaction(() => {
         const holding = db.prepare('SELECT quantity, average_price FROM demo_holdings WHERE user_id = ? AND symbol = ?').get(senderUserId, symbol);
-        if (!holding || holding.quantity + 1e-12 < quantity) throw new Error(`Not enough demo ${symbol} to send.`);
+        if (!holding || holding.quantity + 1e-12 < quantity) throw new ValidationError(`Not enough demo ${symbol} to send.`);
         const receiverHolding = db.prepare('SELECT quantity, average_price FROM demo_holdings WHERE user_id = ? AND symbol = ?').get(recipient.id, symbol);
         const remaining = normalizeUnits(holding.quantity - quantity);
         const receivedQuantity = normalizeUnits((receiverHolding?.quantity || 0) + quantity);

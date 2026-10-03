@@ -29,10 +29,14 @@ function securityHeaders(req, res, next) {
     next();
 }
 
+const ANONYMOUS_SESSION_MS = 2 * 60 * 60 * 1000;
+
 function generateCsrfToken(req) {
     // Generate once per session; rotating on every render breaks multi-page/multi-tab usage
     if (!req.session.csrfToken) {
         req.session.csrfToken = crypto.randomBytes(32).toString('hex');
+        // A visitor who hasn't signed in only needs the session for a sign-in or contact form.
+        if (!req.session.userId) req.session.cookie.maxAge = ANONYMOUS_SESSION_MS;
     }
     return req.session.csrfToken;
 }
@@ -56,8 +60,12 @@ function csrfProtection(req, res, next) {
     next();
 }
 
+/**
+ * Makes `csrfToken` available to templates. It is created only when a page is
+ * rendered, so JSON and public API responses never start a session or set a cookie.
+ */
 function injectCsrfToken(req, res, next) {
-    res.locals.csrfToken = generateCsrfToken(req);
+    Object.defineProperty(res.locals, 'csrfToken', { get: () => generateCsrfToken(req), enumerable: true, configurable: true });
     next();
 }
 

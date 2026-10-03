@@ -7,6 +7,7 @@
 const crypto = require('crypto');
 const { getDb } = require('../database');
 const config = require('../config');
+const { ValidationError } = require('../errors');
 
 const BASE32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 const STEP_SECONDS = 30;
@@ -91,7 +92,7 @@ function isEnabled(userId) {
 
 /** Starts (or restarts) setup and returns the secret for the authenticator app. */
 function beginSetup(userId, email) {
-    if (isEnabled(userId)) throw new Error('Two-step verification is already on.');
+    if (isEnabled(userId)) throw new ValidationError('Two-step verification is already on.');
     const secret = base32Encode(crypto.randomBytes(20));
     getDb().prepare(`INSERT INTO two_factor (user_id, secret_encrypted, enabled_at, last_used_step) VALUES (?, ?, NULL, NULL)
         ON CONFLICT(user_id) DO UPDATE SET secret_encrypted = excluded.secret_encrypted, enabled_at = NULL, last_used_step = NULL, created_at = datetime('now')`).run(userId, encrypt(secret));
@@ -127,8 +128,8 @@ function verify(userId, code, { allowPending = false } = {}) {
 
 function confirmSetup(userId, code) {
     const status = getStatus(userId);
-    if (status.enabled) throw new Error('Two-step verification is already on.');
-    if (!status.pending) throw new Error('Start setup again to get a new key.');
+    if (status.enabled) throw new ValidationError('Two-step verification is already on.');
+    if (!status.pending) throw new ValidationError('Start setup again to get a new key.');
     if (!verify(userId, code, { allowPending: true })) return false;
     getDb().prepare("UPDATE two_factor SET enabled_at = datetime('now') WHERE user_id = ?").run(userId);
     return true;

@@ -9,6 +9,7 @@ const { logAudit, getAuditLogs } = require('../services/audit');
 const { getAllTransactions } = require('../services/transaction');
 const { validateAmount, toCents, formatCurrency } = require('../middleware/validation');
 const { createNotification } = require('../services/notification');
+const { formatMoney } = require('../services/currencies');
 
 const router = express.Router();
 
@@ -187,12 +188,44 @@ router.post('/users/:id/status', requireAdmin, (req, res) => {
 });
 
 // Balance adjustment
+// The optional parts of this copy of Willow and the nightly job, for whoever is reviewing it.
+router.get('/system', requireAdmin, (req, res) => {
+    const config = require('../config');
+    const budgets = require('../services/budgets');
+    const assistant = require('../services/assistant').cachedStatus();
+    res.json({
+        marketData: { ...require('../services/market-data').getStatus(), service: require('../services/market-service').status() },
+        assistant: { available: assistant.available, model: assistant.model, reason: assistant.reason },
+        dailyChecks: {
+            nightlyTime: config.jobs.nightlyTime,
+            lastCompletedDay: budgets.lastCompletedDay(),
+            nextRunAt: new Date(Date.now() + budgets.msUntil(config.jobs.nightlyTime)).toISOString(),
+            activeBudgets: getDb().prepare("SELECT COUNT(*) AS n FROM budgets WHERE status = 'active'").get().n,
+        },
+    });
+});
+
+// Runs tonight's budget check and net-worth snapshots now, so the result can be seen without waiting.
+router.post('/daily-checks', requireAdmin, async (req, res) => {
+    try {
+        const result = await require('../services/jobs').runDailyChecks('nightly');
+        logAudit({ actorId: req.session.userId, actorEmail: res.locals.user?.email || 'admin', action: 'daily_checks_run', targetType: 'system', targetId: 'budgets', metadata: { days: result.days, checks: result.checks, alerts: result.alerts, snapshots: result.snapshots } });
+        res.json(result);
+    } catch (error) {
+        console.error('[Admin] Daily checks failed:', error.message);
+        res.status(500).json({ error: 'The daily checks could not run. See the server log.' });
+    }
+});
+
 router.post('/balance-adjustment', requireAdmin, (req, res) => {
     try {
         const { accountId, amount, reason, type } = req.body;
 
-        if (!accountId || !amount || !reason) {
+        if (!accountId || !amount || typeof reason !== 'string' || !reason.trim()) {
             return res.status(400).json({ error: 'Account, amount, and reason are required.' });
+        }
+        if (reason.trim().length > 200 || /[<>\x00-\x1f]/.test(reason)) {
+            return res.status(400).json({ error: 'Keep the reason under 200 characters of plain text.' });
         }
         if (!validateAmount(amount)) {
             return res.status(400).json({ error: 'Invalid amount.' });
@@ -215,6 +248,8 @@ router.post('/balance-adjustment', requireAdmin, (req, res) => {
         if (type === 'debit' && account.available_balance < amountCents) {
             return res.status(400).json({ error: 'Insufficient balance for debit adjustment.' });
         }
+        const currency = account.currency || 'USD';
+        const note = reason.trim();
 
         const reference = `ADJ-${uuidv4().slice(0, 8).toUpperCase()}`;
 
@@ -223,14 +258,16 @@ router.post('/balance-adjustment', requireAdmin, (req, res) => {
                 db.prepare('UPDATE accounts SET balance = balance + ?, available_balance = available_balance + ? WHERE id = ?')
                     .run(amountCents, amountCents, account.id);
             } else {
-                db.prepare('UPDATE accounts SET balance = balance - ?, available_balance = available_balance - ? WHERE id = ?')
-                    .run(amountCents, amountCents, account.id);
+                const debit = db.prepare('UPDATE accounts SET balance = balance - ?, available_balance = available_balance - ? WHERE id = ? AND available_balance >= ?')
+                    .run(amountCents, amountCents, account.id, amountCents);
+                if (debit.changes !== 1) throw Object.assign(new Error('Insufficient balance for debit adjustment.'), { status: 400 });
             }
 
+            // Recorded in the account's own currency.
             db.prepare(`
         INSERT INTO transactions (reference, account_id, type, amount, currency, direction, status, description)
-        VALUES (?, ?, 'adjustment', ?, 'USD', ?, 'completed', ?)
-      `).run(reference, account.id, amountCents, type, `Admin adjustment: ${reason}`);
+        VALUES (?, ?, 'adjustment', ?, ?, ?, 'completed', ?)
+      `).run(reference, account.id, amountCents, currency, type, `Admin adjustment: ${note}`);
         });
 
         adjustment();
@@ -241,14 +278,15 @@ router.post('/balance-adjustment', requireAdmin, (req, res) => {
             action: 'balance_adjustment',
             targetType: 'account',
             targetId: String(account.id),
-            metadata: { amount: amountCents, type, reason, reference, accountOwner: account.owner_name },
+            metadata: { amount: amountCents, currency, type, reason: note, reference, accountOwner: account.owner_name },
         });
 
-        createNotification(account.owner_id, 'info', 'Balance Adjustment',
-            `An administrative ${type} adjustment of $${Number(amount).toFixed(2)} has been applied. Reason: ${reason}`);
+        createNotification(account.owner_id, 'info', 'Balance adjustment',
+            `An administrative ${type} of ${formatMoney(amountCents, currency)} was applied. Reason: ${note}`);
 
         res.json({ success: true, reference });
     } catch (err) {
+        if (err.status === 400) return res.status(400).json({ error: err.message });
         console.error('[Admin] Adjustment error:', err.message);
         res.status(500).json({ error: 'Failed to process adjustment.' });
     }

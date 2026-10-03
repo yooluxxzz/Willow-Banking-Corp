@@ -17,7 +17,8 @@ describe('Python market-data bridge supervisor', () => {
     before(async () => {
         port = await freePort();
         dir = fs.mkdtempSync(path.join(os.tmpdir(), 'willow-bridge-'));
-        const server = `require('http').createServer((q, s) => { if (q.url === '/health') { s.end(JSON.stringify({ status: 'ok', token: Boolean(process.env.MARKET_DATA_TOKEN) })); } else { s.statusCode = 401; s.end('{}'); } }).listen(Number(process.env.MARKET_DATA_PORT), process.env.MARKET_DATA_HOST); process.on('SIGTERM', () => process.exit(0));`;
+        // Like the real service: /health is open, everything else needs the secret (400 = authorised but no symbols).
+        const server = `require('http').createServer((q, s) => { if (q.url === '/health') { s.end(JSON.stringify({ status: 'ok', token: Boolean(process.env.MARKET_DATA_TOKEN) })); } else { s.statusCode = q.headers['x-willow-service-token'] === process.env.MARKET_DATA_TOKEN ? 400 : 401; s.end('{}'); } }).listen(Number(process.env.MARKET_DATA_PORT), process.env.MARKET_DATA_HOST); process.on('SIGTERM', () => process.exit(0));`;
         fs.writeFileSync(path.join(dir, 'server.js'), server);
         const fake = path.join(dir, 'python');
         fs.writeFileSync(fake, `#!/bin/sh\nif [ "$1" = "-c" ]; then echo "3.11.0"; exit 0; fi\nexec "${process.execPath}" "${path.join(dir, 'server.js')}"\n`);
@@ -26,6 +27,7 @@ describe('Python market-data bridge supervisor', () => {
         process.env.MARKET_DATA_PROVIDER = 'auto';
         process.env.MARKET_DATA_SERVICE_URL = `http://127.0.0.1:${port}`;
         process.env.MARKET_SERVICE_LOG = 'quiet';
+        process.env.MARKET_DATA_TOKEN_FILE = path.join(dir, '.market-data-token');
         delete process.env.MARKET_DATA_TOKEN;
         delete process.env.MARKET_SERVICE_AUTOSTART;
         supervisor = require('../src/services/market-service');
@@ -61,5 +63,25 @@ describe('Python market-data bridge supervisor', () => {
         const again = await supervisor.start();
         assert.equal(again.restarts, 1);
         assert.equal(again.running, true);
+        assert.equal(again.lastError, null);
+    });
+
+    it('keeps the generated secret with the data so a later run can reuse a service that is still up', () => {
+        assert.equal(fs.readFileSync(process.env.MARKET_DATA_TOKEN_FILE, 'utf8'), process.env.MARKET_DATA_TOKEN);
+    });
+
+    it('does not reuse a running service that rejects its secret', async () => {
+        const otherPort = await freePort();
+        const other = require('http').createServer((q, s) => { s.statusCode = q.url === '/health' ? 200 : 401; s.end('{}'); });
+        await new Promise(resolve => other.listen(otherPort, '127.0.0.1', resolve));
+        const url = process.env.MARKET_DATA_SERVICE_URL;
+        process.env.MARKET_DATA_SERVICE_URL = `http://127.0.0.1:${otherPort}`;
+        try {
+            const result = await supervisor.start();
+            assert.equal(result.lastError, 'token_mismatch');
+        } finally {
+            process.env.MARKET_DATA_SERVICE_URL = url;
+            await new Promise(resolve => other.close(resolve));
+        }
     });
 });

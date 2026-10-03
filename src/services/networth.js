@@ -10,6 +10,8 @@ const portfolio = require('./demo-portfolio');
 const { logAudit } = require('./audit');
 const { createNotification } = require('./notification');
 const { formatCurrency } = require('../middleware/validation');
+const { ValidationError } = require('../errors');
+const { parseCents } = require('../middleware/validation');
 
 const ASSET_KINDS = {
     cash: 'Cash outside Willow',
@@ -35,10 +37,8 @@ const pad = n => String(n).padStart(2, '0');
 const localDay = (date = new Date()) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 
 function money(value, { min = 0, max = 100000000000, label = 'amount' } = {}) {
-    const cents = Math.round(Number(value) * 100);
-    if (value === '' || value === null || value === undefined || !Number.isSafeInteger(cents) || cents < min || cents > max) {
-        throw new Error(`Enter a valid ${label}.`);
-    }
+    const cents = parseCents(value, { allowZero: min === 0, max });
+    if (cents === null || cents < min) throw new ValidationError(`Enter a valid ${label}.`);
     return cents;
 }
 
@@ -53,19 +53,19 @@ function listAssets(userId) {
 
 function validateAsset(input, existing = {}) {
     const name = typeof input.name === 'string' ? input.name.trim() : existing.name;
-    if (!name || name.length < 2 || !plain(name, 60)) throw new Error('Name the asset (2–60 characters).');
+    if (!name || name.length < 2 || !plain(name, 60)) throw new ValidationError('Name the asset (2–60 characters).');
     const kind = input.kind ?? existing.kind;
-    if (!Object.hasOwn(ASSET_KINDS, kind)) throw new Error('Choose what kind of asset it is.');
+    if (typeof kind !== 'string' || !Object.hasOwn(ASSET_KINDS, kind)) throw new ValidationError('Choose what kind of asset it is.');
     const valueCents = input.value !== undefined ? money(input.value, { label: 'value' }) : existing.value_cents;
-    if (valueCents === undefined) throw new Error('Enter what it is worth today.');
+    if (valueCents === undefined) throw new ValidationError('Enter what it is worth today.');
     const note = typeof input.note === 'string' ? input.note.trim() : (existing.note || '');
-    if (!plain(note, 200)) throw new Error('Keep the note under 200 characters.');
+    if (!plain(note, 200)) throw new ValidationError('Keep the note under 200 characters.');
     return { name, kind, valueCents, note };
 }
 
 function createAsset(userId, input = {}) {
     const db = getDb();
-    if (db.prepare('SELECT COUNT(*) AS n FROM assets WHERE user_id = ?').get(userId).n >= MAX_ITEMS) throw new Error(`You can track up to ${MAX_ITEMS} assets.`);
+    if (db.prepare('SELECT COUNT(*) AS n FROM assets WHERE user_id = ?').get(userId).n >= MAX_ITEMS) throw new ValidationError(`You can track up to ${MAX_ITEMS} assets.`);
     const { name, kind, valueCents, note } = validateAsset(input);
     const id = db.prepare('INSERT INTO assets (user_id, name, kind, value_cents, note) VALUES (?, ?, ?, ?, ?)').run(userId, name, kind, valueCents, note).lastInsertRowid;
     logAudit({ actorId: userId, action: 'asset_added', targetType: 'asset', targetId: String(id) });
@@ -153,26 +153,26 @@ function listDebts(userId) {
 
 function validateDebt(input, existing = {}) {
     const name = typeof input.name === 'string' ? input.name.trim() : existing.name;
-    if (!name || name.length < 2 || !plain(name, 60)) throw new Error('Name the debt (2–60 characters).');
+    if (!name || name.length < 2 || !plain(name, 60)) throw new ValidationError('Name the debt (2–60 characters).');
     const kind = input.kind ?? existing.kind;
-    if (!Object.hasOwn(DEBT_KINDS, kind)) throw new Error('Choose what kind of debt it is.');
+    if (typeof kind !== 'string' || !Object.hasOwn(DEBT_KINDS, kind)) throw new ValidationError('Choose what kind of debt it is.');
     const lender = typeof input.lender === 'string' ? input.lender.trim() : (existing.lender || '');
-    if (!plain(lender, 60)) throw new Error('Keep the lender under 60 characters.');
+    if (!plain(lender, 60)) throw new ValidationError('Keep the lender under 60 characters.');
     const balanceCents = input.balance !== undefined ? money(input.balance, { label: 'balance' }) : existing.balance_cents;
-    if (balanceCents === undefined) throw new Error('Enter what you owe today.');
+    if (balanceCents === undefined) throw new ValidationError('Enter what you owe today.');
     let originalCents = input.original !== undefined && input.original !== '' ? money(input.original, { label: 'original amount' }) : (existing.original_cents ?? balanceCents);
     if (originalCents < balanceCents) originalCents = balanceCents;
     const rate = input.rate !== undefined && input.rate !== '' ? Number(input.rate) : (existing.rate_bps !== undefined ? existing.rate_bps / 100 : 0);
-    if (!Number.isFinite(rate) || rate < 0 || rate > 100) throw new Error('Enter an interest rate between 0% and 100%.');
+    if (!['string', 'number', 'undefined'].includes(typeof input.rate) || !Number.isFinite(rate) || rate < 0 || rate > 100) throw new ValidationError('Enter an interest rate between 0% and 100%.');
     const minimumCents = input.minimum !== undefined && input.minimum !== '' ? money(input.minimum, { label: 'minimum payment' }) : (existing.minimum_cents || 0);
     const dueDay = input.dueDay !== undefined ? (input.dueDay === '' || input.dueDay === null ? null : Number(input.dueDay)) : (existing.due_day ?? null);
-    if (dueDay !== null && (!Number.isInteger(dueDay) || dueDay < 1 || dueDay > 31)) throw new Error('Choose a due day between 1 and 31.');
+    if (dueDay !== null && (!Number.isInteger(dueDay) || dueDay < 1 || dueDay > 31)) throw new ValidationError('Choose a due day between 1 and 31.');
     return { name, kind, lender, balanceCents, originalCents, rateBps: Math.round(rate * 100), minimumCents, dueDay };
 }
 
 function createDebt(userId, input = {}) {
     const db = getDb();
-    if (db.prepare('SELECT COUNT(*) AS n FROM debts WHERE user_id = ?').get(userId).n >= MAX_ITEMS) throw new Error(`You can track up to ${MAX_ITEMS} debts.`);
+    if (db.prepare('SELECT COUNT(*) AS n FROM debts WHERE user_id = ?').get(userId).n >= MAX_ITEMS) throw new ValidationError(`You can track up to ${MAX_ITEMS} debts.`);
     const v = validateDebt(input);
     const id = db.prepare('INSERT INTO debts (user_id, name, kind, lender, balance_cents, original_cents, rate_bps, minimum_cents, due_day, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
         .run(userId, v.name, v.kind, v.lender, v.balanceCents, v.originalCents, v.rateBps, v.minimumCents, v.dueDay, v.balanceCents ? 'open' : 'paid_off').lastInsertRowid;
@@ -209,23 +209,23 @@ function recordPayment(userId, debtId, input = {}) {
     const db = getDb();
     const debt = db.prepare('SELECT * FROM debts WHERE id = ? AND user_id = ?').get(debtId, userId);
     if (!debt) throw Object.assign(new Error('Debt not found.'), { status: 404 });
-    if (debt.status !== 'open' || debt.balance_cents <= 0) throw new Error('This debt is already paid off.');
+    if (debt.status !== 'open' || debt.balance_cents <= 0) throw new ValidationError('This debt is already paid off.');
     const amountCents = money(input.amount, { min: 1, max: 100000000000, label: 'payment amount' });
-    if (amountCents > debt.balance_cents) throw new Error(`The payment can’t be more than the ${formatCurrency(debt.balance_cents)} you owe.`);
+    if (amountCents > debt.balance_cents) throw new ValidationError(`The payment can’t be more than the ${formatCurrency(debt.balance_cents)} you owe.`);
     const paidOn = typeof input.paidOn === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(input.paidOn) ? input.paidOn : localDay();
-    if (paidOn > localDay()) throw new Error('Choose today or an earlier date.');
+    if (paidOn > localDay()) throw new ValidationError('Choose today or an earlier date.');
     const note = typeof input.note === 'string' ? input.note.trim() : '';
-    if (!plain(note, 120)) throw new Error('Keep the note under 120 characters.');
+    if (!plain(note, 120)) throw new ValidationError('Keep the note under 120 characters.');
     let account = null;
     if (input.accountId) {
         account = db.prepare("SELECT * FROM accounts WHERE id = ? AND user_id = ? AND status = 'active' AND currency = 'USD'").get(Number(input.accountId), userId);
-        if (!account) throw new Error('Choose one of your active US dollar accounts, or record a payment made elsewhere.');
+        if (!account) throw new ValidationError('Choose one of your active US dollar accounts, or record a payment made elsewhere.');
     }
     const reference = account ? `DBT-${uuidv4().slice(0, 8).toUpperCase()}` : null;
     db.transaction(() => {
         if (account) {
             const updated = db.prepare('UPDATE accounts SET balance = balance - ?, available_balance = available_balance - ? WHERE id = ? AND available_balance >= ?').run(amountCents, amountCents, account.id, amountCents);
-            if (updated.changes !== 1) throw new Error('Not enough available money in that account.');
+            if (updated.changes !== 1) throw new ValidationError('Not enough available money in that account.');
             db.prepare(`INSERT INTO transactions (reference, account_id, type, amount, currency, direction, status, description, category, counterparty)
                 VALUES (?, ?, 'payment', ?, 'USD', 'debit', 'completed', ?, 'debt', ?)`).run(reference, account.id, amountCents, `Payment — ${debt.name}`, debt.lender || debt.name);
         }

@@ -13,7 +13,7 @@ const { wantsJson } = require('./services/sign-in');
 
 function createApp({ sessionStore, sessionSecret = config.session.secret, cookieName = 'willow.sid', secureCookies = config.nodeEnv === 'production' } = {}) {
     const app = express();
-    app.set('trust proxy', 1);
+    app.set('trust proxy', config.trustProxy);
     app.set('view engine', 'ejs');
     app.set('views', config.paths.views);
     app.disable('x-powered-by');

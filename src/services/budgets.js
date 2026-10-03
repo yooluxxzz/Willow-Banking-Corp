@@ -9,7 +9,9 @@
  */
 const { getDb } = require('../database');
 const { categorize, categoryMeta } = require('./categories');
-const { formatCurrency } = require('../middleware/validation');
+const { formatCurrency, parseCents } = require('../middleware/validation');
+const { createNotification } = require('./notification');
+const { ValidationError } = require('../errors');
 
 const PERIODS = ['daily', 'weekly', 'monthly'];
 const PERSONAL_CATEGORIES = ['groceries', 'dining', 'transport', 'housing', 'bills', 'shopping', 'entertainment', 'health', 'travel', 'cash', 'transfers', 'debt', 'other'];
@@ -36,6 +38,8 @@ const dayKey = date => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
 const parseDay = key => { const [y, m, d] = key.split('-').map(Number); return new Date(y, m - 1, d); };
 const addDays = (date, n) => new Date(date.getFullYear(), date.getMonth(), date.getDate() + n);
 const sqlUtc = date => date.toISOString().replace('T', ' ').slice(0, 19);
+/** The local calendar day of a stored UTC timestamp ("2026-10-03 02:00:00" is 2 October in California). */
+const localDayOf = timestamp => { const at = new Date(`${String(timestamp).replace(' ', 'T')}Z`); return new Date(at.getFullYear(), at.getMonth(), at.getDate()); };
 
 function periodStart(period, day) {
     if (period === 'monthly') return new Date(day.getFullYear(), day.getMonth(), 1);
@@ -99,16 +103,17 @@ function statusFor(spent, limit) {
 // ── CRUD ─────────────────────────────────────────────────────────────────
 function validate(scope, input) {
     const name = String(input.name || '').trim();
-    if (!name || name.length > 60 || /[<>\x00-\x1f]/.test(name)) throw new Error('Give the budget a name up to 60 characters.');
+    if (!name || name.length > 60 || /[<>\x00-\x1f]/.test(name)) throw new ValidationError('Give the budget a name up to 60 characters.');
     const period = String(input.period || '');
-    if (!PERIODS.includes(period)) throw new Error('Choose daily, weekly or monthly.');
-    let category = input.category ? String(input.category) : null;
+    if (!PERIODS.includes(period)) throw new ValidationError('Choose daily, weekly or monthly.');
+    if (input.category !== undefined && input.category !== null && typeof input.category !== 'string') throw new ValidationError('Choose a category from the list.');
+    let category = input.category || null;
     if (category) {
         const allowed = scope === 'business' ? Object.keys(BUSINESS_CATEGORIES) : PERSONAL_CATEGORIES;
-        if (!allowed.includes(category)) throw new Error('Choose a category from the list.');
+        if (!allowed.includes(category)) throw new ValidationError('Choose a category from the list.');
     } else category = null;
-    const limitCents = Math.round(Number(input.limit) * 100);
-    if (!Number.isSafeInteger(limitCents) || limitCents < 100 || limitCents > 100000000) throw new Error('Set a limit between $1 and $1,000,000.');
+    const limitCents = parseCents(input.limit, { max: 100000000 });
+    if (limitCents === null || limitCents < 100) throw new ValidationError('Set a limit between $1 and $1,000,000.');
     return { name, period, category, limitCents };
 }
 
@@ -120,7 +125,7 @@ function createBudget(userId, input) {
     const db = getDb();
     const scope = scopeOf(input.scope);
     const { name, period, category, limitCents } = validate(scope, input);
-    if (db.prepare("SELECT COUNT(*) AS n FROM budgets WHERE user_id = ? AND status = 'active'").get(userId).n >= MAX_BUDGETS) throw new Error(`You can keep up to ${MAX_BUDGETS} budgets.`);
+    if (db.prepare("SELECT COUNT(*) AS n FROM budgets WHERE user_id = ? AND status = 'active'").get(userId).n >= MAX_BUDGETS) throw new ValidationError(`You can keep up to ${MAX_BUDGETS} budgets.`);
     const id = db.prepare('INSERT INTO budgets (user_id, scope, name, category, period, limit_cents) VALUES (?, ?, ?, ?, ?, ?)').run(userId, scope, name, category, period, limitCents).lastInsertRowid;
     return getBudget(userId, id);
 }
@@ -195,12 +200,20 @@ function setMeta(key, value) {
     getDb().prepare("INSERT INTO app_meta (key, value, updated_at) VALUES (?, ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at").run(key, value);
 }
 
-function notify(budget, level, spent) {
-    const db = getDb();
-    const label = budget.period === 'daily' ? 'today' : budget.period === 'weekly' ? 'this week' : 'this month';
+/** "today" / "this week" / "this month", or the date when the check is for an earlier period. */
+function periodLabel(period, day, now) {
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const date = day.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    if (period === 'daily') return dayKey(day) === dayKey(today) ? 'today' : `on ${date}`;
+    if (period === 'weekly') return dayKey(periodStart('weekly', day)) === dayKey(periodStart('weekly', today)) ? 'this week' : `in the week of ${periodStart('weekly', day).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`;
+    return day.getMonth() === today.getMonth() && day.getFullYear() === today.getFullYear() ? 'this month' : `in ${day.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
+}
+
+function notify(budget, level, spent, day = new Date(), now = new Date()) {
+    const label = periodLabel(budget.period, day, now);
     const title = level === 'over' ? `Over budget: ${budget.name}` : `Close to your budget: ${budget.name}`;
     const message = `${formatCurrency(spent)} of ${formatCurrency(budget.limit_cents)} spent ${label}${level === 'over' ? ` — ${formatCurrency(spent - budget.limit_cents)} over.` : '.'}`;
-    db.prepare("INSERT INTO notifications (user_id, type, title, message) VALUES (?, 'budget', ?, ?)").run(budget.user_id, title, message);
+    createNotification(budget.user_id, 'budget', title, message);
 }
 
 /** Records the check for one budget on one day. Returns { status, notified }. */
@@ -217,7 +230,7 @@ function checkBudgetDay(budget, day, { now = new Date(), notifyUser = true } = {
         const already = db.prepare("SELECT notified FROM budget_checks WHERE budget_id = ? AND period_start = ? AND notified != '' ORDER BY CASE notified WHEN 'over' THEN 0 ELSE 1 END LIMIT 1").get(budget.id, periodKey);
         const level = already && already.notified;
         if (level !== 'over' && (status === 'over' || level !== 'near')) {
-            notify(budget, status, spent);
+            notify(budget, status, spent, day, now);
             db.prepare('UPDATE budget_checks SET notified = ? WHERE budget_id = ? AND day = ?').run(status, budget.id, key);
             return { status, notified: true };
         }
@@ -226,38 +239,44 @@ function checkBudgetDay(budget, day, { now = new Date(), notifyUser = true } = {
 }
 
 /**
- * Checks every active budget. mode 'nightly' checks today; mode 'startup' catches up
- * every full day missed since the last recorded check (up to 31 days), notifying
- * only for the most recent day so a long downtime doesn't flood notifications.
+ * Checks every active budget.
+ *
+ * Every run first records each day that has ended since the last completed check (up
+ * to 31 days back), so no day is ever skipped: not while Willow was stopped, not when
+ * it starts just before midnight, and not the last minutes after the nightly run.
+ * The nightly run (mode 'nightly') then also checks today so far. Only days that have
+ * ended count as done; today is checked again once it is over. Alerts are sent only
+ * for the most recent day, so a long downtime doesn't flood anyone with notifications.
  */
 function runBudgetChecks({ now = new Date(), mode = 'nightly' } = {}) {
     const db = getDb();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    let days;
-    if (mode === 'startup') {
-        const last = getMeta(LAST_DAY_KEY);
-        const earliest = addDays(today, -31);
-        let first = last ? addDays(parseDay(last), 1) : addDays(today, -1);
-        if (first < earliest) first = earliest;
-        days = [];
-        for (let day = first; day < today; day = addDays(day, 1)) days.push(day);
-    } else {
-        days = [today];
-    }
+    const last = getMeta(LAST_DAY_KEY);
+    const earliest = addDays(today, -31);
+    let first = last ? addDays(parseDay(last), 1) : addDays(today, -1);
+    if (first < earliest) first = earliest;
+    const days = [];
+    for (let day = first; day < today; day = addDays(day, 1)) days.push(day);
+    const completed = days.length;
+    if (mode === 'nightly') days.push(today);
     const budgets = db.prepare("SELECT * FROM budgets WHERE status = 'active'").all();
     let checks = 0;
     let alerts = 0;
     days.forEach((day, index) => {
         const isLatest = index === days.length - 1;
         budgets.forEach(budget => {
-            const created = parseDay(String(budget.created_at).slice(0, 10));
-            if (day < created) return;
+            if (day < localDayOf(budget.created_at)) return;
             if (checkBudgetDay(budget, day, { now, notifyUser: isLatest }).notified) alerts += 1;
             checks += 1;
         });
     });
-    if (days.length) setMeta(LAST_DAY_KEY, dayKey(days[days.length - 1]));
+    if (completed) setMeta(LAST_DAY_KEY, dayKey(days[completed - 1]));
     return { days: days.map(dayKey), checks, alerts };
+}
+
+/** The most recent day whose budget check is complete, or null before the first check. */
+function lastCompletedDay() {
+    return getMeta(LAST_DAY_KEY);
 }
 
 /** Milliseconds from `now` until the next daily check at HH:MM local time. */
@@ -271,5 +290,5 @@ function msUntil(time, now = new Date()) {
 module.exports = {
     PERIODS, PERSONAL_CATEGORIES, BUSINESS_CATEGORIES,
     createBudget, updateBudget, deleteBudget, getBudget, listBudgets, categoryOptions,
-    runBudgetChecks, checkBudgetDay, msUntil, personalSpending, businessSpending, dayKey,
+    runBudgetChecks, checkBudgetDay, lastCompletedDay, msUntil, periodLabel, personalSpending, businessSpending, dayKey,
 };

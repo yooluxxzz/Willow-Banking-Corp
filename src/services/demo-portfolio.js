@@ -7,6 +7,7 @@ const { v4: uuidv4 } = require('uuid');
 const { getDb } = require('../database');
 const marketData = require('./market-data');
 const { logAudit } = require('./audit');
+const { ValidationError } = require('../errors');
 const TRADABLE = new Set(['stock', 'etf', 'fund', 'crypto']);
 const TYPE_ORDER = ['stock', 'etf', 'fund', 'crypto'];
 const TYPE_LABELS = { stock: 'Stocks', etf: 'ETFs', fund: 'Funds', crypto: 'Crypto', cash: 'Cash' };
@@ -44,23 +45,23 @@ function cashTransfers(userId, limit = 20) {
  */
 function moveCash(userId, { accountId, direction, amount }) {
     const db = getDb();
-    if (!['in', 'out'].includes(direction)) throw new Error('Choose whether to add or withdraw cash.');
+    if (!['in', 'out'].includes(direction)) throw new ValidationError('Choose whether to add or withdraw cash.');
     const cents = Math.round(Number(amount) * 100);
-    if (!Number.isSafeInteger(cents) || cents < 1 || cents > 100000000) throw new Error('Enter an amount between $0.01 and $1,000,000.');
+    if (!Number.isSafeInteger(cents) || cents < 1 || cents > 100000000) throw new ValidationError('Enter an amount between $0.01 and $1,000,000.');
     const account = db.prepare("SELECT * FROM accounts WHERE id = ? AND user_id = ?").get(Number(accountId), userId);
     if (!account) throw Object.assign(new Error('Choose one of your accounts.'), { status: 404 });
-    if (account.status !== 'active') throw new Error('That account is not active.');
-    if ((account.currency || 'USD') !== 'USD') throw new Error('Investing cash moves to and from US dollar accounts.');
+    if (account.status !== 'active') throw new ValidationError('That account is not active.');
+    if ((account.currency || 'USD') !== 'USD') throw new ValidationError('Investing cash moves to and from US dollar accounts.');
     ensurePortfolio(userId);
     const reference = `INV-${direction === 'in' ? 'IN' : 'OUT'}-${uuidv4().slice(0, 8).toUpperCase()}`;
     db.transaction(() => {
         if (direction === 'in') {
             const updated = db.prepare('UPDATE accounts SET balance = balance - ?, available_balance = available_balance - ? WHERE id = ? AND available_balance >= ?').run(cents, cents, account.id, cents);
-            if (updated.changes !== 1) throw new Error('Not enough available money in that account.');
+            if (updated.changes !== 1) throw new ValidationError('Not enough available money in that account.');
             db.prepare("UPDATE demo_portfolios SET cash_cents = cash_cents + ?, updated_at = datetime('now') WHERE user_id = ?").run(cents, userId);
         } else {
             const updated = db.prepare("UPDATE demo_portfolios SET cash_cents = cash_cents - ?, updated_at = datetime('now') WHERE user_id = ? AND cash_cents >= ?").run(cents, userId, cents);
-            if (updated.changes !== 1) throw new Error('Not enough investing cash. Sell holdings first.');
+            if (updated.changes !== 1) throw new ValidationError('Not enough investing cash. Sell holdings first.');
             db.prepare('UPDATE accounts SET balance = balance + ?, available_balance = available_balance + ? WHERE id = ?').run(cents, cents, account.id);
         }
         db.prepare(`INSERT INTO transactions (reference, account_id, type, amount, currency, direction, status, description, category)
@@ -81,19 +82,21 @@ function executeTrade(userId, { symbol, side, quantity, amount, price }) {
     const instrument = marketData.getInstrument(symbol);
     const normalizedSide = typeof side === 'string' ? side.toLowerCase() : '';
     const quote = Number(price);
-    if (!instrument || !TRADABLE.has(instrument.type)) throw new Error('Choose a supported demo asset.');
-    if (!['buy', 'sell'].includes(normalizedSide)) throw new Error('Choose buy or sell.');
-    if (!Number.isFinite(quote) || quote <= 0) throw new Error('Enter a valid quantity and market price.');
-    let shares = Number(quantity);
+    if (!instrument || !TRADABLE.has(instrument.type)) throw new ValidationError('Choose a supported demo asset.');
+    if (!['buy', 'sell'].includes(normalizedSide)) throw new ValidationError('Choose buy or sell.');
+    if (!Number.isFinite(quote) || quote <= 0) throw new ValidationError('Enter a valid quantity and market price.');
+    let shares = roundQuantity(Number(quantity), instrument.type);
     if ((quantity === undefined || quantity === null || quantity === '') && amount !== undefined) {
         const value = Number(amount);
-        if (!Number.isFinite(value) || value <= 0 || value > 1000000) throw new Error('Enter an amount between $0.01 and $1,000,000.');
+        if (!Number.isFinite(value) || value <= 0 || value > 1000000) throw new ValidationError('Enter an amount between $0.01 and $1,000,000.');
         shares = roundQuantity(value / quote, instrument.type);
     }
-    if (!Number.isFinite(shares) || shares <= 0 || shares > 1000000) throw new Error('Enter a valid quantity and market price.');
+    if (!Number.isFinite(shares) || shares <= 0 || shares > 1000000) throw new ValidationError('Enter a valid quantity and market price.');
     const notionalCents = shares * quote * 100;
-    if (!Number.isSafeInteger(Math.round(notionalCents)) || notionalCents < 1) throw new Error('Order value is outside the supported demo range.');
-    const totalCents = Math.round(notionalCents);
+    // Part-cent values round against the customer, as a broker would: a buy costs at
+    // least its value and a sale pays at most its value, so round trips can't create money.
+    const totalCents = normalizedSide === 'buy' ? Math.ceil(notionalCents - 1e-6) : Math.floor(notionalCents + 1e-6);
+    if (!Number.isSafeInteger(totalCents) || totalCents < 1) throw new ValidationError('Order value is too small. Trade at least one cent’s worth.');
 
     const db = getDb();
     ensurePortfolio(userId);
@@ -102,7 +105,7 @@ function executeTrade(userId, { symbol, side, quantity, amount, price }) {
         const portfolio = db.prepare('SELECT cash_cents FROM demo_portfolios WHERE user_id = ?').get(userId);
         const holding = db.prepare('SELECT quantity, average_price FROM demo_holdings WHERE user_id = ? AND symbol = ?').get(userId, instrument.symbol);
         if (normalizedSide === 'buy') {
-            if (portfolio.cash_cents < totalCents) throw new Error(portfolio.cash_cents ? 'Not enough investing cash for this order. Add cash from one of your accounts.' : 'Add cash from one of your accounts before buying.');
+            if (portfolio.cash_cents < totalCents) throw new ValidationError(portfolio.cash_cents ? 'Not enough investing cash for this order. Add cash from one of your accounts.' : 'Add cash from one of your accounts before buying.');
             const oldQuantity = holding?.quantity || 0;
             const nextQuantity = oldQuantity + shares;
             const averagePrice = ((oldQuantity * (holding?.average_price || 0)) + (shares * quote)) / nextQuantity;
@@ -111,7 +114,7 @@ function executeTrade(userId, { symbol, side, quantity, amount, price }) {
                 ON CONFLICT(user_id, symbol) DO UPDATE SET quantity = excluded.quantity, average_price = excluded.average_price, updated_at = datetime('now')`)
                 .run(userId, instrument.symbol, nextQuantity, averagePrice);
         } else {
-            if (!holding || holding.quantity + 1e-9 < shares) throw new Error('You do not hold enough demo units to sell.');
+            if (!holding || holding.quantity + 1e-9 < shares) throw new ValidationError('You do not hold enough demo units to sell.');
             const nextQuantity = holding.quantity - shares;
             db.prepare('UPDATE demo_portfolios SET cash_cents = cash_cents + ?, updated_at = datetime(\'now\') WHERE user_id = ?').run(totalCents, userId);
             if (nextQuantity < 1e-9) db.prepare('DELETE FROM demo_holdings WHERE user_id = ? AND symbol = ?').run(userId, instrument.symbol);
@@ -132,10 +135,10 @@ function getWatchlist(userId) {
 
 function changeWatchlist(userId, symbol, add) {
     const instrument = marketData.getInstrument(symbol);
-    if (!instrument || !TRADABLE.has(instrument.type)) throw new Error('Choose a supported demo asset.');
+    if (!instrument || !TRADABLE.has(instrument.type)) throw new ValidationError('Choose a supported demo asset.');
     const db = getDb();
     if (add) {
-        if (db.prepare('SELECT COUNT(*) AS count FROM demo_watchlist WHERE user_id = ?').get(userId).count >= 50) throw new Error('Your watchlist can hold up to 50 assets.');
+        if (db.prepare('SELECT COUNT(*) AS count FROM demo_watchlist WHERE user_id = ?').get(userId).count >= 50) throw new ValidationError('Your watchlist can hold up to 50 assets.');
         db.prepare('INSERT OR IGNORE INTO demo_watchlist (user_id, symbol) VALUES (?, ?)').run(userId, instrument.symbol);
     } else db.prepare('DELETE FROM demo_watchlist WHERE user_id = ? AND symbol = ?').run(userId, instrument.symbol);
     return getWatchlist(userId);

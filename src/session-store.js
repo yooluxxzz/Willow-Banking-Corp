@@ -42,10 +42,20 @@ class SQLiteSessionStore extends session.Store {
 
         // Cleanup expired every 15 min
         this._cleanupInterval = setInterval(() => this._cleanup(), 15 * 60 * 1000);
+        this._cleanupInterval.unref();
         this._cleanup();
     }
 
+    /** Coalesces writes: many requests in quick succession cause one file write. */
     _save() {
+        if (!this._db || this._dbPath === ':memory:' || this._saveTimer) return;
+        this._saveTimer = setTimeout(() => this._flush(), 200);
+        this._saveTimer.unref();
+    }
+
+    _flush() {
+        clearTimeout(this._saveTimer);
+        this._saveTimer = null;
         if (!this._db || this._dbPath === ':memory:') return;
         try {
             const data = this._db.export();
@@ -147,7 +157,7 @@ class SQLiteSessionStore extends session.Store {
     close() {
         clearInterval(this._cleanupInterval);
         if (this._db) {
-            this._save();
+            this._flush();
             this._db.close();
             this._db = null;
         }

@@ -1,6 +1,7 @@
 const express = require('express');
 const { requireAuth } = require('../middleware/auth');
 const goals = require('../services/goals');
+const { sendError } = require('./helpers');
 const router = express.Router();
 
 router.use(requireAuth);
@@ -12,7 +13,7 @@ router.post('/', (req, res) => {
     try {
         res.status(201).json({ goal: goals.createGoal(req.session.userId, req.body) });
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        sendError(res, error, 'Goals');
     }
 });
 router.patch('/:id', (req, res) => {
@@ -21,7 +22,7 @@ router.patch('/:id', (req, res) => {
         if (!goal) return res.status(404).json({ error: 'Goal not found.' });
         res.json({ goal });
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        sendError(res, error, 'Goals');
     }
 });
 router.delete('/:id', (req, res) => {
@@ -29,7 +30,7 @@ router.delete('/:id', (req, res) => {
         if (!goals.deleteGoal(req.session.userId, req.params.id)) return res.status(404).json({ error: 'Goal not found.' });
         res.json({ success: true });
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        sendError(res, error, 'Goals');
     }
 });
 

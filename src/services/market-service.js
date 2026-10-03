@@ -5,25 +5,30 @@
  * (yfinance), which the Node app calls over HTTP. So nobody has to start it by
  * hand, the server starts it as a child process when it isn't already running:
  *
- *   - checks <service>/health first and reuses a service that is already up;
+ *   - checks <service>/health first and reuses a service that is already up,
+ *     once it has confirmed that service accepts this copy's secret;
  *   - checks that Python and yfinance are installed, and explains how to install
  *     them if not (Willow then falls back to the Yahoo chart endpoint);
- *   - generates a shared secret for the bridge when MARKET_DATA_TOKEN isn't set;
+ *   - secures the bridge with a shared secret: MARKET_DATA_TOKEN, or one generated
+ *     once and kept in data/.market-data-token so later runs can reuse a service
+ *     that is still up;
  *   - restarts the service with backoff if it exits, and gives up after repeated
  *     quick crashes;
- *   - stops it when Willow stops.
+ *   - stops it when Willow stops, and the service also exits by itself if Willow
+ *     is killed (it watches the pipe Willow holds open), so nothing is left behind.
  *
  * Disable with MARKET_SERVICE_AUTOSTART=false. Only local service URLs are managed.
  */
 const { spawn, spawnSync } = require('child_process');
 const crypto = require('crypto');
+const fs = require('fs');
 const path = require('path');
 const config = require('../config');
 
 const DEFAULT_URL = 'http://127.0.0.1:8765';
 const QUICK_EXIT_MS = 10000;
 const MAX_QUICK_EXITS = 4;
-const state = { managed: false, running: false, pid: null, restarts: 0, quickExits: 0, startedAt: null, lastError: null, python: null, stopping: false };
+const state = { managed: false, running: false, pid: null, restarts: 0, quickExits: 0, startedAt: null, lastError: null, python: null, pythonArgs: [], stopping: false };
 let child = null;
 let restartTimer = null;
 
@@ -31,6 +36,45 @@ const log = (...args) => console.log('[Market service]', ...args);
 
 function serviceUrl() {
     return new URL(process.env.MARKET_DATA_SERVICE_URL || DEFAULT_URL);
+}
+
+/** The bridge secret: MARKET_DATA_TOKEN, or one generated once and kept with the database. */
+function tokenFile() {
+    if (process.env.MARKET_DATA_TOKEN_FILE) return path.resolve(process.env.MARKET_DATA_TOKEN_FILE);
+    if (config.database.path === ':memory:') return null;
+    return path.join(config.paths.local, '.market-data-token');
+}
+
+function ensureToken() {
+    if (process.env.MARKET_DATA_TOKEN) return process.env.MARKET_DATA_TOKEN;
+    const file = tokenFile();
+    let token = '';
+    try { token = file ? fs.readFileSync(file, 'utf8').trim() : ''; } catch (error) { token = ''; }
+    if (!/^[a-f0-9]{48}$/.test(token)) {
+        token = crypto.randomBytes(24).toString('hex');
+        if (file) {
+            try {
+                fs.mkdirSync(path.dirname(file), { recursive: true });
+                fs.writeFileSync(file, token, { mode: 0o600 });
+            } catch (error) { /* an unsaved secret still works for this run */ }
+        }
+    }
+    process.env.MARKET_DATA_TOKEN = token;
+    return token;
+}
+
+/**
+ * True when the running service accepts our secret. A request without symbols is
+ * answered locally (400) when authorised and refused (401) otherwise, so this
+ * never reaches Yahoo.
+ */
+async function acceptsToken(token, timeoutMs = 1500) {
+    try {
+        const response = await fetch(new URL('/v1/quotes', serviceUrl()), { headers: { 'X-Willow-Service-Token': token }, signal: AbortSignal.timeout(timeoutMs) });
+        return response.status !== 401;
+    } catch (error) {
+        return false;
+    }
 }
 
 async function healthy(timeoutMs = 1500) {
@@ -46,16 +90,24 @@ async function healthy(timeoutMs = 1500) {
     }
 }
 
-/** Finds a Python interpreter that can import yfinance. */
+/**
+ * Finds a Python 3 interpreter that can import yfinance. Tries PYTHON, then
+ * python3 and python, and on Windows the `py -3` launcher.
+ */
 function findPython() {
-    const candidates = [process.env.PYTHON, 'python3', 'python'].filter(Boolean);
-    for (const command of candidates) {
-        const probe = spawnSync(command, ['-c', 'import sys, yfinance; print(sys.version.split()[0])'], { encoding: 'utf8', timeout: 20000 });
-        if (probe.status === 0) return { command, version: probe.stdout.trim() };
-        if (probe.error && probe.error.code === 'ENOENT') continue;
-        if (/No module named/.test(probe.stderr || '')) return { command, missing: 'yfinance' };
+    const candidates = [
+        process.env.PYTHON && [process.env.PYTHON, []],
+        ['python3', []],
+        ['python', []],
+        process.platform === 'win32' && ['py', ['-3']],
+    ].filter(Boolean);
+    let missing = null;
+    for (const [command, args] of candidates) {
+        const probe = spawnSync(command, [...args, '-c', 'import sys; assert sys.version_info >= (3, 9); import yfinance; print(sys.version.split()[0])'], { encoding: 'utf8', timeout: 20000, windowsHide: true });
+        if (probe.status === 0) return { command, args, version: probe.stdout.trim() };
+        if (!missing && /No module named/.test(probe.stderr || '')) missing = { command, args, missing: 'yfinance' };
     }
-    return null;
+    return missing;
 }
 
 function launch() {
@@ -67,10 +119,13 @@ function launch() {
         MARKET_DATA_TOKEN: process.env.MARKET_DATA_TOKEN,
         // One log line per request is noise in Willow's console; warnings and errors still show.
         MARKET_DATA_LOG_LEVEL: process.env.MARKET_DATA_LOG_LEVEL || 'WARNING',
+        // The service exits when this pipe closes, i.e. when Willow stops for any reason.
+        MARKET_DATA_EXIT_WITH_PARENT: '1',
         PYTHONUNBUFFERED: '1',
     };
     const script = path.join(config.paths.root, 'market-data-service', 'server.py');
-    child = spawn(state.python, [script], { env, stdio: ['ignore', 'pipe', 'pipe'] });
+    child = spawn(state.python, [...state.pythonArgs, script], { env, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
+    child.stdin.on('error', () => {}); // the service closing its end first is fine
     state.running = true;
     state.pid = child.pid;
     state.startedAt = Date.now();
@@ -106,8 +161,14 @@ async function start() {
     if (process.env.MARKET_SERVICE_AUTOSTART === 'false' || !['auto', 'service'].includes(mode)) return status();
     const url = serviceUrl();
     if (!['127.0.0.1', 'localhost', '::1', '[::1]'].includes(url.hostname)) return status();
+    const token = ensureToken();
     if (await healthy()) {
-        log(`Already running at ${url.origin}; using it.`);
+        if (await acceptsToken(token)) {
+            log(`Already running at ${url.origin}; using it.`);
+        } else {
+            state.lastError = 'token_mismatch';
+            log(`A market-data service is already running at ${url.origin} but doesn't accept this copy's secret (it was probably started by another Willow folder). Stop that process, or set MARKET_DATA_SERVICE_URL to another port. Until then quotes come from the Yahoo chart fallback.`);
+        }
         return status();
     }
     const python = findPython();
@@ -117,13 +178,12 @@ async function start() {
         return status();
     }
     if (python.missing) {
-        log(`yfinance isn't installed for ${python.command}. Run: ${python.command} -m pip install -r market-data-service/requirements.txt`);
+        log(`yfinance isn't installed for ${[python.command, ...python.args].join(' ')}. Run: ${[python.command, ...python.args].join(' ')} -m pip install -r market-data-service/requirements.txt`);
         state.lastError = 'yfinance_missing';
         return status();
     }
-    // The bridge is authenticated: the service only answers requests carrying this secret.
-    if (!process.env.MARKET_DATA_TOKEN) process.env.MARKET_DATA_TOKEN = crypto.randomBytes(24).toString('hex');
     state.python = python.command;
+    state.pythonArgs = python.args;
     state.managed = true;
     launch();
     for (let attempt = 0; attempt < 20 && state.running; attempt += 1) {

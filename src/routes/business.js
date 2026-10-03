@@ -3,17 +3,10 @@ const { requireAuth } = require('../middleware/auth');
 const business = require('../services/business');
 const router = express.Router();
 
-router.use(requireAuth);
-router.use((req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
+const { jsonRoute, validId, noStore } = require('./helpers');
 
-const handle = (status, fn) => (req, res) => {
-    try {
-        res.status(status).json(fn(req));
-    } catch (error) {
-        res.status(error.status || 400).json({ error: error.message });
-    }
-};
-const validId = (req, res, next) => (/^[1-9]\d*$/.test(req.params.id) ? next() : res.status(400).json({ error: 'Invalid identifier.' }));
+router.use(requireAuth, noStore);
+const handle = (status, fn) => jsonRoute(status, fn, 'Business');
 
 router.get('/dashboard', handle(200, req => ({ dashboard: business.getDashboard(req.session.userId) })));
 router.put('/profile', handle(200, req => ({ profile: business.saveProfile(req.session.userId, req.body || {}) })));

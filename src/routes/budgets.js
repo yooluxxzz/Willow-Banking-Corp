@@ -3,17 +3,10 @@ const { requireAuth } = require('../middleware/auth');
 const budgets = require('../services/budgets');
 const router = express.Router();
 
-router.use(requireAuth);
-router.use((req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
+const { jsonRoute, validId, noStore } = require('./helpers');
 
-const handle = (status, fn) => (req, res) => {
-    try {
-        res.status(status).json(fn(req));
-    } catch (error) {
-        res.status(error.status || 400).json({ error: error.message });
-    }
-};
-const validId = (req, res, next) => (/^[1-9]\d*$/.test(req.params.id) ? next() : res.status(400).json({ error: 'Invalid identifier.' }));
+router.use(requireAuth, noStore);
+const handle = (status, fn) => jsonRoute(status, fn, 'Budgets');
 const scope = req => (req.query.scope === 'business' || (req.body && req.body.scope === 'business') ? 'business' : 'personal');
 
 router.get('/', handle(200, req => ({ budgets: budgets.listBudgets(req.session.userId, scope(req)), categories: budgets.categoryOptions(scope(req)), periods: budgets.PERIODS })));

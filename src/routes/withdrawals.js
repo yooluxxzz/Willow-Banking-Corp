@@ -5,7 +5,7 @@ const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const { requireAuth } = require('../middleware/auth');
 const { getDb } = require('../database');
-const { validateAmount, toCents, formatCurrency } = require('../middleware/validation');
+const { validateAmount, toCents, formatCurrency, isOptionalText } = require('../middleware/validation');
 const { scaledLimit } = require('../services/currencies');
 const { createNotification } = require('../services/notification');
 const { logAudit } = require('../services/audit');
@@ -25,6 +25,9 @@ router.post('/', requireAuth, (req, res) => {
 
         if (!accountId || !amount) {
             return res.status(400).json({ error: 'Account and amount are required.' });
+        }
+        if (!isOptionalText(description, 140)) {
+            return res.status(400).json({ error: 'Keep the note under 140 characters of plain text.' });
         }
 
         if (!validateAmount(amount)) {

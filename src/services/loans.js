@@ -4,6 +4,7 @@
  */
 const { getDb } = require('../database');
 const { logAudit } = require('./audit');
+const { ValidationError } = require('../errors');
 
 const LIMITS = {
     personal: { minPrincipal: 1000, maxPrincipal: 100000, minMonths: 12, maxMonths: 84, maxRate: 36 },
@@ -30,14 +31,14 @@ function num(value) {
 /** Computes an estimate. Throws on out-of-range input. */
 function calculate(kind, input = {}) {
     const limits = LIMITS[kind];
-    if (!limits) throw new Error('Choose a loan type.');
+    if (!limits) throw new ValidationError('Choose a loan type.');
     const rate = num(input.rate);
-    if (!(rate >= 0 && rate <= limits.maxRate)) throw new Error(`Enter a rate between 0% and ${limits.maxRate}%.`);
+    if (!(rate >= 0 && rate <= limits.maxRate)) throw new ValidationError(`Enter a rate between 0% and ${limits.maxRate}%.`);
 
     if (kind === 'credit') {
         const balance = num(input.balance);
         const payment = num(input.payment);
-        if (!(balance >= limits.minPrincipal && balance <= limits.maxPrincipal)) throw new Error('Enter a balance between 100 and 100,000.');
+        if (!(balance >= limits.minPrincipal && balance <= limits.maxPrincipal)) throw new ValidationError('Enter a balance between 100 and 100,000.');
         const monthlyInterest = balance * (rate / 100 / 12);
         if (!(payment > monthlyInterest + 0.005)) {
             return { kind, principal: balance, rate, payment, months: null, totalInterest: null, neverPaysOff: true };
@@ -60,20 +61,20 @@ function calculate(kind, input = {}) {
     if (kind === 'mortgage') {
         const price = num(input.homePrice);
         const down = num(input.downPayment);
-        if (!(price >= 20000 && price <= 10000000)) throw new Error('Enter a home price between 20,000 and 10,000,000.');
-        if (!(down >= 0 && down < price)) throw new Error('The down payment must be less than the home price.');
+        if (!(price >= 20000 && price <= 10000000)) throw new ValidationError('Enter a home price between 20,000 and 10,000,000.');
+        if (!(down >= 0 && down < price)) throw new ValidationError('The down payment must be less than the home price.');
         principal = price - down;
         const tax = Math.max(0, num(input.propertyTax) || 0);
         const insurance = Math.max(0, num(input.insurance) || 0);
-        if (tax > 200000 || insurance > 100000) throw new Error('Check the yearly tax and insurance amounts.');
+        if (tax > 200000 || insurance > 100000) throw new ValidationError('Check the yearly tax and insurance amounts.');
         extras = (tax + insurance) / 12;
         details = { homePrice: price, downPayment: down, downPaymentPct: round2(down / price * 100), propertyTax: tax, insurance };
     } else {
         principal = num(input.principal);
     }
-    if (!(principal >= limits.minPrincipal && principal <= limits.maxPrincipal)) throw new Error(`Enter an amount between ${limits.minPrincipal.toLocaleString('en-US')} and ${limits.maxPrincipal.toLocaleString('en-US')}.`);
+    if (!(principal >= limits.minPrincipal && principal <= limits.maxPrincipal)) throw new ValidationError(`Enter an amount between ${limits.minPrincipal.toLocaleString('en-US')} and ${limits.maxPrincipal.toLocaleString('en-US')}.`);
     const months = Math.round(num(input.termMonths));
-    if (!(months >= limits.minMonths && months <= limits.maxMonths)) throw new Error(`Choose a term between ${limits.minMonths} and ${limits.maxMonths} months.`);
+    if (!(months >= limits.minMonths && months <= limits.maxMonths)) throw new ValidationError(`Choose a term between ${limits.minMonths} and ${limits.maxMonths} months.`);
     const payment = amortizedPayment(principal, rate, months);
     const totalPaid = payment * months;
     return {
@@ -99,11 +100,11 @@ function safeJson(value) {
 }
 
 function saveEstimate(userId, { kind, label = '', ...input } = {}) {
-    if (typeof label !== 'string' || label.trim().length > 60 || /[<>\x00-\x1f\x7f]/.test(label)) throw new Error('Use a label of up to 60 characters.');
+    if (typeof label !== 'string' || label.trim().length > 60 || /[<>\x00-\x1f\x7f]/.test(label)) throw new ValidationError('Use a label of up to 60 characters.');
     const result = calculate(kind, input);
-    if (result.neverPaysOff) throw new Error('This payment doesn’t cover the monthly interest, so the balance would never be repaid.');
+    if (result.neverPaysOff) throw new ValidationError('This payment doesn’t cover the monthly interest, so the balance would never be repaid.');
     const db = getDb();
-    if (db.prepare('SELECT COUNT(*) AS count FROM loan_estimates WHERE user_id = ?').get(userId).count >= 20) throw new Error('You can save up to 20 estimates. Remove one to add another.');
+    if (db.prepare('SELECT COUNT(*) AS count FROM loan_estimates WHERE user_id = ?').get(userId).count >= 20) throw new ValidationError('You can save up to 20 estimates. Remove one to add another.');
     db.prepare(`INSERT INTO loan_estimates (user_id, kind, label, principal_cents, annual_rate_bps, term_months, monthly_payment_cents, total_interest_cents, details)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(userId, kind, label.trim(), Math.round(result.principal * 100), Math.round(result.rate * 100), result.months, Math.round((result.monthlyTotal || result.payment) * 100), Math.round(result.totalInterest * 100), JSON.stringify(result.details || {}));
     logAudit({ actorId: userId, action: 'loan_estimate_saved', targetType: 'loan_estimate', targetId: String(userId), metadata: { kind, simulated: true } });

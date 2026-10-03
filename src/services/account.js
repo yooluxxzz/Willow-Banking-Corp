@@ -2,7 +2,7 @@
  * Account service — retrieval and management
  */
 const { getDb } = require('../database');
-const { randomInt } = require('crypto');
+const { uniqueAccountNumber } = require('./ids');
 const { logAudit } = require('./audit');
 const { CURRENCIES, isSupportedCurrency, formatMoney } = require('./currencies');
 
@@ -33,13 +33,6 @@ function openAccount(userId, input = {}) {
         logAudit({ actorId: userId, actorEmail: user.email, action: 'account_opened', targetType: 'account', targetId: String(created.lastInsertRowid), metadata: { product, currency, simulated: true } });
         return { account: getAccountById(created.lastInsertRowid, userId), reused: false };
     })();
-}
-
-function uniqueAccountNumber(db) {
-    let number;
-    do { number = '4200' + String(randomInt(1000000000, 10000000000)); }
-    while (db.prepare('SELECT id FROM accounts WHERE account_number = ?').get(number));
-    return number;
 }
 
 function getUserAccounts(userId) {
@@ -114,4 +107,4 @@ function formatAccount(account) {
     };
 }
 
-module.exports = { getUserAccounts, getAccountById, getAccountByNumber, getTotalBalance, formatAccount, openAccount, uniqueAccountNumber, PRODUCTS };
+module.exports = { getUserAccounts, getAccountById, getAccountByNumber, getTotalBalance, formatAccount, openAccount, PRODUCTS };

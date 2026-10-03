@@ -81,13 +81,15 @@ describe('Scroll focus', () => {
                 <section class="panel" id="assets" data-top="1600" style="border:1px solid #ccc">Assets</section>
             </div>
             <p class="disclosure-note" data-top="2600">Note</p>
+            <footer class="app-footnote" data-top="3000" style="border-top:1px solid #ccc">Demo bank</footer>
         </div></div>`);
         const own = doc.getElementById('own');
         const assets = doc.getElementById('assets');
         const note = doc.querySelector('.disclosure-note');
         assert.ok(!doc.querySelector('.page-head').classList.contains('focus-enter'), 'the page title never moves');
         assert.ok(own.classList.contains('focus-enter'), 'cards on screen fade in at load');
-        assert.equal(doc.getElementById('owe').style.getPropertyValue('--focus-delay'), '70ms', 'one after another');
+        assert.equal(doc.getElementById('owe').style.getPropertyValue('--focus-delay'), '45ms', 'one after another');
+        assert.ok(own.classList.contains('is-quick'), 'with a short fade so the page feels instant');
         animationEnd(own);
         assert.ok(!own.classList.contains('is-attention'), 'cards seen at load only fade in');
 
@@ -99,6 +101,7 @@ describe('Scroll focus', () => {
         animationEnd(note);
         assert.ok(!note.classList.contains('is-attention'), 'text without a card only fades in');
         assert.ok(!note.classList.contains('focus-pending'));
+        assert.equal(doc.querySelector('footer').className, 'app-footnote', 'the page footer is never animated');
     });
 
     it('leaves everything in place with reduced motion', async () => {

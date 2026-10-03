@@ -6,6 +6,7 @@ const { logAudit } = require('./audit');
 const config = require('../config');
 const { formatCurrency } = require('../middleware/validation');
 const { scaledLimit } = require('./currencies');
+const { ValidationError } = require('../errors');
 
 function parseAccountId(value) {
     const text = String(value ?? '');
@@ -31,36 +32,36 @@ function scheduleTransfer(userId, input = {}) {
     const description = input.description ?? '';
     const fromAccountId = parseAccountId(input.fromAccountId);
     const toAccountId = parseAccountId(input.toAccountId);
-    if (!fromAccountId || !toAccountId) throw new Error('Choose valid source and destination accounts.');
-    if (fromAccountId === toAccountId) throw new Error('Choose two different accounts.');
-    if (!validateAmount(input.amount)) throw new Error('Enter a valid positive amount with up to two decimal places.');
+    if (!fromAccountId || !toAccountId) throw new ValidationError('Choose valid source and destination accounts.');
+    if (fromAccountId === toAccountId) throw new ValidationError('Choose two different accounts.');
+    if (!validateAmount(input.amount)) throw new ValidationError('Enter a valid positive amount with up to two decimal places.');
     if (typeof description !== 'string' || description.trim().length > 120 || /[<>\x00-\x1f\x7f]/.test(description)) {
-        throw new Error('Use a description up to 120 characters without markup.');
+        throw new ValidationError('Use a description up to 120 characters without markup.');
     }
     if (typeof input.scheduledDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(input.scheduledDate)) {
-        throw new Error('Choose a valid scheduled date in UTC.');
+        throw new ValidationError('Choose a valid scheduled date in UTC.');
     }
     const scheduledAt = new Date(`${input.scheduledDate}T00:00:00.000Z`);
     if (!Number.isFinite(scheduledAt.getTime()) || scheduledAt.toISOString().slice(0, 10) !== input.scheduledDate) {
-        throw new Error('Choose a valid scheduled date in UTC.');
+        throw new ValidationError('Choose a valid scheduled date in UTC.');
     }
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
     const maxDate = today.getTime() + 366 * 24 * 60 * 60 * 1000;
     if (scheduledAt.getTime() <= today.getTime() || scheduledAt.getTime() > maxDate) {
-        throw new Error('Choose a future UTC date within the next year.');
+        throw new ValidationError('Choose a future UTC date within the next year.');
     }
     const amount = toCents(input.amount);
 
     const db = getDb();
     const accounts = db.prepare(`SELECT id, status, currency FROM accounts WHERE user_id = ? AND id IN (?, ?)`).all(userId, fromAccountId, toAccountId);
     if (accounts.length !== 2 || accounts.some(account => account.status !== 'active')) {
-        throw new Error('Choose two active accounts that belong to you.');
+        throw new ValidationError('Choose two active accounts that belong to you.');
     }
     if (accounts[0].currency !== accounts[1].currency) {
-        throw new Error('Scheduled transfers need two accounts in the same currency. Use Convert in International to move money between currencies.');
+        throw new ValidationError('Scheduled transfers need two accounts in the same currency. Use Convert in International to move money between currencies.');
     }
-    if (amount > scaledLimit(config.limits.dailyTransferCents, accounts[0].currency)) throw new Error('This amount exceeds the daily demo transfer limit.');
+    if (amount > scaledLimit(config.limits.dailyTransferCents, accounts[0].currency)) throw new ValidationError('This amount exceeds the daily demo transfer limit.');
     const inserted = db.transaction(() => {
         const result = db.prepare(`INSERT INTO scheduled_transfers
             (user_id, from_account_id, to_account_id, amount, description, scheduled_for)
@@ -74,7 +75,7 @@ function scheduleTransfer(userId, input = {}) {
 
 function cancelScheduledTransfer(userId, id) {
     const scheduleId = parseAccountId(id);
-    if (!scheduleId) throw new Error('Invalid scheduled transfer.');
+    if (!scheduleId) throw new ValidationError('Invalid scheduled transfer.');
     const db = getDb();
     const result = db.prepare(`UPDATE scheduled_transfers SET status = 'cancelled', result_message = 'Cancelled by customer'
         WHERE id = ? AND user_id = ? AND status = 'pending' AND scheduled_for > ?`).run(scheduleId, userId, new Date().toISOString());

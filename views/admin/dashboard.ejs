@@ -38,10 +38,11 @@
                     <option value="login">Sign-ins</option>
                     <option value="register">Registrations</option>
                     <option value="transfer">Transfers</option>
-                    <option value="admin_balance_adjustment">Balance adjustments</option>
-                    <option value="user_status_change">Status changes</option>
-                    <option value="password_changed">Password changes</option>
-                    <option value="two_factor_enabled">Two-step enabled</option>
+                    <option value="balance_adjustment">Balance adjustments</option>
+                    <option value="user_activated,user_suspended,user_deleted,user_deletion_scheduled,user_auto_deleted">Status changes</option>
+                    <option value="password_changed,password_recovered">Password changes</option>
+                    <option value="two_factor_enabled,two_factor_disabled">Two-step verification</option>
+                    <option value="daily_checks_run">Daily checks run</option>
                     <option value="data_exported">Data exports</option>
                 </select>
             </div>
@@ -50,6 +51,17 @@
     </div>
 
     <aside class="col-stack">
+        <section class="panel" aria-labelledby="systemTitle">
+            <div class="panel-head"><h2 id="systemTitle">System</h2><button type="button" class="btn btn-ghost btn-sm" data-system-refresh><%- icon('refresh', 'icon-sm') %> Refresh</button></div>
+            <ul class="system-list" role="list" data-system aria-live="polite">
+                <li><span class="icon-tile icon-tile-sm"><%- icon('chart') %></span><div><strong>Market data</strong><small data-system-market>Checking…</small></div></li>
+                <li><span class="icon-tile icon-tile-sm"><%- icon('sparkle') %></span><div><strong>Ask Willow (Ollama)</strong><small data-system-assistant>Checking…</small></div></li>
+                <li><span class="icon-tile icon-tile-sm"><%- icon('calendar') %></span><div><strong>Daily budget check</strong><small data-system-daily>Checking…</small></div></li>
+            </ul>
+            <div class="form-actions mt-4"><button type="button" class="btn btn-secondary btn-sm" data-run-daily><%- icon('refresh', 'icon-sm') %> Run daily checks now</button></div>
+            <p class="form-status mt-3" data-daily-status role="status" hidden></p>
+        </section>
+
         <form class="panel" id="adjustForm" novalidate>
             <div class="panel-head"><h2>Adjust a balance</h2><span class="sim-tag">Simulated</span></div>
             <div class="field"><label for="adjAccountId">Account ID or number</label><input class="input" id="adjAccountId" name="accountId" required placeholder="e.g. 12 or 4200…"></div>

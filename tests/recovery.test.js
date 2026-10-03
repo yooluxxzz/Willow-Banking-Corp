@@ -118,5 +118,8 @@ describe('Recovery and account settings', () => {
         let result;
         for (let n = 0; n < 101; n++) { result = await post(auth, '/auth/reset-password', { email: 'bad', recoveryCode: 'bad', newPassword: 'bad' }); if (result.status === 429) break; }
         assert.equal(result.status, 429);
+        // Without a reverse proxy (TRUST_PROXY unset) a client can't pick a new IP to escape the limit.
+        const spoofed = await post(auth, '/auth/reset-password', { email: 'bad', recoveryCode: 'bad', newPassword: 'bad' }).set('X-Forwarded-For', '203.0.113.77');
+        assert.equal(spoofed.status, 429);
     });
 });

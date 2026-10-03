@@ -12,6 +12,7 @@ const { formatAccount } = require('./account');
 
 const ROLES = { admin: 'Administrator', approver: 'Approver', cardholder: 'Cardholder', viewer: 'Viewer' };
 const { BUSINESS_CATEGORIES } = require('./budgets');
+const { ValidationError } = require('../errors');
 const text = (value, max) => typeof value === 'string' && value.trim().length <= max && !/[<>\x00-\x1f\x7f]/.test(value);
 
 function businessAccounts(userId) {
@@ -23,8 +24,8 @@ function getProfile(userId) {
 }
 
 function saveProfile(userId, { name, industry = '', country = '' } = {}) {
-    if (!text(name, 80) || name.trim().length < 2) throw new Error('Enter a business name of 2–80 characters.');
-    if (!text(industry, 60) || !text(country, 56)) throw new Error('Use plain text for industry and country.');
+    if (!text(name, 80) || name.trim().length < 2) throw new ValidationError('Enter a business name of 2–80 characters.');
+    if (!text(industry, 60) || !text(country, 56)) throw new ValidationError('Use plain text for industry and country.');
     getDb().prepare(`INSERT INTO business_profiles (user_id, name, industry, country) VALUES (?, ?, ?, ?)
         ON CONFLICT(user_id) DO UPDATE SET name = excluded.name, industry = excluded.industry, country = excluded.country, updated_at = datetime('now')`).run(userId, name.trim(), industry.trim(), country.trim());
     return getProfile(userId);
@@ -52,13 +53,13 @@ function nextInvoiceNumber(db, userId) {
 
 function createInvoice(userId, input = {}) {
     const { customerName, customerEmail = '', description = '', amount, dueOn } = input;
-    if (!businessAccounts(userId).length) throw new Error('Open a business checking account before creating invoices.');
-    if (!text(customerName, 80) || customerName.trim().length < 2) throw new Error('Enter the customer’s name.');
-    if (customerEmail && !validateEmail(customerEmail)) throw new Error('Enter a valid customer email or leave it blank.');
-    if (!text(description, 160)) throw new Error('Keep the description under 160 characters.');
-    if (!validateAmount(amount) || toCents(amount) > 100000000) throw new Error('Enter an invoice amount up to 1,000,000.');
+    if (!businessAccounts(userId).length) throw new ValidationError('Open a business checking account before creating invoices.');
+    if (!text(customerName, 80) || customerName.trim().length < 2) throw new ValidationError('Enter the customer’s name.');
+    if (customerEmail && !validateEmail(customerEmail)) throw new ValidationError('Enter a valid customer email or leave it blank.');
+    if (!text(description, 160)) throw new ValidationError('Keep the description under 160 characters.');
+    if (!validateAmount(amount) || toCents(amount) > 100000000) throw new ValidationError('Enter an invoice amount up to 1,000,000.');
     const today = new Date().toISOString().slice(0, 10);
-    if (typeof dueOn !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dueOn) || dueOn < today || Number.isNaN(Date.parse(dueOn))) throw new Error('Choose a due date from today onwards.');
+    if (typeof dueOn !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dueOn) || dueOn < today || Number.isNaN(Date.parse(dueOn))) throw new ValidationError('Choose a due date from today onwards.');
     const db = getDb();
     const id = db.transaction(() => {
         const number = nextInvoiceNumber(db, userId);
@@ -75,14 +76,14 @@ function markInvoicePaid(userId, invoiceId, { accountId } = {}) {
     const db = getDb();
     const invoice = db.prepare('SELECT * FROM business_invoices WHERE id = ? AND user_id = ?').get(invoiceId, userId);
     if (!invoice) throw Object.assign(new Error('Invoice not found.'), { status: 404 });
-    if (invoice.status !== 'open') throw new Error('Only open invoices can be marked as paid.');
+    if (invoice.status !== 'open') throw new ValidationError('Only open invoices can be marked as paid.');
     const accounts = businessAccounts(userId).filter(account => account.status === 'active' && account.currency === invoice.currency);
     const account = accountId ? accounts.find(item => item.id === Number(accountId)) : accounts[0];
-    if (!account) throw new Error('Choose an active business account in the invoice currency.');
+    if (!account) throw new ValidationError('Choose an active business account in the invoice currency.');
     const reference = `INV-PAY-${uuidv4().slice(0, 8).toUpperCase()}`;
     db.transaction(() => {
         const updated = db.prepare("UPDATE business_invoices SET status = 'paid', paid_at = datetime('now'), paid_account_id = ?, transaction_reference = ? WHERE id = ? AND status = 'open'").run(account.id, reference, invoice.id);
-        if (updated.changes !== 1) throw new Error('This invoice was already updated.');
+        if (updated.changes !== 1) throw new ValidationError('This invoice was already updated.');
         db.prepare('UPDATE accounts SET balance = balance + ?, available_balance = available_balance + ? WHERE id = ?').run(invoice.amount, invoice.amount, account.id);
         db.prepare(`INSERT INTO transactions (reference, account_id, type, amount, currency, direction, status, description, category, counterparty)
             VALUES (?, ?, 'deposit', ?, ?, 'credit', 'completed', ?, 'income', ?)`).run(reference, account.id, invoice.amount, invoice.currency, `Invoice ${invoice.number} payment — ${invoice.customer_name}`, invoice.customer_name);
@@ -94,7 +95,7 @@ function markInvoicePaid(userId, invoiceId, { accountId } = {}) {
 
 function voidInvoice(userId, invoiceId) {
     const result = getDb().prepare("UPDATE business_invoices SET status = 'void' WHERE id = ? AND user_id = ? AND status = 'open'").run(invoiceId, userId);
-    if (!result.changes) throw new Error('Only open invoices can be voided.');
+    if (!result.changes) throw new ValidationError('Only open invoices can be voided.');
     logAudit({ actorId: userId, action: 'invoice_voided', targetType: 'invoice', targetId: String(invoiceId) });
     return listInvoices(userId);
 }
@@ -105,11 +106,11 @@ function listTeam(userId) {
 }
 
 function inviteMember(userId, { name, email, role } = {}) {
-    if (!text(name, 80) || name.trim().length < 2) throw new Error('Enter the team member’s name.');
-    if (!validateEmail(email)) throw new Error('Enter a valid email address.');
-    if (!Object.hasOwn(ROLES, role)) throw new Error('Choose a role.');
+    if (!text(name, 80) || name.trim().length < 2) throw new ValidationError('Enter the team member’s name.');
+    if (!validateEmail(email)) throw new ValidationError('Enter a valid email address.');
+    if (typeof role !== 'string' || !Object.hasOwn(ROLES, role)) throw new ValidationError('Choose a role.');
     const db = getDb();
-    if (db.prepare("SELECT COUNT(*) AS count FROM business_team_members WHERE user_id = ? AND status = 'invited'").get(userId).count >= 20) throw new Error('This demo supports up to 20 team invitations.');
+    if (db.prepare("SELECT COUNT(*) AS count FROM business_team_members WHERE user_id = ? AND status = 'invited'").get(userId).count >= 20) throw new ValidationError('This demo supports up to 20 team invitations.');
     db.prepare(`INSERT INTO business_team_members (user_id, name, email, role, status) VALUES (?, ?, ?, ?, 'invited')
         ON CONFLICT(user_id, email) DO UPDATE SET name = excluded.name, role = excluded.role, status = 'invited'`).run(userId, name.trim(), email.trim().toLowerCase(), role);
     logAudit({ actorId: userId, action: 'team_member_invited', targetType: 'business', targetId: String(userId), metadata: { role, simulated: true } });
@@ -118,7 +119,7 @@ function inviteMember(userId, { name, email, role } = {}) {
 
 function removeMember(userId, memberId) {
     const result = getDb().prepare("UPDATE business_team_members SET status = 'removed' WHERE id = ? AND user_id = ? AND status = 'invited'").run(memberId, userId);
-    if (!result.changes) throw new Error('Team member not found.');
+    if (!result.changes) throw new ValidationError('Team member not found.');
     return listTeam(userId);
 }
 
@@ -152,19 +153,19 @@ function listExpenses(userId, { from, to, category } = {}) {
 
 function validateExpense(input, existing = null) {
     const vendor = typeof input.vendor === 'string' ? input.vendor.trim() : existing?.vendor;
-    if (!text(vendor || '', 80) || !vendor || vendor.length < 2) throw new Error('Enter who you paid (2–80 characters).');
+    if (!text(vendor || '', 80) || !vendor || vendor.length < 2) throw new ValidationError('Enter who you paid (2–80 characters).');
     const category = input.category ?? existing?.category;
-    if (!Object.hasOwn(BUSINESS_CATEGORIES, category)) throw new Error('Choose an expense category.');
+    if (typeof category !== 'string' || !Object.hasOwn(BUSINESS_CATEGORIES, category)) throw new ValidationError('Choose an expense category.');
     const spentOn = input.spentOn ?? existing?.spent_on;
-    if (!isDay(spentOn) || spentOn > localToday()) throw new Error('Choose the date it was paid (today or earlier).');
+    if (!isDay(spentOn) || spentOn > localToday()) throw new ValidationError('Choose the date it was paid (today or earlier).');
     const note = typeof input.note === 'string' ? input.note.trim() : (existing?.note || '');
-    if (!text(note, 200)) throw new Error('Keep the note under 200 characters.');
+    if (!text(note, 200)) throw new ValidationError('Keep the note under 200 characters.');
     let amountCents = existing?.amount_cents;
     if (input.amount !== undefined) {
-        if (!validateAmount(input.amount) || toCents(input.amount) > 100000000) throw new Error('Enter an amount up to 1,000,000.');
+        if (!validateAmount(input.amount) || toCents(input.amount) > 100000000) throw new ValidationError('Enter an amount up to 1,000,000.');
         amountCents = toCents(input.amount);
     }
-    if (!amountCents) throw new Error('Enter the amount.');
+    if (!amountCents) throw new ValidationError('Enter the amount.');
     return { vendor, category, spentOn, note, amountCents };
 }
 
@@ -175,18 +176,18 @@ function validateExpense(input, existing = null) {
 function createExpense(userId, input = {}) {
     const db = getDb();
     const { vendor, category, spentOn, note, amountCents } = validateExpense(input);
-    if (db.prepare('SELECT COUNT(*) AS n FROM business_expenses WHERE user_id = ?').get(userId).n >= 5000) throw new Error('You have reached the expense log limit.');
+    if (db.prepare('SELECT COUNT(*) AS n FROM business_expenses WHERE user_id = ?').get(userId).n >= 5000) throw new ValidationError('You have reached the expense log limit.');
     const accountId = input.payFromAccountId ? Number(input.payFromAccountId) : null;
     let account = null;
     if (accountId) {
         account = businessAccounts(userId).find(item => item.id === accountId && item.status === 'active' && item.currency === 'USD');
-        if (!account) throw new Error('Choose an active US dollar business account, or log the expense without paying from an account.');
+        if (!account) throw new ValidationError('Choose an active US dollar business account, or log the expense without paying from an account.');
     }
     const reference = account ? `EXP-${uuidv4().slice(0, 8).toUpperCase()}` : null;
     const id = db.transaction(() => {
         if (account) {
             const updated = db.prepare('UPDATE accounts SET balance = balance - ?, available_balance = available_balance - ? WHERE id = ? AND available_balance >= ?').run(amountCents, amountCents, account.id, amountCents);
-            if (updated.changes !== 1) throw new Error(`Not enough available money in ${account.displayName}.`);
+            if (updated.changes !== 1) throw new ValidationError(`Not enough available money in ${account.displayName}.`);
             db.prepare(`INSERT INTO transactions (reference, account_id, type, amount, currency, direction, status, description, category, counterparty)
                 VALUES (?, ?, 'payment', ?, 'USD', 'debit', 'completed', ?, 'business', ?)`).run(reference, account.id, amountCents, `${vendor} — ${BUSINESS_CATEGORIES[category]}`, vendor);
         }
@@ -202,7 +203,7 @@ function updateExpense(userId, expenseId, input = {}) {
     const db = getDb();
     const existing = db.prepare('SELECT * FROM business_expenses WHERE id = ? AND user_id = ?').get(expenseId, userId);
     if (!existing) throw Object.assign(new Error('Expense not found.'), { status: 404 });
-    if (existing.transaction_reference && input.amount !== undefined && toCents(input.amount) !== existing.amount_cents) throw new Error('This expense was paid from an account, so its amount can’t change.');
+    if (existing.transaction_reference && input.amount !== undefined && toCents(input.amount) !== existing.amount_cents) throw new ValidationError('This expense was paid from an account, so its amount can’t change.');
     const { vendor, category, spentOn, note, amountCents } = validateExpense(input, existing);
     db.prepare("UPDATE business_expenses SET vendor = ?, category = ?, spent_on = ?, note = ?, amount_cents = ?, updated_at = datetime('now') WHERE id = ?").run(vendor, category, spentOn, note, amountCents, existing.id);
     return formatExpense(db.prepare('SELECT * FROM business_expenses WHERE id = ?').get(existing.id));
@@ -212,7 +213,7 @@ function deleteExpense(userId, expenseId) {
     const db = getDb();
     const existing = db.prepare('SELECT * FROM business_expenses WHERE id = ? AND user_id = ?').get(expenseId, userId);
     if (!existing) throw Object.assign(new Error('Expense not found.'), { status: 404 });
-    if (existing.transaction_reference) throw new Error('This expense was paid from an account and stays in your records. You can edit its details instead.');
+    if (existing.transaction_reference) throw new ValidationError('This expense was paid from an account and stays in your records. You can edit its details instead.');
     db.prepare('DELETE FROM business_expenses WHERE id = ?').run(existing.id);
     logAudit({ actorId: userId, action: 'business_expense_deleted', targetType: 'business_expense', targetId: String(existing.id) });
 }

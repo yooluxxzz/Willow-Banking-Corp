@@ -79,7 +79,7 @@ router.post('/register', authLimiter, async (req, res) => {
         }
 
         if (accountType === 'business') {
-            const { uniqueAccountNumber } = require('../services/account');
+            const { uniqueAccountNumber } = require('../services/ids');
             const db = getDb();
             db.prepare("INSERT INTO accounts (user_id, account_number, account_type, purpose, nickname, balance, available_balance, currency, status) VALUES (?, ?, 'checking', 'business', 'Business operating', 0, 0, 'USD', 'active')").run(result.userId, uniqueAccountNumber(db));
         }
