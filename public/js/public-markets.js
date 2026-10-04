@@ -44,7 +44,8 @@
                 const data = await api(`/api/public/quotes?symbols=${encodeURIComponent(card.dataset.liveQuotes)}`);
                 if (data.unavailable) throw new Error('unavailable');
                 list.replaceChildren(...data.quotes.slice(0, 6).map(quote => quoteRow(quote)));
-                if (status) status.replaceChildren(icon('clock'), data.quotes.some(quote => quote.stale) ? ' Cached · delayed' : ' Delayed');
+                const fresh = global.Willow.priceStatus(data.quotes);
+                if (status) status.replaceChildren(icon('clock'), fresh.kind === 'saved' ? ` ${fresh.text}` : fresh.kind === 'cached' ? ' Cached · delayed' : ' Delayed');
             } catch (error) {
                 list.replaceChildren(unavailableNotice());
                 if (status) status.replaceChildren(icon('alert'), ' Unavailable');

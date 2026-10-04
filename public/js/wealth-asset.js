@@ -122,7 +122,7 @@
             },
         });
         rangeSummary(points, range);
-        if (history.stale) chartBox.append(el('p', { className: 'wl-chart-flag' }, el('span', { className: 'badge badge-warning' }, W.icon('clock'), 'Cached history')));
+        if (history.stale) chartBox.append(el('p', { className: 'wl-chart-flag' }, el('span', { className: 'badge badge-warning' }, W.icon('clock'), history.saved ? 'Saved prices' : 'Cached history')));
     }
 
     async function loadChart(range) {
@@ -188,7 +188,7 @@
             return;
         }
         box.replaceChildren(el('dl', { className: 'wl-stats' }, items));
-        $('[data-stats-source]').textContent = (state.quote && state.quote.stale) || p.stale ? 'Cached market data' : 'Delayed market data';
+        $('[data-stats-source]').textContent = state.quote && state.quote.saved ? W.priceStatus([state.quote]).text : (state.quote && state.quote.stale) || p.stale ? 'Cached market data' : 'Delayed market data';
     }
 
     function renderAbout(profile) {
@@ -329,15 +329,25 @@
         if (!asset.tradable) return 'This asset can’t be traded in the demo.';
         if (!state.quote && !state.quoteError) return 'Loading the latest price…';
         if (!WW.isPriced(state.quote)) return short ? 'Orders are paused until a price can be retrieved.' : 'Market data temporarily unavailable. Orders are paused until a price can be retrieved.';
-        if (state.quote.stale) return 'Prices are from the last cached quote, so orders are paused until fresh market data is available.';
         return null;
+    }
+
+    // Orders still work when the price isn't live; this says which price they will use.
+    function priceNotice() {
+        if (!WW.isPriced(state.quote) || !state.quote.stale) return null;
+        return state.quote.saved
+            ? `Live prices can’t be reached right now. Orders use the saved price from ${W.formatDate(state.quote.asOf, 'datetime')}.`
+            : 'The latest refresh failed. Orders use the last cached price shown here.';
     }
 
     function updateTradeAvailability() {
         const reason = blockReason(true);
+        const notice = reason ? null : priceNotice();
         const note = $('[data-trade-note]');
-        note.hidden = !reason || state.quote === null && !state.quoteError;
-        if (reason) $('[data-trade-note-text]').textContent = reason;
+        note.hidden = !(reason || notice) || state.quote === null && !state.quoteError;
+        note.classList.toggle('notice-warning', Boolean(reason));
+        note.classList.toggle('notice-info', !reason);
+        if (reason || notice) $('[data-trade-note-text]').textContent = reason || notice;
         root.querySelectorAll('[data-trade-open]').forEach(button => {
             button.disabled = Boolean(reason) && (state.quote !== null || Boolean(state.quoteError));
             if (button.disabled) button.setAttribute('title', reason); else button.removeAttribute('title');
@@ -419,7 +429,7 @@
         const priceText = est.price !== null ? WW.formatPrice(est.price, state.quote.currency) : '—';
         dialog.querySelector('[data-est-price]').textContent = priceText;
         const fresh = dialog.querySelector('[data-est-fresh]');
-        fresh.textContent = state.quote && state.quote.stale ? 'Cached' : 'Delayed';
+        fresh.textContent = state.quote && state.quote.saved ? `Saved · ${W.formatDate(state.quote.asOf, 'short')}` : state.quote && state.quote.stale ? 'Cached' : 'Delayed';
         const valueBox = dialog.querySelector('[data-est-value]');
         const afterBox = dialog.querySelector('[data-est-after]');
         dialog.querySelector('[data-est-label]').textContent = trade.mode === 'amount' ? `Estimated ${unitPlural}` : 'Estimated total';
@@ -582,7 +592,7 @@
                 [isCrypto ? 'Units' : 'Shares', unitsText(receipt.quantity), { private: true }],
                 ['Total', W.formatMoney(total, 'USD', { digits: 2 }), { private: true }],
                 ['Cash available', state.cash !== null ? W.formatMoney(state.cash, 'USD', { digits: 2 }) : null, { private: true }],
-                ['Price as of', asOf ? WW.shortTime(asOf) : null],
+                ['Price as of', asOf ? `${receipt.priceNote === 'saved' ? W.formatDate(asOf, 'datetime') : WW.shortTime(asOf)}${receipt.priceNote === 'saved' ? ' (saved price)' : receipt.priceNote === 'cached' ? ' (cached price)' : ''}` : null],
                 ['Reference', `SIM-${String(receipt.id).padStart(6, '0')}`],
             ])),
             el('p', { className: 'sim-note' }, W.icon('info', 'icon-sm'), isCrypto ? `This is a simulated transaction. No real crypto is ${buy ? 'purchased' : 'sold'}.` : `This is a simulated transaction. No real securities are ${buy ? 'purchased' : 'sold'}.`));
@@ -595,7 +605,7 @@
             const data = await W.api(`/api/wealth/quotes/${encodeURIComponent(asset.symbol)}?range=1d`, { passive: true, timeout: 25000 });
             state.quote = data;
             state.quoteError = null;
-            if (Array.isArray(data.history) && data.history.length) state.history.set('1d', { points: data.history.map(point => ({ t: point.t, v: point.close })), stale: data.historyStale });
+            if (Array.isArray(data.history) && data.history.length) state.history.set('1d', { points: data.history.map(point => ({ t: point.t, v: point.close })), stale: data.historyStale, saved: data.historySaved });
         } catch (error) {
             if (passive && state.quote) return;
             state.quote = null;
@@ -610,7 +620,7 @@
         try {
             const data = await W.api(`/api/wealth/quotes/${encodeURIComponent(asset.symbol)}?range=${encodeURIComponent(state.range)}`, { passive: true, timeout: 25000 });
             state.quote = data;
-            if (Array.isArray(data.history) && data.history.length) state.history.set(state.range, { points: data.history.map(point => ({ t: point.t, v: point.close })), stale: data.historyStale });
+            if (Array.isArray(data.history) && data.history.length) state.history.set(state.range, { points: data.history.map(point => ({ t: point.t, v: point.close })), stale: data.historyStale, saved: data.historySaved });
         } catch (error) {
             state.quote = null;
             state.quoteError = error;
@@ -618,7 +628,10 @@
         renderQuote();
         renderPosition();
         if (dialog.open) syncTradeForm(false);
-        if (WW.isPriced(state.quote)) loadChart(state.range);
+        // Saved prices have no intraday detail, so open on the past month instead of today.
+        const month = $('[data-range-group] [data-range="1m"]');
+        if (state.quote && state.quote.saved && state.range === '1d' && month) month.click();
+        else if (WW.isPriced(state.quote)) loadChart(state.range);
         else {
             chartBox.classList.remove('chart', 'is-up', 'is-down');
             chartBox.replaceChildren(el('div', { className: 'wl-chart-empty' }, W.icon('chart', 'icon-lg'), el('p', { className: 'text-sm', text: 'The price chart will appear once market data can be retrieved. Willow never draws estimated prices.' })));

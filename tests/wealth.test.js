@@ -141,6 +141,31 @@ describe('Demo wealth platform', () => {
         }
     });
 
+    it('lets orders use saved prices when live prices are unavailable, and says so on the receipt', async () => {
+        const originalFetch = global.fetch;
+        const today = Math.floor(Date.now() / 86400000);
+        const file = require('path').join(require('fs').mkdtempSync(require('path').join(require('os').tmpdir(), 'willow-prices-')), 'prices.json');
+        require('fs').writeFileSync(file, JSON.stringify({ savedAt: '2026-10-02T20:00:00.000Z', instruments: { AMZN: { quote: { price: 25, previousClose: 24, currency: 'USD', asOf: '2026-10-02T20:00:00.000Z' }, daily: [[today - 1, 24], [today, 25]], weekly: [] } } }));
+        process.env.MARKET_SNAPSHOT_PATH = file;
+        const marketData = require('../src/services/market-data');
+        marketData.clearCache();
+        global.fetch = async () => { throw new Error('offline'); };
+        try {
+            const quote = await first.agent.get('/api/wealth/quotes/AMZN').set('Accept', 'application/json');
+            assert.equal(quote.status, 200);
+            assert.equal(quote.body.saved, true);
+            const response = await first.agent.post('/api/wealth/trades').set('X-CSRF-Token', first.csrfToken).send({ symbol: 'AMZN', side: 'buy', quantity: 1 });
+            assert.equal(response.status, 201);
+            assert.equal(response.body.receipt.priceNote, 'saved');
+            assert.equal(response.body.receipt.priceSource, 'saved');
+            assert.equal(response.body.portfolio.holdings.find(item => item.symbol === 'AMZN').average_price, 25);
+        } finally {
+            global.fetch = originalFetch;
+            process.env.MARKET_SNAPSHOT_PATH = '';
+            marketData.clearCache();
+        }
+    });
+
     it('returns indicative FX rates only to signed-in customers', async () => {
         const originalFetch = global.fetch;
         global.fetch = async () => ({

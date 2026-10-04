@@ -229,8 +229,8 @@
                 delta(quote))));
             const rows = [...data.popular.slice(0, 5), ...data.crypto.slice(0, 1)];
             list.replaceChildren(...rows.map(quote => quoteRow(quote)));
-            const stale = [...data.indices, ...rows].some(quote => quote.stale);
-            status.replaceChildren(icon('clock'), stale ? ' Cached · delayed' : ' Delayed data');
+            const fresh = global.Willow.priceStatus([...data.indices, ...rows]);
+            status.replaceChildren(icon('clock'), fresh.kind === 'saved' ? ` ${fresh.text}` : fresh.kind === 'cached' ? ' Cached · delayed' : ' Delayed data');
         } catch (error) {
             indicesRoot.replaceChildren();
             list.replaceChildren(unavailableNotice());

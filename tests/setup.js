@@ -16,6 +16,8 @@ process.env.ADMIN_EMAIL = 'admin@willow.test';
 process.env.ADMIN_PASSWORD = 'Admin123Test';
 // Tests never reach the network: the market-data provider is chosen per test.
 process.env.MARKET_DATA_PROVIDER = process.env.MARKET_DATA_PROVIDER || 'yahoo-chart';
+// Saved prices are off unless a test points MARKET_SNAPSHOT_PATH at its own file.
+process.env.MARKET_SNAPSHOT_PATH = process.env.MARKET_SNAPSHOT_PATH ?? '';
 
 /**
  * Create and initialize a test application instance

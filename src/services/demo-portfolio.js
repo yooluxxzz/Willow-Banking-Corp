@@ -177,6 +177,8 @@ async function valuePortfolio(userId) {
             price,
             priceAvailable: Boolean(hasPrice),
             stale: Boolean(hasPrice && quote.stale),
+            saved: Boolean(hasPrice && quote.saved),
+            priceAsOf: hasPrice ? quote.asOf || null : null,
             marketValue: value,
             dayChange: change,
             dayChangePercent: hasPrice && Number.isFinite(quote.changePercent) ? quote.changePercent : null,

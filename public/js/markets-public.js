@@ -23,7 +23,8 @@
             crypto.replaceChildren(unavailableNotice());
             return;
         }
-        status.replaceChildren(icon('clock'), [...data.indices, ...data.popular].some(quote => quote.stale) ? ' Cached · delayed data' : ' Delayed data');
+        const fresh = global.Willow.priceStatus([...data.indices, ...data.popular]);
+        status.replaceChildren(icon('clock'), fresh.kind === 'saved' ? ` ${fresh.text}` : fresh.kind === 'cached' ? ' Cached · delayed data' : ' Delayed data');
         grid.replaceChildren(...data.indices.map(quote => {
             const chart = el('div', { className: 'ticker-spark' });
             const card = el('article', { className: 'ticker-card' },

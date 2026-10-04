@@ -5,11 +5,15 @@
  *   1. Willow market-data service (Python, yfinance) — quotes, history, profile, news
  *   2. Yahoo Finance chart endpoint — quotes and history only (fallback)
  *   3. Last good cached value, flagged `stale`
+ *   4. Saved prices (src/content/market-snapshot.json, `npm run prices:save`) — real
+ *      delayed prices from a known date, flagged `stale` and `saved`
  *
  * Every public function resolves to normalised objects or throws a
  * MarketDataError; callers render "Market data temporarily unavailable"
  * instead of failing the page.
  */
+const fs = require('fs');
+const path = require('path');
 const universe = require('../content/instruments');
 
 const DEFAULT_SERVICE_URL = 'http://127.0.0.1:8765';
@@ -93,10 +97,10 @@ function finite(value) {
 }
 
 // ── Provider 1: Willow market-data service (yfinance) ────────────────
-async function serviceRequest(path, params) {
+async function serviceRequest(endpoint, params) {
     const { serviceUrl, token, timeoutMs } = settings();
     if (Date.now() < state.serviceDownUntil) throw unavailable();
-    const url = new URL(path, serviceUrl);
+    const url = new URL(endpoint, serviceUrl);
     Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
     let response;
     try {
@@ -168,6 +172,8 @@ async function chartRequest(instrument, range) {
     try {
         response = await fetch(url, { headers: { 'User-Agent': 'Willow-Demo/2.0', Accept: 'application/json' }, signal: AbortSignal.timeout(settings().timeoutMs) });
     } catch (error) {
+        // Offline or blocked: don't make every symbol wait for its own timeout.
+        state.chartCooldownUntil = Date.now() + 30 * 1000;
         throw unavailable();
     }
     if (response.status === 429) {
@@ -233,6 +239,73 @@ function baseQuote(instrument, data) {
     };
 }
 
+// ── Provider 4: saved prices ─────────────────────────────────────────
+const DAY_MS = 86400000;
+const SAVED_DAYS = { '1w': 7, '1m': 31, '6m': 183, '1y': 366, '5y': 1827 };
+let saved; // undefined until first read; null when there is no snapshot
+
+function savedData() {
+    if (saved !== undefined) return saved;
+    const file = process.env.MARKET_SNAPSHOT_PATH ?? path.join(__dirname, '..', 'content', 'market-snapshot.json');
+    try {
+        const data = file ? JSON.parse(fs.readFileSync(file, 'utf8')) : null;
+        saved = data && data.instruments && typeof data.instruments === 'object' ? data : null;
+    } catch (error) {
+        saved = null;
+    }
+    return saved;
+}
+
+function savedQuote(instrument) {
+    const entry = savedData()?.instruments[instrument.symbol];
+    const price = finite(entry?.quote?.price);
+    if (!price || price <= 0) return null;
+    const q = entry.quote;
+    const previousClose = finite(q.previousClose);
+    const change = previousClose ? price - previousClose : null;
+    return baseQuote(instrument, {
+        price,
+        previousClose,
+        change,
+        changePercent: previousClose ? (change / previousClose) * 100 : null,
+        currency: q.currency || 'USD',
+        exchange: q.exchange || null,
+        dayHigh: finite(q.dayHigh),
+        dayLow: finite(q.dayLow),
+        volume: finite(q.volume),
+        marketCap: null,
+        high52Week: finite(q.high52Week),
+        low52Week: finite(q.low52Week),
+        asOf: q.asOf || saved.savedAt,
+        source: 'saved',
+        stale: true,
+        saved: true,
+    });
+}
+
+/** Saved history for a range: daily closes up to a year, weekly beyond. There is no saved intraday data. */
+function savedHistory(instrument, range) {
+    const entry = savedData()?.instruments[instrument.symbol];
+    if (!entry || range === '1d') return null;
+    const daily = Array.isArray(entry.daily) ? entry.daily : [];
+    const weekly = Array.isArray(entry.weekly) ? entry.weekly : [];
+    const useWeekly = range === '5y' || range === 'max';
+    let rows = useWeekly ? weekly : daily;
+    if (SAVED_DAYS[range] && rows.length) {
+        const from = rows[rows.length - 1][0] - SAVED_DAYS[range];
+        rows = rows.filter(([dayNumber]) => dayNumber >= from);
+    }
+    if (rows.length < 2) return null;
+    return {
+        points: rows.map(([dayNumber, close]) => ({ t: new Date(dayNumber * DAY_MS).toISOString(), close: finite(close) })).filter(point => point.close !== null),
+        currency: entry.quote?.currency || 'USD',
+        interval: useWeekly ? '1wk' : '1d',
+        source: 'saved',
+        stale: true,
+        saved: true,
+    };
+}
+
 function useService() {
     return ['auto', 'yfinance', 'service'].includes(settings().mode);
 }
@@ -266,7 +339,7 @@ async function getQuotes(symbols) {
                 return chartQuote(instrument);
             }));
         } catch (error) {
-            results.set(instrument.symbol, { symbol: instrument.symbol, name: instrument.name, type: instrument.type, typeLabel: instrument.typeLabel, unavailable: true });
+            results.set(instrument.symbol, savedQuote(instrument) || { symbol: instrument.symbol, name: instrument.name, type: instrument.type, typeLabel: instrument.typeLabel, unavailable: true });
         }
     });
     return instruments.map(instrument => results.get(instrument.symbol));
@@ -284,13 +357,19 @@ async function getHistory(symbol, range = '1y') {
     const instrument = getInstrument(symbol);
     if (!instrument) throw new MarketDataError('Unsupported instrument.', 'unsupported');
     const period = RANGES[range] ? range : '1y';
-    const history = await cached(`history:${instrument.symbol}:${period}`, RANGES[period].ttl, async () => {
-        if (useService()) {
-            try { return await serviceHistory(instrument, period); } catch (error) { if (!useChart()) throw error; }
-        }
-        if (useChart()) return chartHistory(instrument, period);
-        throw unavailable();
-    });
+    let history;
+    try {
+        history = await cached(`history:${instrument.symbol}:${period}`, RANGES[period].ttl, async () => {
+            if (useService()) {
+                try { return await serviceHistory(instrument, period); } catch (error) { if (!useChart()) throw error; }
+            }
+            if (useChart()) return chartHistory(instrument, period);
+            throw unavailable();
+        });
+    } catch (error) {
+        history = error.code === 'not_found' ? null : savedHistory(instrument, period);
+        if (!history) throw error;
+    }
     return { symbol: instrument.symbol, range: period, ...history };
 }
 
@@ -306,6 +385,7 @@ async function getQuote(symbol, range = '1y') {
         range: RANGES[range] ? range : '1y',
         history: history.points.map(point => ({ t: point.t, date: String(point.t).slice(0, 10), close: point.close })),
         historyStale: Boolean(history.stale),
+        historySaved: Boolean(history.saved),
     };
 }
 
@@ -400,6 +480,7 @@ async function getFxRates() {
             changePercent: quote.changePercent,
             asOf: quote.asOf,
             stale: Boolean(quote.stale),
+            saved: Boolean(quote.saved),
             source: quote.source,
         };
     });
@@ -416,16 +497,19 @@ function convertAmount(amount, from, to, rates) {
 }
 
 function getStatus() {
+    const snapshot = savedData();
     return {
         mode: settings().mode,
         serviceAvailable: Date.now() >= state.serviceDownUntil,
         chartCoolingDown: Date.now() < state.chartCooldownUntil,
+        savedPrices: snapshot ? { savedAt: snapshot.savedAt, instruments: Object.keys(snapshot.instruments).length } : null,
     };
 }
 
 function clearCache() {
     cache.clear();
     inflight.clear();
+    saved = undefined;
     state.serviceDownUntil = 0;
     state.chartCooldownUntil = 0;
 }

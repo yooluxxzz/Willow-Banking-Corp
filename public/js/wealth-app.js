@@ -107,7 +107,10 @@
     /** "Delayed" / "Cached" freshness badge for a quote. */
     function freshness(quote) {
         if (!isPriced(quote)) return W.el('span', { className: 'badge badge-warning' }, W.icon('alert'), 'Unavailable');
-        if (quote.stale) return W.el('span', { className: 'badge badge-warning', title: 'The latest refresh failed; showing the last cached quote.' }, W.icon('clock'), 'Cached');
+        if (quote.stale) {
+            const fresh = W.priceStatus([quote]);
+            return W.el('span', { className: 'badge badge-warning', title: fresh.title }, W.icon('clock'), quote.saved ? fresh.text : 'Cached');
+        }
         return W.el('span', { className: 'badge badge-outline', title: 'Market data may be delayed.' }, W.icon('clock'), 'Delayed');
     }
 

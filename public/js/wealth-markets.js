@@ -218,7 +218,7 @@
             head.replaceChildren(name, WW.delta(quote.changePercent, { pill: true }));
             level.replaceChildren(el('span', { className: 'num', text: WW.formatLevel(quote.price) }),
                 el('span', { className: 'wl-index-change' }, Number.isFinite(Number(quote.change)) ? `${quote.change >= 0 ? '+' : '−'}${W.formatNumber(Math.abs(quote.change), 2)}` : ''));
-            if (quote.stale) level.append(el('span', { className: 'badge badge-warning', text: 'Cached' }));
+            if (quote.stale) level.append(el('span', { className: 'badge badge-warning', text: quote.saved ? 'Saved' : 'Cached' }));
         });
     }
 
@@ -251,8 +251,8 @@
     function renderStatus() {
         const status = $('[data-market-status]');
         const priced = [...state.quotes.values()].filter(WW.isPriced);
-        const stale = priced.some(quote => quote.stale);
-        status.replaceChildren(W.icon('clock', 'icon-sm'), state.marketsFailed || !priced.length ? ' Prices unavailable' : stale ? ' Cached · delayed data' : ` Delayed data · updated ${WW.timeNow()}`);
+        const fresh = W.priceStatus(priced);
+        status.replaceChildren(W.icon('clock', 'icon-sm'), state.marketsFailed || !priced.length ? ' Prices unavailable' : fresh.kind === 'saved' ? ` ${fresh.text}` : fresh.kind === 'cached' ? ' Cached · delayed data' : ` Delayed data · updated ${WW.timeNow()}`);
     }
 
     // ── Controls ───────────────────────────────────────────────────────

@@ -28,7 +28,7 @@
             if (WW.isPriced(quote)) {
                 priceCell.replaceChildren(el('span', { className: 'wl-cell-strong', text: WW.formatPrice(quote.price, quote.currency) }), el('span', { className: 'wl-cell-sub wl-show-sm' }, WW.delta(quote.changePercent)));
                 changeCell.replaceChildren(WW.delta(quote.changePercent, { pill: true }));
-                if (quote.stale) priceCell.append(el('span', { className: 'wl-cell-sub' }, el('span', { className: 'badge badge-warning', text: 'Cached' })));
+                if (quote.stale) priceCell.append(el('span', { className: 'wl-cell-sub' }, el('span', { className: 'badge badge-warning', text: quote.saved ? 'Saved' : 'Cached' })));
             } else if (quote) {
                 priceCell.replaceChildren(el('span', { className: 'wl-cell-strong muted', text: 'Unavailable' }));
                 changeCell.replaceChildren(el('span', { className: 'muted', text: '—' }));
@@ -38,7 +38,8 @@
         });
         const status = $('[data-coins-status]');
         const priced = COINS.map(coin => state.quotes.get(coin.symbol)).filter(WW.isPriced);
-        status.replaceChildren(W.icon('clock', 'icon-sm'), !priced.length ? ' Prices unavailable' : priced.some(quote => quote.stale) ? ' Cached · delayed prices' : ` Delayed · updated ${WW.timeNow()}`);
+        const fresh = W.priceStatus(priced);
+        status.replaceChildren(W.icon('clock', 'icon-sm'), !priced.length ? ' Prices unavailable' : fresh.kind === 'saved' ? ` ${fresh.text}` : fresh.kind === 'cached' ? ' Cached · delayed prices' : ` Delayed · updated ${WW.timeNow()}`);
     }
 
     async function loadQuotes(passive = false) {

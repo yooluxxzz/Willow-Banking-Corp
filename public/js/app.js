@@ -142,6 +142,19 @@
         return new Intl.DateTimeFormat('en-US', options).format(date);
     }
 
+    // How fresh a set of market quotes is: delayed (live), the last cached quote, or real
+    // prices saved earlier (used when live prices can't be reached; orders use them too).
+    function priceStatus(quotes) {
+        const priced = (quotes || []).filter(quote => quote && !quote.unavailable);
+        const saved = priced.filter(quote => quote.saved);
+        if (saved.length) {
+            const latest = saved.map(quote => quote.asOf || quote.priceAsOf).filter(Boolean).sort().pop();
+            return { kind: 'saved', text: `Saved prices${latest ? ` from ${formatDate(latest, 'short')}` : ''}`, title: 'Live prices can’t be reached right now, so Willow shows real prices saved earlier. Simulated orders use them too.' };
+        }
+        if (priced.some(quote => quote.stale)) return { kind: 'cached', text: 'Cached', title: 'The latest refresh failed; showing the last cached quote.' };
+        return { kind: 'live', text: 'Delayed', title: '' };
+    }
+
     function relativeDay(value) {
         const date = parseDate(value);
         if (!date) return '';
@@ -1225,7 +1238,7 @@
         api, csrfToken, el, icon, empty, skeletonRows, showToast, showConfirm, openDialog, closeDialog, enableBackdropClose,
         formatMoney, formatCents, formatNumber, formatCompact, formatPercent, formatQuantity, formatDate, relativeDay, parseDate,
         countUp, prefersReducedMotion, setupRangeFill, toggleTheme, txnRow, showTransaction, flow, highlight, stagger, rovingTabs,
-        syncPrivateOptions,
+        syncPrivateOptions, priceStatus,
     };
     global.showToast = showToast;
     global.showConfirm = showConfirm;

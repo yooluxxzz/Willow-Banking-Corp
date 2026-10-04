@@ -44,7 +44,7 @@ router.get('/history/:symbol', async (req, res) => {
     if (!instrument) return res.status(404).json({ error: 'This asset is unavailable.', code: 'not_found' });
     try {
         const history = await marketData.getHistory(instrument.symbol, req.query.range);
-        res.json({ symbol: instrument.symbol, range: history.range, interval: history.interval, currency: history.currency, points: history.points.map(point => ({ t: point.t, v: point.close })), stale: Boolean(history.stale), source: history.source });
+        res.json({ symbol: instrument.symbol, range: history.range, interval: history.interval, currency: history.currency, points: history.points.map(point => ({ t: point.t, v: point.close })), stale: Boolean(history.stale), saved: Boolean(history.saved), source: history.source });
     } catch (error) {
         unavailable(res);
     }
@@ -130,7 +130,6 @@ router.post('/trades', async (req, res) => {
     } catch (error) {
         return unavailable(res);
     }
-    if (quote.stale) return res.status(503).json({ error: 'Market data is stale. Orders are unavailable until a fresh quote can be retrieved.', code: 'market_stale' });
     try {
         const { quantity, amount, side } = req.body;
         const result = portfolio.executeTrade(req.session.userId, { symbol: instrument.symbol, side, quantity, amount, price: quote.price });
@@ -143,6 +142,8 @@ router.post('/trades', async (req, res) => {
                 totalFormatted: formatCurrency(trade.totalCents),
                 priceSource: quote.source,
                 quoteAsOf: quote.asOf,
+                // Not a live price: the last cached quote, or saved prices when live data can't be reached.
+                priceNote: quote.saved ? 'saved' : quote.stale ? 'cached' : null,
                 createdAt: new Date().toISOString(),
             },
             portfolio: result,

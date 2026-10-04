@@ -19,8 +19,8 @@
             const { rates } = await W.api('/api/fx/rates', { passive: true });
             const rows = rates.filter(rate => rate.currency !== 'USD');
             if (!rows.length || rows.every(rate => rate.unavailable)) throw new Error('unavailable');
-            const stale = rows.some(rate => rate.stale);
-            status.textContent = stale ? 'Cached · delayed' : 'Delayed';
+            const fresh = W.priceStatus(rows.map(rate => ({ ...rate, unavailable: rate.unavailable })));
+            status.textContent = fresh.kind === 'saved' ? `${fresh.text.replace('prices', 'rates')}` : fresh.kind === 'cached' ? 'Cached · delayed' : 'Delayed';
             board.replaceChildren(W.el('ul', { className: 'list-plain', role: 'list' }, rows.map(rate => W.el('li', { className: 'list-row' },
                 W.el('span', { className: 'currency-flag', 'aria-hidden': 'true', text: SYMBOLS[rate.currency] || rate.currency }),
                 W.el('span', { className: 'list-row-main' }, W.el('span', { className: 'list-row-title', text: `USD → ${rate.currency}` }), W.el('span', { className: 'list-row-sub', text: rate.name })),
@@ -96,9 +96,9 @@
                 }
                 quote = { ...result, source, target, raw };
                 converted.textContent = W.formatMoney(result.converted, target.currency, { digits: 2 });
-                rateLine.replaceChildren(W.icon('clock', 'icon-sm'), ` ${rateText(result.rate, source.currency, target.currency)} · indicative${result.stale ? ' · out of date' : ''}${result.asOf ? ` · ${W.formatDate(result.asOf, 'time')}` : ''}`);
-                review.disabled = Boolean(result.stale);
-                if (result.stale) setError('Rates are out of date, so conversions are paused until a current rate is available.');
+                const kind = result.saved ? 'saved rate' : result.stale ? 'cached rate' : 'indicative';
+                rateLine.replaceChildren(W.icon('clock', 'icon-sm'), ` ${rateText(result.rate, source.currency, target.currency)} · ${kind}${result.asOf ? ` · ${W.formatDate(result.asOf, result.saved ? 'short' : 'time')}` : ''}`);
+                review.disabled = false;
             } catch (err) {
                 if (current !== token) return;
                 converted.textContent = '—';
@@ -124,7 +124,7 @@
             if (!quote) return;
             dialog.querySelector('[data-review-from]').textContent = W.formatMoney(Number(quote.raw), quote.source.currency, { digits: 2 });
             dialog.querySelector('[data-review-to]').textContent = W.formatMoney(quote.converted, quote.target.currency, { digits: 2 });
-            dialog.querySelector('[data-review-rate]').textContent = `${rateText(quote.rate, quote.source.currency, quote.target.currency)} (indicative)`;
+            dialog.querySelector('[data-review-rate]').textContent = `${rateText(quote.rate, quote.source.currency, quote.target.currency)} (${quote.saved ? `saved rate from ${W.formatDate(quote.asOf, 'short')}` : quote.stale ? 'cached rate' : 'indicative'})`;
             dialog.querySelector('[data-review-from-account]').textContent = `${quote.source.name} · ${quote.source.masked}`;
             dialog.querySelector('[data-review-to-account]').textContent = `${quote.target.name} · ${quote.target.masked}`;
             dialog.querySelector('[data-review-error]').hidden = true;

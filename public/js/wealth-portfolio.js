@@ -48,10 +48,10 @@
         metric('cash').replaceChildren(W.formatMoney(valuation.cash, 'USD', { digits: 2 }));
 
         const updated = $('[data-updated]');
-        const stale = valuation.holdings.some(holding => holding.stale);
+        const fresh = W.priceStatus(valuation.holdings.filter(holding => holding.priceAvailable));
         const badge = valuation.pricing === 'unavailable'
             ? null
-            : stale ? el('span', { className: 'badge badge-warning', title: 'Some prices are from the last cached quote.' }, W.icon('clock'), 'Cached')
+            : fresh.kind !== 'live' ? el('span', { className: 'badge badge-warning', title: fresh.kind === 'saved' ? fresh.title : 'Some prices are from the last cached quote.' }, W.icon('clock'), fresh.text)
                 : el('span', { className: 'badge badge-outline', title: 'Market data may be delayed.' }, W.icon('clock'), 'Delayed');
         updated.replaceChildren(el('span', { className: 'text-xs muted', text: `Updated ${WW.timeNow()}` }), badge);
     }
@@ -68,7 +68,7 @@
         const unit = WW.unitWord(holding.type, holding.symbol, holding.quantity);
         const quantityText = `${WW.formatQuantity(holding.quantity, holding.type)} ${unit}`;
         const priceCell = holding.priceAvailable
-            ? [el('span', { className: 'wl-cell-strong', text: WW.formatPrice(holding.price) }), el('span', { className: 'wl-cell-sub' }, WW.delta(holding.dayChangePercent), holding.stale ? el('span', { className: 'badge badge-warning wl-mini-badge', text: 'Cached' }) : null)]
+            ? [el('span', { className: 'wl-cell-strong', text: WW.formatPrice(holding.price) }), el('span', { className: 'wl-cell-sub' }, WW.delta(holding.dayChangePercent), holding.stale ? el('span', { className: 'badge badge-warning wl-mini-badge', text: holding.saved ? 'Saved' : 'Cached' }) : null)]
             : [el('span', { className: 'badge badge-warning' }, W.icon('alert'), 'Unavailable')];
         const gainPct = () => { const node = WW.delta(holding.gainPercent); node.setAttribute('data-private', ''); return node; };
         return el('tr', null,
