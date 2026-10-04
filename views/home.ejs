@@ -39,7 +39,7 @@
                     <% scenes.forEach((scene, index) => { %><span data-hero-caption="<%= index %>"<%- index === 0 ? ' class="is-active"' : ' aria-hidden="true"' %>><%= scene.caption %></span><% }) %>
                 </p>
                 <h1 class="hero-title">Your money.<br>Moving forward.</h1>
-                <p class="hero-lede">Banking, investing, and building wealth — brought together in one intelligent financial experience.</p>
+                <p class="hero-lede">Understand your money as you use it — banking, budgets and investing in one place, with a private AI assistant that explains your own numbers.</p>
                 <div class="hero-actions">
                     <a href="/register" class="btn btn-light btn-lg">Open an account <%- icon('arrow-right', 'icon-arrow') %></a>
                     <a href="/login" class="btn btn-outline-light btn-lg">Sign in</a>
@@ -248,7 +248,7 @@
                     <p class="eyebrow"><span class="section-number">04</span> Net worth</p>
                     <h2 class="h2" id="hubTitle">Your complete financial picture.</h2>
                 </div>
-                <p class="lede">Cash, savings, investments and crypto in one calm view — with budgets checked every night, net worth you can log, and an optional assistant that runs on your own computer.</p>
+                <p class="lede">Cash, savings, investments and debts in one calm view — budgets checked every night, net worth you can follow over time, and Ask Willow: an AI assistant that runs on your own computer and explains your numbers in plain words.</p>
             </div>
             <div class="hub-showcase reveal" aria-label="Illustrative net worth dashboard">
                 <div class="hub-frame">
@@ -304,8 +304,8 @@
                 </div>
             </div>
             <div class="hub-cta reveal">
-                <p>The assistant runs locally with Ollama, answers only from your own records — and never predicts markets or gives advice.</p>
-                <a href="/login?returnTo=%2Fhub" class="link-arrow">Sign in to see your picture <%- icon('arrow-right') %></a>
+                <p>Ask Willow runs on your computer with Ollama, so your questions and records never leave it. Without Ollama it still gives quick answers worked out from your figures. It explains — it never predicts markets or gives advice.</p>
+                <a href="/login?returnTo=%2Fnet-worth" class="link-arrow">Sign in to see your picture <%- icon('arrow-right') %></a>
             </div>
         </div>
     </section>
@@ -394,10 +394,11 @@
         <div class="home-final-inner container reveal">
             <p class="eyebrow">Willow</p>
             <h2 class="display" id="finalTitle">Where will your money take you?</h2>
-            <p class="lede">Open a Willow account in minutes — or start an empty guest profile and try everything yourself.</p>
+            <p class="lede">Open a Willow account in minutes — or try it as a guest, starting empty or with a sample profile full of example activity.</p>
             <div class="cluster">
                 <a href="/register" class="btn btn-light btn-lg">Join Willow <%- icon('arrow-right', 'icon-arrow') %></a>
                 <button type="button" class="btn btn-outline-light btn-lg" data-demo-start>Try it as a guest</button>
+                <button type="button" class="btn btn-outline-light btn-lg" data-demo-start data-demo-kind="sample">See a sample profile</button>
             </div>
             <p class="home-final-note" data-demo-status role="status" aria-live="polite"></p>
         </div>

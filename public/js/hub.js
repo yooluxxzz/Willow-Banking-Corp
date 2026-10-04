@@ -32,7 +32,7 @@
         const parts = [];
         if (worth.pricing === 'unavailable' || worth.pricing === 'partial') parts.push('Some investments are shown at cost because market prices are unavailable.');
         if (!worth.assets.length && !worth.debts.length) parts.push('Add what you own outside Willow and any debts to complete the picture.');
-        doc.querySelector('[data-net-note]').textContent = parts.join(' ') || 'Includes investing at the latest delayed prices.';
+        doc.querySelector('[data-net-note]').textContent = parts.join(' ') || (worth.pricing === 'saved' ? 'Includes investing at saved prices, because live prices can’t be reached right now.' : 'Includes investing at the latest delayed prices.');
         const set = (selector, text, tone) => { const node = doc.querySelector(selector); node.textContent = text; node.classList.remove('positive', 'negative'); if (tone) node.classList.add(tone); };
         set('[data-stat-assets]', W.formatCents(worth.grossCents));
         set('[data-stat-debts]', W.formatCents(worth.debtsCents));

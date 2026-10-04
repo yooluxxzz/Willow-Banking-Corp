@@ -269,7 +269,7 @@ async function computeNetWorth(userId) {
         const valuation = await portfolio.valuePortfolio(userId);
         crypto = Math.round(valuation.holdings.filter(h => h.type === 'crypto').reduce((total, h) => total + h.marketValue, 0) * 100);
         investments = Math.round(valuation.total * 100) - crypto;
-        pricing = valuation.pricing;
+        pricing = valuation.pricing === 'live' && valuation.holdings.some(h => h.saved) ? 'saved' : valuation.pricing;
     } catch (error) {
         const base = portfolio.getPortfolio(userId);
         investments = base.cashCents + Math.round(base.holdings.reduce((total, h) => total + h.quantity * h.average_price, 0) * 100);

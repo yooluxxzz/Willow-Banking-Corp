@@ -717,7 +717,7 @@ const articles = [
                 heading: 'How Willow approaches it',
                 paragraphs: [
                     'In Willow, the Net worth page brings your account balances, your investing and crypto, and the assets and debts you record together into a single figure. It shows money movement across income, expenses, savings and investments, groups spending into categories inferred from transaction descriptions and displays your goals alongside.',
-                    'If you run Ollama on the same computer, Ask Willow can answer questions such as how much you spent this month or which debt costs you most, using only your own records. It offers information rather than advice and does not make predictions or recommendations.',
+                    'Ask Willow can answer questions such as how much you spent this month or which debt costs you most, using only your own records — in its own words with a local AI model through Ollama, or as quick answers calculated from your figures without one. It offers information rather than advice and does not make predictions or recommendations.',
                     'Because the picture is built only from what you record, it is a safe way to explore how these views work, and what questions they can answer, before you look at your real finances the same way.',
                 ],
             },

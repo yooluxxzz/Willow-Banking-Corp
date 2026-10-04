@@ -2,7 +2,12 @@
 
 **Your money. Moving forward.**
 
-Willow is a fictional digital bank, investment platform and financial-intelligence app — a complete, working software demonstration. Everyday banking, cards, payments, currencies, a stocks-and-crypto trading simulator, goals, loan calculators, budgets, debts and net worth, a small-business workspace and an optional local assistant all live in one calm, consistent product. Nothing is pre-filled: every balance and chart comes from what you add.
+Willow is a fictional digital bank, investment platform and financial-intelligence app — a complete, working software demonstration built around two ideas:
+
+- **Financial literacy:** you understand your money as you use it. Budgets are checked every night, net worth is tracked over time, debts come with payoff estimates and interest, and insights explain what changed in plain words.
+- **Private AI:** **Ask Willow** explains your own numbers with a language model running on your own computer (Ollama). Without Ollama it still answers from your figures, so it never leaves you stuck.
+
+Everyday banking, cards, payments, currencies, a stocks-and-crypto trading simulator, goals, loan calculators, a small-business workspace and the assistant all live in one calm, consistent product. Nothing is pre-filled: every balance and chart comes from what you add, unless you choose the clearly labelled **sample profile**.
 
 > **Demo only.** Willow is not a bank, broker or payment provider. Every balance, card, payment, conversion, trade and identity check is simulated, and nothing reaches a bank, card network, exchange or blockchain. Market prices are delayed third-party data used for illustration. Use fictional details.
 
@@ -48,14 +53,17 @@ Willow is a fictional digital bank, investment platform and financial-intelligen
 - **Debts:** loans and card balances with payoff estimates and interest; record payments from a Willow account or made elsewhere.
 - Goals, loan and mortgage calculators with saved estimates, notifications, Security center (score, 2FA, sessions, card freeze, full data export) and settings.
 - **Business workspace:** dashboard, your own expense log (optionally paid from the business account), business budgets, invoices, team invitations and business details.
-- **Ask Willow:** an optional assistant that runs on your own computer with Ollama and answers from your records only.
+- **Ask Willow:** answers questions about your own records — with a local AI model through Ollama, or with quick answers worked out from your figures when no model is installed. It explains ideas like an emergency fund or the avalanche and snowball debt methods, as information rather than advice.
 
 **Wealth (simulated investing)**
 - Investing cash starts at $0 — move money in from your accounts and back out again. Portfolio dashboard with performance against what you put in, allocation, holdings and activity.
+- When live prices can't be reached (no internet, or Yahoo Finance blocked), Willow uses real prices saved earlier (`src/content/market-snapshot.json`), labels them "Prices saved <date>", and simulated orders and conversions say which price they used.
 - Markets with search, categories, sorting, watchlist, indices and popular stocks; stock and crypto detail pages with 1D–MAX charts, key stats, profile, news and your position.
 - Buy/sell flows with simulated receipts: *“This is a simulated transaction. No real securities are purchased.”*
 
-**Admin console** for customers (suspend, reactivate, delete), balance adjustments and the audit log.
+**Admin console** for customers (suspend, reactivate, delete), balance adjustments, the audit log and a System panel with **Run daily checks now**.
+
+**Sample profile** (opt-in): one click on the sign-in page creates a guest profile with four months of example activity — salary, bills, spending, savings, a small business, debts, budgets, goals, investing and net-worth history — labelled "Sample profile" on every page and generated with the same ledger rules as real activity.
 
 ## Your money, nothing made up
 
@@ -71,7 +79,7 @@ On upgrade, a one-time clean-up (`src/services/data-cleanup.js`) removes what ea
 
 ## Quick start
 
-Requirements: **Node.js 22 or 24** (any version from 20.19 works). Optional: **Python 3.9+** for fuller market data and **[Ollama](https://ollama.com)** for the assistant.
+Requirements: **Node.js 22 or 24** (any version from 20.19 works). Optional: **Python 3.9+** for fuller market data and **[Ollama](https://ollama.com)** for full AI answers in Ask Willow (it gives quick answers without it).
 
 ```bash
 npm install
@@ -84,8 +92,9 @@ Optional extras, each picked up automatically on the next `npm start`:
 
 ```bash
 npm run setup:python          # installs yfinance for the market-data service
-ollama pull llama3.2          # a local model for Ask Willow
+ollama pull llama3.2          # a local model for full AI answers in Ask Willow
 npm run assistant:check       # checks the assistant end to end
+npm run prices:save           # refreshes the saved market prices (needs internet access to Yahoo Finance)
 ```
 
 `npm run dev` restarts on file changes. The SQLite database and session store are migrated in place on later starts.
@@ -101,11 +110,14 @@ You don’t start it yourself. On start-up Willow (`src/services/market-service.
 3. secures the bridge with a generated shared secret (`X-Willow-Service-Token`) unless `MARKET_DATA_TOKEN` is set;
 4. restarts the service with back-off if it exits, and stops it when Willow stops (the service also exits by itself if Willow is killed).
 
-`/health` on Willow reports the bridge’s state. Provider chain (`src/services/market-data.js`): yfinance service → Yahoo chart endpoint fallback (quotes and history) → last good cached value marked stale. Responses are cached and coalesced, and a failing provider is backed off. When nothing is available the UI shows **“Market data temporarily unavailable.”** — prices are never invented, and simulated trades and conversions are refused until fresh data returns.
+`/health` on Willow reports the bridge’s state. Provider chain (`src/services/market-data.js`): yfinance service → Yahoo chart endpoint fallback (quotes and history) → last good cached value marked stale → **saved prices** (`src/content/market-snapshot.json`: real delayed prices for every instrument, a year of daily and five years of weekly closes, refreshed with `npm run prices:save` or the *Refresh saved market prices* GitHub workflow). Responses are cached and coalesced, and a failing provider is backed off. Saved and cached prices are always labelled (for example **“Prices saved Oct 4”**), and simulated orders and conversions at those prices say so on the receipt. Prices are never invented: only an instrument with no live, cached or saved price shows **“Market data temporarily unavailable.”** Set `MARKET_SNAPSHOT_PATH` to an empty value to turn saved prices off.
 
 ## Local assistant (Ollama)
 
-Ask Willow uses a language model running on the same computer through [Ollama](https://ollama.com). Nothing goes to a cloud service.
+Ask Willow works in two modes, and the panel says which one is active:
+
+- **Quick answers** (no set-up): when Ollama isn’t running, Willow answers common questions — spending, income, budgets, debts, net worth, savings, investing, business, upcoming payments, recent activity and money tips — directly from your records (`src/services/quick-answers.js`).
+- **AI answers**: with [Ollama](https://ollama.com) running, a language model on the same computer answers any question about your money. Nothing goes to a cloud service.
 
 ```bash
 ollama pull llama3.2          # or qwen2.5, mistral, gemma3 … any chat model (llama3.2:1b for small machines)
@@ -114,7 +126,8 @@ npm run assistant:check       # reachability, model, load time and a test questi
 ```
 
 - Willow picks the best installed chat model (Llama 3.2 first, embedding models never), or `OLLAMA_MODEL` if set, and warms it up so the first answer comes sooner. It checks Ollama at start-up and again (at most every 30 seconds) as pages load.
-- **Ask Willow** is in the top bar (or **Ctrl/Cmd+K**). While Ollama is off it shows how to set it up, with a **Check again** button.
+- **Ask Willow** is in the top bar (or **Ctrl/Cmd+K**). While Ollama is off it gives quick answers and offers the set-up steps in a collapsed **Get full AI answers on this computer** section, with a **Check again** button; it also checks again every 15 seconds while open.
+- If the model fails before it has written anything (Ollama stopped, model missing, out of memory), Willow answers with a quick answer instead and adds a short note naming the problem.
 - Answers stream in as they are written. A stalled model is stopped after 45 seconds of silence, and Ollama's own errors (for example, not enough memory) are shown as they are. Each answer ends with links to the pages it talks about.
 - With each question the model receives a short summary of **your own** records — balances, recent activity, budgets, debts, net worth, investing and business figures, with the key totals already calculated — and nothing about anyone else.
 - It gives information, not advice: it won’t predict markets or recommend trades. Questions are limited to 20 per 5 minutes per customer.
@@ -153,15 +166,17 @@ All settings are environment variables; see [`.env.example`](.env.example) for t
 | `MARKET_DATA_PROVIDER` | `auto` (default), `service` or `yahoo-chart`. |
 | `MARKET_DATA_SERVICE_URL`, `MARKET_DATA_TOKEN` | Where the Python service runs and its shared secret (generated when unset). |
 | `MARKET_SERVICE_AUTOSTART`, `PYTHON` | Start the Python service with Willow (default `true`) and which interpreter to use. |
+| `MARKET_SNAPSHOT_PATH` | Saved-prices file used when live prices can’t be reached (default `src/content/market-snapshot.json`; an empty value turns saved prices off). |
 | `OLLAMA_URL`, `OLLAMA_MODEL` | Local Ollama server (default `http://127.0.0.1:11434`) and model (default: the best installed chat model). |
 | `OLLAMA_TIMEOUT_MS`, `OLLAMA_NUM_CTX` | How long to wait for the first words of an answer (default 120 s) and the context size requested (default 8192). |
-| `ASSISTANT_ENABLED` | `false` hides the assistant even when Ollama is running. |
+| `ASSISTANT_ENABLED` | `false` turns Ask Willow off completely (no AI or quick answers). |
 | `TRUST_PROXY` | Set only behind a reverse proxy, so rate limits see real client addresses (default off). |
 
 ## Profiles
 
 - **Your own profile:** sign up at `/register`. Everything starts at zero.
 - **Guest profile:** choose **Explore as a guest** on the sign-in page (or *Just looking?* on sign-up). Guests start with an empty account and can keep the profile by adding their own email and password in Settings; unused guest profiles are deleted after 7 days.
+- **Sample profile:** choose **explore a sample profile** on the sign-in page (or **See a sample profile** at the end of the homepage). Willow creates a guest profile with four months of clearly labelled example activity — salary, bills, budgets, two debts, savings, a small business and a few holdings bought at real prices — so every chart has something to show. A banner says it is a sample, and it is deleted like any other unused guest profile.
 - **Admin:** sign in with the generated admin login (`data/admin-credentials.txt`), or the account from `ADMIN_EMAIL` / `ADMIN_PASSWORD`, and open `/admin`: customers, balance adjustments, the audit log and a System panel with **Run daily checks now**.
 - To try payments, create two profiles and send money from one to the other by email.
 
@@ -169,7 +184,7 @@ All settings are environment variables; see [`.env.example`](.env.example) for t
 
 ```bash
 npm run check                 # ESLint, then the Node tests
-npm test                      # Node integration and client tests (node:test, supertest, jsdom) — 181 tests
+npm test                      # Node integration and client tests (node:test, supertest, jsdom) — 192 tests
 npm run test:python           # market-data service unit tests — 42 tests
 npm run test:all              # both
 npm run test:coverage         # Node tests with a coverage report (about 87% of lines)
@@ -177,29 +192,33 @@ npm run test:coverage         # Node tests with a coverage report (about 87% of 
 
 GitHub Actions (`.github/workflows/ci.yml`) runs lint and the Node tests on Linux (Node 20, 22 and 24), Windows and macOS, plus the Python tests, on every push.
 
-Coverage includes authentication, sessions and idle timeout, 2FA, recovery, empty new profiles, accounts and the ledger, transfers between real customers, cards on request, statements, goals, budgets and the nightly check, net worth, assets and debts, business expenses, scheduled transfers, FX, crypto wallet, investing funded from deposits, the assistant (against a stand-in Ollama), the Python bridge supervisor, database snapshots, market-data providers and caching, the homepage hero, and a crawl of every public and signed-in page that fails on broken internal links or placeholder output. Tests never reach the network.
+Coverage includes authentication, sessions and idle timeout, 2FA, recovery, empty new profiles, accounts and the ledger, transfers between real customers, cards on request, statements, goals, budgets and the nightly check, net worth, assets and debts, business expenses, scheduled transfers, FX, crypto wallet, investing funded from deposits, the assistant (against a stand-in Ollama) and its quick answers, the sample profile, the Python bridge supervisor, database snapshots, market-data providers, caching and saved prices, the homepage hero, and a crawl of every public and signed-in page that fails on broken internal links or placeholder output. Tests never reach the network.
 
 ## Architecture
 
 ```
-server.js                    Startup and shutdown: database, admin, Python bridge, background jobs
-src/app.js                   Express app factory (security headers, sessions, CSRF, routes)
-src/config.js                Environment configuration
-src/errors.js                ValidationError: expected failures shown to people (everything else is a logged 500)
-src/database.js              sql.js schema, in-place migrations, foreign-key repair, snapshot auto-restore
-src/view-helpers.js          Template helpers (icons, money, dates, navigation)
-src/content/                 Products, navigation, help, articles, instrument universe
-src/routes/                  Site pages, app pages and JSON APIs (shared helpers in routes/helpers.js)
-src/services/                Domain logic (ledger, cards, FX, portfolio, budgets, net worth,
-                             business, assistant, market-service bridge, snapshot…)
-src/services/jobs.js         Scheduled transfers, nightly budget checks and net-worth snapshots, clean-ups
-src/services/spending.js     The one definition of "spending" used by budgets, Net worth and the assistant
-scripts/                     db:save / db:restore, assistant:check, a cross-platform Python launcher
-market-data-service/         Python yfinance service and its tests
-views/                       EJS templates: home, product, explore, auth, app/*, info/*, partials
-public/css/                  willow.css (design system), site, home, product, auth, app
-public/js/                   app.js runtime, charts.js, and one script per page
-tests/                       Node test suites
+server.js                       Startup and shutdown: database, admin, Python bridge, background jobs
+src/app.js                      Express app factory (security headers, sessions, CSRF, routes)
+src/config.js                   Environment configuration
+src/errors.js                   ValidationError: expected failures shown to people (everything else is a logged 500)
+src/database.js                 sql.js schema, in-place migrations, foreign-key repair, snapshot auto-restore
+src/view-helpers.js             Template helpers (icons, money, dates, navigation)
+src/content/                    Products, navigation, help, articles, instrument universe,
+                                market-snapshot.json (saved real prices)
+src/routes/                     Site pages, app pages and JSON APIs (shared helpers in routes/helpers.js)
+src/services/                   Domain logic (ledger, cards, FX, portfolio, budgets, net worth,
+                                business, assistant, market-service bridge, snapshot…)
+src/services/jobs.js            Scheduled transfers, nightly budget checks and net-worth snapshots, clean-ups
+src/services/spending.js        The one definition of "spending" used by budgets, Net worth and the assistant
+src/services/quick-answers.js   Ask Willow's answers from your records when no AI model is running
+src/services/sample-profile.js  The opt-in sample profile (four months of generated example activity)
+scripts/                        db:save / db:restore, assistant:check, prices:save, a cross-platform Python launcher
+.github/workflows/              CI, and "Refresh saved market prices" (runs prices:save and commits the result)
+market-data-service/            Python yfinance service and its tests
+views/                          EJS templates: home, product, explore, auth, app/*, info/*, partials
+public/css/                     willow.css (design system), site, home, product, auth, app
+public/js/                      app.js runtime, charts.js, and one script per page
+tests/                          Node test suites
 ```
 
 - **One ledger.** Every change to a balance is a transaction row: deposits, payments, investing cash moves (`INV-IN-`/`INV-OUT-`), business expenses paid from an account (`EXP-`), debt payments (`DBT-`) and conversions (`CNV-`). Holdings and trades live in the separate `demo_*` tables; prices come only from the market-data layer.

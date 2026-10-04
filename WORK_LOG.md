@@ -621,3 +621,37 @@ The user asked for Willow to be upgraded into one premium digital bank, investin
 - Not testable in this environment:
   - A real Ollama model: downloads are blocked. Covered by protocol-faithful tests and `assistant:check` against a stand-in server.
   - Live stock prices: Yahoo is blocked by the sandbox proxy. The unavailable states were verified.
+
+## Always-working demo: saved prices, quick answers and a sample profile — 2026-10-04
+
+The user chose: keep both themes (financial literacy and AI), make sure Ask Willow never looks broken, use saved real prices when live prices can't be reached, add an opt-in sample profile, and merge straight into main.
+
+**Implemented**
+- **Saved real prices**
+  - `scripts/save-market-prices.js` (`npm run prices:save`) saves a quote, a year of daily closes and five years of weekly closes for every listed instrument. The *Refresh saved market prices* GitHub workflow runs it with open internet access and commits `src/content/market-snapshot.json` (52 instruments, saved Oct 4).
+  - The provider chain is now service → Yahoo chart → cached value → saved price. Quotes, history (except 1 day), crypto, FX rates, portfolio values and net worth fall back to saved prices, and every screen labels them ("Prices saved Oct 4", "Saved · <date>", "saved rate").
+  - Simulated orders and conversions are no longer refused when only saved or cached prices are available; the receipt says "(saved price)" and the conversion description says "(saved rate)". An instrument with no price at all still shows "Market data temporarily unavailable".
+  - A failing provider now backs off for 30 seconds (Yahoo network errors and service 5xx), so an offline Markets page loads in about a second instead of nine.
+- **Ask Willow always answers**
+  - New `src/services/quick-answers.js`: answers about spending, income, budgets, debts (avalanche and snowball, explained), net worth, balances, savings and emergency funds, investing, business, upcoming payments, recent activity and tips, worked out from the customer's own records.
+  - Without Ollama the panel says "Quick answers…" and offers the set-up steps in a collapsed section; with Ollama it says which model is running. If the model fails before writing anything, a quick answer is given with a note naming the problem. The status API reports `mode` (`ai`, `quick` or `off`).
+- **Sample profile**
+  - "Explore a sample profile" on sign-in, sign-up and the homepage creates a labelled guest profile with four months of generated activity (`src/services/sample-profile.js`) so every chart, budget, debt plan and insight has something to show. A banner marks it as a sample; it is deleted like any guest.
+- **Theme copy**
+  - The homepage, page descriptions, footer, About, Demo, Compliance and Education pages present Willow as financial literacy built into everyday banking, with a private AI assistant that explains your own numbers.
+- **Docs**
+  - `docs/TESTING_GUIDE.md`: new steps B14 (Ask Willow without set-up, with expected figures) and B15 (sample profile), saved-prices notes, Part D is now optional, updated counts.
+  - README, `.env.example` (`MARKET_SNAPSHOT_PATH`) and `docs/DATABASE_CHANGES.md` updated.
+
+**Database / schema** (details in `docs/DATABASE_CHANGES.md`)
+- New column `users.is_sample` (default 0). Sample profiles are guests and are purged by the existing guest clean-up.
+- Saved prices are a committed JSON file, not database data.
+- No backup was needed: only scratch databases outside the repository were used.
+
+**Checks run**
+- `npx eslint .` clean; `npm test`: 192 Node tests pass (new: saved-price fallback, an order at a saved price, 5 quick-answer tests, 4 sample-profile tests including purge, assistant fallback and mode). `npm run test:python`: 42 tests pass.
+- Playwright against a live server with Yahoo blocked and no Ollama:
+  - **Journey 3** (guide Part B, B2–B14): every promised figure checked, including the quick answers ($1,100.00 of debt; "$410.50 across 4 payments").
+  - **Journey 4**: sample profile banner and dashboard, quick answers, Markets with saved prices, a simulated order at a saved price and its receipt, and a currency conversion at a saved rate.
+  - No page errors or server errors.
+- Not testable here: a real Ollama model (downloads blocked; covered by tests against a stand-in Ollama) and live prices (Yahoo blocked; saved prices verified instead).

@@ -150,3 +150,13 @@ Applied in place at start-up by `src/database.js`; nothing is rewritten except t
 - **Ledger references** now use 10 random hex digits (`TRF-3F9A1C0B7E`) instead of 8, generated in one place (`src/services/ids.js`). Prefixes are unchanged and still meaningful (see `src/services/spending.js`); existing references are kept.
 - **Hide balances** is a per-device setting (the eye icon), so the unused `privacy_hide_balances` field was removed from the preferences API; the column stays.
 - **Backups:** this session ran Willow only against scratch databases outside the repository, so no backup was taken. Before upgrading a database you care about, stop Willow and copy it, or run `npm run db:save`.
+
+## 2026-10-04: sample profile flag and saved market prices
+
+Applied in place at start-up by `src/database.js`.
+
+- **New column:** `users.is_sample INTEGER NOT NULL DEFAULT 0`. Existing customers keep 0. It is set to 1 only for a profile created with **Explore a sample profile** (`POST /auth/sample`), and makes every signed-in page show a "sample profile" banner.
+- **Sample profile contents** (`src/services/sample-profile.js`): a guest profile (`is_guest = 1`) whose example activity is generated from a seeded random generator, so it is reproducible per profile. Every balance change is an ordinary ledger row written through the same rules as customer activity (no rows dated in the future, no negative balances): 120 days of salary, rent, bills, everyday spending and a monthly savings transfer; two debts with payments (`DBT-…`); client payments and paid business expenses (`EXP-…`); investing cash moved from checking (`INV-IN-…`) and three holdings bought at the current live or saved price. It also adds assets, budgets (with their daily `budget_checks` for the last 30 days), goals, scheduled transfers, cards and daily `net_worth_snapshots`. Nothing is added to any other profile.
+- **Removal:** sample profiles are guests, so the existing guest clean-up deletes them after `GUEST_RETENTION_DAYS` without use (with a `guest_profile_purged` audit event), and their owner can keep one by adding an email and password like any guest.
+- **Saved market prices** are a JSON file in the source tree (`src/content/market-snapshot.json`, refreshed by `npm run prices:save` or the *Refresh saved market prices* workflow), not database rows. Simulated orders and conversions at a saved or cached price are stored exactly like others; only their receipt and description say which price was used.
+- **Backups:** this session ran Willow only against scratch databases outside the repository, so no backup was taken. Before upgrading a database you care about, stop Willow and copy it, or run `npm run db:save`.

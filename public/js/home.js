@@ -244,9 +244,10 @@
                 const status = doc.querySelector('[data-demo-status]');
                 button.classList.add('is-loading');
                 button.disabled = true;
-                if (status) status.textContent = 'Opening your guest profile…';
+                const sample = button.dataset.demoKind === 'sample';
+                if (status) status.textContent = sample ? 'Preparing your sample profile…' : 'Opening your guest profile…';
                 try {
-                    const result = await global.Willow.api('/auth/demo', { method: 'POST', body: {} , timeout: 45000 });
+                    const result = await global.Willow.api(sample ? '/auth/sample' : '/auth/demo', { method: 'POST', body: {}, timeout: 45000 });
                     global.location.href = result.redirect || '/dashboard';
                 } catch (error) {
                     if (status) status.textContent = error.message || 'The demo profile could not be created. Please try again.';

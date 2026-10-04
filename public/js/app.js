@@ -148,8 +148,8 @@
         const priced = (quotes || []).filter(quote => quote && !quote.unavailable);
         const saved = priced.filter(quote => quote.saved);
         if (saved.length) {
-            const latest = saved.map(quote => quote.asOf || quote.priceAsOf).filter(Boolean).sort().pop();
-            return { kind: 'saved', text: `Saved prices${latest ? ` from ${formatDate(latest, 'short')}` : ''}`, title: 'Live prices can’t be reached right now, so Willow shows real prices saved earlier. Simulated orders use them too.' };
+            const when = saved.map(quote => quote.savedAt || quote.asOf || quote.priceAsOf).filter(Boolean).sort().pop();
+            return { kind: 'saved', text: `Prices saved ${when ? formatDate(when, 'short') : 'earlier'}`, title: 'Live prices can’t be reached right now, so Willow shows real prices saved earlier. Simulated orders use them too.' };
         }
         if (priced.some(quote => quote.stale)) return { kind: 'cached', text: 'Cached', title: 'The latest refresh failed; showing the last cached quote.' };
         return { kind: 'live', text: 'Delayed', title: '' };

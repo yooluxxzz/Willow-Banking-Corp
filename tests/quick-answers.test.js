@@ -60,8 +60,7 @@ describe('Ask Willow quick answers (no Ollama)', () => {
     it('explains the idea behind the numbers without giving advice', async () => {
         const debts = (await quick.answer(userId, 'Which debt should I pay off first?')).text;
         assert.match(debts, /You owe \$4,600\.00 across 2 debts/);
-        assert.match(debts, /avalanche.*Store card at 29\.9%/s);
-        assert.match(debts, /snowball.*Store card/s);
+        assert.match(debts, /avalanche.*snowball.*both point to Store card: it has the highest rate \(29\.9%\) and the smallest balance/s);
         const tips = (await quick.answer(userId, 'Any tips for my money?')).text;
         assert.match(tips, /information, not advice/);
         assert.match(tips, /Store card has the highest interest rate \(29\.9% APR\)/);

@@ -111,7 +111,11 @@ async function serviceRequest(endpoint, params) {
     }
     const body = await response.json().catch(() => null);
     if (response.status === 404) throw notFound();
-    if (!response.ok || !body || typeof body !== 'object') throw unavailable();
+    if (!response.ok || !body || typeof body !== 'object') {
+        // The service is up but can't reach its own source: ask again in a little while.
+        if (response.status >= 500) state.serviceDownUntil = Date.now() + 30 * 1000;
+        throw unavailable();
+    }
     return body;
 }
 
@@ -277,6 +281,7 @@ function savedQuote(instrument) {
         high52Week: finite(q.high52Week),
         low52Week: finite(q.low52Week),
         asOf: q.asOf || saved.savedAt,
+        savedAt: saved.savedAt,
         source: 'saved',
         stale: true,
         saved: true,

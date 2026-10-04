@@ -16,16 +16,16 @@
             </section>
             <section class="info-section" id="try">
                 <h2>Trying it out</h2>
-                <p>Open a profile with fictional details, or start a guest profile from the homepage. Every profile — guest or not — starts empty: one checking account at $0, no cards, no history. Balances, budgets, debts and charts fill in only from what you do.<% if (guestRetentionDays) { %> Unused guest profiles are deleted after <%= guestRetentionDays %> days unless you save your own email and password.<% } %></p>
+                <p>Open a profile with fictional details, or start a guest profile from the homepage. Every profile — guest or not — starts empty: one checking account at $0, no cards, no history. Balances, budgets, debts and charts fill in only from what you do. To see everything filled in at once, choose <strong>Explore a sample profile</strong> instead: a guest profile with four months of example activity, clearly labelled as sample data.<% if (guestRetentionDays) { %> Unused guest profiles are deleted after <%= guestRetentionDays %> days unless you save your own email and password.<% } %></p>
                 <p>To try payments, open a second profile (or ask a friend to) — money only moves between real Willow profiles.</p>
             </section>
             <section class="info-section" id="market">
                 <h2>Market data</h2>
-                <p>A small Python service retrieves delayed quotes, price history, company profiles and headlines through the open-source yfinance library, and caches them briefly. If it can’t reach the data source, Willow shows “Market data temporarily unavailable.” rather than an estimate. Demo trades are blocked until fresh prices return.</p>
+                <p>A small Python service retrieves delayed quotes, price history, company profiles and headlines through the open-source yfinance library, and caches them briefly. If it can’t reach the data source, Willow uses real prices saved earlier and labels them “Saved prices” with their date (simulated orders then use those prices); without saved prices it shows “Market data temporarily unavailable.” rather than an estimate.</p>
             </section>
             <section class="info-section" id="assistant">
                 <h2>The assistant</h2>
-                <p>Ask Willow uses a language model running on the same computer as Willow, through <a class="text-link" href="https://ollama.com" rel="noopener">Ollama</a>. With each question it receives a short summary of your own records — balances, recent activity, budgets, debts, net worth, investing and business figures — and nothing from anyone else. It doesn’t browse the web, predict markets or recommend trades. When Ollama isn’t running, the assistant is hidden.</p>
+                <p>Ask Willow uses a language model running on the same computer as Willow, through <a class="text-link" href="https://ollama.com" rel="noopener">Ollama</a>. With each question it receives a short summary of your own records — balances, recent activity, budgets, debts, net worth, investing and business figures — and nothing from anyone else. It doesn’t browse the web, predict markets or recommend trades. When Ollama isn’t running, Ask Willow still answers the common questions — spending, budgets, debts, net worth, investing and more — with quick answers worked out directly from your records, and says so.</p>
             </section>
             <section class="info-section" id="labels">
                 <h2>Labels you’ll see</h2>

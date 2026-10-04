@@ -98,9 +98,9 @@ const answers = {
         const smallest = [...data.debts].sort((a, b) => a.balanceCents - b.balanceCents)[0];
         const lines = [`You owe ${usd(total)} across ${plural(data.debts.length, 'debt')}, costing about ${usd(interest)} in interest a month.`];
         data.debts.slice(0, 4).forEach(debt => lines.push(`- ${debt.name}: ${usd(debt.balanceCents)} at ${debt.apr}% APR; ${debt.payoffPossible ? `about ${plural(debt.payoffMonths, 'month')} to clear at the minimum, with ${usd(debt.payoffInterestCents)} of interest` : 'the minimum payment doesn’t cover the interest'}.`));
-        lines.push(data.debts.length > 1
-            ? `Paying extra on the highest rate first (the “avalanche” method) costs the least interest overall — here that’s ${costliest.name} at ${costliest.apr}%. Clearing the smallest balance first (the “snowball” method, ${smallest.name}) gives a quicker win.`
-            : `Anything you pay above the minimum goes straight to the balance and cuts the interest you pay.`);
+        if (data.debts.length < 2) lines.push('Anything you pay above the minimum goes straight to the balance and cuts the interest you pay.');
+        else if (costliest === smallest) lines.push(`Paying extra on the highest rate first (the “avalanche” method) costs the least interest overall; clearing the smallest balance first (the “snowball” method) gives a quicker win. Here both point to ${costliest.name}: it has the highest rate (${costliest.apr}%) and the smallest balance.`);
+        else lines.push(`Paying extra on the highest rate first (the “avalanche” method) costs the least interest overall — here that’s ${costliest.name} at ${costliest.apr}%. Clearing the smallest balance first (the “snowball” method, ${smallest.name}) gives a quicker win.`);
         return lines.join('\n');
     },
 

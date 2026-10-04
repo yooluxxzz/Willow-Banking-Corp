@@ -139,7 +139,7 @@ function buildInsights(summary, valuation) {
         insights.push({ icon: 'calendar', tone: 'neutral', text: `You have ${summary.scheduledThisWeek} scheduled payment${summary.scheduledThisWeek === 1 ? '' : 's'} this week.`, detail: 'Demo transfers run on their scheduled date (UTC).', href: '/scheduled-transfers' });
     }
     if (valuation && valuation.holdings.length) {
-        insights.push({ icon: 'pie', tone: 'neutral', text: `Your simulated portfolio is spread across ${valuation.holdings.length} asset${valuation.holdings.length === 1 ? '' : 's'}.`, detail: valuation.pricing === 'live' ? 'Valued at the latest available market prices.' : 'Some prices are unavailable — those holdings show cost basis.', href: '/wealth' });
+        insights.push({ icon: 'pie', tone: 'neutral', text: `Your simulated portfolio is spread across ${valuation.holdings.length} asset${valuation.holdings.length === 1 ? '' : 's'}.`, detail: valuation.pricing !== 'live' ? 'Some prices are unavailable — those holdings show cost basis.' : valuation.holdings.some(holding => holding.saved) ? 'Valued at saved prices while live prices can’t be reached.' : 'Valued at the latest available market prices.', href: '/wealth' });
     }
     const nearest = summary.goals.filter(goal => goal.target_cents > 0 && goal.current_cents < goal.target_cents).sort((a, b) => (b.current_cents / b.target_cents) - (a.current_cents / a.target_cents))[0];
     if (nearest) {

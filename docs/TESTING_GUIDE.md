@@ -1,9 +1,15 @@
 # Testing Willow — step-by-step guide
 
-This guide is for whoever tests Willow. It assumes no knowledge of the code. Follow it from top to bottom:
+This guide is for whoever tests Willow. It assumes no knowledge of the code.
+
+**What Willow is about.** Willow is a demonstration bank built around two ideas:
+- **Financial literacy:** people understand their money as they use it. Budgets are checked every night, net worth is shown over time, debts come with payoff estimates, and insights are explained in plain words.
+- **Private AI:** Ask Willow explains your own numbers. It runs on your own computer through Ollama, and without Ollama it still answers from your figures.
+
+Follow the guide from top to bottom:
 
 - **Part A** (install and start) takes about 10 minutes.
-- **Part B** (the guided test) takes about 35 minutes. Every step says what to do and what you should see.
+- **Part B** (the guided test) takes about 40 minutes. Every step says what to do and what you should see.
 - **Parts C–F** are optional extras, automated checks and help when something goes wrong.
 
 > **Everything is simulated.** Willow is a fictional bank built as a software demonstration. No real money, card, bank or exchange is involved. Use made-up names, emails such as `alex@example.test`, and a password you don't use anywhere else.
@@ -84,13 +90,13 @@ No configuration file is needed. After a few seconds you should see:
 [Admin] └─────────────────────────────────────────────────────────────┘
 [Server] Willow Banking Corp. running at http://localhost:3000
 [Server] Environment: development
-[Assistant] Ask Willow is off (Ollama is not running). …
+[Assistant] Ask Willow gives quick answers from each customer's figures (Ollama is not running). …
 [Market service] …
 ```
 
 - **Keep this window open** while you test. Press **Ctrl+C** in it to stop Willow.
 - **Write down the admin password** from the box (you need it in test B13). It is also saved in the file `data/admin-credentials.txt` inside the project folder. The box appears only on the first start; later starts print where the password is saved.
-- The `[Assistant]` and `[Market service]` lines describe the optional extras. It is fine if they say they are off.
+- The `[Assistant]` and `[Market service]` lines describe the optional extras. It is fine if Ask Willow is on quick answers or the market service isn't running.
 - Windows may ask whether Node.js may use the network. Either answer works for testing on this computer.
 
 Now open **http://localhost:3000** in your browser.
@@ -132,7 +138,7 @@ Do the tests in order: later tests use money and accounts from earlier ones, and
 - Each field is checked as you type, with clear messages.
 - The dashboard (**Home**) shows **$0.00** and a short *Get started* list. Nothing is pre-filled: no money, no savings account, no card.
 
-> **Shortcut:** on the sign-in page, **Explore as a guest** creates an empty, temporary profile in one click. Guests can keep their profile later by adding an email and password in Settings.
+> **Shortcuts:** on the sign-in page, **Explore as a guest** creates an empty, temporary profile in one click. Next to it, **explore a sample profile** creates one that already has four months of example activity (see B15). Guests can keep their profile later by adding an email and password in Settings.
 
 ### B3. Add money (2 min)
 
@@ -193,7 +199,7 @@ Payments only go to customers that really exist in this copy of Willow, so first
 - **Net worth: $10,535.00** = accounts $2,135.00 (checking $1,735 + savings $400) + car $9,500 − card $1,100.
 - What you own and owe as two rings, a history chart, and money in and out by month.
 
-### B8. Investing (4 min — stock prices need internet)
+### B8. Investing (4 min)
 
 **Do**
 1. **Portfolio → Add cash**: `300` from *Checking account* → **Add cash**.
@@ -201,8 +207,8 @@ Payments only go to customers that really exist in this copy of Willow, so first
 
 **You should see**
 - Investing cash starts at **$0** and becomes **$300.00**. Checking shows the move ("investing"), and net worth doesn't change (the money just moved).
-- With internet: delayed real prices and charts; the order fills at the price shown and Apple appears in Portfolio with its value and return.
-- Without internet, or if the price service is unreachable: *"Market data temporarily unavailable"* and buying is disabled. **This is intended** — Willow never invents prices. See Part C.
+- With internet: delayed real prices and charts. The order fills at the price shown, and Apple appears in Portfolio with its value and return.
+- Without internet, or if Yahoo Finance is blocked: Willow uses **real prices saved earlier**, labelled *"Prices saved <date>"*. The order screen says the order will use the saved price, and the receipt says *(saved price)*. Willow never invents a price.
 
 ### B9. Cards (2 min)
 
@@ -264,7 +270,31 @@ Payments only go to customers that really exist in this copy of Willow, so first
 - A suspended customer can't sign in; reactivating restores access.
 - The audit log lists sign-ins, payments, admin actions and the daily checks.
 
-### B14. Keyboard and accessibility (2 min)
+### B14. Ask Willow without any set-up (3 min)
+
+**Do**
+1. Click **Ask Willow** in the top bar (or press **Ctrl+K**, **Cmd+K** on a Mac).
+2. Click the suggestion **Which debt should I pay off first?**, then ask *How much have I spent this month?* and *Any tips for my money?*
+
+**You should see**
+- Without Ollama, the panel says **"Quick answers, worked out directly from your Willow records"**, and offers **Get full AI answers on this computer** (Part D).
+- The answers use your real figures and link to the related pages:
+  - **Debt:** you owe **$1,100.00** on the Visa card, with its monthly interest and how long the minimum payment would take.
+  - **Spending:** **$410.50 across 4 payments** this month. That's the $140 groceries withdrawal, the $125 to Ben, the $100 card payment and the $45.50 business expense; moves between your own accounts and into investing don't count.
+- With two or more debts (as in the sample profile, B15), the debt answer also explains the "avalanche" and "snowball" ways of paying them off.
+
+### B15. Sample profile (3 min)
+
+**Do**
+1. Sign out. On the sign-in page, click **explore a sample profile** (under *Explore as a guest*).
+2. Look at **Home**, **Net worth**, **Budgets**, **Debts**, **Business** and **Portfolio**, and ask Ask Willow *Any tips for my money?*
+
+**You should see**
+- A banner on every page: **"Sample profile. The activity here is example data…"**.
+- Four months of activity: salary, rent, bills, everyday spending, monthly savings, a small design business, two debts with payments, a net-worth history chart, budgets (one is over its limit), goals and investing.
+- Everything follows the same rules as your own profile. Balances add up to their transactions, and the money is just as simulated.
+
+### B16. Keyboard and accessibility (2 min)
 
 **Do**
 1. Using only the keyboard (**Tab**, **Shift+Tab**, **Enter**, **Space**, **Esc**, arrow keys in tabs and menus), send yourself a transfer between your accounts.
@@ -303,13 +333,13 @@ npm run setup:python
 npm start
 ```
 
-Market data is delayed third-party data, shown for illustration. If your network blocks Yahoo Finance, market pages say *"Market data temporarily unavailable"* with a **Retry** button.
+Market data is delayed third-party data, shown for illustration. If your network blocks Yahoo Finance, Willow uses the real prices saved in the project (labelled *"Prices saved <date>"*). With internet, `npm run prices:save` refreshes those saved prices.
 
 ---
 
-## Part D — Optional: Ask Willow, the local AI assistant
+## Part D — Optional: full AI answers in Ask Willow
 
-Ask Willow answers questions about **your own** Willow data using a language model that runs on your computer through [Ollama](https://ollama.com). Nothing is sent to a cloud service.
+Without any set-up, Ask Willow gives quick answers worked out from your figures (B14). With [Ollama](https://ollama.com), it uses a language model on your own computer to answer any question about your money in its own words. Nothing is sent to a cloud service.
 
 1. Install Ollama from [ollama.com/download](https://ollama.com/download) (Windows and macOS installers start it automatically; on Linux run `curl -fsSL https://ollama.com/install.sh | sh`).
 2. Download a model (about 2 GB):
@@ -326,7 +356,7 @@ Ask Willow answers questions about **your own** Willow data using a language mod
    ```
 
    It checks that Ollama is reachable, which model Willow will use, how long the model takes to load, and asks it one test question. It ends with **"Ask Willow is ready"** or tells you exactly what to fix.
-4. In Willow, click **Ask Willow** in the top bar (or press **Ctrl+K**, **Cmd+K** on a Mac). If it shows the setup card, click **Check again**. Willow also notices by itself within 30 seconds.
+4. In Willow, click **Ask Willow** in the top bar (or press **Ctrl+K**, **Cmd+K** on a Mac). The panel should say **"AI running on this computer with llama3.2…"**. If it still says *Quick answers*, open **Get full AI answers on this computer** and click **Check again**; Willow also notices by itself within 30 seconds.
 
 **Try asking**
 
@@ -340,6 +370,7 @@ Ask Willow answers questions about **your own** Willow data using a language mod
 - The first answer can take 10–60 seconds while the model loads; later ones are faster. Answers appear word by word.
 - Answers use your real figures (for example the $140 groceries spending from B6) and end with links to the related pages.
 - It gives information, not advice: it won't recommend investments or predict prices. Each customer can ask 20 questions every 5 minutes.
+- If the model fails before answering (for example, not enough memory), you still get a quick answer, with a note saying why the AI couldn't answer.
 
 ---
 
@@ -349,7 +380,7 @@ In the Willow folder (Willow doesn't need to be running):
 
 | Command | What it does | Expected result |
 | --- | --- | --- |
-| `npm run check` | Code style check (ESLint), then all Node tests | No lint errors, then `# fail 0` (about 30 seconds). There are 181 tests; Windows runs 177, because four tests of the Python bridge need a Unix shell. |
+| `npm run check` | Code style check (ESLint), then all Node tests | No lint errors, then `# fail 0` (about 30 seconds). There are 192 tests; Windows runs 188, because four tests of the Python bridge need a Unix shell. |
 | `npm run test:python` | The 42 tests of the Python market-data service (needs Python, not yfinance) | `Ran 42 tests … OK` |
 | `npm run test:coverage` | The Node tests with a coverage report (Node 22 or newer) | About 87% of lines covered |
 
@@ -364,10 +395,11 @@ The tests never use the internet or your Willow data: each one runs against its 
 | `node` or `npm` "is not recognized" / "command not found" | Install Node.js (Part A1), then **close and reopen** the terminal. |
 | PowerShell: "running scripts is disabled on this system" | Use `npm.cmd install` and `npm.cmd start`, or Command Prompt. |
 | "Port 3000 is already in use" | Another program (perhaps another copy of Willow) uses it. Close it, or start on port 3001 — PowerShell: `$env:PORT=3001; npm start` · Command Prompt: `set PORT=3001 && npm start` · macOS/Linux: `PORT=3001 npm start` — then open http://localhost:3001. |
-| "Market data temporarily unavailable" | Prices need internet. Check the connection and click **Retry**. Some networks block Yahoo Finance. Part C can help. |
+| Prices say *"Prices saved <date>"* | Live prices can't be reached (no internet, or Yahoo Finance is blocked), so Willow uses real prices saved earlier. Orders still work. With internet, prices go live again by themselves. |
+| "Market data temporarily unavailable" | Neither live nor saved prices are available for that item. Check the connection and click **Retry**. |
 | `[Market service] yfinance isn't installed …` | Run `npm run setup:python` and restart Willow. |
 | "externally-managed-environment" | Use the virtual environment steps in Part C. |
-| Ask Willow shows **Set up Ask Willow** | Ollama isn't running or has no model yet. Follow Part D, then click **Check again**. |
+| Ask Willow says *Quick answers* | That's expected without Ollama. For full AI answers, follow Part D, then click **Check again**. |
 | The assistant's first answer is very slow or times out | The model is still loading. Ask again, or use the smaller model (`ollama pull llama3.2:1b`). `npm run assistant:check` shows what is wrong. |
 | "Too many attempts" when signing in | 5 wrong passwords pause that profile for 15 minutes, and 10 failed sign-ins from one computer pause sign-in for 15 minutes. Wait, or restart Willow (this clears both). |
 | Signed out unexpectedly | Sessions end after 30 minutes without activity (a warning appears a minute before). |
@@ -384,8 +416,9 @@ The tests never use the internet or your Willow data: each one runs against its 
 | Real | Simulated |
 | --- | --- |
 | The software: accounts and a full transaction ledger, payments between customers, budgets with nightly checks, net worth, debts, cards and their controls, statements, two-step verification, sessions, the admin console and audit log | All money. Balances start at $0 and only change when you add money, pay or move it. |
-| Delayed stock, fund, crypto and exchange-rate data from Yahoo Finance (when reachable) | Every order, trade, conversion and card. Nothing reaches a bank, exchange, card network or blockchain. |
-| The AI assistant, running locally through Ollama | The identity check during sign-up. |
+| Delayed stock, fund, crypto and exchange-rate data from Yahoo Finance, or real prices saved earlier when it can't be reached | Every order, trade, conversion and card. Nothing reaches a bank, exchange, card network or blockchain. |
+| The AI assistant, running locally through Ollama, and the quick answers calculated from your records | The identity check during sign-up. |
+| | The activity in a **sample profile**, which is labelled as example data. |
 | | Emails and text messages: none are sent. |
 
-Nothing in Willow is made up: every figure, chart and insight comes from what you entered while testing.
+Apart from the labelled sample profile, nothing in Willow is made up: every figure, chart and insight comes from what you entered while testing.

@@ -14,7 +14,7 @@ const bySlug = new Map(products.map(product => [product.slug, product]));
 router.get('/', (req, res) => {
     res.render('home', {
         title: 'Willow — Your money. Moving forward.',
-        description: 'Banking, investing and building wealth — brought together in one intelligent financial experience. Willow is a fictional demo bank; no real money moves.',
+        description: 'Understand your money as you use it: banking, budgets and investing in one place, with a private AI assistant that explains your own numbers. Willow is a fictional demo bank; no real money moves.',
     });
 });
 
