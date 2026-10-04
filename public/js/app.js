@@ -787,16 +787,15 @@
             model_missing: 'The model named in OLLAMA_MODEL isn’t installed. Pull it with Ollama, or remove the setting to use any installed model.',
         };
 
-        // When the local model isn't available, the panel explains how to turn it on instead of
-        // hiding the feature, and switches to the chat by itself once Ollama is ready.
+        // Ask Willow always answers: with the local AI model when Ollama is ready, otherwise with
+        // quick answers worked out from the customer's records. It switches to AI by itself.
         const setAvailable = (isAvailable, model, reason) => {
             available = Boolean(isAvailable);
             triggers.forEach(button => { button.hidden = reason === 'disabled'; });
             if (modelLabel && model) modelLabel.textContent = model;
-            panel.classList.toggle('is-setup', !available);
+            panel.querySelectorAll('[data-ask-mode]').forEach(node => { node.hidden = node.dataset.askMode !== (available ? 'ai' : 'quick'); });
             if (setup) setup.hidden = available;
-            [thread, form, panel.querySelector('.ask-disclaimer')].forEach(node => { if (node) node.hidden = !available; });
-            if (setupStatus) setupStatus.textContent = available ? '' : (REASONS[reason] || 'Ask Willow is off right now.');
+            if (setupStatus) setupStatus.textContent = available ? '' : (REASONS[reason] || '');
             if (available && poll) { clearInterval(poll); poll = null; }
         };
         const checkStatus = (refresh = false) => fetch(`/api/assistant/status${refresh ? '?refresh=1' : ''}`, { headers: { Accept: 'application/json', 'X-Willow-Passive': '1' }, credentials: 'same-origin' })
@@ -808,12 +807,8 @@
         const open = question => {
             if (triggers.length && triggers.every(button => button.hidden)) return;
             openDialog(panel);
-            if (!available) {
-                // Waiting for Ollama: look again every 10 seconds while the panel is open.
-                if (!poll) poll = setInterval(() => { if (!panel.open) { clearInterval(poll); poll = null; return; } checkStatus(true); }, 10000);
-                setTimeout(() => { const recheck = panel.querySelector('[data-ask-recheck]'); if (recheck) recheck.focus(); }, 60);
-                return;
-            }
+            // Without Ollama, look for it again every 15 seconds while the panel is open.
+            if (!available && !poll) poll = setInterval(() => { if (!panel.open) { clearInterval(poll); poll = null; return; } checkStatus(true); }, 15000);
             setTimeout(() => input.focus(), 60);
             if (question) ask(question);
         };
@@ -824,7 +819,7 @@
                 const status = await checkStatus(true);
                 recheck.classList.remove('is-loading');
                 if (status && status.available) setTimeout(() => input.focus(), 60);
-                else if (setupStatus) setupStatus.textContent = `${REASONS[status && status.reason] || 'Still off.'} Checked just now.`;
+                else if (setupStatus) setupStatus.textContent = `${REASONS[status && status.reason] || 'Ollama isn’t available yet.'} Checked just now.`;
             });
         }
         triggers.forEach(button => button.addEventListener('click', () => open()));
@@ -866,6 +861,8 @@
             let text = '';
             let failed = null;
             let links = [];
+            let notice = null;
+            let mode = null;
             try {
                 const response = await fetch('/api/assistant/chat', {
                     method: 'POST',
@@ -876,7 +873,6 @@
                 });
                 if (!response.ok) {
                     const data = await response.json().catch(() => ({}));
-                    if (data.code === 'assistant_unavailable') checkStatus(true);
                     if (response.status === 401) redirectToSignIn(data.code === 'session_timeout' ? 'session_timeout' : 'expired');
                     throw new Error(data.error || 'The assistant couldn’t answer right now.');
                 }
@@ -897,13 +893,20 @@
                         const event = JSON.parse(line);
                         if (event.delta) { text += event.delta; if (!frame) frame = requestAnimationFrame(paint); }
                         if (event.error) failed = event.error;
-                        if (event.done && Array.isArray(event.links)) links = event.links;
+                        if (event.done) {
+                            if (Array.isArray(event.links)) links = event.links;
+                            notice = event.notice || null;
+                            mode = event.mode || null;
+                        }
                     }
                 }
                 if (frame) cancelAnimationFrame(frame);
                 if (failed && !text) throw new Error(failed);
                 answer.replaceChildren(renderRichText(text || 'I don’t have an answer for that.'));
                 if (failed) answer.append(el('p', { className: 'ask-note', text: failed }));
+                if (notice) answer.append(el('p', { className: 'ask-note', text: notice }));
+                // A quick answer while the AI was expected means Ollama went away: show the right mode.
+                if (mode === 'quick' && available) checkStatus(true);
                 // Pages that go with the answer (same-site paths only).
                 const safe = links.filter(link => link && typeof link.href === 'string' && /^\/(?!\/)/.test(link.href) && typeof link.label === 'string');
                 if (safe.length) answer.append(el('div', { className: 'ask-links' }, ...safe.map(link => el('a', { className: 'chip chip-sm', href: link.href, text: link.label }))));

@@ -27,9 +27,10 @@ async function start() {
         // The local model for the assistant, if Ollama is running.
         require('./src/services/assistant').refreshStatus().then(status => {
             const why = { unreachable: 'Ollama is not running', no_models: 'Ollama has no model yet', model_missing: `OLLAMA_MODEL "${config.assistant.model}" is not installed`, disabled: 'ASSISTANT_ENABLED=false' }[status.reason] || status.reason;
-            console.log(status.available
-                ? `[Assistant] Ask Willow is on, using ${status.model} via Ollama.`
-                : `[Assistant] Ask Willow is off (${why}). To turn it on: install Ollama from https://ollama.com and run "ollama pull llama3.2"; Willow notices within 30 seconds.`);
+            const message = status.reason === 'disabled' ? 'Ask Willow is turned off (ASSISTANT_ENABLED=false).'
+                : status.available ? `Ask Willow is using AI: ${status.model} via Ollama.`
+                    : `Ask Willow gives quick answers from each customer's figures (${why}). For full AI answers, install Ollama from https://ollama.com and run "ollama pull llama3.2"; Willow notices within 30 seconds.`;
+            console.log(`[Assistant] ${message}`);
         });
 
         // Scheduled transfers, the nightly budget check, guest clean-up and deletions.

@@ -155,7 +155,8 @@
                     : service.lastError === 'yfinance_missing' ? 'yfinance not installed: quotes come from the Yahoo chart fallback.'
                         : 'yfinance service unavailable: quotes come from the Yahoo chart fallback.';
             const reasons = { unreachable: 'Ollama is not running on this computer.', no_models: 'Ollama is running but has no model. Run: ollama pull llama3.2', model_missing: 'The model named in OLLAMA_MODEL is not installed.', disabled: 'Turned off with ASSISTANT_ENABLED=false.' };
-            assistant.textContent = system.assistant.available ? `On, using ${system.assistant.model}.` : `Off. ${reasons[system.assistant.reason] || ''}`.trim();
+            assistant.textContent = system.assistant.available ? `AI answers, using ${system.assistant.model}.`
+                : system.assistant.reason === 'disabled' ? 'Turned off with ASSISTANT_ENABLED=false.' : `Quick answers from customers’ figures. ${reasons[system.assistant.reason] || ''}`.trim();
             const checks = system.dailyChecks;
             const next = new Date(checks.nextRunAt).toLocaleString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' });
             daily.textContent = `Runs every night at ${checks.nightlyTime} and at start-up. ${checks.activeBudgets} active budget${checks.activeBudgets === 1 ? '' : 's'}. Last full day checked: ${checks.lastCompletedDay || 'none yet'}. Next run: ${next}.`;

@@ -78,7 +78,7 @@ describe('Local assistant (Ollama)', () => {
 
     it('picks an installed chat model (never an embedding model) and loads it straight away', async () => {
         const status = (await owner.agent.get('/api/assistant/status')).body;
-        assert.deepEqual(status, { available: true, model: 'llama3.2:latest', reason: null });
+        assert.deepEqual(status, { available: true, mode: 'ai', model: 'llama3.2:latest', reason: null });
         assert.ok(ollama.warmups.some(request => request.model === 'llama3.2:latest' && request.keep_alive === '30m'), 'the model is loaded before the first question');
         const names = assistant.chatModels([{ name: 'nomic-embed-text:latest', details: { family: 'nomic-bert' } }, { name: 'mxbai-embed-large' }, { name: 'my-custom-model:7b' }]);
         assert.deepEqual(names, ['my-custom-model:7b'], 'embedding models are never used for chat');
@@ -86,7 +86,7 @@ describe('Local assistant (Ollama)', () => {
         assert.equal(assistant.pickModel(['qwen2.5:7b', 'llama3.1:8b'], 'qwen2.5'), 'qwen2.5:7b', 'OLLAMA_MODEL wins, with or without its tag');
         const page = await owner.agent.get('/dashboard');
         assert.match(page.text, /class="ask-trigger" data-ask-open[^>]*aria-controls="askPanel">/);
-        assert.match(page.text, /Runs on this computer with <span data-ask-model>llama3\.2:latest<\/span>/);
+        assert.match(page.text, /AI running on this computer with <span data-ask-model>llama3\.2:latest<\/span>/);
         assert.equal((await supertest(app).get('/api/assistant/status').set('Accept', 'application/json')).status, 401);
     });
 
@@ -140,19 +140,22 @@ describe('Local assistant (Ollama)', () => {
         assert.equal(['Hello <', 'b>world</b> and 1 < 2'].map(piece => filter.push(piece)).join('') + filter.flush(), 'Hello <b>world</b> and 1 < 2', 'other text with < is untouched');
     });
 
-    it('passes on Ollama’s own error, such as not enough memory', async () => {
+    it('answers from the figures, naming Ollama’s own error, when the model fails before saying anything', async () => {
         ollama.state.mode = 'error';
         try {
             const events = lines((await chat(owner, { question: 'What is my balance?' })).text);
-            const error = events.find(event => event.error);
-            assert.match(error.error, /requires more system memory/);
+            assert.ok(!events.some(event => event.error), 'no error is shown');
+            assert.match(events.filter(event => event.delta).map(event => event.delta).join(''), /\$250\.00/);
+            const done = events.find(event => event.done);
+            assert.equal(done.mode, 'quick');
+            assert.match(done.notice, /requires more system memory/);
         } finally {
             ollama.state.mode = 'answer';
             await assistant.refreshStatus();
         }
     });
 
-    it('offers setup steps instead of the chat, and refuses questions, when the configured model is missing or Ollama is down', async () => {
+    it('keeps answering with quick answers, and offers set-up steps, when the configured model is missing or Ollama is down', async () => {
         config.assistant.model = 'mistral';
         assert.equal((await assistant.refreshStatus()).reason, 'model_missing');
         config.assistant.model = 'qwen2.5';
@@ -160,12 +163,17 @@ describe('Local assistant (Ollama)', () => {
         config.assistant.ollamaUrl = 'http://127.0.0.1:9';
         const down = await assistant.refreshStatus();
         assert.deepEqual([down.available, down.reason], [false, 'unreachable']);
-        const refused = await chat(owner, { question: 'Anything?' });
-        assert.equal(refused.status, 503);
-        assert.equal(refused.body.code, 'assistant_unavailable');
+        const status = await owner.agent.get('/api/assistant/status').set('Accept', 'application/json');
+        assert.deepEqual([status.body.available, status.body.mode], [false, 'quick']);
+        const quick = await chat(owner, { question: 'How much money do I have?' });
+        assert.equal(quick.status, 200);
+        const events = lines(quick.text);
+        assert.match(events.find(event => event.delta).delta, /\$250\.00/);
+        assert.equal(events.find(event => event.done).mode, 'quick');
         const page = await owner.agent.get('/dashboard');
-        assert.match(page.text, /class="ask-trigger" data-ask-open[^>]*aria-controls="askPanel">/, 'the button stays, so people can find the feature');
-        assert.match(page.text, /Turn on Ask Willow/);
+        assert.match(page.text, /class="ask-trigger" data-ask-open[^>]*aria-controls="askPanel">/, 'the button stays');
+        assert.match(page.text, /Quick answers, worked out directly from your Willow records/);
+        assert.match(page.text, /Get full AI answers on this computer/);
         assert.match(page.text, /ollama pull llama3\.2/);
         config.assistant.ollamaUrl = ollama.url;
         config.assistant.model = '';

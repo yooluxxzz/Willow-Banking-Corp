@@ -1,32 +1,33 @@
-<% const assistantModel = typeof assistant !== 'undefined' && assistant && assistant.model ? assistant.model : 'a local model'; %>
+<% const assistantModel = typeof assistant !== 'undefined' && assistant && assistant.model ? assistant.model : 'a local model';
+   const assistantAi = typeof assistant !== 'undefined' && assistant && assistant.available; %>
 <dialog class="ask-panel" id="askPanel" aria-labelledby="askTitle" data-ask-panel>
     <div class="ask-panel-head">
         <div class="ask-panel-title">
             <span class="ask-orb" aria-hidden="true"><%- icon('sparkle', 'icon-md') %></span>
             <div>
                 <h2 id="askTitle">Ask Willow</h2>
-                <p>Runs on this computer with <span data-ask-model><%= assistantModel %></span>. Answers use your Willow records.</p>
+                <p data-ask-mode="ai"<%- assistantAi ? '' : ' hidden' %>>AI running on this computer with <span data-ask-model><%= assistantModel %></span>. Answers use your Willow records.</p>
+                <p data-ask-mode="quick"<%- assistantAi ? ' hidden' : '' %>>Quick answers, worked out directly from your Willow records.</p>
             </div>
         </div>
         <button type="button" class="btn btn-ghost btn-icon" data-ask-close aria-label="Close Ask Willow"><%- icon('x', 'icon-md') %></button>
     </div>
-    <div class="ask-setup" data-ask-setup hidden>
-        <span class="ask-setup-art" aria-hidden="true"><%- icon('sparkle', 'icon-lg') %></span>
-        <h3>Turn on Ask Willow</h3>
-        <p>Ask Willow runs a language model on this computer through Ollama, so your questions and your records never leave it.</p>
+    <details class="ask-setup" data-ask-setup<%- assistantAi ? ' hidden' : '' %>>
+        <summary><%- icon('sparkle', 'icon-sm') %> Get full AI answers on this computer</summary>
+        <p>With Ollama, Ask Willow runs a language model on this computer, so it can answer any question about your money in its own words. Your questions and records never leave the computer.</p>
         <ol class="ask-setup-steps">
             <li><span class="ask-setup-num" aria-hidden="true">1</span><span><strong>Install Ollama</strong> from <a class="text-link" href="https://ollama.com/download" target="_blank" rel="noopener">ollama.com/download</a> and start it.</span></li>
             <li><span class="ask-setup-num" aria-hidden="true">2</span><span><strong>Download a model.</strong> In a terminal, run <code>ollama pull llama3.2</code> (about 2 GB).</span></li>
-            <li><span class="ask-setup-num" aria-hidden="true">3</span><span><strong>That’s it.</strong> Willow notices within about 30 seconds and this panel switches to the chat by itself.</span></li>
+            <li><span class="ask-setup-num" aria-hidden="true">3</span><span><strong>That’s it.</strong> Willow notices within about 30 seconds and switches to AI answers by itself.</span></li>
         </ol>
         <p class="ask-setup-status" data-ask-setup-status role="status"></p>
         <button type="button" class="btn btn-secondary btn-sm" data-ask-recheck><%- icon('refresh', 'icon-sm') %> Check again</button>
-    </div>
+    </details>
     <div class="ask-thread" data-ask-thread aria-live="polite">
         <div class="ask-welcome" data-ask-welcome>
             <p class="ask-welcome-title">What would you like to know?</p>
             <ul class="ask-suggestions" role="list">
-                <% ['How much have I spent this month?', 'Am I on track with my budgets?', 'What is my net worth made of?', 'Which debt should I pay off first?', 'Summarize my last 10 transactions.', 'How is my business doing this month?'].forEach(prompt => { %>
+                <% ['How much have I spent this month?', 'Am I on track with my budgets?', 'What is my net worth made of?', 'Which debt should I pay off first?', 'Any tips for my money?', 'Summarize my last 10 transactions.'].forEach(prompt => { %>
                 <li><button type="button" class="chip" data-ask-prompt="<%= prompt %>"><%= prompt %></button></li>
                 <% }) %>
             </ul>
@@ -38,5 +39,5 @@
         <button type="submit" class="btn btn-primary btn-icon" aria-label="Ask" data-ask-send><%- icon('arrow-up', 'icon-md') %></button>
         <button type="button" class="btn btn-secondary btn-icon" aria-label="Stop answering" data-ask-stop hidden><%- icon('pause', 'icon-md') %></button>
     </form>
-    <p class="ask-disclaimer">Information, not financial advice. It won’t predict markets or tell you what to buy, and it can make mistakes — check important numbers.</p>
+    <p class="ask-disclaimer">Information, not financial advice. Ask Willow won’t predict markets or tell you what to buy. AI answers can make mistakes — check important numbers.</p>
 </dialog>

@@ -14,7 +14,8 @@
  *  - gives the model figures already calculated, because small models are
  *    unreliable at arithmetic.
  *
- * When Ollama isn't available the app shows how to turn the assistant on.
+ * When Ollama isn't available (or fails before it answers), ./quick-answers
+ * answers from the customer's figures instead, so Ask Willow always responds.
  */
 const config = require('../config');
 const { getDb } = require('../database');
