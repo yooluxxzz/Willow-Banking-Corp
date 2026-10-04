@@ -120,7 +120,8 @@ Takes 1–40 comma-separated symbols. Duplicates are dropped, and quotes come ba
   - `503 {"error":"rate_limited","retryAfter":N,"errors":{...}}` if any of those failures was
     upstream rate limiting.
 - **Timing:** symbols are fetched in parallel. The whole batch waits at most 10 s, and symbols that
-  aren't ready by then are reported as `unavailable`.
+  aren't ready by then are reported as `unavailable`. Their fetches carry on in the background and
+  are cached for the next request; this is logged once per batch at `INFO`, not as a warning.
 - **Validation:** an invalid or missing symbol returns `400 {"error":"invalid_symbol"}`. More than
   40 symbols returns `400 {"error":"too_many_symbols","max":40}`.
 
@@ -217,7 +218,10 @@ Takes 1–40 comma-separated symbols. Duplicates are dropped, and quotes come ba
   | Profiles | 12 h |
   | News | 30 min |
 
-- **Stale fallback:** expired entries are kept for 24 h. When a refresh fails for any reason
+- **Background refresh:** an entry that expired less than 5 minutes ago is returned straight away
+  (`"stale": false`) while a background fetch refreshes it for the next request, so a page never
+  waits on a routine refresh.
+- **Stale fallback:** expired entries are kept for 24 h. When a refresh of an older entry fails for any reason
   (network error, timeout, rate limit, or even "not found"), the old value is returned with
   `200` and `"stale": true`. Only when no cached copy exists does the client get a 404 or 503.
 - **Timeouts:** a request waits at most 10 s for Yahoo. A slow fetch keeps running in the
@@ -226,6 +230,9 @@ Takes 1–40 comma-separated symbols. Duplicates are dropped, and quotes come ba
   - At most 8 upstream calls run at once.
   - Concurrent requests for the same uncached key share one upstream fetch.
   - Workers are daemon threads, so a hung Yahoo call can't block shutdown.
+- **Quiet logs:** an upstream failure is logged as a warning at most once a minute per kind of
+  error (`unavailable`, `rate_limited`), followed by a count of the similar failures in between,
+  so an outage doesn't print a line per symbol. Unknown symbols are logged at `INFO`.
 - **Rate limiting:** Yahoo rate limiting is detected by yfinance's `YFRateLimitError` class name,
   an HTTP 429, or a "Too Many Requests" message. After that, the service makes no Yahoo calls for
   60 s. It serves cached data in the meantime, or answers `rate_limited` with the remaining

@@ -655,3 +655,25 @@ The user chose: keep both themes (financial literacy and AI), make sure Ask Will
   - **Journey 4**: sample profile banner and dashboard, quick answers, Markets with saved prices, a simulated order at a saved price and its receipt, and a currency conversion at a saved rate.
   - No page errors or server errors.
 - Not testable here: a real Ollama model (downloads blocked; covered by tests against a stand-in Ollama) and live prices (Yahoo blocked; saved prices verified instead).
+
+## Quieter, faster market-data service — 2026-10-04
+
+The user saw about 40 `upstream quote:… timed out after 10.0s` warnings right after the service started and asked whether that was normal. It was harmless: the first batch of quotes ran past the service's shared 10-second wait, and those fetches finished in the background. But it looked like a failure, and that first visit to Markets had to wait.
+
+**Implemented**
+- `market-data-service/willow_market/service.py`:
+  - A batch that outlasts the wait logs one `INFO` line ("N of M quotes still loading…; they finish in the background") instead of a warning per symbol. Willow runs the service at `WARNING`, so nothing is printed.
+  - An entry that expired less than 5 minutes ago is returned at once while a background refresh updates it, so later visits never wait on a routine refresh.
+  - Upstream failures of the same kind are logged as a warning at most once a minute, with a count of the ones in between, so an outage doesn't print a line per symbol.
+- `cache.py`: cache hits report how long ago they expired.
+- `server.js`: once the market service is ready (or found missing), Willow loads the Markets and currency quotes once, so the first visit to those pages is quick.
+- Docs: the service README (timing, background refresh, quiet logs) and a tester-guide troubleshooting row for market-service warnings.
+
+**Database / schema**
+- None.
+
+**Checks run**
+- `npm run test:python`: 45 tests pass. New tests cover the one-line summary for a slow batch, failures logged once a minute with a count, and a recently expired quote served instantly then refreshed. The stale-fallback test now moves past the revalidation window.
+- `npx eslint .` clean; `npm test`: 192 Node tests pass.
+- Simulation of the reported case: 40 symbols against a slow stand-in for Yahoo, logging at `WARNING`. The cold batch printed nothing, and the next request returned all 40 instantly.
+- Willow against a stand-in market service: at start-up it requested the 44 market symbols and 8 currencies, with no errors, and the markets endpoint then answered in 56 ms.

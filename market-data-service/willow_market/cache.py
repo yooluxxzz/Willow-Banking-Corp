@@ -14,10 +14,12 @@ DEFAULT_MAX_ENTRIES = 5000
 
 @dataclass(frozen=True)
 class CachedValue:
-    """A cache hit: the stored value and whether it is still within its TTL."""
+    """A cache hit: the stored value, whether it is still within its TTL and, if not, for how long
+    it has been expired (seconds)."""
 
     value: Any
     fresh: bool
+    expired_for: float = 0.0
 
 
 class TTLCache:
@@ -51,7 +53,7 @@ class TTLCache:
             if now >= expires_at + self._stale_window:
                 del self._entries[key]
                 return None
-            return CachedValue(value, now < expires_at)
+            return CachedValue(value, now < expires_at, max(0.0, now - expires_at))
 
     def set(self, key: str, value: Any, ttl: float) -> None:
         """Store ``value`` under ``key`` for ``ttl`` seconds."""

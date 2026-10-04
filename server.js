@@ -23,7 +23,12 @@ async function start() {
         // Start the Python market-data service (yfinance) if it isn't already running.
         // Runs in the background: pages work immediately and market data switches over when ready.
         const marketService = require('./src/services/market-service');
-        marketService.start().catch(error => console.error('[Market service] Could not start:', error.message));
+        const marketData = require('./src/services/market-data');
+        marketService.start()
+            .catch(error => console.error('[Market service] Could not start:', error.message))
+            // Load market and currency quotes once now, so the first visit to those pages is quick.
+            .then(() => Promise.all([marketData.getMarkets(), marketData.getFxRates()]))
+            .catch(() => { /* pages fall back to cached or saved prices the same way */ });
         // The local model for the assistant, if Ollama is running.
         require('./src/services/assistant').refreshStatus().then(status => {
             const why = { unreachable: 'Ollama is not running', no_models: 'Ollama has no model yet', model_missing: `OLLAMA_MODEL "${config.assistant.model}" is not installed`, disabled: 'ASSISTANT_ENABLED=false' }[status.reason] || status.reason;

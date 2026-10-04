@@ -398,6 +398,7 @@ The tests never use the internet or your Willow data: each one runs against its 
 | Prices say *"Prices saved <date>"* | Live prices can't be reached (no internet, or Yahoo Finance is blocked), so Willow uses real prices saved earlier. Orders still work. With internet, prices go live again by themselves. |
 | "Market data temporarily unavailable" | Neither live nor saved prices are available for that item. Check the connection and click **Retry**. |
 | `[Market service] yfinance isn't installed …` | Run `npm run setup:python` and restart Willow. |
+| `[Market service] … WARNING … upstream … failed (unavailable)` or `(rate_limited)` | The service can't reach Yahoo Finance right now (no internet, a firewall, or Yahoo limiting requests). Nothing to fix in Willow: it keeps working (with the Yahoo fallback or saved prices) and tries again by itself. The warning appears at most once a minute. |
 | "externally-managed-environment" | Use the virtual environment steps in Part C. |
 | Ask Willow says *Quick answers* | That's expected without Ollama. For full AI answers, follow Part D, then click **Check again**. |
 | The assistant's first answer is very slow or times out | The model is still loading. Ask again, or use the smaller model (`ollama pull llama3.2:1b`). `npm run assistant:check` shows what is wrong. |

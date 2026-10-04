@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import logging
 import os
 import sys
 import threading
@@ -680,7 +681,7 @@ class HttpApiTests(HttpTestCase):
         self.clock.now += 30  # within the quote TTL: served fresh from cache, no upstream call
         self.assertFalse(self.request("/v1/quotes?symbols=AAPL")[2]["quotes"][0]["stale"])
 
-        self.clock.now += 1800  # past both TTLs: refresh fails, the old values are served as stale
+        self.clock.now += 1800 + 600  # past both TTLs and the revalidation window: served as stale
         status, _, body = self.request("/v1/quotes?symbols=AAPL")
         self.assertEqual((status, body["quotes"][0]["price"], body["quotes"][0]["stale"]), (200, 231.4, True))
         status, _, body = self.request("/v1/history?symbol=AAPL&range=1m")
@@ -688,6 +689,26 @@ class HttpApiTests(HttpTestCase):
 
         self.clock.now += 24 * 3600  # beyond the stale window: nothing left to fall back on
         self.assertEqual(self.request("/v1/quotes?symbols=AAPL")[0], 503)
+
+    def test_recently_expired_quote_is_served_at_once_and_refreshed_in_the_background(self) -> None:
+        self.assertEqual(self.request("/v1/quotes?symbols=AAPL")[2]["quotes"][0]["price"], 231.4)
+        self.market.fast_info["AAPL"] = fast_info(price=240.0)
+        self.market.gate = threading.Event()  # the refresh is slow
+        self.addCleanup(self.market.gate.set)
+
+        self.clock.now += 90  # past the 60s quote TTL, within the revalidation window
+        started = time.monotonic()
+        quote = self.request("/v1/quotes?symbols=AAPL")[2]["quotes"][0]
+        self.assertLess(time.monotonic() - started, 1, "the request doesn't wait for the refresh")
+        self.assertEqual((quote["price"], quote["stale"]), (231.4, False))
+
+        self.market.gate.set()
+        deadline = time.monotonic() + 5
+        while quote["price"] != 240.0 and time.monotonic() < deadline:
+            time.sleep(0.05)
+            quote = self.request("/v1/quotes?symbols=AAPL")[2]["quotes"][0]
+        self.assertEqual((quote["price"], quote["stale"]), (240.0, False))
+        self.assertEqual(self.market.tickers_created, 2, "one refresh, shared by every request meanwhile")
 
     def test_nan_and_infinity_become_null(self) -> None:
         self.market.fast_info["AAPL"] = fast_info(day_high=NAN, day_low=-INF, market_cap=INF, year_high=None)
@@ -724,6 +745,36 @@ class HttpApiTests(HttpTestCase):
             worker.join(10)
         self.assertEqual(results, [200] * 5)
         self.assertEqual(self.market.tickers_created, 1)
+
+
+class ServiceLoggingTests(unittest.TestCase):
+    def test_a_slow_batch_logs_one_line_instead_of_one_per_symbol(self) -> None:
+        market = FakeMarket()
+        market.fast_info["AAPL"] = market.fast_info["MSFT"] = fast_info()
+        market.gate = threading.Event()
+        self.addCleanup(market.gate.set)
+        service = MarketDataService(YFinanceProvider(market), timeout=0.2)
+        with self.assertLogs("willow_market.service", level="DEBUG") as logs:
+            quotes, errors = service.quotes(["AAPL", "MSFT"])
+        self.assertEqual((quotes, sorted(errors)), ([], ["AAPL", "MSFT"]))
+        summary = "INFO:willow_market.service:2 of 2 quotes still loading after 0.2s; they finish in the background"
+        self.assertEqual(logs.output, [summary])
+
+    def test_repeated_failures_are_logged_once_a_minute_with_a_count(self) -> None:
+        market = FakeMarket()
+        for symbol in ("AAPL", "MSFT", "NVDA"):
+            market.fast_info[symbol] = ProxyConnectionError("blocked")
+        clock = FakeClock()
+        service = MarketDataService(YFinanceProvider(market), TTLCache(clock=clock), clock=clock)
+        with self.assertLogs("willow_market.service", level="DEBUG") as logs:
+            service.quotes(["AAPL", "MSFT", "NVDA"])
+            clock.now += 61
+            service.quotes(["AAPL"])
+        warnings = [record.getMessage() for record in logs.records if record.levelno == logging.WARNING]
+        self.assertEqual(len(warnings), 2)
+        self.assertNotIn("similar", warnings[0])
+        self.assertTrue(warnings[1].endswith("(and 2 similar failures since the last message)"), warnings[1])
+        self.assertEqual(sum(record.levelno == logging.DEBUG for record in logs.records), 2)
 
 
 class HttpAuthTests(HttpTestCase):
