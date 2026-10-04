@@ -18,6 +18,7 @@
         "check": "npm run lint && npm test",
         "setup:python": "node scripts/python.js -m pip install -r market-data-service/requirements.txt",
         "market-service": "node scripts/python.js market-data-service/server.py",
+        "prices:save": "node scripts/save-market-prices.js",
         "assistant:check": "node scripts/assistant-check.js",
         "db:save": "node scripts/db.js save",
         "db:restore": "node scripts/db.js restore"
