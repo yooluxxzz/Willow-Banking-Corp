@@ -265,7 +265,8 @@
         if (!email.value) email.focus({ preventScroll: true });
     }
 
-    // "Explore as a guest" starts a temporary, empty profile — no details needed.
+    // "Explore as a guest" starts a temporary, empty profile — no details needed; the sample
+    // option (data-demo-kind="sample") starts one with four months of labelled example activity.
     function setupGuestStart(root, done) {
         root.querySelectorAll('[data-demo-start]').forEach(button => button.addEventListener('click', async () => {
             if (button.getAttribute('aria-busy') === 'true') return;
@@ -276,9 +277,10 @@
             button.setAttribute('aria-busy', 'true');
             const description = button.querySelector('[data-demo-text]');
             const original = description ? description.textContent : '';
-            if (description) description.textContent = 'Opening your guest profile…';
+            const sample = button.dataset.demoKind === 'sample';
+            if (description) description.textContent = sample ? 'Preparing your sample profile…' : 'Opening your guest profile…';
             try {
-                const result = await global.Willow.api('/auth/demo', { method: 'POST', body: {}, timeout: 45000 });
+                const result = await global.Willow.api(sample ? '/auth/sample' : '/auth/demo', { method: 'POST', body: {}, timeout: 45000 });
                 done(result.redirect || '/dashboard');
             } catch (error) {
                 if (description) description.textContent = original;

@@ -14,6 +14,7 @@ const { safeReturnTo } = require('../services/sign-in');
 const twoFactor = require('../services/two-factor');
 const { consumeCode } = require('../services/recovery');
 const { createGuestProfile } = require('../services/guests');
+const { createSampleProfile } = require('../services/sample-profile');
 
 const router = express.Router();
 
@@ -183,6 +184,18 @@ router.post('/demo', demoLimiter, async (req, res) => {
     } catch (err) {
         console.error('[Auth] Demo profile error:', err.message);
         res.status(500).json({ error: 'The demo profile could not be created. Please try again.' });
+    }
+});
+
+/** A guest profile that already has four months of labelled sample activity. */
+router.post('/sample', demoLimiter, async (req, res) => {
+    try {
+        const user = await createSampleProfile();
+        const redirect = await establishSession(req, { ...user, authVersion: user.auth_version }, '/dashboard?welcome=sample');
+        res.json({ success: true, redirect });
+    } catch (err) {
+        console.error('[Auth] Sample profile error:', err.message);
+        res.status(500).json({ error: 'The sample profile could not be created. Please try again.' });
     }
 });
 

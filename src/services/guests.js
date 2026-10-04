@@ -1,6 +1,7 @@
 /**
  * Guest profiles: one-click profiles that start empty like any new customer
  * (a single $0 checking account), plus removal of guests nobody has used.
+ * Sample profiles (./sample-profile) are guests marked is_sample.
  */
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
@@ -12,13 +13,13 @@ const { logAudit } = require('./audit');
 const GUEST_NAMES = ['Alex Morgan', 'Sam Rivera', 'Jordan Lee', 'Taylor Brooks', 'Riley Chen'];
 
 /** Creates an empty guest profile and returns the new user. */
-async function createGuestProfile() {
+async function createGuestProfile({ sample = false } = {}) {
     const db = getDb();
     const name = GUEST_NAMES[crypto.randomInt(0, GUEST_NAMES.length)];
     const email = `guest-${crypto.randomBytes(5).toString('hex')}@guest.willow.test`;
     const hash = await bcrypt.hash(crypto.randomBytes(24).toString('hex'), config.bcryptRounds);
     const userId = db.transaction(() => {
-        const result = db.prepare("INSERT INTO users (email, full_name, phone, password_hash, role, status, customer_id, is_guest) VALUES (?, ?, '', ?, 'customer', 'active', ?, 1)").run(email, name, hash, uniqueCustomerId(db));
+        const result = db.prepare("INSERT INTO users (email, full_name, phone, password_hash, role, status, customer_id, is_guest, is_sample) VALUES (?, ?, '', ?, 'customer', 'active', ?, 1, ?)").run(email, name, hash, uniqueCustomerId(db), sample ? 1 : 0);
         db.prepare("INSERT INTO accounts (user_id, account_number, account_type, balance, available_balance, currency, status) VALUES (?, ?, 'checking', 0, 0, 'USD', 'active')").run(result.lastInsertRowid, uniqueAccountNumber(db));
         return result.lastInsertRowid;
     })();

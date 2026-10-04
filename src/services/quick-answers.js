@@ -177,7 +177,9 @@ const answers = {
         const tips = [];
         const { month, categories } = data.summary;
         if (month.earnedCents && month.spendingCents < month.earnedCents) tips.push(`You’ve kept ${percent(month.earnedCents - month.spendingCents, month.earnedCents)}% of this month’s income so far. A common guide is to save at least 20% of what comes in.`);
-        if (categories.length && month.spendingCents) tips.push(`${categories[0].label} is ${percent(categories[0].cents, month.spendingCents)}% of your spending this month; a budget for it is the quickest way to keep it in check.`);
+        // Rent, bills and debt payments are fixed; the tip is about spending people can adjust.
+        const flexible = categories.find(category => !['housing', 'bills', 'debt', 'transfers', 'business', 'investing'].includes(category.key));
+        if (flexible && month.spendingCents) tips.push(`${flexible.label} is ${percent(flexible.cents, month.spendingCents)}% of your spending this month${data.budgets.some(budget => budget.category === flexible.key) ? ', and it has a budget to keep it in check' : '; a budget for it is the quickest way to keep it in check'}.`);
         if (!data.budgets.length) tips.push('Setting one or two budgets for your biggest categories makes overspending visible before the month ends.');
         const costliest = [...data.debts].sort((a, b) => b.apr - a.apr)[0];
         if (costliest) tips.push(`${costliest.name} has the highest interest rate (${costliest.apr}% APR); extra payments there save the most interest.`);

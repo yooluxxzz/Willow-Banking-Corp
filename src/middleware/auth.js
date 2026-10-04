@@ -40,7 +40,7 @@ function loadUser(req, res, next) {
         res.set('Cache-Control', 'no-store');
         const { getDb } = require('../database');
         const db = getDb();
-        const user = db.prepare('SELECT id, email, full_name, phone, role, status, customer_id, auth_version, is_guest FROM users WHERE id = ?').get(req.session.userId);
+        const user = db.prepare('SELECT id, email, full_name, phone, role, status, customer_id, auth_version, is_guest, is_sample FROM users WHERE id = ?').get(req.session.userId);
         const { isRevoked } = require('../services/sessions');
         if (!user || (req.session.authVersion || 0) !== user.auth_version || isRevoked(req.sessionID)) {
             req.session.destroy(() => {});

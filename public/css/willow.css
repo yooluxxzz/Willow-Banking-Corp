@@ -997,6 +997,15 @@ table {
     text-decoration-color: currentColor;
 }
 
+button.text-link {
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-weight: 560;
+    cursor: pointer;
+}
+
 /* ── Badges, chips & pills ──────────────────────────────────────────── */
 .badge {
     display: inline-flex;

@@ -24,8 +24,8 @@
 <% if (welcome) { %>
 <div class="notice notice-success dismissible mb-6" data-dismissible role="status">
     <%- icon('check-circle') %>
-    <div><strong><%= welcome === 'demo' ? 'Welcome to your guest profile.' : 'Your Willow account is ready.' %></strong>
-        <%= welcome === 'demo' ? 'It starts empty, like any new account. Add money to your checking account to get going.' : 'Your checking account starts at $0. Add money to get going — everything else builds from what you do.' %></div>
+    <div><strong><%= welcome === 'sample' ? 'Welcome to your sample profile.' : welcome === 'demo' ? 'Welcome to your guest profile.' : 'Your Willow account is ready.' %></strong>
+        <%= welcome === 'sample' ? 'It comes with four months of example activity — try Net worth, Budgets, Debts, Business and Ask Willow.' : welcome === 'demo' ? 'It starts empty, like any new account. Add money to your checking account to get going.' : 'Your checking account starts at $0. Add money to get going — everything else builds from what you do.' %></div>
     <button type="button" class="btn btn-ghost btn-icon btn-sm" data-dismiss aria-label="Dismiss"><%- icon('x') %></button>
 </div>
 <% } %>

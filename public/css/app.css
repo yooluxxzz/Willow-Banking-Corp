@@ -3847,3 +3847,22 @@ ul.account-rows.panel {
         height: 20px;
     }
 }
+
+/* Sample profiles say so on every page. */
+.sample-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--s-2);
+    margin-bottom: var(--s-5);
+    padding: var(--s-3) var(--s-4);
+    border-radius: var(--r-lg);
+    background: var(--accent-soft);
+    color: var(--text);
+    font-size: var(--fs-sm);
+}
+
+.sample-banner .icon {
+    flex: none;
+    margin-top: 2px;
+    color: var(--accent-strong);
+}

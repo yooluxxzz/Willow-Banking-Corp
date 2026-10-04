@@ -42,7 +42,7 @@
 
                 <div class="auth-or"><span>or</span></div>
                 <button type="button" class="btn btn-secondary btn-lg btn-block" data-demo-start><%- icon('sparkle') %> <span data-demo-text>Explore as a guest</span></button>
-                <p class="auth-guest-note">A temporary, empty profile — no details needed.</p>
+                <p class="auth-guest-note">A temporary, empty profile — no details needed. Or <button type="button" class="text-link" data-demo-start data-demo-kind="sample"><span data-demo-text>explore a sample profile</span></button> with four months of example activity.</p>
                 <div class="notice notice-error auth-notice" data-demo-error role="alert" tabindex="-1" hidden><%- icon('alert') %><div data-demo-error-text></div></div>
                 <button type="button" class="btn btn-ghost btn-block mt-3" data-auth-go="methods"><%- icon('key', 'icon-sm') %> Other ways to sign in</button>
 
@@ -59,6 +59,13 @@
                         <button type="button" class="auth-method" data-demo-start>
                             <span class="icon-tile"><%- icon('sparkle') %></span>
                             <span class="auth-method-text"><strong>Explore as a guest</strong><span data-demo-text>Start a temporary, empty profile. No details needed.</span></span>
+                            <%- icon('chevron-right', 'auth-method-arrow') %>
+                        </button>
+                    </li>
+                    <li>
+                        <button type="button" class="auth-method" data-demo-start data-demo-kind="sample">
+                            <span class="icon-tile"><%- icon('chart') %></span>
+                            <span class="auth-method-text"><strong>Explore a sample profile</strong><span data-demo-text>A guest profile with four months of example activity, labelled as sample data.</span></span>
                             <%- icon('chevron-right', 'auth-method-arrow') %>
                         </button>
                     </li>

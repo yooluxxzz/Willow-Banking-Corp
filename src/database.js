@@ -448,6 +448,8 @@ async function initializeDatabase() {
         "ALTER TABLE users ADD COLUMN scheduled_deletion_at TEXT DEFAULT NULL",
         "ALTER TABLE users ADD COLUMN country TEXT NOT NULL DEFAULT ''",
         "ALTER TABLE users ADD COLUMN is_guest INTEGER NOT NULL DEFAULT 0",
+        // Opt-in sample profiles (services/sample-profile.js) show a "sample data" banner.
+        "ALTER TABLE users ADD COLUMN is_sample INTEGER NOT NULL DEFAULT 0",
         "ALTER TABLE cards ADD COLUMN form TEXT NOT NULL DEFAULT 'physical'",
         "ALTER TABLE cards ADD COLUMN nickname TEXT NOT NULL DEFAULT ''",
         "ALTER TABLE cards ADD COLUMN design TEXT NOT NULL DEFAULT 'forest'",

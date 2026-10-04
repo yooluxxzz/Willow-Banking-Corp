@@ -81,3 +81,6 @@
             </div>
         </header>
         <main id="main" class="app-content" tabindex="-1">
+            <% if (typeof user !== 'undefined' && user && user.is_sample) { %>
+            <p class="sample-banner" role="note"><%- icon('info', 'icon-sm') %> <span><strong>Sample profile.</strong> The activity here is example data to show how Willow works. Explore freely — it’s removed after a week unused.</span></p>
+            <% } %>
