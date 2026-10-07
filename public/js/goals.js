@@ -15,6 +15,7 @@
         const error = form.querySelector('[data-goal-error]');
         const remove = form.querySelector('[data-goal-delete]');
         let goals = [];
+        let accounts = [];
 
         const money = cents => W.formatCents(cents, 'USD', { digits: 0 });
 
@@ -33,24 +34,12 @@
         function card(goal) {
             const pct = Math.min(100, Math.round(goal.current_cents / goal.target_cents * 100));
             const done = goal.current_cents >= goal.target_cents;
-            const quick = W.el('form', { className: 'goal-quick', 'aria-label': `Update progress for ${goal.name}` },
-                W.el('label', { className: 'visually-hidden', for: `goalAdd${goal.id}`, text: 'Add to progress' }),
-                W.el('div', { className: 'input-group has-prefix' }, W.el('span', { className: 'input-prefix', text: '$' }), W.el('input', { className: 'input input-sm num', id: `goalAdd${goal.id}`, inputmode: 'decimal', placeholder: 'Add amount' })),
-                W.el('button', { type: 'submit', className: 'btn btn-secondary btn-sm', text: 'Add' }));
-            quick.addEventListener('submit', async event => {
-                event.preventDefault();
-                const input = quick.querySelector('input');
-                const value = Number(input.value.replace(/[,\s$]/g, ''));
-                if (!Number.isFinite(value) || value <= 0) { input.setAttribute('aria-invalid', 'true'); input.focus(); return; }
-                const next = Math.min(goal.target_cents, goal.current_cents + Math.round(value * 100));
-                quick.setAttribute('aria-busy', 'true'); // one update at a time
-                try {
-                    const result = await W.api(`/api/goals/${goal.id}`, { method: 'PATCH', body: { currentAmount: (next / 100).toFixed(2) } });
-                    Object.assign(goal, result.goal);
-                    W.showToast(next >= goal.target_cents ? `“${goal.name}” reached its target.` : 'Progress updated.', 'success');
-                    render();
-                } catch (err) { W.showToast(err.message, 'error'); } finally { quick.removeAttribute('aria-busy'); }
-            });
+            const account = accounts.find(item => item.id === goal.account_id);
+            const accountLabel = account ? `${account.displayName} · ${account.availableBalanceFormatted} available` : (goal.account_name || 'No funding account');
+            const fund = goal.account_id
+                ? W.el('a', { className: 'btn btn-secondary btn-sm', href: `/transfers?mode=own&to=${goal.account_id}` }, W.icon('transfer', 'icon-sm'), ' Move money')
+                : W.el('button', { type: 'button', className: 'btn btn-secondary btn-sm', text: 'Link account' });
+            if (!goal.account_id) fund.addEventListener('click', () => open(goal));
             const edit = W.el('button', { type: 'button', className: 'btn btn-ghost btn-icon btn-sm', 'aria-label': `Edit ${goal.name}` }, W.icon('settings'));
             edit.addEventListener('click', () => open(goal));
             return W.el('article', { className: `goal-card${done ? ' is-done' : ''}` },
@@ -63,8 +52,11 @@
                     W.el('div', null,
                         W.el('p', { className: 'figure figure-md', 'data-private': '', text: money(goal.current_cents) }),
                         W.el('p', { className: 'text-sm muted', 'data-private': '', text: `of ${money(goal.target_cents)}` }),
-                        W.el('p', { className: 'text-xs muted mt-2', 'data-private': done ? null : '', text: done ? 'Target reached' : `${money(goal.target_cents - goal.current_cents)} to go` }))),
-                done ? W.el('p', { className: 'goal-done' }, W.icon('check-circle', 'icon-sm'), 'Target reached') : quick);
+                        W.el('p', { className: 'text-xs muted mt-2', 'data-private': done ? null : '', text: done ? 'Target reached' : `${money(goal.target_cents - goal.current_cents)} to go` }),
+                        W.el('p', { className: 'text-xs muted mt-2', text: `Funding account · ${accountLabel}` }))),
+                done
+                    ? W.el('div', { className: 'goal-card-actions' }, W.el('p', { className: 'goal-done' }, W.icon('check-circle', 'icon-sm'), 'Target reached'), fund)
+                    : W.el('div', { className: 'goal-card-actions' }, fund);
         }
 
         function render() {
@@ -79,7 +71,9 @@
         async function load() {
             list.replaceChildren(W.el('div', { className: 'panel' }, W.skeletonRows(3)));
             try {
-                goals = (await W.api('/api/goals')).goals;
+                const [goalData, accountData] = await Promise.all([W.api('/api/goals'), W.api('/api/accounts')]);
+                goals = goalData.goals;
+                accounts = (accountData.accounts || []).filter(account => account.status === 'active' && account.purpose === 'personal' && account.currency === 'USD');
                 render();
             } catch (err) {
                 list.replaceChildren(W.el('div', { className: 'panel' }, W.empty({ level: 2, iconName: 'alert', title: 'Goals couldn’t load', text: err.message, error: true, action: { label: 'Try again', onClick: load } })));
@@ -89,6 +83,15 @@
         function open(goal) {
             form.reset();
             error.hidden = true;
+            if (!accounts.length) {
+                W.showToast('Open a personal USD checking or savings account before creating a goal.', 'warning');
+                return;
+            }
+            const accountField = form.elements.accountId;
+            accountField.replaceChildren(...accounts.map(account => W.el('option', {
+                value: account.id,
+                text: `${account.displayName} · ${account.availableBalanceFormatted} available`,
+            })));
             form.elements.id.value = goal ? goal.id : '';
             doc.getElementById('goalDialogTitle').textContent = goal ? 'Edit goal' : 'New goal';
             remove.hidden = !goal;
@@ -97,10 +100,14 @@
             if (goal) {
                 form.elements.name.value = goal.name;
                 form.elements.targetAmount.value = (goal.target_cents / 100).toFixed(2);
-                form.elements.currentAmount.value = (goal.current_cents / 100).toFixed(2);
+                accountField.value = goal.account_id ? String(goal.account_id) : '';
+            } else {
+                form.elements.name.value = '';
+                form.elements.targetAmount.value = '';
+                accountField.value = String(accounts[0].id);
             }
             W.openDialog(dialog);
-            (goal ? form.elements.currentAmount : form.elements.name).focus();
+            (goal ? form.elements.accountId : form.elements.name).focus();
         }
 
         doc.querySelectorAll('[data-goal-new]').forEach(button => button.addEventListener('click', () => open()));
@@ -113,9 +120,9 @@
             button.classList.add('is-loading');
             try {
                 if (id) {
-                    await W.api(`/api/goals/${id}`, { method: 'PATCH', body: { targetAmount: clean(form.elements.targetAmount.value), currentAmount: clean(form.elements.currentAmount.value) || '0' } });
+                    await W.api(`/api/goals/${id}`, { method: 'PATCH', body: { accountId: form.elements.accountId.value, targetAmount: clean(form.elements.targetAmount.value) } });
                 } else {
-                    await W.api('/api/goals', { method: 'POST', body: { name: form.elements.name.value.trim(), category: form.querySelector('input[name="category"]:checked').value, targetAmount: clean(form.elements.targetAmount.value), currentAmount: clean(form.elements.currentAmount.value) || '0' } });
+                    await W.api('/api/goals', { method: 'POST', body: { name: form.elements.name.value.trim(), category: form.querySelector('input[name="category"]:checked').value, accountId: form.elements.accountId.value, targetAmount: clean(form.elements.targetAmount.value) } });
                 }
                 W.closeDialog(dialog);
                 W.showToast(id ? 'Goal updated.' : 'Goal created.', 'success');
