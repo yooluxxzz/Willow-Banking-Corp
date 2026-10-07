@@ -43,7 +43,7 @@
 <div class="pv pv-savings" aria-hidden="true">
     <div class="pv-goals glass">
         <% [['Emergency fund', 72, 'var(--chart-1)'], ['Home deposit', 31, 'var(--chart-3)'], ['Lisbon in spring', 58, 'var(--chart-5)']].forEach(([label, pct, color]) => { %>
-        <div class="pv-goal"><span class="progress-ring" style="--value:<%= pct %>;--ring-color:<%= color %>;--size:58px"><span><%= pct %>%</span></span><div><strong><%= label %></strong><small>Self-reported progress</small></div></div>
+        <div class="pv-goal"><span class="progress-ring" style="--value:<%= pct %>;--ring-color:<%= color %>;--size:58px"><span><%= pct %>%</span></span><div><strong><%= label %></strong><small>Linked account balance</small></div></div>
         <% }) %>
     </div>
     <%- tag %>
