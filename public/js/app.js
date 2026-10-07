@@ -766,6 +766,7 @@
     }
 
     function setupAssistant() {
+        const W = global.Willow;
         const panel = doc.querySelector('[data-ask-panel]');
         const triggers = Array.from(doc.querySelectorAll('[data-ask-open]'));
         if (!panel) return;
