@@ -780,8 +780,11 @@
         const setupStatus = panel.querySelector('[data-ask-setup-status]');
         const autonomyButtons = Array.from(panel.querySelectorAll('[data-ask-autonomy-value]'));
         const autonomyNote = panel.querySelector('[data-ask-autonomy-note]');
+        const historyList = panel.querySelector('[data-ask-history-list]');
+        const newChatButton = panel.querySelector('[data-ask-new]');
         let autonomy = 'confirm';
-        const history = [];
+        let currentConversationId = null;
+        let history = [];
         let controller = null;
         let available = false;
         let poll = null;
@@ -828,17 +831,79 @@
             if (setupStatus) setupStatus.textContent = available ? '' : (REASONS[reason] || '');
             if (available && poll) { clearInterval(poll); poll = null; }
         };
+        const loadChatHistory = async () => {
+            if (!historyList) return;
+            try {
+                const response = await fetch('/api/assistant/conversations', { headers: { Accept: 'application/json', 'X-Willow-Passive': '1' }, credentials: 'same-origin' });
+                if (!response.ok) return;
+                const data = await response.json();
+                historyList.replaceChildren();
+                if (!data.conversations?.length) {
+                    historyList.append(el('p', { className: 'ask-history-empty', text: 'No saved chats yet.' }));
+                    return;
+                }
+                data.conversations.forEach(conversation => {
+                    const row = el('div', { className: 'ask-history-item' });
+                    const button = el('button', { type: 'button', className: 'ask-history-chat', text: conversation.title || 'New chat' });
+                    const remove = el('button', { type: 'button', className: 'btn btn-ghost btn-icon', 'aria-label': 'Delete chat', title: 'Delete chat' }, icon('trash', 'icon-sm'));
+                    button.classList.toggle('is-active', Number(conversation.id) === Number(currentConversationId));
+                    button.addEventListener('click', () => loadConversation(conversation.id));
+                    remove.addEventListener('click', async () => {
+                        try {
+                            await W.api('/api/assistant/conversations/' + encodeURIComponent(conversation.id), { method: 'DELETE', body: {} });
+                            if (Number(currentConversationId) === Number(conversation.id)) startNewChat(false);
+                            await loadChatHistory();
+                        } catch (error) { W.showToast(error.message, 'error'); }
+                    });
+                    row.append(button, remove);
+                    historyList.append(row);
+                });
+            } catch (error) { /* history is non-critical */ }
+        };
         const checkStatus = (refresh = false) => fetch(`/api/assistant/status${refresh ? '?refresh=1' : ''}`, { headers: { Accept: 'application/json', 'X-Willow-Passive': '1' }, credentials: 'same-origin' })
             .then(response => (response.ok ? response.json() : null))
             .then(status => { if (status) setAvailable(status.available, status.model, status.reason, status.autonomy); return status; })
             .catch(() => null);
         checkStatus();
 
+        const renderSavedConversation = conversation => {
+            currentConversationId = conversation.id;
+            history = conversation.messages.map(message => ({ role: message.role, content: message.content }));
+            const welcome = panel.querySelector('[data-ask-welcome]');
+            if (welcome) welcome.hidden = true;
+            thread.replaceChildren();
+            conversation.messages.forEach(message => {
+                thread.append(el('div', { className: `ask-message ${message.role === 'user' ? 'is-user' : 'is-answer'}` },
+                    ...(message.role === 'user' ? [doc.createTextNode(message.content)] : [renderRichText(message.content)])));
+            });
+            loadChatHistory();
+            scrollThread();
+        };
+        const loadConversation = async id => {
+            if (controller) return;
+            try {
+                const response = await fetch('/api/assistant/conversations/' + encodeURIComponent(id), { headers: { Accept: 'application/json', 'X-Willow-Passive': '1' }, credentials: 'same-origin' });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.error || 'Chat could not be loaded.');
+                renderSavedConversation(data.conversation);
+            } catch (error) { W.showToast(error.message, 'error'); }
+        };
+        const startNewChat = (refresh = true) => {
+            currentConversationId = null;
+            history = [];
+            thread.replaceChildren();
+            const welcome = panel.querySelector('[data-ask-welcome]');
+            if (welcome) welcome.hidden = false;
+            if (refresh) loadChatHistory();
+            input.focus();
+        };
+        newChatButton?.addEventListener('click', () => startNewChat());
         const open = question => {
             if (triggers.length && triggers.every(button => button.hidden)) return;
             openDialog(panel);
             // Without Ollama, look for it again every 15 seconds while the panel is open.
             if (!available && !poll) poll = setInterval(() => { if (!panel.open) { clearInterval(poll); poll = null; return; } checkStatus(true); }, 15000);
+            loadChatHistory();
             setTimeout(() => input.focus(), 60);
             if (question) ask(question);
         };
@@ -899,7 +964,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', Accept: 'application/x-ndjson', 'X-CSRF-Token': csrfToken() },
                     credentials: 'same-origin',
-                    body: JSON.stringify({ question, history: history.slice(-10) }),
+                    body: JSON.stringify({ question, conversationId: currentConversationId, history: history.slice(-10) }),
                     signal: controller.signal,
                 });
                 if (!response.ok) {
@@ -929,6 +994,7 @@
                             notice = event.notice || null;
                             mode = event.mode || null;
                             action = event.action || null;
+                            if (event.conversationId) currentConversationId = event.conversationId;
                         }
                     }
                 }
@@ -982,12 +1048,14 @@
                         cancel.remove();
                     });
                 }
-                history.push({ role: 'user', content: question }, { role: 'assistant', content: text });
+                history = history.concat([{ role: 'user', content: question }, { role: 'assistant', content: text }]);
+                loadChatHistory();
             } catch (error) {
                 const stopped = error.name === 'AbortError';
                 if (stopped && text) {
                     answer.replaceChildren(renderRichText(text), el('p', { className: 'ask-note', text: 'Stopped.' }));
-                    history.push({ role: 'user', content: question }, { role: 'assistant', content: text });
+                    history = history.concat([{ role: 'user', content: question }, { role: 'assistant', content: text }]);
+                    loadChatHistory();
                 } else {
                     answer.classList.add('is-error');
                     answer.replaceChildren(el('p', { text: stopped ? 'Stopped.' : (error.message || 'The assistant couldn’t answer right now.') }));
