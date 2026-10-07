@@ -29,6 +29,7 @@ describe('Personal planning goals', () => {
         assert.match(missingAccount.body.error, /account/i);
         const deposit = await owner.agent.post('/api/deposits').set('X-CSRF-Token', owner.csrfToken).send({ accountId: owner.savings.id, amount: '125.50' });
         assert.equal(deposit.status, 200);
+        const balanceBeforeGoal = db.prepare('SELECT SUM(balance) AS total FROM accounts WHERE user_id = ?').get(ownerId).total;
         const created = await owner.agent.post('/api/goals').set('X-CSRF-Token', owner.csrfToken)
             .send({ name: 'Home deposit', category: 'home', targetAmount: '5000', accountId: owner.savings.id, currentAmount: '9999' });
         assert.equal(created.status, 201);
@@ -46,7 +47,7 @@ describe('Personal planning goals', () => {
         await owner.agent.post('/api/deposits').set('X-CSRF-Token', owner.csrfToken).send({ accountId: owner.savings.id, amount: '100' });
         const refreshed = await owner.agent.get('/api/goals');
         assert.equal(refreshed.body.goals[0].current_cents, 22550);
-        assert.equal(db.prepare('SELECT SUM(balance) AS total FROM accounts WHERE user_id = ?').get(ownerId).total, balanceBefore);
+        assert.equal(db.prepare('SELECT SUM(balance) AS total FROM accounts WHERE user_id = ?').get(ownerId).total, balanceBeforeGoal + 10000);
 
         const invalid = await owner.agent.patch(`/api/goals/${created.body.goal.id}`).set('X-CSRF-Token', owner.csrfToken).send({ targetAmount: '500' });
         assert.equal(invalid.status, 400);
@@ -60,7 +61,10 @@ describe('Personal planning goals', () => {
         assert.equal((await post({ name: '<b>Bad</b>', category: 'home', targetAmount: '500' })).status, 400);
         assert.equal((await post({ name: 'Test goal', category: 'stocks', targetAmount: '500' })).status, 400);
         assert.equal((await post({ name: 'Test goal', category: 'home', targetAmount: '10.001' })).status, 400);
-        assert.equal((await post({ name: 'Test goal', category: 'home', targetAmount: '10', currentAmount: '11' })).status, 400);
+        const realFunds = await post({ name: 'Actual funds', category: 'home', targetAmount: '10', accountId: owner.savings.id, currentAmount: '999999' });
+        assert.equal(realFunds.status, 201);
+        assert.equal(realFunds.body.goal.current_cents, 1000);
         assert.equal((await post({ name: 'Test goal', category: 'home', targetAmount: '10', accountId: 999999 })).status, 400);
+        await owner.agent.delete(`/api/goals/${realFunds.body.goal.id}`).set('X-CSRF-Token', owner.csrfToken);
     });
 });
