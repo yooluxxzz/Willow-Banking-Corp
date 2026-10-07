@@ -126,7 +126,7 @@ describe('Local assistant (Ollama)', () => {
         assert.match(system, /Money in Willow accounts in US dollars: \$250\.00/);
         assert.match(system, /Budgets: none set yet/);
         assert.match(system, /Paycheck from Northwind/);
-        assert.equal(sent.messages[3].content, 'How much is in checking?');
+        assert.equal(sent.messages[1].content, 'How much is in checking?');
     });
 
     it('never includes another customer’s data', async () => {
