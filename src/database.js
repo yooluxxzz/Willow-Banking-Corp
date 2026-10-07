@@ -406,6 +406,23 @@ async function initializeDatabase() {
       result TEXT NOT NULL DEFAULT 'success',
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS assistant_conversations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      title TEXT NOT NULL DEFAULT 'New chat',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS assistant_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      conversation_id INTEGER NOT NULL REFERENCES assistant_conversations(id) ON DELETE CASCADE,
+      role TEXT NOT NULL CHECK(role IN ('user', 'assistant')),
+      content TEXT NOT NULL,
+      mode TEXT DEFAULT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
     `);
 
     // Auto-update updated_at on user changes
@@ -428,6 +445,8 @@ async function initializeDatabase() {
         'CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications(user_id, is_read)',
         'CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at)',
         'CREATE INDEX IF NOT EXISTS idx_audit_logs_actor_id ON audit_logs(actor_id)',
+        'CREATE INDEX IF NOT EXISTS idx_assistant_conversations_user ON assistant_conversations(user_id, updated_at)',
+        'CREATE INDEX IF NOT EXISTS idx_assistant_messages_conversation ON assistant_messages(conversation_id, id)',
         'CREATE INDEX IF NOT EXISTS idx_cards_account_id ON cards(account_id)',
         'CREATE INDEX IF NOT EXISTS idx_demo_trades_user_created ON demo_trades(user_id, created_at)',
         'CREATE INDEX IF NOT EXISTS idx_demo_goals_user ON demo_goals(user_id, created_at)',
