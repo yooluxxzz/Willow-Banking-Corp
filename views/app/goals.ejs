@@ -5,7 +5,7 @@
 <header class="page-head">
     <div class="page-head-copy">
         <h1 class="page-head-title">Goals</h1>
-        <p class="page-head-sub">Plan for what you’re working toward. Goals are plans, not bank balances — progress is what you record, and no money moves.</p>
+        <p class="page-head-sub">Plan for what you’re working toward. Each goal is tied to one of your real personal USD accounts, and progress follows that account’s available balance.</p>
     </div>
     <div class="page-head-actions"><button type="button" class="btn btn-primary" data-goal-new><%- icon('plus') %> New goal</button></div>
 </header>
@@ -19,7 +19,7 @@
 
 <div class="goal-grid" id="goalList" aria-live="polite"></div>
 
-<p class="disclosure-note mt-8"><%- icon('info') %> <span>Goals are planning tools. Updating progress doesn’t move money between accounts — use <a class="text-link" href="/transfers?mode=own">Move money</a> or <a class="text-link" href="/scheduled-transfers">Scheduled transfers</a> to do that.</span></p>
+<p class="disclosure-note mt-8"><%- icon('info') %> <span>Goal progress is based only on the available balance of its linked personal USD account. To fund a goal, move real demo funds into that account using <a class="text-link" href="/transfers?mode=own">Move money</a> or <a class="text-link" href="/scheduled-transfers">Scheduled transfers</a>.</span></p>
 
 <dialog class="modal" id="goalDialog" aria-labelledby="goalDialogTitle">
     <form id="goalForm" novalidate>
@@ -37,7 +37,7 @@
             <div class="field mt-5"><label for="goalName">Name</label><input class="input" id="goalName" name="name" required minlength="2" maxlength="60" placeholder="e.g. Lisbon in spring"></div>
             <div class="field-grid mt-5">
                 <div class="field"><label for="goalTarget">Target</label><div class="input-group has-prefix"><span class="input-prefix">$</span><input class="input num" id="goalTarget" name="targetAmount" inputmode="decimal" required placeholder="5,000"></div></div>
-                <div class="field"><label for="goalCurrent">Saved so far</label><div class="input-group has-prefix"><span class="input-prefix">$</span><input class="input num" id="goalCurrent" name="currentAmount" inputmode="decimal" placeholder="0"></div></div>
+                <div class="field"><label for="goalAccount">Funded by</label><select class="select" id="goalAccount" name="accountId" required></select></div>
             </div>
             <p class="field-error mt-3" data-goal-error role="alert" hidden></p>
         </div>
