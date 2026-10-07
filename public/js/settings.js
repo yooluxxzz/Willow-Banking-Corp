@@ -97,19 +97,32 @@
         if (!group) return;
         const buttons = Array.from(group.querySelectorAll('[data-theme-value]'));
         const current = () => { try { return localStorage.getItem('willow-theme') || 'system'; } catch (error) { return 'system'; } };
+        const isSystem = () => current() === 'system';
+        const apply = value => {
+            const root = doc.documentElement;
+            const dark = value === 'dark' || (value === 'system' && global.matchMedia && global.matchMedia('(prefers-color-scheme: dark)').matches);
+            if (dark) root.setAttribute('data-theme', 'dark'); else root.removeAttribute('data-theme');
+            doc.dispatchEvent(new CustomEvent('willow:themechange', { detail: { theme: dark ? 'dark' : 'light', preference: value } }));
+        };
         const sync = () => buttons.forEach(button => button.setAttribute('aria-checked', String(button.dataset.themeValue === current())));
         buttons.forEach(button => button.addEventListener('click', () => {
             const value = button.dataset.themeValue;
-            const root = doc.documentElement;
             try {
                 if (value === 'system') localStorage.removeItem('willow-theme');
                 else localStorage.setItem('willow-theme', value);
             } catch (error) { /* storage unavailable */ }
-            const dark = value === 'dark' || (value === 'system' && global.matchMedia && global.matchMedia('(prefers-color-scheme: dark)').matches);
-            if (dark) root.setAttribute('data-theme', 'dark'); else root.removeAttribute('data-theme');
-            doc.dispatchEvent(new CustomEvent('willow:themechange', { detail: { theme: dark ? 'dark' : 'light' } }));
+            apply(value);
             sync();
         }));
+        const media = global.matchMedia && global.matchMedia('(prefers-color-scheme: dark)');
+        if (media) {
+            const onSystemChange = () => {
+                if (isSystem()) apply('system');
+            };
+            if (typeof media.addEventListener === 'function') media.addEventListener('change', onSystemChange);
+            else if (typeof media.addListener === 'function') media.addListener(onSystemChange);
+        }
+        apply(current());
         sync();
     }
 
