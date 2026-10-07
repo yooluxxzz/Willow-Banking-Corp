@@ -1347,7 +1347,7 @@
             (global.requestAnimationFrame || global.setTimeout)(update);
         };
         queue();
-        global.addEventListener('resize', queue);
+        if (typeof global.addEventListener === 'function') global.addEventListener('resize', queue);
         const main = doc.getElementById('main');
         if (main && 'MutationObserver' in global) new MutationObserver(queue).observe(main, { childList: true, subtree: true });
     }
