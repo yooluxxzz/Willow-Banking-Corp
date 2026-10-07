@@ -117,7 +117,7 @@ describe('Local assistant (Ollama)', () => {
         assert.equal(sent.keep_alive, '30m', 'the model stays loaded between questions');
         assert.equal(sent.options.temperature, 0.2);
         assert.equal(sent.options.num_ctx, 8192);
-        assert.deepEqual(sent.messages.map(message => message.role), ['system', 'user', 'assistant', 'user'], 'client-supplied system turns are dropped');
+        assert.deepEqual(sent.messages.map(message => message.role), ['system', 'user'], 'client-supplied chat history is ignored');
         const system = sent.messages[0].content;
         assert.match(system, /Use only CONTEXT/);
         assert.match(system, /do not tell the customer to buy or sell specific investments/);
