@@ -355,7 +355,7 @@ const products = [
         feature: {
             eyebrow: 'Goals tracker',
             title: 'Progress you can see, at your own pace.',
-            body: 'Goals in Willow are a planning tool. You set a target, record what you have saved and watch the progress bar fill. Goals never move money on their own, so you stay in control of every transfer.',
+            body: 'Goals in Willow pair a target with a real Willow account. The progress bar follows that account’s available balance, while transfers remain under your control.',
             points: [
                 'Emergency fund, home, travel and other goals',
                 'Self-reported progress toward each target',
