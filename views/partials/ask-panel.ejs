@@ -25,6 +25,13 @@
             <button type="button" role="radio" data-ask-autonomy-value="autonomous" aria-checked="false">Autonomous</button>
         </div>
     </section>
+    <section class="ask-history" aria-labelledby="askHistoryTitle" data-ask-history>
+        <div class="ask-history-head">
+            <p class="label" id="askHistoryTitle">Your chats</p>
+            <button type="button" class="btn btn-ghost btn-sm" data-ask-new>New chat</button>
+        </div>
+        <div class="ask-history-list" data-ask-history-list></div>
+    </section>
     <details class="ask-setup" data-ask-setup<%- assistantAi ? ' hidden' : '' %>>
         <summary><%- icon('sparkle', 'icon-sm') %> Get full AI answers on this computer</summary>
         <p>With Ollama, Ask Willow runs a language model on this computer, so it can answer any question about your money in its own words. Your questions and records never leave the computer.</p>
