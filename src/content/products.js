@@ -358,7 +358,7 @@ const products = [
             body: 'Goals in Willow pair a target with a real Willow account. The progress bar follows that account’s available balance, while transfers remain under your control.',
             points: [
                 'Emergency fund, home, travel and other goals',
-                'Self-reported progress toward each target',
+                'Progress based on the linked account balance',
                 'Goals never move money automatically',
                 'Goals shown on your Net worth page alongside balances',
             ],
