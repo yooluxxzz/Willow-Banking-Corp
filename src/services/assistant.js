@@ -395,18 +395,18 @@ async function chat(userId, { question, history = [] }, { onToken = () => {}, si
 
 
 const ACTION_SYSTEM_PROMPT =
-    'You are Willow\\'s private action router. Return JSON only, with no markdown.\\n' +
-    'Choose exactly one mode: answer, read, or action.\\n' +
-    'answer = advice, explanation, conversation, or unclear request.\\n' +
-    'read = a verified data lookup using one of: accounts, finances, portfolio, stock_quote, debts, loans, transactions, budgets, goals.\\n' +
-    'action = an explicit request to change something using one of: transfer, pay_debt, move_investing_cash, trade, create_goal.\\n' +
-    'Rules: use only ACTION DATA; never invent IDs, balances, emails, symbols, account names, or destinations; never turn a question into an action.\\n' +
-    'transfer args: fromAccountId + (toAccountId OR recipientEmail) + amount, optional description.\\n' +
-    'pay_debt args: debtId + accountId + amount.\\n' +
-    'move_investing_cash args: accountId + direction in|out + amount.\\n' +
-    'trade args: symbol + side buy|sell + quantity OR amount.\\n' +
-    'create_goal args: name + category + target + accountId.\\n' +
-    'stock_quote args: symbol.\\n' +
+    'You are Willow\\'s private action router. Return JSON only, with no markdown.\n' +
+    'Choose exactly one mode: answer, read, or action.\n' +
+    'answer = advice, explanation, conversation, or unclear request.\n' +
+    'read = a verified data lookup using one of: accounts, finances, portfolio, stock_quote, debts, loans, transactions, budgets, goals.\n' +
+    'action = an explicit request to change something using one of: transfer, pay_debt, move_investing_cash, trade, create_goal.\n' +
+    'Rules: use only ACTION DATA; never invent IDs, balances, emails, symbols, account names, or destinations; never turn a question into an action.\n' +
+    'transfer args: fromAccountId + (toAccountId OR recipientEmail) + amount, optional description.\n' +
+    'pay_debt args: debtId + accountId + amount.\n' +
+    'move_investing_cash args: accountId + direction in|out + amount.\n' +
+    'trade args: symbol + side buy|sell + quantity OR amount.\n' +
+    'create_goal args: name + category + target + accountId.\n' +
+    'stock_quote args: symbol.\n' +
     'For an ambiguous amount, destination, debt, account, goal, or instrument, return answer mode.';
 
 function parsePlan(raw) {
@@ -445,7 +445,7 @@ async function planAction(userId, question) {
                 format: 'json',
                 options: { temperature: 0, num_ctx: Math.min(config.assistant.contextTokens, 8192) },
                 messages: [
-                    { role: 'system', content: ACTION_SYSTEM_PROMPT + '\\n\\n' + assistantActions.plannerContext(userId) },
+                    { role: 'system', content: ACTION_SYSTEM_PROMPT + '\n\n' + assistantActions.plannerContext(userId) },
                     { role: 'user', content: text },
                 ],
             }),
