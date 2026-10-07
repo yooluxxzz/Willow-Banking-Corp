@@ -12,6 +12,7 @@ const assistant = require('../services/assistant');
 const assistantActions = require('../services/assistant-actions');
 const quickAnswers = require('../services/quick-answers');
 const preferences = require('../services/preferences');
+const assistantChats = require('../services/assistant-chats');
 const router = express.Router();
 
 router.use(requireAuth);
@@ -35,13 +36,13 @@ function explicitWriteRequest(question) {
     return /\b(send|transfer|move|pay|make a payment|buy|sell|purchase|create|set up|add a goal|put money into investing|move money out of investing)\b/i.test(String(question || ''));
 }
 
-function rememberAction(userId, plan) {
+function rememberAction(userId, plan, conversationId) {
     const now = Date.now();
     for (const [key, pending] of pendingActions) {
         if (now - pending.createdAt > ACTION_TTL_MS) pendingActions.delete(key);
     }
     const key = crypto.randomBytes(24).toString('hex');
-    pendingActions.set(key, { userId, tool: plan.tool, args: plan.args, createdAt: Date.now() });
+    pendingActions.set(key, { userId, tool: plan.tool, args: plan.args, conversationId, createdAt: Date.now() });
     return key;
 }
 
@@ -68,6 +69,27 @@ router.get('/status', async (req, res) => {
     res.json({ available: status.available, mode, model: status.available ? status.model : null, reason: status.reason, autonomy: preferences.getPreferences(req.session.userId).assistantAutonomy });
 });
 
+router.get('/conversations', (req, res) => {
+    res.json({ conversations: assistantChats.listConversations(req.session.userId) });
+});
+
+router.get('/conversations/:id', (req, res) => {
+    try {
+        res.json({ conversation: assistantChats.getConversation(req.session.userId, req.params.id) });
+    } catch (error) {
+        res.status(error.status || 400).json({ error: error.message });
+    }
+});
+
+router.delete('/conversations/:id', (req, res) => {
+    try {
+        assistantChats.deleteConversation(req.session.userId, req.params.id);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(error.status || 400).json({ error: error.message });
+    }
+});
+
 router.get('/autonomy', (req, res) => {
     const value = preferences.getPreferences(req.session.userId).assistantAutonomy;
     res.json({ autonomy: value, options: [
@@ -92,7 +114,9 @@ router.post('/actions/:token/confirm', async (req, res) => {
     if (!pending) return res.status(410).json({ error: 'That action has expired. Ask Willow to prepare it again.', code: 'action_expired' });
     try {
         const result = await assistant.runActionTool(req.session.userId, pending.tool, pending.args);
-        res.json({ success: true, tool: pending.tool, result });
+        const summary = 'Completed: ' + assistantActions.actionPreview(req.session.userId, pending.tool, pending.args) + '.';
+        if (pending.conversationId) assistantChats.appendMessage(req.session.userId, pending.conversationId, 'assistant', summary, 'action_executed');
+        res.json({ success: true, tool: pending.tool, result, conversationId: pending.conversationId || null });
     } catch (error) {
         res.status(error.status || 400).json({ error: error.message });
     }
@@ -106,12 +130,21 @@ router.post('/actions/:token/cancel', (req, res) => {
 
 router.post('/chat', async (req, res) => {
     const userId = req.session.userId;
-    const { question, history } = req.body || {};
+    const { question, history: clientHistory, conversationId: requestedConversationId } = req.body || {};
     if (!allow(userId)) return res.status(429).json({ error: 'You’ve asked a lot of questions in a short time. Please wait a few minutes.' });
     const status = await assistant.getStatus();
     if (status.reason === 'disabled') return res.status(503).json({ error: 'Ask Willow is turned off on this server.', code: 'assistant_disabled' });
     if (typeof question !== 'string' || !question.trim()) return res.status(400).json({ error: 'Ask a question about your money.' });
     if (question.length > 1000) return res.status(400).json({ error: 'Keep questions under 1000 characters.' });
+
+    let conversation;
+    try {
+        conversation = assistantChats.ensureConversation(userId, requestedConversationId, question);
+        assistantChats.appendMessage(userId, conversation.id, 'user', question, 'user');
+    } catch (error) {
+        return res.status(error.status || 400).json({ error: error.message });
+    }
+    const history = assistantChats.history(userId, conversation.id, 10);
 
     const controller = new AbortController();
     res.on('close', () => { if (!res.writableEnded) controller.abort(); });
@@ -133,14 +166,18 @@ router.post('/chat', async (req, res) => {
             try {
                 const result = await assistant.runReadTool(userId, directRead, {});
                 if (status.available) {
-                    await assistant.chat(userId, { question, history }, {
+                    const answerText = await assistant.chat(userId, { question, history }, {
                         onToken: delta => send({ delta }),
                         signal: controller.signal,
                         extraContext: JSON.stringify({ tool: directRead, result }),
                     });
-                    send({ done: true, mode: 'ai', model: status.model, tool: directRead, links });
+                    assistantChats.appendMessage(userId, conversation.id, 'assistant', answerText, 'ai');
+                    send({ done: true, mode: 'ai', model: status.model, tool: directRead, conversationId: conversation.id, links });
                 } else {
-                    await quick(null);
+                    const fallback = await quickAnswers.answer(userId, question);
+                    assistantChats.appendMessage(userId, conversation.id, 'assistant', fallback.text, 'quick');
+                    send({ delta: fallback.text });
+                    send({ done: true, mode: 'quick', conversationId: conversation.id, links });
                 }
                 return res.end();
             } catch (error) {
@@ -169,28 +206,31 @@ router.post('/chat', async (req, res) => {
 
         if (planned.mode === 'action') {
             if (autonomy === 'read_only') {
-                send({ delta: 'I can prepare ' + explainTool(planned.tool) + ', but Read only mode prevents me from executing it. Change Ask Willow autonomy if you want Willow to act.' });
+                const blocked = 'I can prepare ' + explainTool(planned.tool) + ', but Read only mode prevents me from executing it. Change Ask Willow autonomy if you want Willow to act.';
+                assistantChats.appendMessage(userId, conversation.id, 'assistant', blocked, 'action_blocked');
+                send({ delta: blocked });
                 send({ done: true, mode: 'action_blocked', action: { tool: planned.tool, autonomy }, links });
                 return res.end();
             }
             if (autonomy === 'confirm') {
-                const actionToken = rememberAction(userId, planned);
-                send({ delta: 'I’m ready to ' + explainTool(planned.tool) + '.' });
+                const actionToken = rememberAction(userId, planned, conversation.id);
+                const pendingText = 'I’m ready to ' + explainTool(planned.tool) + '.';
+                assistantChats.appendMessage(userId, conversation.id, 'assistant', pendingText, 'action_pending');
+                send({ delta: pendingText });
                 send({ done: true, mode: 'action_pending', action: { token: actionToken, tool: planned.tool, title: assistantActions.actionPreview(userId, planned.tool, planned.args), expiresInSeconds: ACTION_TTL_MS / 1000 }, links });
                 return res.end();
             }
             try {
                 const result = await assistant.runActionTool(userId, planned.tool, planned.args);
-                if (status.available) {
-                    await assistant.chat(userId, { question, history }, {
+                const resultText = status.available
+                    ? await assistant.chat(userId, { question, history }, {
                         onToken: delta => send({ delta }),
                         signal: controller.signal,
                         extraContext: JSON.stringify({ action: planned.tool, executed: true, result }),
-                    });
-                } else {
-                    send({ delta: 'Done. ' + assistantActions.actionPreview(userId, planned.tool, planned.args) + ' was completed in the Willow demo.' });
-                }
-                send({ done: true, mode: 'action_executed', action: { tool: planned.tool, autonomy }, links });
+                    })
+                    : 'Done. ' + assistantActions.actionPreview(userId, planned.tool, planned.args) + ' was completed in the Willow demo.';
+                assistantChats.appendMessage(userId, conversation.id, 'assistant', resultText, 'action_executed');
+                send({ done: true, mode: 'action_executed', action: { tool: planned.tool, autonomy }, conversationId: conversation.id, links });
                 return res.end();
             } catch (error) {
                 if (controller.signal.aborted) throw error;
@@ -204,8 +244,9 @@ router.post('/chat', async (req, res) => {
         } else {
             let said = false;
             try {
-                await assistant.chat(userId, { question, history }, { onToken: delta => { said = true; send({ delta }); }, signal: controller.signal });
-                send({ done: true, mode: 'ai', model: status.model, links });
+                const answerText = await assistant.chat(userId, { question, history }, { onToken: delta => { said = true; send({ delta }); }, signal: controller.signal });
+                assistantChats.appendMessage(userId, conversation.id, 'assistant', answerText, 'ai');
+                send({ done: true, mode: 'ai', model: status.model, conversationId: conversation.id, links });
             } catch (error) {
                 if (controller.signal.aborted) throw error;
                 if (!said && error.status !== 400) await quick('The local AI model couldn’t answer (' + error.message.replace(/\.$/, '') + '), so this answer was worked out directly from your figures.');
