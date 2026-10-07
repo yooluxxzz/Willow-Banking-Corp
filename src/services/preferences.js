@@ -4,6 +4,8 @@
 const { getDb } = require('../database');
 const { ValidationError } = require('../errors');
 
+const AUTONOMY = new Set(['read_only', 'confirm', 'autonomous']);
+
 const BOOLEAN_FIELDS = {
     alertTransactions: 'alert_transactions',
     alertCards: 'alert_cards',
@@ -20,6 +22,7 @@ function ensure(userId) {
 
 function format(row) {
     const result = {};
+    result.assistantAutonomy = AUTONOMY.has(row.assistant_autonomy) ? row.assistant_autonomy : 'confirm';
     Object.entries(BOOLEAN_FIELDS).forEach(([key, column]) => { result[key] = Boolean(row[column]); });
     return result;
 }
@@ -38,9 +41,14 @@ function updatePreferences(userId, changes = {}) {
         sets.push(`${column} = ?`);
         values.push(changes[key] ? 1 : 0);
     });
+    if (changes.assistantAutonomy !== undefined) {
+        if (typeof changes.assistantAutonomy !== 'string' || !AUTONOMY.has(changes.assistantAutonomy)) throw new ValidationError('Choose a valid Ask Willow autonomy mode.');
+        sets.push('assistant_autonomy = ?');
+        values.push(changes.assistantAutonomy);
+    }
     if (!sets.length) throw new ValidationError('No preferences were changed.');
     getDb().prepare(`UPDATE user_preferences SET ${sets.join(', ')}, updated_at = datetime('now') WHERE user_id = ?`).run(...values, userId);
     return getPreferences(userId);
 }
 
-module.exports = { getPreferences, updatePreferences, ensure };
+module.exports = { getPreferences, updatePreferences, ensure, AUTONOMY };
