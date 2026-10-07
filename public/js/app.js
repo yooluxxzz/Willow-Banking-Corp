@@ -1052,7 +1052,6 @@
         // Treat semantic sections as scroll stops. Nested sections are part of their
         // parent stop, while same-row sections (e.g. two columns) move together.
         const getSections = () => Array.from(main.querySelectorAll('section'))
-            .filter(section => !section.parentElement.closest('section'))
             .filter(section => !section.matches(FOCUS_SKIP) && isShown(section));
 
         const duration = 1700;
