@@ -1037,6 +1037,81 @@
         });
     }
 
+    /**
+     * Guided section scrolling across Willow's public and product pages.
+     * The main account dashboard is intentionally excluded because it is a dense
+     * workspace rather than a storytelling page.
+     */
+    function setupGuidedSectionScroll() {
+        if (!doc || !global.matchMedia || global.matchMedia('(prefers-reduced-motion: reduce)').matches) return null;
+        if (global.location && global.location.pathname === '/dashboard') return null;
+
+        const main = doc.getElementById('main');
+        if (!main) return null;
+        const sections = Array.from(main.children).filter(section => {
+            if (section.tagName !== 'SECTION') return false;
+            if (section.hasAttribute('data-no-scroll-lock')) return false;
+            return section.getBoundingClientRect().height > 0;
+        });
+        if (sections.length < 2) return null;
+
+        const duration = 1700;
+        let lockedUntil = 0;
+        let timer = null;
+        let lastScrollY = global.scrollY;
+
+        const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+        const topOf = section => Math.max(0, global.scrollY + section.getBoundingClientRect().top);
+        const nearest = () => {
+            const center = global.scrollY + global.innerHeight * 0.5;
+            let match = 0;
+            let distance = Infinity;
+            sections.forEach((section, index) => {
+                const sectionCenter = topOf(section) + section.offsetHeight * 0.5;
+                const nextDistance = Math.abs(sectionCenter - center);
+                if (nextDistance < distance) { distance = nextDistance; match = index; }
+            });
+            return match;
+        };
+        const lock = () => {
+            lockedUntil = Date.now() + duration;
+            if (timer) global.clearTimeout(timer);
+            timer = global.setTimeout(() => { lockedUntil = 0; timer = null; }, duration);
+        };
+        const move = direction => {
+            const index = nearest();
+            const target = sections[clamp(index + direction, 0, sections.length - 1)];
+            if (!target || sections.indexOf(target) === index) return false;
+            const maxTop = Math.max(0, doc.documentElement.scrollHeight - global.innerHeight);
+            global.scrollTo({ top: clamp(topOf(target), 0, maxTop), behavior: 'smooth' });
+            lock();
+            return true;
+        };
+        const interactive = target => Boolean(target && target.closest && target.closest('a, button, input, textarea, select, [contenteditable="true"]'));
+
+        const onWheel = event => {
+            if (Math.abs(event.deltaY) <= Math.abs(event.deltaX) || Math.abs(event.deltaY) < 8 || interactive(event.target)) return;
+            if (Date.now() < lockedUntil) { event.preventDefault(); return; }
+            if (move(event.deltaY > 0 ? 1 : -1)) event.preventDefault();
+        };
+        const onKeydown = event => {
+            if (event.defaultPrevented || interactive(event.target)) return;
+            const direction = event.key === 'PageDown' || event.key === 'ArrowDown' ? 1 : event.key === 'PageUp' || event.key === 'ArrowUp' ? -1 : 0;
+            if (!direction) return;
+            if (Date.now() < lockedUntil) { event.preventDefault(); return; }
+            if (move(direction)) event.preventDefault();
+        };
+        const onScroll = () => {
+            if (Date.now() < lockedUntil && Math.abs(global.scrollY - lastScrollY) > 2) global.scrollTo(0, lastScrollY);
+            lastScrollY = global.scrollY;
+        };
+
+        global.addEventListener('wheel', onWheel, { passive: false });
+        global.addEventListener('keydown', onKeydown);
+        global.addEventListener('scroll', onScroll, { passive: true });
+        return { destroy() { global.removeEventListener('wheel', onWheel); global.removeEventListener('keydown', onKeydown); global.removeEventListener('scroll', onScroll); if (timer) global.clearTimeout(timer); } };
+    }
+
     // ── Idle sign-out ───────────────────────────────────────────────────
     const idle = { ms: 0, warnTimer: null, endTimer: null, tick: null, dialog: null };
 
@@ -1233,6 +1308,7 @@
         setupLocalDetails();
         setupIdleTimeout();
         setupScrollRegions();
+        setupGuidedSectionScroll();
         setupPageIcon();
         setupAttention();
     }
