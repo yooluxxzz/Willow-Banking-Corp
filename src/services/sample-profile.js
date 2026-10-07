@@ -158,9 +158,9 @@ function populateLedger(userId, now) {
     balances.forEach((cents, account) => db.prepare('UPDATE accounts SET balance = ?, available_balance = ? WHERE id = ?').run(cents, cents, account));
     debts.forEach(item => db.prepare('UPDATE debts SET balance_cents = ? WHERE id = ?').run(item.balance, item.id));
 
-    // Self-reported goals, upcoming transfers, and cards.
-    db.prepare("INSERT INTO demo_goals (user_id, name, category, target_cents, current_cents) VALUES (?, 'Emergency fund', 'savings', 900000, ?)").run(userId, Math.min(900000, balances.get(savings)));
-    db.prepare("INSERT INTO demo_goals (user_id, name, category, target_cents, current_cents) VALUES (?, 'Summer trip', 'travel', 240000, 85000)").run(userId);
+    // Goals are backed by real account balances; progress is calculated from the linked account.
+    db.prepare("INSERT INTO demo_goals (user_id, account_id, name, category, target_cents, current_cents) VALUES (?, ?, 'Emergency fund', 'savings', 900000, 0)").run(userId, savings);
+    db.prepare("INSERT INTO demo_goals (user_id, account_id, name, category, target_cents, current_cents) VALUES (?, ?, 'Summer trip', 'travel', 240000, 0)").run(userId, checking);
     const nextSixteenth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + (now.getUTCDate() >= 16 ? 1 : 0), 16));
     const inThreeDays = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 3));
     db.prepare('INSERT INTO scheduled_transfers (user_id, from_account_id, to_account_id, amount, description, scheduled_for) VALUES (?, ?, ?, 40000, \'Monthly savings\', ?)').run(userId, checking, savings, nextSixteenth.toISOString());
