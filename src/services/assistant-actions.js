@@ -55,13 +55,13 @@ function plannerContext(userId) {
     return [
         'ACTION DATA (only for choosing tools; IDs are internal and must never be exposed unless needed in a confirmation receipt):',
         'Accounts:',
-        ...(accounts.length ? accounts.map(a => \`- id=\${a.id}; name=\${a.nickname || (a.purpose === 'business' ? 'Business checking' : a.account_type === 'savings' ? 'Savings' : 'Checking')}; last4=\${String(a.account_number).slice(-4)}; \${a.currency}; available=\${formatCurrency(a.available_balance, a.currency)}\`) : ['- none']),
+        ...(accounts.length ? accounts.map(a => `- id=${a.id}; name=${a.nickname || (a.purpose === 'business' ? 'Business checking' : a.account_type === 'savings' ? 'Savings' : 'Checking')}; last4=${String(a.account_number).slice(-4)}; ${a.currency}; available=${formatCurrency(a.available_balance, a.currency)}`) : ['- none']),
         'Debts:',
-        ...(debts.length ? debts.map(d => \`- id=\${d.id}; name=\${d.name}; kind=\${d.kind}; balance=\${usd(d.balanceCents)}; APR=\${d.apr}%\`) : ['- none']),
+        ...(debts.length ? debts.map(d => `- id=${d.id}; name=${d.name}; kind=${d.kind}; balance=${usd(d.balanceCents)}; APR=${d.apr}%`) : ['- none']),
         'Goals:',
-        ...(goalsList.length ? goalsList.map(g => \`- id=\${g.id}; name=\${g.name}; target=\${usd(g.target_cents)}; accountId=\${g.account_id || 'none'}\`) : ['- none']),
+        ...(goalsList.length ? goalsList.map(g => `- id=${g.id}; name=${g.name}; target=${usd(g.target_cents)}; accountId=${g.account_id || 'none'}`) : ['- none']),
         'Tradable symbols:',
-        ...(instruments.length ? instruments.map(i => \`- \${i.symbol}: \${i.name}\`) : ['- unavailable']),
+        ...(instruments.length ? instruments.map(i => `- ${i.symbol}: ${i.name}`) : ['- unavailable']),
     ].join('\n');
 }
 
@@ -180,10 +180,10 @@ function loans(userId) {
 
 function transactions(userId, limit = 10) {
     const n = Math.min(20, Math.max(1, Number(limit) || 10));
-    const rows = getDb().prepare(\`SELECT t.id, t.created_at, t.description, t.counterparty, t.type, t.direction, t.amount, t.currency, a.nickname, a.account_type
+    const rows = getDb().prepare(`SELECT t.id, t.created_at, t.description, t.counterparty, t.type, t.direction, t.amount, t.currency, a.nickname, a.account_type
         FROM transactions t JOIN accounts a ON a.id = t.account_id
         WHERE a.user_id = ? AND t.status = 'completed'
-        ORDER BY t.created_at DESC, t.id DESC LIMIT ?\`).all(userId, n);
+        ORDER BY t.created_at DESC, t.id DESC LIMIT ?`).all(userId, n);
     return {
         simulated: true,
         transactions: rows.map(row => ({
