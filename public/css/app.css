@@ -534,6 +534,59 @@ html.is-private .privacy-icon-show {
 
 /* Ask Willow when the local model isn't available yet: how to turn it on. */
 /* "Get full AI answers": an optional, collapsible set-up note above the chat. */
+.ask-autonomy {
+    margin: var(--s-3) var(--s-5) 0;
+    padding: var(--s-3) var(--s-4);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    background: var(--surface-muted);
+}
+
+.ask-autonomy-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--s-3);
+    margin-bottom: var(--s-3);
+}
+
+.ask-autonomy-options {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.ask-autonomy-options button {
+    min-width: 0;
+    min-height: 38px;
+    padding: 7px 9px;
+    white-space: normal;
+    line-height: 1.2;
+    font-size: var(--fs-xs);
+}
+
+.ask-autonomy-options button[aria-checked='true'] {
+    background: var(--surface);
+    color: var(--brand);
+    box-shadow: 0 0 0 1px var(--brand) inset;
+}
+
+.ask-action-card {
+    display: grid;
+    gap: var(--s-2);
+    margin-top: var(--s-3);
+    padding: var(--s-3);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--r-lg);
+    background: var(--surface);
+}
+
+.ask-action-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
 .ask-setup {
     margin: var(--s-3) var(--s-5) 0;
     padding: var(--s-3) var(--s-4);
