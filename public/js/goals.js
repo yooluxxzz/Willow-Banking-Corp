@@ -57,7 +57,7 @@
                         W.el('p', { className: 'text-xs muted mt-2', text: `Funding account · ${accountLabel}` }))),
                 done
                     ? W.el('div', { className: 'goal-card-actions' }, W.el('p', { className: 'goal-done' }, W.icon('check-circle', 'icon-sm'), 'Target reached'), fund)
-                    : W.el('div', { className: 'goal-card-actions' }, fund);
+                    : W.el('div', { className: 'goal-card-actions' }, fund));
         }
 
         function render() {
