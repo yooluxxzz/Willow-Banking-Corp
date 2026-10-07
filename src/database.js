@@ -206,6 +206,7 @@ async function initializeDatabase() {
       alert_product_news INTEGER NOT NULL DEFAULT 0,
       privacy_hide_balances INTEGER NOT NULL DEFAULT 0,
       privacy_personalized_insights INTEGER NOT NULL DEFAULT 1,
+      assistant_autonomy TEXT NOT NULL DEFAULT 'confirm' CHECK(assistant_autonomy IN ('read_only', 'confirm', 'autonomous')),
       sample_data_loaded_at TEXT DEFAULT NULL,
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
@@ -465,6 +466,7 @@ async function initializeDatabase() {
         "ALTER TABLE transactions ADD COLUMN counterparty TEXT DEFAULT NULL",
         "ALTER TABLE transactions ADD COLUMN card_id INTEGER DEFAULT NULL",
         "ALTER TABLE user_preferences ADD COLUMN alert_budgets INTEGER NOT NULL DEFAULT 1",
+        "ALTER TABLE user_preferences ADD COLUMN assistant_autonomy TEXT NOT NULL DEFAULT 'confirm' CHECK(assistant_autonomy IN ('read_only', 'confirm', 'autonomous'))",
         "ALTER TABLE demo_goals ADD COLUMN account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL",
     ];
     migrations.forEach(m => { try { db.run(m); } catch (e) { /* column already exists */ } });
