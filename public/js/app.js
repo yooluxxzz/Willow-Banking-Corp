@@ -1091,7 +1091,6 @@
             const distance = end - start;
             const animationDuration = Math.min(900, Math.max(520, 420 + Math.abs(distance) * 0.28));
             const started = Date.now();
-            let frame = null;
             animating = true;
 
             const easeInOut = value => value < 0.5
@@ -1102,10 +1101,10 @@
                 const progress = Math.min(1, (Date.now() - started) / animationDuration);
                 global.scrollTo(0, start + distance * easeInOut(progress));
                 if (progress < 1) {
-                    frame = global.requestAnimationFrame ? global.requestAnimationFrame(animate) : global.setTimeout(animate, 16);
+                    if (global.requestAnimationFrame) global.requestAnimationFrame(animate);
+                    else global.setTimeout(animate, 16);
                     return;
                 }
-                frame = null;
                 animating = false;
                 lastScrollY = global.scrollY;
             };
