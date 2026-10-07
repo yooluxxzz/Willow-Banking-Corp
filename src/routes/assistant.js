@@ -167,7 +167,7 @@ router.post('/chat', async (req, res) => {
                         extraContext: JSON.stringify({ action: planned.tool, executed: true, result }),
                     });
                 } else {
-                    send({ delta: 'Done. ' + assistant.actionTitle(planned.tool, planned.args) + ' was completed in the Willow demo.' });
+                    send({ delta: 'Done. ' + assistantActions.actionPreview(userId, planned.tool, planned.args) + ' was completed in the Willow demo.' });
                 }
                 send({ done: true, mode: 'action_executed', action: { tool: planned.tool, autonomy }, links });
                 return res.end();
