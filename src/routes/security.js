@@ -10,6 +10,7 @@ const twoFactor = require('../services/two-factor');
 const { verifyPassword, consumeCode, remainingCodes } = require('../services/recovery');
 const { logAudit } = require('../services/audit');
 const { createNotification } = require('../services/notification');
+const goals = require('../services/goals');
 const config = require('../config');
 
 const router = express.Router();
@@ -99,7 +100,7 @@ router.get('/export', (req, res) => {
         transactions,
         cards: db.prepare('SELECT c.id, c.account_id, c.form, c.nickname, c.last_four, c.status, c.daily_limit, c.created_at FROM cards c JOIN accounts a ON a.id = c.account_id WHERE a.user_id = ?').all(userId),
         payees: db.prepare('SELECT u.full_name AS name, u.email, p.nickname, p.created_at FROM payees p JOIN users u ON u.id = p.recipient_user_id WHERE p.user_id = ?').all(userId),
-        goals: db.prepare('SELECT name, category, target_cents, current_cents, created_at FROM demo_goals WHERE user_id = ?').all(userId),
+        goals: goals.listGoals(userId),
         demoPortfolio: {
             cash: db.prepare('SELECT cash_cents, created_at FROM demo_portfolios WHERE user_id = ?').get(userId) || null,
             holdings: db.prepare('SELECT symbol, quantity, average_price FROM demo_holdings WHERE user_id = ?').all(userId),
