@@ -16,7 +16,6 @@ describe('Personal planning goals', () => {
     it('creates, updates and deletes a user-owned plan without moving account money', async () => {
         assert.equal((await supertest(app).get('/goals')).status, 302);
         const ownerId = db.prepare('SELECT id FROM users WHERE email = ?').get('goal-owner@example.test').id;
-        const balanceBefore = db.prepare('SELECT SUM(balance) AS total FROM accounts WHERE user_id = ?').get(ownerId).total;
         const page = await owner.agent.get('/goals');
         assert.equal(page.status, 200);
         assert.match(page.text, /real personal USD accounts/);
