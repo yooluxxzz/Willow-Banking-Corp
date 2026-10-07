@@ -130,7 +130,7 @@ router.post('/actions/:token/cancel', (req, res) => {
 
 router.post('/chat', async (req, res) => {
     const userId = req.session.userId;
-    const { question, history: clientHistory, conversationId: requestedConversationId } = req.body || {};
+    const { question, conversationId: requestedConversationId } = req.body || {};
     if (!allow(userId)) return res.status(429).json({ error: 'You’ve asked a lot of questions in a short time. Please wait a few minutes.' });
     const status = await assistant.getStatus();
     if (status.reason === 'disabled') return res.status(503).json({ error: 'Ask Willow is turned off on this server.', code: 'assistant_disabled' });
