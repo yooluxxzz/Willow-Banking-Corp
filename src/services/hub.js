@@ -143,7 +143,7 @@ function buildInsights(summary, valuation) {
     }
     const nearest = summary.goals.filter(goal => goal.target_cents > 0 && goal.current_cents < goal.target_cents).sort((a, b) => (b.current_cents / b.target_cents) - (a.current_cents / a.target_cents))[0];
     if (nearest) {
-        insights.push({ icon: 'target', tone: 'neutral', text: `“${nearest.name}” is ${Math.round(nearest.current_cents / nearest.target_cents * 100)}% of the way there.`, detail: `${usd(nearest.target_cents - nearest.current_cents)} to go · self-reported progress`, href: '/goals' });
+        insights.push({ icon: 'target', tone: 'neutral', text: `“${nearest.name}” is ${Math.round(nearest.current_cents / nearest.target_cents * 100)}% of the way there.`, detail: `${usd(nearest.target_cents - nearest.current_cents)} to go · actual account funds`, href: '/goals' });
     }
     return insights.slice(0, 5);
 }
