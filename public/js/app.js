@@ -1038,6 +1038,42 @@
     }
 
     /**
+     * Market pages can render the Yahoo fallback while the local yfinance bridge starts.
+     * Once that bridge is genuinely ready, refresh once so the page picks up fresh provider data.
+     * Pages already opened after readiness are left alone.
+     */
+    function setupMarketServiceRefresh() {
+        const marketPage = doc.querySelector('[data-rates-status], [data-fx-status], [data-market-status], [data-coins-status], [data-wealth-page="markets"]');
+        if (!marketPage) return;
+
+        const maxAttempts = 20;
+        const pollMs = 3000;
+        let sawNotReady = false;
+        let attempts = 0;
+        let timer = null;
+
+        const poll = async () => {
+            attempts += 1;
+            try {
+                const result = await api('/api/public/market-service-status', { passive: true, timeout: 3000 });
+                if (result.ready) {
+                    if (sawNotReady) global.location.reload();
+                    return;
+                }
+                if (result.retryable === false || attempts >= maxAttempts) return;
+                sawNotReady = true;
+            } catch (error) {
+                if (attempts >= maxAttempts) return;
+                sawNotReady = true;
+            }
+            timer = global.setTimeout(poll, pollMs);
+        };
+
+        timer = global.setTimeout(poll, 500);
+        global.addEventListener('pagehide', () => { if (timer) global.clearTimeout(timer); }, { once: true });
+    }
+
+    /**
      * Guided section scrolling across Willow's public and product pages.
      * The main account dashboard is intentionally excluded because it is a dense
      * workspace rather than a storytelling page.
@@ -1237,6 +1273,7 @@
         setupRangeFill();
         setupTransactionDetails();
         setupLocalDetails();
+        setupMarketServiceRefresh();
         setupIdleTimeout();
         setupScrollRegions();
         setupPageIcon();
