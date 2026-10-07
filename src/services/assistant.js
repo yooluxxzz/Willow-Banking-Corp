@@ -395,7 +395,7 @@ async function chat(userId, { question, history = [] }, { onToken = () => {}, si
 
 
 const ACTION_SYSTEM_PROMPT =
-    'You are Willow\\'s private action router. Return JSON only, with no markdown.\n' +
+    'You are Willow\'s private action router. Return JSON only, with no markdown.\n' +
     'Choose exactly one mode: answer, read, or action.\n' +
     'answer = advice, explanation, conversation, or unclear request.\n' +
     'read = a verified data lookup using one of: accounts, finances, portfolio, stock_quote, debts, loans, transactions, budgets, goals.\n' +
