@@ -3304,6 +3304,18 @@ html.is-private [data-private]:hover {
     animation: w-attention-text 2.4s var(--ease-in-out) 1;
 }
 
+/* Guided scroll focus: the reached section subtly grows to draw attention,
+   stays enlarged during the reading lock, then eases back to normal before the
+   next scroll is accepted. The scale property avoids fighting existing transforms. */
+.willow-guided-focus {
+    scale: 1.022;
+    transform-origin: center center;
+    will-change: scale;
+    position: relative;
+    z-index: 1;
+    transition: scale 480ms var(--ease-out);
+}
+
 /* Scroll focus (setupAttention in app.js): sections wait hidden until they are
    scrolled to, fade up, then a glow or a soft colour wash fades in and out. */
 .focus-pending {
