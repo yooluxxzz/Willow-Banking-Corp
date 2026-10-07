@@ -316,25 +316,56 @@ async function execute(userId, tool, args = {}) {
     }
 }
 
-function title(tool, args = {}) {
+function actionTitle(tool, args = {}) {
     const amount = args.amount !== undefined ? formatCurrency(Number(args.amount) * 100, 'USD') : '';
     switch (tool) {
     case 'transfer':
-        return \`Move \${amount} from your selected account to the selected destination\`;
+        return `Move ${amount} from the selected account to the selected destination`;
     case 'pay_debt':
-        return \`Pay \${amount} toward the selected debt\`;
+        return `Pay ${amount} toward the selected debt`;
     case 'move_investing_cash':
-        return \`\${args.direction === 'out' ? 'Move' : 'Add'} \${amount} \${args.direction === 'out' ? 'from investing to an account' : 'from an account to investing'}\`;
+        return `${args.direction === 'out' ? 'Move' : 'Add'} ${amount} ${args.direction === 'out' ? 'from investing to an account' : 'from an account to investing'}`;
     case 'trade':
-        return \`\${String(args.side || '').toLowerCase() === 'sell' ? 'Sell' : 'Buy'} \${args.quantity ? Number(args.quantity) : amount} of \${String(args.symbol || '').toUpperCase()}\`;
+        return `${String(args.side || '').toLowerCase() === 'sell' ? 'Sell' : 'Buy'} ${args.quantity ? Number(args.quantity) : amount} of ${String(args.symbol || '').toUpperCase()}`;
     case 'create_goal':
-        return \`Create the savings goal “\${compact(args.name).slice(0, 60)}”\`;
+        return `Create the savings goal “${compact(args.name).slice(0, 60)}”`;
     default:
         return 'Run this Willow action';
     }
 }
 
+function actionPreview(userId, tool, args = {}) {
+    const db = getDb();
+    const accountLabel = id => {
+        const account = db.prepare("SELECT nickname, account_type, purpose, account_number, currency FROM accounts WHERE id = ? AND user_id = ? AND status = 'active'").get(Number(id), userId);
+        if (!account) return 'Unavailable account';
+        return `${account.nickname || (account.purpose === 'business' ? 'Business checking' : account.account_type === 'savings' ? 'Savings' : 'Checking')} ··${String(account.account_number).slice(-4)} (${account.currency})`;
+    };
+    const amount = args.amount !== undefined ? formatCurrency(Number(args.amount) * 100, 'USD') : '';
+    switch (tool) {
+    case 'transfer':
+        return args.toAccountId
+            ? `Move ${amount} from ${accountLabel(args.fromAccountId)} to ${accountLabel(args.toAccountId)}`
+            : `Send ${amount} from ${accountLabel(args.fromAccountId)} to ${compact(args.recipientEmail)}`;
+    case 'pay_debt': {
+        const debt = Number(args.debtId) > 0 ? networth.getDebt(userId, Number(args.debtId)) : null;
+        return debt ? `Pay ${amount} toward “${debt.name}” from ${accountLabel(args.accountId)}` : actionTitle(tool, args);
+    }
+    case 'move_investing_cash':
+        return args.direction === 'out'
+            ? `Move ${amount} from investing cash to ${accountLabel(args.accountId)}`
+            : `Move ${amount} from ${accountLabel(args.accountId)} into investing cash`;
+    case 'trade':
+        return `${String(args.side || '').toLowerCase() === 'sell' ? 'Sell' : 'Buy'} ${args.quantity ? Number(args.quantity) + ' units' : amount} of ${String(args.symbol || '').toUpperCase()}`;
+    case 'create_goal':
+        return `Create “${compact(args.name).slice(0, 60)}” with a ${formatCurrency(Number(args.target) * 100, 'USD')} target funded by ${accountLabel(args.accountId)}`;
+    default:
+        return actionTitle(tool, args);
+    }
+}
+
+
 function isReadTool(tool) { return READ_TOOLS.has(tool); }
 function isWriteTool(tool) { return WRITE_TOOLS.has(tool); }
 
-module.exports = { READ_TOOLS, WRITE_TOOLS, plannerContext, detectReadIntent, read, execute, title, isReadTool, isWriteTool };
+module.exports = { READ_TOOLS, WRITE_TOOLS, plannerContext, detectReadIntent, read, execute, title: actionTitle, actionTitle, actionPreview, isReadTool, isWriteTool };
