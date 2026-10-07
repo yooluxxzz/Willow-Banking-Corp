@@ -155,7 +155,7 @@ router.post('/chat', async (req, res) => {
             if (autonomy === 'confirm') {
                 const actionToken = rememberAction(userId, planned);
                 send({ delta: 'I’m ready to ' + explainTool(planned.tool) + '.' });
-                send({ done: true, mode: 'action_pending', action: { token: actionToken, tool: planned.tool, title: assistant.actionTitle(planned.tool, planned.args), expiresInSeconds: ACTION_TTL_MS / 1000 }, links });
+                send({ done: true, mode: 'action_pending', action: { token: actionToken, tool: planned.tool, title: assistantActions.actionPreview(userId, planned.tool, planned.args), expiresInSeconds: ACTION_TTL_MS / 1000 }, links });
                 return res.end();
             }
             try {
