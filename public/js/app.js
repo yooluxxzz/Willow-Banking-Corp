@@ -782,6 +782,7 @@
         const autonomyNote = panel.querySelector('[data-ask-autonomy-note]');
         const historyList = panel.querySelector('[data-ask-history-list]');
         const newChatButton = panel.querySelector('[data-ask-new]');
+        const scroll = () => { thread.scrollTop = thread.scrollHeight; };
         let autonomy = 'confirm';
         let currentConversationId = null;
         let history = [];
@@ -877,7 +878,7 @@
                     ...(message.role === 'user' ? [doc.createTextNode(message.content)] : [renderRichText(message.content)])));
             });
             loadChatHistory();
-            scrollThread();
+            scroll();
         };
         const loadConversation = async id => {
             if (controller) return;
@@ -937,7 +938,6 @@
         });
         stop.addEventListener('click', () => { if (controller) controller.abort(); });
 
-        const scroll = () => { thread.scrollTop = thread.scrollHeight; };
         const busy = on => { send.hidden = on; stop.hidden = !on; input.disabled = on; };
 
         async function ask(question) {
