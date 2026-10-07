@@ -26,6 +26,8 @@ const portfolio = require('./demo-portfolio');
 const goals = require('./goals');
 const business = require('./business');
 const { categorize, categoryMeta } = require('./categories');
+const assistantActions = require('./assistant-actions');
+const preferences = require('./preferences');
 
 const STATUS_TTL_MS = 30 * 1000;
 const MAX_QUESTION = 1000;
@@ -310,7 +312,7 @@ const ollamaReason = text => String(text || '').replace(/\s+/g, ' ').trim().slic
  * this conversation; `onToken` receives text as it arrives. Resolves with the
  * full answer.
  */
-async function chat(userId, { question, history = [] }, { onToken = () => {}, signal } = {}) {
+async function chat(userId, { question, history = [] }, { onToken = () => {}, signal, extraContext = '' } = {}) {
     const text = typeof question === 'string' ? question.trim() : '';
     if (!text) throw fail('Ask a question about your money.', 400);
     if (text.length > MAX_QUESTION) throw fail(`Keep questions under ${MAX_QUESTION} characters.`, 400);
@@ -321,8 +323,9 @@ async function chat(userId, { question, history = [] }, { onToken = () => {}, si
         .slice(-MAX_TURNS)
         .map(turn => ({ role: turn.role, content: turn.content.slice(0, 4000) }));
     const context = await buildContext(userId);
+    const supplemental = typeof extraContext === 'string' && extraContext.trim() ? `\n\nVERIFIED TOOL RESULT — use these exact values for this request\n${extraContext.trim()}` : '';
     const messages = [
-        { role: 'system', content: `${SYSTEM_PROMPT}\n\nCONTEXT\n${context}` },
+        { role: 'system', content: `${SYSTEM_PROMPT}\n\nCONTEXT\n${context}${supplemental}` },
         ...turns,
         { role: 'user', content: text },
     ];
@@ -390,4 +393,86 @@ async function chat(userId, { question, history = [] }, { onToken = () => {}, si
     return answer.trim();
 }
 
-module.exports = { refreshStatus, cachedStatus, getStatus, buildContext, chat, relatedLinks, thinkFilter, pickModel, chatModels, SYSTEM_PROMPT };
+
+const ACTION_SYSTEM_PROMPT =
+    'You are Willow\\'s private action router. Return JSON only, with no markdown.\\n' +
+    'Choose exactly one mode: answer, read, or action.\\n' +
+    'answer = advice, explanation, conversation, or unclear request.\\n' +
+    'read = a verified data lookup using one of: accounts, finances, portfolio, stock_quote, debts, loans, transactions, budgets, goals.\\n' +
+    'action = an explicit request to change something using one of: transfer, pay_debt, move_investing_cash, trade, create_goal.\\n' +
+    'Rules: use only ACTION DATA; never invent IDs, balances, emails, symbols, account names, or destinations; never turn a question into an action.\\n' +
+    'transfer args: fromAccountId + (toAccountId OR recipientEmail) + amount, optional description.\\n' +
+    'pay_debt args: debtId + accountId + amount.\\n' +
+    'move_investing_cash args: accountId + direction in|out + amount.\\n' +
+    'trade args: symbol + side buy|sell + quantity OR amount.\\n' +
+    'create_goal args: name + category + target + accountId.\\n' +
+    'stock_quote args: symbol.\\n' +
+    'For an ambiguous amount, destination, debt, account, goal, or instrument, return answer mode.';
+
+function parsePlan(raw) {
+    const text = String(raw || '').trim();
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    if (start < 0 || end <= start) return { mode: 'answer' };
+    try {
+        const plan = JSON.parse(text.slice(start, end + 1));
+        if (!plan || !['answer', 'read', 'action'].includes(plan.mode)) return { mode: 'answer' };
+        if (plan.mode === 'read' && !assistantActions.isReadTool(plan.tool)) return { mode: 'answer' };
+        if (plan.mode === 'action' && !assistantActions.isWriteTool(plan.tool)) return { mode: 'answer' };
+        return {
+            mode: plan.mode,
+            tool: plan.mode === 'answer' ? null : plan.tool,
+            args: plan.args && typeof plan.args === 'object' && !Array.isArray(plan.args) ? plan.args : {},
+        };
+    } catch (error) {
+        return { mode: 'answer' };
+    }
+}
+
+async function planAction(userId, question) {
+    const text = typeof question === 'string' ? question.trim() : '';
+    if (!text) return { mode: 'answer' };
+    const current = await getStatus();
+    if (!current.available) return { mode: 'answer' };
+    try {
+        const response = await fetch(`${config.assistant.ollamaUrl}/api/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model: current.model,
+                stream: false,
+                keep_alive: KEEP_ALIVE,
+                format: 'json',
+                options: { temperature: 0, num_ctx: Math.min(config.assistant.contextTokens, 8192) },
+                messages: [
+                    { role: 'system', content: ACTION_SYSTEM_PROMPT + '\\n\\n' + assistantActions.plannerContext(userId) },
+                    { role: 'user', content: text },
+                ],
+            }),
+            signal: AbortSignal.timeout(Math.min(config.assistant.timeoutMs, 60000)),
+        });
+        if (!response.ok) return { mode: 'answer' };
+        const body = await response.json();
+        return parsePlan(body.message?.content || body.response || '');
+    } catch (error) {
+        return { mode: 'answer' };
+    }
+}
+
+function autonomy(userId) {
+    return preferences.getPreferences(userId).assistantAutonomy;
+}
+
+async function runReadTool(userId, tool, args) {
+    return assistantActions.read(userId, tool, args);
+}
+
+async function runActionTool(userId, tool, args) {
+    return assistantActions.execute(userId, tool, args);
+}
+
+function actionTitle(tool, args) {
+    return assistantActions.title(tool, args);
+}
+
+module.exports = { planAction, parsePlan, autonomy, runReadTool, runActionTool, actionTitle, refreshStatus, cachedStatus, getStatus, buildContext, chat, relatedLinks, thinkFilter, pickModel, chatModels, SYSTEM_PROMPT };
