@@ -36,6 +36,10 @@ function explicitWriteRequest(question) {
 }
 
 function rememberAction(userId, plan) {
+    const now = Date.now();
+    for (const [key, pending] of pendingActions) {
+        if (now - pending.createdAt > ACTION_TTL_MS) pendingActions.delete(key);
+    }
     const key = crypto.randomBytes(24).toString('hex');
     pendingActions.set(key, { userId, tool: plan.tool, args: plan.args, createdAt: Date.now() });
     return key;
@@ -83,6 +87,7 @@ router.patch('/autonomy', (req, res) => {
 });
 
 router.post('/actions/:token/confirm', async (req, res) => {
+    if (preferences.getPreferences(req.session.userId).assistantAutonomy === 'read_only') return res.status(403).json({ error: 'Ask Willow is currently Read only, so no action was taken.', code: 'autonomy_read_only' });
     const pending = takeAction(req.session.userId, req.params.token);
     if (!pending) return res.status(410).json({ error: 'That action has expired. Ask Willow to prepare it again.', code: 'action_expired' });
     try {
@@ -144,7 +149,23 @@ router.post('/chat', async (req, res) => {
         }
 
         let planned = { mode: 'answer' };
-        if (status.available && explicitWriteRequest(question)) planned = await assistant.planAction(userId, question);
+        const mayNeedTool = explicitWriteRequest(question) || /\b(stock|share|ticker|quote|price|trading)\b/i.test(question);
+        if (status.available && mayNeedTool) planned = await assistant.planAction(userId, question);
+
+        if (planned.mode === 'read') {
+            try {
+                const result = await assistant.runReadTool(userId, planned.tool, planned.args);
+                await assistant.chat(userId, { question, history }, {
+                    onToken: delta => send({ delta }),
+                    signal: controller.signal,
+                    extraContext: JSON.stringify({ tool: planned.tool, result }),
+                });
+                send({ done: true, mode: 'ai', model: status.model, tool: planned.tool, links });
+                return res.end();
+            } catch (error) {
+                if (controller.signal.aborted) throw error;
+            }
+        }
 
         if (planned.mode === 'action') {
             if (autonomy === 'read_only') {
