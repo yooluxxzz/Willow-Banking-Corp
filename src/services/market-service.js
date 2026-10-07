@@ -214,4 +214,14 @@ function status() {
     return { managed: state.managed, running: state.running, pid: state.pid, restarts: state.restarts, lastError: state.lastError, url: serviceUrl().origin };
 }
 
-module.exports = { start, stop, status, healthy };
+/** Whether a usable local market-data service is healthy and accepts this copy's token. */
+async function ready(timeoutMs = 1500) {
+    const mode = (process.env.MARKET_DATA_PROVIDER || 'auto').toLowerCase();
+    if (process.env.MARKET_SERVICE_AUTOSTART === 'false' || !['auto', 'service'].includes(mode)) return false;
+    const url = serviceUrl();
+    if (!['127.0.0.1', 'localhost', '::1', '[::1]'].includes(url.hostname)) return false;
+    const token = ensureToken();
+    return (await healthy(timeoutMs)) && (await acceptsToken(token, timeoutMs));
+}
+
+module.exports = { start, stop, status, healthy, ready };
