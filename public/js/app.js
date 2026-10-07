@@ -1055,7 +1055,6 @@
             .filter(section => !section.matches(FOCUS_SKIP) && isShown(section));
 
         const duration = 1700;
-        const zoomInDuration = 480;
         const zoomOutDuration = 480;
         const groupTolerance = 48;
         let lockedUntil = 0;
@@ -1064,6 +1063,7 @@
         let releaseTimer = null;
         let animating = false;
         let focusedSections = [];
+        let lastScrollY = global.scrollY;
 
         const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
