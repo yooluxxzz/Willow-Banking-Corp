@@ -49,7 +49,7 @@ The application uses sql.js with its schema and startup migrations in `src/datab
 ## 2026-10-02: personal planning goals
 
 - Startup creates `demo_goals(id, user_id, name, category, target_cents, current_cents, created_at, updated_at)`. Rows are owned by a single user, cascade on account deletion, restrict categories and enforce positive targets with progress between zero and the target.
-- Goal amounts are self-reported planning values only. Creating or updating a goal does not move money or modify account balances, savings balances, or ledger transactions. The Hub shows these saved goals with the same planning-only disclosure.
+- Goal targets are planning values, while progress is sourced from the linked personal USD account’s available balance. Creating or updating a goal does not move money; funding happens through normal account transfers. The Hub shows the same account-backed progress.
 
 ## 2026-10-02: scheduled demo transfers
 
