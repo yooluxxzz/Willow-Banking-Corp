@@ -397,7 +397,8 @@
     }
 
     function init() {
-        setupHero(doc.querySelector('[data-hero]'));\n        setupSectionScrollLock(doc.querySelector('#main'), { duration: 1700 });
+        setupHero(doc.querySelector('[data-hero]'));
+        setupSectionScrollLock(doc.querySelector('#main'), { duration: 1700 });
         setupTabs(doc.querySelector('.grow-tabs'), { tabSelector: '[data-grow-tab]', panelFor: tab => doc.getElementById(tab.getAttribute('aria-controls')) });
         setupTabs(doc.querySelector('.goal-picker'), { tabSelector: '[data-goal-option]', panelFor: tab => doc.getElementById(tab.getAttribute('aria-controls')) });
         lazyImages();
