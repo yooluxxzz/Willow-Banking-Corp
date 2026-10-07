@@ -12,6 +12,19 @@
         </div>
         <button type="button" class="btn btn-ghost btn-icon" data-ask-close aria-label="Close Ask Willow"><%- icon('x', 'icon-md') %></button>
     </div>
+    <section class="ask-autonomy" aria-labelledby="askAutonomyTitle" data-ask-autonomy>
+        <div class="ask-autonomy-head">
+            <div>
+                <p class="label" id="askAutonomyTitle">How much should Willow do?</p>
+                <p class="text-xs muted" data-ask-autonomy-note>Read your data, ask before changes, or let explicit demo actions run automatically.</p>
+            </div>
+        </div>
+        <div class="segmented ask-autonomy-options" role="radiogroup" aria-label="Ask Willow autonomy">
+            <button type="button" role="radio" data-ask-autonomy-value="read_only" aria-checked="false">Read only</button>
+            <button type="button" role="radio" data-ask-autonomy-value="confirm" aria-checked="false">Ask before actions</button>
+            <button type="button" role="radio" data-ask-autonomy-value="autonomous" aria-checked="false">Autonomous</button>
+        </div>
+    </section>
     <details class="ask-setup" data-ask-setup<%- assistantAi ? ' hidden' : '' %>>
         <summary><%- icon('sparkle', 'icon-sm') %> Get full AI answers on this computer</summary>
         <p>With Ollama, Ask Willow runs a language model on this computer, so it can answer any question about your money in its own words. Your questions and records never leave the computer.</p>
@@ -35,9 +48,9 @@
     </div>
     <form class="ask-form" data-ask-form>
         <label for="askInput" class="visually-hidden">Ask a question about your money</label>
-        <textarea id="askInput" name="question" class="ask-input" rows="1" placeholder="Ask about spending, budgets, debts…" maxlength="1000" autocomplete="off" required></textarea>
+        <textarea id="askInput" name="question" class="ask-input" rows="1" placeholder="Ask about balances, stocks, loans, spending, or what to do next…" maxlength="1000" autocomplete="off" required></textarea>
         <button type="submit" class="btn btn-primary btn-icon" aria-label="Ask" data-ask-send><%- icon('arrow-up', 'icon-md') %></button>
         <button type="button" class="btn btn-secondary btn-icon" aria-label="Stop answering" data-ask-stop hidden><%- icon('pause', 'icon-md') %></button>
     </form>
-    <p class="ask-disclaimer">Information, not financial advice. Ask Willow won’t predict markets or tell you what to buy. AI answers can make mistakes — check important numbers.</p>
+    <p class="ask-disclaimer">Information only, not financial advice. Read-only checks happen immediately. Money-moving and trading actions are controlled by your autonomy setting; AI can make mistakes, so review important actions and numbers.</p>
 </dialog>
