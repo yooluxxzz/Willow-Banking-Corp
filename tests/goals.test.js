@@ -19,7 +19,7 @@ describe('Personal planning goals', () => {
         const balanceBefore = db.prepare('SELECT SUM(balance) AS total FROM accounts WHERE user_id = ?').get(ownerId).total;
         const page = await owner.agent.get('/goals');
         assert.equal(page.status, 200);
-        assert.match(page.text, /not bank balances/);
+        assert.match(page.text, /real personal USD accounts/);
 
         const denied = await owner.agent.post('/api/goals').send({ name: 'Home', category: 'home', targetAmount: '5000' });
         assert.equal(denied.status, 403);
