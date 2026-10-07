@@ -1,4 +1,4 @@
-/* Willow goals — plans with self-reported progress. */
+/* Willow goals — progress sourced from real account balances. */
 'use strict';
 
 (function (global) {
@@ -36,10 +36,11 @@
             const done = goal.current_cents >= goal.target_cents;
             const account = accounts.find(item => item.id === goal.account_id);
             const accountLabel = account ? `${account.displayName} · ${account.availableBalanceFormatted} available` : (goal.account_name || 'No funding account');
-            const fund = goal.account_id
+            const linkedAccount = Boolean(goal.account_id && account);
+            const fund = linkedAccount
                 ? W.el('a', { className: 'btn btn-secondary btn-sm', href: `/transfers?mode=own&to=${goal.account_id}` }, W.icon('transfer', 'icon-sm'), ' Move money')
                 : W.el('button', { type: 'button', className: 'btn btn-secondary btn-sm', text: 'Link account' });
-            if (!goal.account_id) fund.addEventListener('click', () => open(goal));
+            if (!linkedAccount) fund.addEventListener('click', () => open(goal));
             const edit = W.el('button', { type: 'button', className: 'btn btn-ghost btn-icon btn-sm', 'aria-label': `Edit ${goal.name}` }, W.icon('settings'));
             edit.addEventListener('click', () => open(goal));
             return W.el('article', { className: `goal-card${done ? ' is-done' : ''}` },
@@ -137,7 +138,7 @@
         remove.addEventListener('click', async () => {
             const id = form.elements.id.value;
             W.closeDialog(dialog);
-            const ok = await W.showConfirm('This removes the goal and its recorded progress. Your accounts aren’t affected.', 'Delete goal?', { confirmLabel: 'Delete', danger: true });
+            const ok = await W.showConfirm('This removes the goal link. Your accounts and balances aren’t affected.', 'Delete goal?', { confirmLabel: 'Delete', danger: true });
             if (!ok) return;
             try {
                 await W.api(`/api/goals/${id}`, { method: 'DELETE' });
