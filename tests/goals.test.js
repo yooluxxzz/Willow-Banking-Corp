@@ -49,13 +49,15 @@ describe('Personal planning goals', () => {
         assert.equal(db.prepare('SELECT SUM(balance) AS total FROM accounts WHERE user_id = ?').get(ownerId).total, balanceBeforeGoal + 10000);
 
         const invalid = await owner.agent.patch(`/api/goals/${created.body.goal.id}`).set('X-CSRF-Token', owner.csrfToken).send({ targetAmount: '500' });
-        assert.equal(invalid.status, 400);
+        assert.equal(invalid.status, 200);
+        assert.equal(invalid.body.goal.current_cents, 22550);
+        assert.equal(invalid.body.goal.target_cents, 50000);
         const removed = await owner.agent.delete(`/api/goals/${created.body.goal.id}`).set('X-CSRF-Token', owner.csrfToken);
         assert.equal(removed.status, 200);
         assert.deepEqual((await owner.agent.get('/api/goals')).body.goals, []);
     });
 
-    it('rejects unsafe names, unknown categories, malformed currency values and excess progress', async () => {
+    it('rejects unsafe names, unknown categories and malformed currency values while using real progress', async () => {
         const post = value => owner.agent.post('/api/goals').set('X-CSRF-Token', owner.csrfToken).send(value);
         assert.equal((await post({ name: '<b>Bad</b>', category: 'home', targetAmount: '500' })).status, 400);
         assert.equal((await post({ name: 'Test goal', category: 'stocks', targetAmount: '500' })).status, 400);
