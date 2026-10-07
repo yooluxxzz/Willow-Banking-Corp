@@ -1074,6 +1074,7 @@
             return match;
         };
         const lock = () => {
+            // 1.7s of intentional reading time after the smooth section transition.
             lockedUntil = Date.now() + duration;
             if (timer) global.clearTimeout(timer);
             timer = global.setTimeout(() => { lockedUntil = 0; timer = null; }, duration);
@@ -1082,8 +1083,33 @@
             const index = nearest();
             const target = sections[clamp(index + direction, 0, sections.length - 1)];
             if (!target || sections.indexOf(target) === index) return false;
+
             const maxTop = Math.max(0, doc.documentElement.scrollHeight - global.innerHeight);
-            global.scrollTo({ top: clamp(topOf(target), 0, maxTop), behavior: 'smooth' });
+            const start = global.scrollY;
+            const end = clamp(topOf(target), 0, maxTop);
+            const distance = end - start;
+            const animationDuration = Math.min(900, Math.max(520, 420 + Math.abs(distance) * 0.28));
+            const started = Date.now();
+            let frame = null;
+
+            const easeInOut = value => value < 0.5
+                ? 4 * value * value * value
+                : 1 - Math.pow(-2 * value + 2, 3) / 2;
+
+            const animate = () => {
+                const progress = Math.min(1, (Date.now() - started) / animationDuration);
+                global.scrollTo(0, start + distance * easeInOut(progress));
+                if (progress < 1) {
+                    frame = global.requestAnimationFrame ? global.requestAnimationFrame(animate) : global.setTimeout(animate, 16);
+                    return;
+                }
+                frame = null;
+            };
+
+            if (global.requestAnimationFrame) global.requestAnimationFrame(animate);
+            else animate();
+
+            // Give the visitor a full reading window after the section settles.
             lock();
             return true;
         };
