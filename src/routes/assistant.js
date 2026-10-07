@@ -144,7 +144,7 @@ router.post('/chat', async (req, res) => {
     } catch (error) {
         return res.status(error.status || 400).json({ error: error.message });
     }
-    const history = assistantChats.history(userId, conversation.id, 10);
+    const history = assistantChats.history(userId, conversation.id, 11).slice(0, -1);
 
     const controller = new AbortController();
     res.on('close', () => { if (!res.writableEnded) controller.abort(); });
