@@ -113,6 +113,7 @@ async function initializeDatabase() {
         CREATE TABLE IF NOT EXISTS demo_goals (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
             name TEXT NOT NULL,
             category TEXT NOT NULL CHECK(category IN ('savings', 'home', 'travel', 'business', 'investing', 'other')),
             target_cents INTEGER NOT NULL CHECK(target_cents > 0),
@@ -429,6 +430,7 @@ async function initializeDatabase() {
         'CREATE INDEX IF NOT EXISTS idx_cards_account_id ON cards(account_id)',
         'CREATE INDEX IF NOT EXISTS idx_demo_trades_user_created ON demo_trades(user_id, created_at)',
         'CREATE INDEX IF NOT EXISTS idx_demo_goals_user ON demo_goals(user_id, created_at)',
+        'CREATE INDEX IF NOT EXISTS idx_demo_goals_account ON demo_goals(account_id)',
         'CREATE INDEX IF NOT EXISTS idx_scheduled_transfers_due ON scheduled_transfers(status, scheduled_for)',
         'CREATE INDEX IF NOT EXISTS idx_scheduled_transfers_user ON scheduled_transfers(user_id, created_at)',
         'CREATE INDEX IF NOT EXISTS idx_demo_crypto_transfers_sender ON demo_crypto_transfers(sender_user_id, created_at)',
@@ -463,6 +465,7 @@ async function initializeDatabase() {
         "ALTER TABLE transactions ADD COLUMN counterparty TEXT DEFAULT NULL",
         "ALTER TABLE transactions ADD COLUMN card_id INTEGER DEFAULT NULL",
         "ALTER TABLE user_preferences ADD COLUMN alert_budgets INTEGER NOT NULL DEFAULT 1",
+        "ALTER TABLE demo_goals ADD COLUMN account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL",
     ];
     migrations.forEach(m => { try { db.run(m); } catch (e) { /* column already exists */ } });
     db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_opening_key ON accounts(user_id, opening_key)');
