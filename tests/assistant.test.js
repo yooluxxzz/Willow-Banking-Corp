@@ -78,7 +78,7 @@ describe('Local assistant (Ollama)', () => {
 
     it('picks an installed chat model (never an embedding model) and loads it straight away', async () => {
         const status = (await owner.agent.get('/api/assistant/status')).body;
-        assert.deepEqual(status, { available: true, mode: 'ai', model: 'llama3.2:latest', reason: null });
+        assert.deepEqual(status, { available: true, mode: 'ai', model: 'llama3.2:latest', reason: null, autonomy: 'confirm' });
         assert.ok(ollama.warmups.some(request => request.model === 'llama3.2:latest' && request.keep_alive === '30m'), 'the model is loaded before the first question');
         const names = assistant.chatModels([{ name: 'nomic-embed-text:latest', details: { family: 'nomic-bert' } }, { name: 'mxbai-embed-large' }, { name: 'my-custom-model:7b' }]);
         assert.deepEqual(names, ['my-custom-model:7b'], 'embedding models are never used for chat');
@@ -87,6 +87,14 @@ describe('Local assistant (Ollama)', () => {
         const page = await owner.agent.get('/dashboard');
         assert.match(page.text, /class="ask-trigger" data-ask-open[^>]*aria-controls="askPanel">/);
         assert.match(page.text, /AI running on this computer with <span data-ask-model>llama3\.2:latest<\/span>/);
+        assert.match(page.text, /Ask Willow autonomy/);
+        assert.match(page.text, /Read only/);
+        assert.match(page.text, /Ask before actions/);
+        assert.match(page.text, /Autonomous/);
+        const autonomy = await owner.agent.get('/api/assistant/autonomy');
+        assert.equal(autonomy.status, 200);
+        assert.equal(autonomy.body.autonomy, 'confirm');
+        assert.equal(autonomy.body.options.length, 3);
         assert.equal((await supertest(app).get('/api/assistant/status').set('Accept', 'application/json')).status, 401);
     });
 
