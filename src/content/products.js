@@ -395,7 +395,7 @@ const products = [
                 a: 'No. Every Willow balance is simulated, including savings. New savings accounts start at zero, and you can add simulated demo funds or transfer them from another of your Willow accounts.',
             },
         ],
-        disclosure: 'Willow savings accounts hold simulated balances and earn no interest. Goals are planning tools with self-reported progress, and they never move money.',
+        disclosure: 'Willow savings accounts hold simulated balances and earn no interest. Goals track the available balance of a linked real account and never move money automatically.',
         related: ['accounts', 'transfers', 'portfolio'],
     },
     {
