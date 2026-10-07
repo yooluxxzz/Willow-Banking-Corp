@@ -27,7 +27,8 @@
             var root = document.documentElement;
             try {
                 var theme = localStorage.getItem('willow-theme');
-                if (theme === 'dark' || (!theme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) root.setAttribute('data-theme', 'dark');
+                var systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (theme === 'dark' || (theme !== 'light' && systemDark)) root.setAttribute('data-theme', 'dark');
                 if (localStorage.getItem('willow-private') === '1') root.classList.add('is-private');
             } catch (error) { /* storage unavailable */ }
             root.classList.add('js');
