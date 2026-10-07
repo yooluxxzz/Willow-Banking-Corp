@@ -5,6 +5,7 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const marketData = require('../services/market-data');
+const marketService = require('../services/market-service');
 const config = require('../config');
 
 const router = express.Router();
@@ -14,6 +15,25 @@ router.use((req, res, next) => { res.set('Cache-Control', 'public, max-age=30');
 const publicQuote = quote => (quote.unavailable
     ? { symbol: quote.symbol, name: quote.name, type: quote.type, unavailable: true }
     : { symbol: quote.symbol, name: quote.name, type: quote.type, price: quote.price, change: quote.change, changePercent: quote.changePercent, currency: quote.currency, asOf: quote.asOf, stale: Boolean(quote.stale) });
+
+router.get('/market-service-status', async (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    const status = marketService.status();
+    const enabled = process.env.MARKET_SERVICE_AUTOSTART !== 'false'
+        && ['auto', 'service'].includes(marketData.getStatus().mode);
+    const terminalErrors = new Set(['python_missing', 'yfinance_missing', 'token_mismatch']);
+    if (!enabled) {
+        return res.json({ ready: false, enabled: false, retryable: false });
+    }
+    const ready = await marketService.ready(900);
+    return res.json({
+        ready,
+        enabled: true,
+        running: status.running,
+        retryable: ready || !terminalErrors.has(status.lastError),
+        reason: ready ? null : status.lastError,
+    });
+});
 
 router.get('/markets', async (req, res) => {
     try {
