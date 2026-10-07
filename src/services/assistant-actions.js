@@ -48,16 +48,16 @@ function accountRows(userId) {
 }
 
 function plannerContext(userId) {
-    const accounts = accountRows(userId);
-    const debts = networth.listDebts(userId);
+    const plannerAccounts = accountRows(userId);
+    const plannerDebts = networth.listDebts(userId);
     const instruments = marketData.listInstruments().filter(item => item.tradable).slice(0, 120);
     const goalsList = goals.listGoals(userId);
     return [
         'ACTION DATA (only for choosing tools; IDs are internal and must never be exposed unless needed in a confirmation receipt):',
         'Accounts:',
-        ...(accounts.length ? accounts.map(a => `- id=${a.id}; name=${a.nickname || (a.purpose === 'business' ? 'Business checking' : a.account_type === 'savings' ? 'Savings' : 'Checking')}; last4=${String(a.account_number).slice(-4)}; ${a.currency}; available=${formatCurrency(a.available_balance, a.currency)}`) : ['- none']),
+        ...(plannerAccounts.length ? plannerAccounts.map(a => `- id=${a.id}; name=${a.nickname || (a.purpose === 'business' ? 'Business checking' : a.account_type === 'savings' ? 'Savings' : 'Checking')}; last4=${String(a.account_number).slice(-4)}; ${a.currency}; available=${formatCurrency(a.available_balance, a.currency)}`) : ['- none']),
         'Debts:',
-        ...(debts.length ? debts.map(d => `- id=${d.id}; name=${d.name}; kind=${d.kind}; balance=${usd(d.balanceCents)}; APR=${d.apr}%`) : ['- none']),
+        ...(plannerDebts.length ? plannerDebts.map(d => `- id=${d.id}; name=${d.name}; kind=${d.kind}; balance=${usd(d.balanceCents)}; APR=${d.apr}%`) : ['- none']),
         'Goals:',
         ...(goalsList.length ? goalsList.map(g => `- id=${g.id}; name=${g.name}; target=${usd(g.target_cents)}; accountId=${g.account_id || 'none'}`) : ['- none']),
         'Tradable symbols:',
@@ -103,7 +103,7 @@ async function finances(userId) {
     const budgetRows = [...budgets.listBudgets(userId, 'personal'), ...budgets.listBudgets(userId, 'business')];
     const savings = getUserAccounts(userId).filter(a => a.status === 'active' && a.currency === 'USD' && a.account_type === 'savings')
         .reduce((sum, a) => sum + a.balance, 0);
-    const debts = networth.listDebts(userId).filter(d => d.status === 'open');
+    const openDebts = networth.listDebts(userId).filter(d => d.status === 'open');
     return {
         simulated: true,
         balance: getTotalBalance(userId),
@@ -114,7 +114,7 @@ async function finances(userId) {
         },
         savingsCents: savings,
         netWorthCents: worth ? worth.netCents : null,
-        debtsCents: debts.reduce((sum, d) => sum + d.balanceCents, 0),
+        debtsCents: openDebts.reduce((sum, d) => sum + d.balanceCents, 0),
         budgets: budgetRows.map(b => ({ name: b.name, status: b.status, spentCents: b.spentCents, limitCents: b.limitCents })),
         topSpending: summary.categories.slice(0, 5).map(c => ({ category: c.label, cents: c.cents })),
     };
@@ -229,32 +229,37 @@ function validateAccount(userId, accountId) {
 function transfer(userId, args = {}) {
     const amount = args.amount;
     const from = validateAccount(userId, args.fromAccountId);
-    let toAccountNumber = null;
-    let recipientName = '';
-    if (args.toAccountId !== undefined && args.toAccountId !== null && args.toAccountId !== '') {
-        const to = validateAccount(userId, args.toAccountId);
-        if (to.id === from.id) throw new ValidationError('The source and destination accounts must be different.');
-        toAccountNumber = to.account_number;
-        recipientName = to.nickname || (to.account_type === 'savings' ? 'Savings' : 'Checking');
-    } else if (typeof args.recipientEmail === 'string' && args.recipientEmail.trim()) {
-        const recipient = getDb().prepare("SELECT id, full_name, email, status FROM users WHERE email = ? COLLATE NOCASE").get(args.recipientEmail.trim());
-        if (!recipient || recipient.status !== 'active') throw new ValidationError('No active Willow customer was found for that email.');
-        const target = getDb().prepare("SELECT account_number FROM accounts WHERE user_id = ? AND account_type = 'checking' AND status = 'active' AND currency = ? ORDER BY id LIMIT 1").get(recipient.id, from.currency || 'USD');
-        if (!target) throw new ValidationError('That recipient does not have a compatible checking account.');
-        toAccountNumber = target.account_number;
-        recipientName = recipient.full_name;
-    } else {
+    const destination = (() => {
+        if (args.toAccountId !== undefined && args.toAccountId !== null && args.toAccountId !== '') {
+            const to = validateAccount(userId, args.toAccountId);
+            if (to.id === from.id) throw new ValidationError('The source and destination accounts must be different.');
+            return {
+                toAccountNumber: to.account_number,
+                recipientName: to.nickname || (to.account_type === 'savings' ? 'Savings' : 'Checking'),
+            };
+        }
+        if (typeof args.recipientEmail === 'string' && args.recipientEmail.trim()) {
+            const recipient = getDb().prepare("SELECT id, full_name, email, status FROM users WHERE email = ? COLLATE NOCASE").get(args.recipientEmail.trim());
+            if (!recipient || recipient.status !== 'active') throw new ValidationError('No active Willow customer was found for that email.');
+            const target = getDb().prepare("SELECT account_number FROM accounts WHERE user_id = ? AND account_type = 'checking' AND status = 'active' AND currency = ? ORDER BY id LIMIT 1").get(recipient.id, from.currency || 'USD');
+            if (!target) throw new ValidationError('That recipient does not have a compatible checking account.');
+            return {
+                toAccountNumber: target.account_number,
+                recipientName: recipient.full_name,
+            };
+        }
         throw new ValidationError('Choose a destination account or recipient email.');
-    }
+    })();
+
     const result = executeTransfer({
         fromAccountId: from.id,
-        toAccountNumber,
+        toAccountNumber: destination.toAccountNumber,
         amount,
         description: typeof args.description === 'string' ? compact(args.description).slice(0, 200) : '',
         userId,
     });
     if (result.error) throw new ValidationError(result.error);
-    return { ...result, amountFormatted: formatCurrency(result.amountCents, result.currency), recipientName };
+    return { ...result, amountFormatted: formatCurrency(result.amountCents, result.currency), recipientName: destination.recipientName };
 }
 
 function payDebt(userId, args = {}) {
@@ -262,7 +267,7 @@ function payDebt(userId, args = {}) {
     const accountId = Number(args.accountId);
     validateAccount(userId, accountId);
     if (!Number.isSafeInteger(debtId) || debtId <= 0) throw new ValidationError('Choose a valid debt.');
-    const debt = networth.getDebt(userId, debtId);
+    networth.getDebt(userId, debtId);
     const result = networth.recordPayment(userId, debtId, { amount: args.amount, accountId, note: typeof args.note === 'string' ? compact(args.note).slice(0, 120) : 'Paid by Ask Willow' });
     return { debt: result, amountFormatted: formatCurrency(Number(args.amount) * 100, 'USD') };
 }
