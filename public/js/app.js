@@ -777,6 +777,9 @@
         const modelLabel = panel.querySelector('[data-ask-model]');
         const setup = panel.querySelector('[data-ask-setup]');
         const setupStatus = panel.querySelector('[data-ask-setup-status]');
+        const autonomyButtons = Array.from(panel.querySelectorAll('[data-ask-autonomy-value]'));
+        const autonomyNote = panel.querySelector('[data-ask-autonomy-note]');
+        let autonomy = 'confirm';
         const history = [];
         let controller = null;
         let available = false;
@@ -789,8 +792,34 @@
 
         // Ask Willow always answers: with the local AI model when Ollama is ready, otherwise with
         // quick answers worked out from the customer's records. It switches to AI by itself.
-        const setAvailable = (isAvailable, model, reason) => {
+        const setAutonomy = value => {
+            autonomy = ['read_only', 'confirm', 'autonomous'].includes(value) ? value : 'confirm';
+            autonomyButtons.forEach(button => button.setAttribute('aria-checked', String(button.dataset.askAutonomyValue === autonomy)));
+            if (autonomyNote) {
+                autonomyNote.textContent = autonomy === 'read_only'
+                    ? 'Willow can inspect your finances but never changes anything.'
+                    : autonomy === 'confirm'
+                        ? 'Willow prepares actions and waits for you to approve them.'
+                        : 'Willow may execute explicit demo actions automatically. You can switch this off at any time.';
+            }
+        };
+        const saveAutonomy = async value => {
+            autonomyButtons.forEach(button => { button.disabled = true; });
+            try {
+                const result = await W.api('/api/assistant/autonomy', { method: 'PATCH', body: { autonomy: value } });
+                setAutonomy(result.autonomy);
+                W.showToast(value === 'autonomous' ? 'Ask Willow is now autonomous.' : value === 'read_only' ? 'Ask Willow is now read only.' : 'Ask Willow will ask before actions.', 'success', 2600);
+            } catch (error) {
+                W.showToast(error.message, 'error');
+            } finally {
+                autonomyButtons.forEach(button => { button.disabled = false; });
+            }
+        };
+        autonomyButtons.forEach(button => button.addEventListener('click', () => saveAutonomy(button.dataset.askAutonomyValue)));
+
+        const setAvailable = (isAvailable, model, reason, savedAutonomy) => {
             available = Boolean(isAvailable);
+            if (savedAutonomy) setAutonomy(savedAutonomy);
             triggers.forEach(button => { button.hidden = reason === 'disabled'; });
             if (modelLabel && model) modelLabel.textContent = model;
             panel.querySelectorAll('[data-ask-mode]').forEach(node => { node.hidden = node.dataset.askMode !== (available ? 'ai' : 'quick'); });
@@ -800,7 +829,7 @@
         };
         const checkStatus = (refresh = false) => fetch(`/api/assistant/status${refresh ? '?refresh=1' : ''}`, { headers: { Accept: 'application/json', 'X-Willow-Passive': '1' }, credentials: 'same-origin' })
             .then(response => (response.ok ? response.json() : null))
-            .then(status => { if (status) setAvailable(status.available, status.model, status.reason); return status; })
+            .then(status => { if (status) setAvailable(status.available, status.model, status.reason, status.autonomy); return status; })
             .catch(() => null);
         checkStatus();
 
@@ -897,6 +926,7 @@
                             if (Array.isArray(event.links)) links = event.links;
                             notice = event.notice || null;
                             mode = event.mode || null;
+                            action = event.action || null;
                         }
                     }
                 }
@@ -910,6 +940,46 @@
                 // Pages that go with the answer (same-site paths only).
                 const safe = links.filter(link => link && typeof link.href === 'string' && /^\/(?!\/)/.test(link.href) && typeof link.label === 'string');
                 if (safe.length) answer.append(el('div', { className: 'ask-links' }, ...safe.map(link => el('a', { className: 'chip chip-sm', href: link.href, text: link.label }))));
+                if (mode === 'action_pending' && action && action.token) {
+                    const controls = el('div', { className: 'ask-action-controls' });
+                    const confirm = el('button', { type: 'button', className: 'btn btn-primary btn-sm', text: 'Run action' });
+                    const cancel = el('button', { type: 'button', className: 'btn btn-secondary btn-sm', text: 'Cancel' });
+                    const statusNode = el('p', { className: 'ask-note', text: 'This approval expires in about 2 minutes.' });
+                    controls.append(confirm, cancel);
+                    answer.append(el('div', { className: 'ask-action-card' }, el('strong', { text: action.title || 'Run this action?' }), controls, statusNode));
+                    confirm.addEventListener('click', async () => {
+                        confirm.disabled = true;
+                        cancel.disabled = true;
+                        confirm.classList.add('is-loading');
+                        statusNode.textContent = 'Running…';
+                        try {
+                            const result = await W.api('/api/assistant/actions/' + encodeURIComponent(action.token) + '/confirm', { method: 'POST', body: {} });
+                            statusNode.textContent = 'Done. The requested demo action was completed.';
+                            confirm.remove();
+                            cancel.remove();
+                            W.showToast('Ask Willow completed the action.', 'success', 2600);
+                            doc.dispatchEvent(new CustomEvent('willow:assistant-action', { detail: result }));
+                        } catch (error) {
+                            statusNode.textContent = error.message;
+                            confirm.disabled = false;
+                            cancel.disabled = false;
+                        } finally {
+                            confirm.classList.remove('is-loading');
+                        }
+                    });
+                    cancel.addEventListener('click', async () => {
+                        confirm.disabled = true;
+                        cancel.disabled = true;
+                        try {
+                            await W.api('/api/assistant/actions/' + encodeURIComponent(action.token) + '/cancel', { method: 'POST', body: {} });
+                            statusNode.textContent = 'Cancelled. No action was taken.';
+                        } catch (error) {
+                            statusNode.textContent = error.message;
+                        }
+                        confirm.remove();
+                        cancel.remove();
+                    });
+                }
                 history.push({ role: 'user', content: question }, { role: 'assistant', content: text });
             } catch (error) {
                 const stopped = error.name === 'AbortError';
