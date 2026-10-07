@@ -1058,6 +1058,7 @@
         const duration = 1700;
         let lockedUntil = 0;
         let timer = null;
+        let animating = false;
         let lastScrollY = global.scrollY;
 
         const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -1091,6 +1092,7 @@
             const animationDuration = Math.min(900, Math.max(520, 420 + Math.abs(distance) * 0.28));
             const started = Date.now();
             let frame = null;
+            animating = true;
 
             const easeInOut = value => value < 0.5
                 ? 4 * value * value * value
@@ -1104,6 +1106,8 @@
                     return;
                 }
                 frame = null;
+                animating = false;
+                lastScrollY = global.scrollY;
             };
 
             if (global.requestAnimationFrame) global.requestAnimationFrame(animate);
@@ -1128,7 +1132,7 @@
             if (move(direction)) event.preventDefault();
         };
         const onScroll = () => {
-            if (Date.now() < lockedUntil && Math.abs(global.scrollY - lastScrollY) > 2) global.scrollTo(0, lastScrollY);
+            if (!animating && Date.now() < lockedUntil && Math.abs(global.scrollY - lastScrollY) > 2) global.scrollTo(0, lastScrollY);
             lastScrollY = global.scrollY;
         };
 
