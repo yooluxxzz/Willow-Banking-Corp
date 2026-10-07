@@ -892,6 +892,7 @@
             let links = [];
             let notice = null;
             let mode = null;
+            let action = null;
             try {
                 const response = await fetch('/api/assistant/chat', {
                     method: 'POST',
