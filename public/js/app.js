@@ -1048,47 +1048,101 @@
 
         const main = doc.getElementById('main');
         if (!main) return null;
-        const sections = Array.from(main.children).filter(section => {
-            if (section.tagName !== 'SECTION') return false;
-            if (section.hasAttribute('data-no-scroll-lock')) return false;
-            return section.getBoundingClientRect().height > 0;
-        });
-        if (sections.length < 2) return null;
+
+        // Treat semantic sections as scroll stops. Nested sections are part of their
+        // parent stop, while same-row sections (e.g. two columns) move together.
+        const getSections = () => Array.from(main.querySelectorAll('section'))
+            .filter(section => !section.parentElement.closest('section'))
+            .filter(section => !section.matches(FOCUS_SKIP) && isShown(section));
 
         const duration = 1700;
+        const zoomInDuration = 480;
+        const zoomOutDuration = 480;
+        const groupTolerance = 48;
         let lockedUntil = 0;
-        let timer = null;
+        let releasingUntil = 0;
+        let holdTimer = null;
+        let releaseTimer = null;
         let animating = false;
-        let lastScrollY = global.scrollY;
+        let focusedSections = [];
 
         const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
         const topOf = section => Math.max(0, global.scrollY + section.getBoundingClientRect().top);
-        const nearest = () => {
+
+        const sectionGroups = () => {
+            const groups = [];
+            getSections()
+                .map(section => ({ section, top: topOf(section), left: section.getBoundingClientRect().left }))
+                .sort((a, b) => a.top - b.top || a.left - b.left)
+                .forEach(item => {
+                    const current = groups[groups.length - 1];
+                    if (!current || Math.abs(item.top - current.top) > groupTolerance) {
+                        groups.push({ top: item.top, sections: [item.section] });
+                    } else {
+                        current.sections.push(item.section);
+                    }
+                });
+            return groups;
+        };
+
+        const nearestGroupIndex = groups => {
+            if (!groups.length) return -1;
             const center = global.scrollY + global.innerHeight * 0.5;
             let match = 0;
             let distance = Infinity;
-            sections.forEach((section, index) => {
-                const sectionCenter = topOf(section) + section.offsetHeight * 0.5;
-                const nextDistance = Math.abs(sectionCenter - center);
-                if (nextDistance < distance) { distance = nextDistance; match = index; }
+            groups.forEach((group, index) => {
+                const height = Math.max(...group.sections.map(section => section.offsetHeight), 0);
+                const groupCenter = group.top + height * 0.5;
+                const nextDistance = Math.abs(groupCenter - center);
+                if (nextDistance < distance) {
+                    distance = nextDistance;
+                    match = index;
+                }
             });
             return match;
         };
-        const lock = () => {
-            // 1.7s of intentional reading time after the smooth section transition.
-            lockedUntil = Date.now() + duration;
-            if (timer) global.clearTimeout(timer);
-            timer = global.setTimeout(() => { lockedUntil = 0; timer = null; }, duration);
-        };
-        const move = direction => {
-            const index = nearest();
-            const target = sections[clamp(index + direction, 0, sections.length - 1)];
-            if (!target || sections.indexOf(target) === index) return false;
 
+        const clearFocus = () => {
+            focusedSections.forEach(section => section.classList.remove('willow-guided-focus'));
+            focusedSections = [];
+            if (holdTimer) global.clearTimeout(holdTimer);
+            if (releaseTimer) global.clearTimeout(releaseTimer);
+            holdTimer = null;
+            releaseTimer = null;
+            lockedUntil = 0;
+            releasingUntil = 0;
+        };
+
+        const focusGroup = group => {
+            clearFocus();
+            focusedSections = group.sections.slice();
+            focusedSections.forEach(section => section.classList.add('willow-guided-focus'));
+
+            lockedUntil = Date.now() + duration;
+            holdTimer = global.setTimeout(() => {
+                focusedSections.forEach(section => section.classList.remove('willow-guided-focus'));
+                releasingUntil = Date.now() + zoomOutDuration;
+                releaseTimer = global.setTimeout(() => {
+                    focusedSections = [];
+                    releasingUntil = 0;
+                    releaseTimer = null;
+                }, zoomOutDuration);
+                holdTimer = null;
+            }, duration);
+        };
+
+        const move = direction => {
+            const groups = sectionGroups();
+            const index = nearestGroupIndex(groups);
+            const targetIndex = index + direction;
+            if (index < 0 || targetIndex < 0 || targetIndex >= groups.length) return false;
+
+            const target = groups[targetIndex];
             const maxTop = Math.max(0, doc.documentElement.scrollHeight - global.innerHeight);
-            const start = global.scrollY;
-            const end = clamp(topOf(target), 0, maxTop);
-            const distance = end - start;
+            const startY = global.scrollY;
+            const endY = clamp(target.top, 0, maxTop);
+            const distance = endY - startY;
             const animationDuration = Math.min(900, Math.max(520, 420 + Math.abs(distance) * 0.28));
             const started = Date.now();
             animating = true;
@@ -1099,7 +1153,7 @@
 
             const animate = () => {
                 const progress = Math.min(1, (Date.now() - started) / animationDuration);
-                global.scrollTo(0, start + distance * easeInOut(progress));
+                global.scrollTo(0, startY + distance * easeInOut(progress));
                 if (progress < 1) {
                     if (global.requestAnimationFrame) global.requestAnimationFrame(animate);
                     else global.setTimeout(animate, 16);
@@ -1107,38 +1161,58 @@
                 }
                 animating = false;
                 lastScrollY = global.scrollY;
+                focusGroup(target);
             };
 
             if (global.requestAnimationFrame) global.requestAnimationFrame(animate);
             else animate();
-
-            // Give the visitor a full reading window after the section settles.
-            lock();
             return true;
         };
+
         const interactive = target => Boolean(target && target.closest && target.closest('a, button, input, textarea, select, [contenteditable="true"]'));
+        const blocked = () => animating || Date.now() < lockedUntil || Date.now() < releasingUntil;
 
         const onWheel = event => {
             if (Math.abs(event.deltaY) <= Math.abs(event.deltaX) || Math.abs(event.deltaY) < 8 || interactive(event.target)) return;
-            if (Date.now() < lockedUntil) { event.preventDefault(); return; }
+            if (blocked()) {
+                event.preventDefault();
+                return;
+            }
             if (move(event.deltaY > 0 ? 1 : -1)) event.preventDefault();
         };
+
         const onKeydown = event => {
             if (event.defaultPrevented || interactive(event.target)) return;
-            const direction = event.key === 'PageDown' || event.key === 'ArrowDown' ? 1 : event.key === 'PageUp' || event.key === 'ArrowUp' ? -1 : 0;
+            const direction = event.key === 'PageDown' || event.key === 'ArrowDown' ? 1
+                : event.key === 'PageUp' || event.key === 'ArrowUp' ? -1
+                    : 0;
             if (!direction) return;
-            if (Date.now() < lockedUntil) { event.preventDefault(); return; }
+            if (blocked()) {
+                event.preventDefault();
+                return;
+            }
             if (move(direction)) event.preventDefault();
         };
+
         const onScroll = () => {
-            if (!animating && Date.now() < lockedUntil && Math.abs(global.scrollY - lastScrollY) > 2) global.scrollTo(0, lastScrollY);
+            if (!animating && blocked() && Math.abs(global.scrollY - lastScrollY) > 2) {
+                global.scrollTo(0, lastScrollY);
+            }
             lastScrollY = global.scrollY;
         };
 
         global.addEventListener('wheel', onWheel, { passive: false });
         global.addEventListener('keydown', onKeydown);
         global.addEventListener('scroll', onScroll, { passive: true });
-        return { destroy() { global.removeEventListener('wheel', onWheel); global.removeEventListener('keydown', onKeydown); global.removeEventListener('scroll', onScroll); if (timer) global.clearTimeout(timer); } };
+
+        return {
+            destroy() {
+                global.removeEventListener('wheel', onWheel);
+                global.removeEventListener('keydown', onKeydown);
+                global.removeEventListener('scroll', onScroll);
+                clearFocus();
+            },
+        };
     }
 
     // ── Idle sign-out ───────────────────────────────────────────────────
