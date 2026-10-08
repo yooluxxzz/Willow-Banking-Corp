@@ -10,7 +10,7 @@ HTTP on localhost. **Browsers never talk to this service directly.**
 > Do not use it for investment decisions. Willow never executes trades; nothing in this service
 > places, routes or simulates orders.
 
-- Python 3.9+. The only runtime dependency is `yfinance`; everything else is the standard library
+- Python 3.10+. The only direct runtime dependency is `yfinance`; its HTTP dependency (`curl_cffi` 0.15+) requires Python 3.10 or newer. The service's own modules use the standard library
   (`http.server`, `json`, `threading`, `logging`).
 - yfinance is imported lazily, so the server starts and `/health` answers even when yfinance
   isn't installed. Data endpoints then return `503`.

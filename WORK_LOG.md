@@ -2,6 +2,13 @@
 
 Each completed work session is recorded here and committed locally. Git history is the authoritative record of code and database schema changes. Live account/session data and secrets are excluded.
 
+## Main integration and Python dependency compatibility — 2026-10-08
+
+- The user explicitly approved merging PR #4, containing the tested audit fixes and requested shared Ask Willow controls, into main. The screenshot matched main's old panel; all account categories use the same shared partial. Publication to the fix branch alone had not updated main or the running application.
+- GitHub CI run 37799699475 passed all five Node jobs (Linux Node 20/22/24, macOS Node 22 and Windows Node 22), but Python 3.9 could not install yfinance 1.7.0: its required curl_cffi >=0.15 has a Python >=3.10 minimum. The other Python job was cancelled by fail-fast.
+- Aligned the optional market service's actual supported minimum at Python 3.10 across CI, interpreter probes, fallback messages and installation/testing docs. Python jobs now run independently at 3.10 and 3.12. The pinned dependency version and banking/UI behavior are unchanged.
+- No schema or live data changes. Validation: lint clean, 227 Node tests and 46 Python tests pass locally using the existing isolated Python 3.12 runtime. Updated remote CI must pass before completing the approved merge. Browser rendering remains unverified.
+
 ## Requested chat controls, stable photos and registration integrity — 2026-10-08
 
 **Behavior**

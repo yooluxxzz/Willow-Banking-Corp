@@ -79,7 +79,7 @@ On upgrade, a one-time clean-up (`src/services/data-cleanup.js`) removes what ea
 
 ## Quick start
 
-Requirements: **Node.js 22 or 24** (any version from 20.19 works). Optional: **Python 3.9+** for fuller market data and **[Ollama](https://ollama.com)** for full AI answers in Ask Willow (it gives quick answers without it).
+Requirements: **Node.js 22 or 24** (any version from 20.19 works). Optional: **Python 3.10+** for fuller market data and **[Ollama](https://ollama.com)** for full AI answers in Ask Willow (it gives quick answers without it).
 
 ```bash
 npm install

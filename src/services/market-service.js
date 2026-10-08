@@ -104,7 +104,7 @@ async function findPython() {
     // Runs asynchronously: importing yfinance (and pandas) can take a while on first use,
     // and Willow keeps serving pages meanwhile.
     const probe = (command, args) => new Promise(resolve => {
-        execFile(command, [...args, '-c', 'import sys; assert sys.version_info >= (3, 9); import yfinance; print(sys.version.split()[0])'], { timeout: 30000, windowsHide: true }, (error, stdout, stderr) => {
+        execFile(command, [...args, '-c', 'import sys; assert sys.version_info >= (3, 10); import yfinance; print(sys.version.split()[0])'], { timeout: 30000, windowsHide: true }, (error, stdout, stderr) => {
             resolve({ ok: !error, stdout: String(stdout || ''), stderr: String(stderr || '') });
         });
     });
@@ -180,7 +180,7 @@ async function start() {
     }
     const python = await findPython();
     if (!python) {
-        log('Python 3 was not found, so live market data uses the Yahoo chart fallback. Install Python 3.9+ to enable the yfinance service.');
+        log('Python 3.10+ was not found, so live market data uses the Yahoo chart fallback. Install Python 3.10+ to enable the yfinance service.');
         state.lastError = 'python_missing';
         return status();
     }

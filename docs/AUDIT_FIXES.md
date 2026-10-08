@@ -1,6 +1,6 @@
 # Audit fixes — 7 October 2026
 
-Implemented on `fix/audit-integrity-and-assistant`, from `5fc3fbdb4835374d37322616f06603c522ab682f`. After the user's approval, the original audit source tree was published as `2974fd94f78c8569839cf1fc157ee967a3bc3b2f`; the targeted follow-up below is on the same branch. No deployed database, main branch or running application was modified.
+Implemented on `fix/audit-integrity-and-assistant`, from `5fc3fbdb4835374d37322616f06603c522ab682f`. After the user's approval, the original audit source tree was published as `2974fd94f78c8569839cf1fc157ee967a3bc3b2f`; the targeted follow-up below is on the same branch. PR #4 integrates these changes into main following the user's explicit merge approval. No deployed database or running application was modified here.
 
 ## Ask Willow
 
@@ -41,7 +41,7 @@ The reported defects below are addressed; architectural recommendations and new 
 | F19: charts | Replays cash and crypto movements, including received crypto; removes flat current-cash history; flags missing prices. | Contribution-adjusted returns, rebalancing and legacy opening-position reconciliation remain. |
 | F20–F24: correctness/privacy | Calendar validation, meaningful guest activity, no-store anonymous session HTML, expanded/versioned owned export and bounded pagination. | Export evolution and retention remain ongoing maintenance. |
 | F25–F27: market service | Labels expired data stale, bounds upstream work/HTTP threads, and reports availability from recent observed responses. | Load/slow-client tests and dedicated periodic health probes remain. |
-| F28: Python integration | CI installs pinned runtime requirements, checks yfinance's required API and tests Python 3.9/3.12. | Transitive dependencies are not fully locked or separately vulnerability-audited; remote CI has not run on this local branch. |
+| F28: Python integration | CI installs pinned runtime requirements, checks yfinance's required API and tests Python 3.10/3.12. The CLI/service launchers and docs use the same Python 3.10 minimum required by curl_cffi 0.15+. | Transitive dependencies are not fully locked or separately vulnerability-audited. |
 
 ## Requested product areas
 
