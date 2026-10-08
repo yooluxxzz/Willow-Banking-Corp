@@ -240,7 +240,7 @@ async function initializeAdmin() {
     if (existing) {
         // ADMIN_PASSWORD always wins, so setting it in .env works even if the admin already exists.
         if (!(await bcrypt.compare(password, existing.password_hash))) {
-            db.prepare("UPDATE users SET password_hash = ?, updated_at = datetime('now') WHERE id = ?").run(await bcrypt.hash(password, config.bcryptRounds), existing.id);
+            db.prepare("UPDATE users SET password_hash = ?, auth_version = auth_version + 1, updated_at = datetime('now') WHERE id = ?").run(await bcrypt.hash(password, config.bcryptRounds), existing.id);
             console.log(`[Admin] Updated the password for ${email} from ADMIN_PASSWORD.`);
         }
         return;

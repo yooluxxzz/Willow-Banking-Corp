@@ -57,7 +57,7 @@ describe('Database snapshots in Git and removal of invented data', () => {
         forced.close();
     });
 
-    it('removes invented customers, sample activity, auto-issued cards and practice cash once, keeping what customers did', async () => {
+    it('removes invented customers, sample activity, auto-issued cards once without resetting investing, keeping what customers did', async () => {
         const cleanup = require('../src/services/data-cleanup');
         db.prepare('DELETE FROM app_meta WHERE key = ?').run(cleanup.KEY);
         // A database from the previous version: a fictional customer, sample rows mixed with a real deposit.
@@ -85,8 +85,8 @@ describe('Database snapshots in Git and removal of invented data', () => {
         assert.deepEqual(db.prepare('SELECT name FROM demo_goals WHERE user_id = ?').all(user.id).map(row => row.name), ['My real goal']);
         assert.deepEqual(db.prepare('SELECT id FROM cards WHERE account_id = ?').all(account.id).map(row => row.id), [ordered], 'the ordered card stays, the auto-issued one goes');
         assert.ok(autoCard);
-        assert.deepEqual(db.prepare('SELECT cash_cents FROM demo_portfolios WHERE user_id = ?').get(user.id), { cash_cents: 0 });
-        assert.equal(db.prepare('SELECT COUNT(*) AS n FROM demo_holdings').get().n, 0);
+        assert.deepEqual(db.prepare('SELECT cash_cents FROM demo_portfolios WHERE user_id = ?').get(user.id), { cash_cents: 10000000 });
+        assert.equal(db.prepare('SELECT COUNT(*) AS n FROM demo_holdings').get().n, 1, 'positions without reliable sample provenance are preserved');
         assert.deepEqual(db.prepare('SELECT title FROM notifications WHERE user_id = ?').all(user.id).map(row => row.title).filter(title => /Welcome|Deposit received/.test(title)), ['Deposit received']);
         assert.equal(db.prepare('SELECT sample_data_loaded_at FROM user_preferences WHERE user_id = ?').get(user.id).sample_data_loaded_at, null);
         assert.deepEqual(cleanup.run(), { skipped: true }, 'runs once per database');

@@ -177,7 +177,7 @@ describe('Platform: navigation, sessions and new flows', () => {
         const communityBefore = db.prepare('SELECT SUM(balance) AS total FROM accounts WHERE user_id = ?').get(mariaId).total;
         assert.equal(communityBefore, 1500);
         const otherRowsBefore = db.prepare('SELECT COUNT(*) AS n FROM transactions WHERE account_id NOT IN (SELECT id FROM accounts WHERE user_id = ?)').get(stale.id).n;
-        db.prepare("UPDATE users SET created_at = datetime('now', '-10 days') WHERE id = ?").run(stale.id);
+        db.prepare("UPDATE users SET last_active_at = datetime('now', '-10 days'), created_at = datetime('now', '-10 days') WHERE id = ?").run(stale.id);
         db.prepare("UPDATE audit_logs SET created_at = datetime('now', '-9 days') WHERE actor_id = ?").run(stale.id);
         const { purgeStaleGuests } = require('../src/services/guests');
         assert.equal(purgeStaleGuests({ days: 7 }).purged, 1);

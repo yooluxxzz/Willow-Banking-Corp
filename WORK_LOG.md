@@ -2,6 +2,29 @@
 
 Each completed work session is recorded here and committed locally. Git history is the authoritative record of code and database schema changes. Live account/session data and secrets are excluded.
 
+## Banking integrity and Ask Willow audit fixes — 2026-10-07
+
+Implemented the user's authorization to fix issues from the repository audit, on `fix/audit-integrity-and-assistant` from `5fc3fbdb4835374d37322616f06603c522ab682f`.
+
+**Behavior**
+- Preserved dirty database state after failed exports/writes and surfaced degraded readiness. Session operations/startup await initialization; failed session-file saves retry. Removed global investing/crypto cleanup and narrowed sample guest cleanup.
+- Bound pending MFA and AI approvals to authentication versions. Status/MFA changes and key rotation invalidate older credentials. Production requires independent signing/encryption secrets. Added atomic previous-key authenticator migration and private-backup guidance.
+- Revalidated FX/trade authorization after async work, centralized immediate-transfer limits, checked current AI autonomy at write boundaries, and made principal audit records transactional. Added keyed financial request reservations/replay and browser retry keys. Ancillary net-worth snapshot failures preserve primary-operation success.
+- Fixed bank-funds/quote/write routing, goal field mapping and transfer currencies. New AI reads cover cards, schedules, business, crypto wallets/history and education. Saved response identity/history consistently; receipts use mutation results. Educational/negated questions cannot execute planned actions.
+- Added styled searchable History/New chat controls, funds cards and descriptive action buttons with expiry and terminal failure states. New chat restores prompts. Server-processing copy now describes the configured host accurately.
+- Corrected money/calendar/pagination validation, guest activity retention, anonymous HTML cache policy, owned data exports, cash/crypto chart replay, market stale labels, capacity limits and health reporting. Python CI installs runtime requirements and checks the actual yfinance adapter API.
+
+**Database / schema**
+- Added `idempotent_requests`, `users.last_active_at` and `user_preferences.assistant_revision`; exports now use schema version 2. No deployed data was used or changed. Ambiguous legacy portfolios remain intact. See `docs/AUDIT_FIXES.md` and `docs/DATABASE_CHANGES.md` for upgrade/rotation notes and remaining architectural/product scope.
+- Raw SQL backups remain private and ignored; repository instructions no longer request committing customer data or credential hashes.
+
+**Checks**
+- `npm run check`: lint clean, 221 Node tests pass, including three DOM UI interaction tests.
+- Python 3.12 isolated environment with installed runtime requirements: 46 tests pass. yfinance 1.7.0 import/provider-adapter smoke passes.
+- Production startup with independent secrets, disk-backed sessions, readiness and graceful shutdown passes on a disposable database. Configuration rejection, save retry, MFA invalidation, one-time AI writes, permission races, competing/frozen FX, replay, secondary failure, exports, dates and portfolio regressions covered.
+- `git diff --check` clean. Chromium download failed, so browser viewport/accessibility rendering remains unverified. Real Ollama quality, live Yahoo quotes, load capacity and remote CI on this branch were not exercised.
+- Completed changes committed locally; no push or deployment authorized/performed.
+
 ## Earlier design sessions — 2026-09-30
 
 - `f399ce6`: Willow photography, authentication design and demo transfer flows.

@@ -13,7 +13,7 @@ from functools import partial
 from typing import Any, Callable, Optional
 
 from .cache import CachedValue, TTLCache
-from .errors import NotFoundError, RateLimitedError, UpstreamError, classify_error
+from .errors import NotFoundError, RateLimitedError, UnavailableError, UpstreamError, classify_error
 from .provider import YFinanceProvider
 
 logger = logging.getLogger(__name__)
@@ -69,7 +69,10 @@ class MarketDataService:
         self._cache = cache if cache is not None else TTLCache(clock=clock)
         self._timeout = timeout
         self._revalidate_window = revalidate_window
+        if max_workers < 1:
+            raise ValueError("max_workers must be positive")
         self._slots = threading.BoundedSemaphore(max_workers)
+        self._max_pending = max_workers * 4
         self._inflight: dict[str, Future] = {}
         self._inflight_lock = threading.Lock()
         self._cooldown_until = 0.0
@@ -137,6 +140,9 @@ class MarketDataService:
             existing = self._inflight.get(key)
             if existing is not None:
                 return existing
+            if len(self._inflight) >= self._max_pending:
+                future.set_exception(UnavailableError("market-data capacity reached; retry later"))
+                return future
             self._inflight[key] = future
         worker = threading.Thread(target=self._run, args=(key, ttl, load, future), name=f"upstream {key}", daemon=True)
         worker.start()
@@ -180,7 +186,7 @@ class MarketDataService:
         """Resolve a pending lookup to ``(value, stale)`` or raise an :class:`UpstreamError`."""
         if pending.future is None:
             assert pending.cached is not None
-            return pending.cached.value, False
+            return pending.cached.value, not pending.cached.fresh
         try:
             return pending.future.result(timeout=max(0.0, deadline - time.monotonic())), False
         except Exception as exc:

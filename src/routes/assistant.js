@@ -7,12 +7,15 @@
  */
 const express = require('express');
 const crypto = require('node:crypto');
+const { getDb } = require('../database');
+const config = require('../config');
 const { requireAuth } = require('../middleware/auth');
 const assistant = require('../services/assistant');
 const assistantActions = require('../services/assistant-actions');
 const quickAnswers = require('../services/quick-answers');
 const preferences = require('../services/preferences');
 const assistantChats = require('../services/assistant-chats');
+const { assistantAction, assertUser } = require('../services/mutation-guard');
 const router = express.Router();
 
 router.use(requireAuth);
@@ -33,7 +36,7 @@ function allow(userId, now = Date.now()) {
 }
 
 function explicitWriteRequest(question) {
-    return /\b(send|transfer|move|pay|make a payment|buy|sell|purchase|create|set up|add a goal|put money into investing|move money out of investing)\b/i.test(String(question || ''));
+    return assistantActions.isWriteRequest(question);
 }
 
 function rememberAction(userId, plan, conversationId) {
@@ -42,14 +45,17 @@ function rememberAction(userId, plan, conversationId) {
         if (now - pending.createdAt > ACTION_TTL_MS) pendingActions.delete(key);
     }
     const key = crypto.randomBytes(24).toString('hex');
-    pendingActions.set(key, { userId, tool: plan.tool, args: plan.args, conversationId, createdAt: Date.now() });
+    const authVersion = getDb().prepare('SELECT auth_version FROM users WHERE id = ?').get(userId).auth_version;
+    const revision = getDb().prepare('SELECT assistant_revision FROM user_preferences WHERE user_id = ?').get(userId)?.assistant_revision || 0;
+    pendingActions.set(key, { authVersion, revision, userId, tool: plan.tool, args: plan.args, conversationId, title: assistantActions.actionPreview(userId, plan.tool, plan.args), createdAt: Date.now() });
     return key;
 }
 
 function takeAction(userId, key) {
     const pending = pendingActions.get(key);
+    if (!pending || pending.userId !== userId) return null;
     pendingActions.delete(key);
-    if (!pending || pending.userId !== userId || Date.now() - pending.createdAt > ACTION_TTL_MS) return null;
+    if (Date.now() - pending.createdAt > ACTION_TTL_MS) return null;
     return pending;
 }
 
@@ -113,9 +119,10 @@ router.post('/actions/:token/confirm', async (req, res) => {
     const pending = takeAction(req.session.userId, req.params.token);
     if (!pending) return res.status(410).json({ error: 'That action has expired. Ask Willow to prepare it again.', code: 'action_expired' });
     try {
-        const result = await assistant.runActionTool(req.session.userId, pending.tool, pending.args);
-        const summary = 'Completed: ' + assistantActions.actionPreview(req.session.userId, pending.tool, pending.args) + '.';
-        if (pending.conversationId) assistantChats.appendMessage(req.session.userId, pending.conversationId, 'assistant', summary, 'action_executed');
+        if (pending.authVersion !== req.session.authVersion) return res.status(410).json({ error: 'Your sign-in changed. Prepare this action again.', code: 'action_expired' });
+        const result = await assistantAction(true, () => assistant.runActionTool(req.session.userId, pending.tool, pending.args), pending.revision);
+        const summary = 'Completed: ' + pending.title + '. Reference: ' + (result.reference || result.trade?.id || 'recorded') + '.';
+        try { if (pending.conversationId) assistantChats.appendMessage(req.session.userId, pending.conversationId, 'assistant', summary, 'action_executed'); } catch (error) { console.error('[Assistant] Receipt history failed:', error.message); }
         res.json({ success: true, tool: pending.tool, result, conversationId: pending.conversationId || null });
     } catch (error) {
         res.status(error.status || 400).json({ error: error.message });
@@ -125,6 +132,7 @@ router.post('/actions/:token/confirm', async (req, res) => {
 router.post('/actions/:token/cancel', (req, res) => {
     const pending = takeAction(req.session.userId, req.params.token);
     if (!pending) return res.status(410).json({ error: 'That action has already expired or been handled.', code: 'action_expired' });
+    if (pending.conversationId) assistantChats.appendMessage(req.session.userId, pending.conversationId, 'assistant', 'Cancelled: ' + pending.title, 'action_cancelled');
     res.json({ success: true, cancelled: true });
 });
 
@@ -132,7 +140,8 @@ router.post('/chat', async (req, res) => {
     const userId = req.session.userId;
     const { question, conversationId: requestedConversationId } = req.body || {};
     if (!allow(userId)) return res.status(429).json({ error: 'You’ve asked a lot of questions in a short time. Please wait a few minutes.' });
-    const status = await assistant.getStatus();
+    if (!config.assistant.enabled) return res.status(503).json({ error: 'Ask Willow is turned off on this server.', code: 'assistant_disabled' });
+    const status = assistantActions.detectReadIntent(question) === 'accounts' ? assistant.cachedStatus({ refresh: false }) : await assistant.getStatus();
     if (status.reason === 'disabled') return res.status(503).json({ error: 'Ask Willow is turned off on this server.', code: 'assistant_disabled' });
     if (typeof question !== 'string' || !question.trim()) return res.status(400).json({ error: 'Ask a question about your money.' });
     if (question.length > 1000) return res.status(400).json({ error: 'Keep questions under 1000 characters.' });
@@ -150,7 +159,21 @@ router.post('/chat', async (req, res) => {
     res.on('close', () => { if (!res.writableEnded) controller.abort(); });
     res.status(200).set({ 'Content-Type': 'application/x-ndjson; charset=utf-8', 'X-Accel-Buffering': 'no' });
     res.flushHeaders();
-    const send = payload => { if (!res.writableEnded) res.write(JSON.stringify(payload) + '\n'); };
+    let streamedText = '';
+    let savedTurn = false;
+    const send = payload => {
+        if (payload.delta) streamedText += payload.delta;
+        if ((payload.done || payload.error) && !savedTurn && (streamedText.trim() || payload.error)) {
+            try {
+                assistantChats.appendMessage(userId, conversation.id, 'assistant', (streamedText || payload.error).slice(0, 12000), payload.mode || 'error');
+            } catch (error) {
+                // History is ancillary: it must not hide a committed action receipt.
+                console.error('[Assistant] Response history failed:', error.message);
+            }
+            savedTurn = true;
+        }
+        if (!res.writableEnded) res.write(JSON.stringify({ ...payload, conversationId: conversation.id }) + '\n');
+    };
     const links = assistant.relatedLinks(question);
     const quick = async notice => {
         const result = await quickAnswers.answer(userId, question);
@@ -159,25 +182,38 @@ router.post('/chat', async (req, res) => {
     };
 
     try {
-        const autonomy = preferences.getPreferences(userId).assistantAutonomy;
-        const directRead = assistantActions.detectReadIntent(question);
+        let autonomy = preferences.getPreferences(userId).assistantAutonomy;
+        const directRead = explicitWriteRequest(question) ? null : assistantActions.detectReadIntent(question);
 
-        if (directRead && directRead !== 'stock_quote') {
+        if (directRead) {
             try {
-                const result = await assistant.runReadTool(userId, directRead, {});
-                if (status.available) {
-                    const answerText = await assistant.chat(userId, { question, history }, {
+                const args = directRead === 'stock_quote' ? assistantActions.quoteArgs(question) : {};
+                if (!args) {
+                    send({ delta: 'Which supported symbol would you like a price for? For example, ask “What is the AAPL stock price?”' });
+                    send({ done: true, mode: 'quick', links: [{ label: 'View markets', href: '/markets' }] });
+                    return res.end();
+                }
+                const result = await assistant.runReadTool(userId, directRead, args);
+                if (directRead === 'accounts') {
+                    send({ delta: assistantActions.renderAccounts(result) });
+                    send({ done: true, mode: 'quick', tool: 'accounts', data: result, readAt: new Date().toISOString(), links: [{ label: 'View accounts', href: '/accounts' }] });
+                } else if (directRead === 'stock_quote') {
+                    send({ delta: assistantActions.renderRead(directRead, result) });
+                    send({ done: true, mode: 'quick', tool: directRead, data: result, links });
+                } else if (status.available) {
+                    await assistant.chat(userId, { question, history }, {
                         onToken: delta => send({ delta }),
                         signal: controller.signal,
                         extraContext: JSON.stringify({ tool: directRead, result }),
                     });
-                    assistantChats.appendMessage(userId, conversation.id, 'assistant', answerText, 'ai');
+
                     send({ done: true, mode: 'ai', model: status.model, tool: directRead, conversationId: conversation.id, links });
                 } else {
-                    const fallback = await quickAnswers.answer(userId, question);
-                    assistantChats.appendMessage(userId, conversation.id, 'assistant', fallback.text, 'quick');
+                    const rendered = assistantActions.renderRead(directRead, result);
+                    const fallback = rendered ? { text: rendered } : await quickAnswers.answer(userId, question);
+
                     send({ delta: fallback.text });
-                    send({ done: true, mode: 'quick', conversationId: conversation.id, links });
+                    send({ done: true, mode: 'quick', conversationId: conversation.id, links: result.guides ? result.guides.map(g => ({ label: g.title, href: g.href })) : links });
                 }
                 return res.end();
             } catch (error) {
@@ -188,6 +224,7 @@ router.post('/chat', async (req, res) => {
         let planned = { mode: 'answer' };
         const mayNeedTool = explicitWriteRequest(question) || /\b(stock|share|ticker|quote|price|trading)\b/i.test(question);
         if (status.available && mayNeedTool) planned = await assistant.planAction(userId, question);
+        if (planned.mode === 'action' && !explicitWriteRequest(question)) planned = { mode: 'answer' };
 
         if (planned.mode === 'read') {
             try {
@@ -205,9 +242,11 @@ router.post('/chat', async (req, res) => {
         }
 
         if (planned.mode === 'action') {
+            assertUser(userId);
+            autonomy = preferences.getPreferences(userId).assistantAutonomy;
             if (autonomy === 'read_only') {
                 const blocked = 'I can prepare ' + explainTool(planned.tool) + ', but Read only mode prevents me from executing it. Change Ask Willow autonomy if you want Willow to act.';
-                assistantChats.appendMessage(userId, conversation.id, 'assistant', blocked, 'action_blocked');
+
                 send({ delta: blocked });
                 send({ done: true, mode: 'action_blocked', action: { tool: planned.tool, autonomy }, links });
                 return res.end();
@@ -215,21 +254,15 @@ router.post('/chat', async (req, res) => {
             if (autonomy === 'confirm') {
                 const actionToken = rememberAction(userId, planned, conversation.id);
                 const pendingText = 'I’m ready to ' + explainTool(planned.tool) + '.';
-                assistantChats.appendMessage(userId, conversation.id, 'assistant', pendingText, 'action_pending');
+
                 send({ delta: pendingText });
                 send({ done: true, mode: 'action_pending', action: { token: actionToken, tool: planned.tool, title: assistantActions.actionPreview(userId, planned.tool, planned.args), expiresInSeconds: ACTION_TTL_MS / 1000 }, links });
                 return res.end();
             }
             try {
-                const result = await assistant.runActionTool(userId, planned.tool, planned.args);
-                const resultText = status.available
-                    ? await assistant.chat(userId, { question, history }, {
-                        onToken: delta => send({ delta }),
-                        signal: controller.signal,
-                        extraContext: JSON.stringify({ action: planned.tool, executed: true, result }),
-                    })
-                    : 'Done. ' + assistantActions.actionPreview(userId, planned.tool, planned.args) + ' was completed in the Willow demo.';
-                assistantChats.appendMessage(userId, conversation.id, 'assistant', resultText, 'action_executed');
+                const result = await assistantAction(false, () => assistant.runActionTool(userId, planned.tool, planned.args), getDb().prepare('SELECT assistant_revision FROM user_preferences WHERE user_id = ?').get(userId)?.assistant_revision || 0);
+                const resultText = 'Done. Reference: ' + (result.reference || result.trade?.id || 'recorded') + '. The requested Willow demo action was completed.';
+                send({ delta: resultText });
                 send({ done: true, mode: 'action_executed', action: { tool: planned.tool, autonomy }, conversationId: conversation.id, links });
                 return res.end();
             } catch (error) {
@@ -244,8 +277,8 @@ router.post('/chat', async (req, res) => {
         } else {
             let said = false;
             try {
-                const answerText = await assistant.chat(userId, { question, history }, { onToken: delta => { said = true; send({ delta }); }, signal: controller.signal });
-                assistantChats.appendMessage(userId, conversation.id, 'assistant', answerText, 'ai');
+                await assistant.chat(userId, { question, history }, { onToken: delta => { said = true; send({ delta }); }, signal: controller.signal });
+
                 send({ done: true, mode: 'ai', model: status.model, conversationId: conversation.id, links });
             } catch (error) {
                 if (controller.signal.aborted) throw error;
@@ -258,6 +291,10 @@ router.post('/chat', async (req, res) => {
             console.error('[Assistant] Error:', error.message);
             send({ error: 'Ask Willow couldn’t answer right now. Please try again.' });
         }
+    }
+    if (!savedTurn && streamedText.trim()) {
+        try { assistantChats.appendMessage(userId, conversation.id, 'assistant', streamedText.slice(0, 11980) + '\n[Interrupted]', 'interrupted'); }
+        catch (error) { console.error('[Assistant] Interrupted history failed:', error.message); }
     }
     res.end();
 });

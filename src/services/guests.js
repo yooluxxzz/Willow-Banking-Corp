@@ -55,7 +55,7 @@ function purgeStaleGuests({ days = 7, now = new Date() } = {}) {
     const cutoff = new Date(now.getTime() - days * 86400000).toISOString().replace('T', ' ').slice(0, 19);
     const stale = db.prepare(`SELECT u.id FROM users u
         WHERE u.is_guest = 1 AND u.role = 'customer' AND u.created_at < ?
-          AND COALESCE((SELECT MAX(created_at) FROM audit_logs WHERE actor_id = u.id), u.created_at) < ?`).all(cutoff, cutoff);
+          AND MAX(COALESCE(u.last_active_at, u.created_at), COALESCE((SELECT MAX(created_at) FROM audit_logs WHERE actor_id = u.id), u.created_at)) < ?`).all(cutoff, cutoff);
     for (const guest of stale) {
         db.transaction(() => {
             removeUserRecords(db, guest.id);

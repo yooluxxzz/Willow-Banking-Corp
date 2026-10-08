@@ -1,5 +1,5 @@
 /**
- * Database snapshots: a plain-SQL copy of Willow's data that can live in Git.
+ * Database snapshots: a private plain-SQL backup of Willow's data. Never commit customer backups.
  *
  * - exportSnapshot(sqlDb) returns deterministic SQL (rows ordered by rowid) for
  *   every table except session revocations, plus AUTOINCREMENT counters.

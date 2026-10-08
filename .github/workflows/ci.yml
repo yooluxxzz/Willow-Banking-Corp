@@ -34,12 +34,17 @@ jobs:
   python:
     name: Market-data service (Python)
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.9', '3.12']
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
         with:
-          python-version: '3.12'
+          python-version: ${{ matrix.python }}
       - uses: actions/setup-node@v5
         with:
           node-version: 22
+      - run: python -m pip install -r market-data-service/requirements.txt
+      - run: python -c "import yfinance; from yfinance import config; assert hasattr(config.debug, 'hide_exceptions')"
       - run: npm run test:python

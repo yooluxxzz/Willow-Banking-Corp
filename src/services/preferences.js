@@ -43,6 +43,7 @@ function updatePreferences(userId, changes = {}) {
     });
     if (changes.assistantAutonomy !== undefined) {
         if (typeof changes.assistantAutonomy !== 'string' || !AUTONOMY.has(changes.assistantAutonomy)) throw new ValidationError('Choose a valid Ask Willow autonomy mode.');
+        sets.push('assistant_revision = assistant_revision + 1');
         sets.push('assistant_autonomy = ?');
         values.push(changes.assistantAutonomy);
     }

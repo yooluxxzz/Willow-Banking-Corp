@@ -28,7 +28,7 @@ function run() {
     db.transaction(() => {
         // Fictional customers and the old sample-filled guest profiles.
         db.prepare("SELECT id FROM users WHERE email LIKE '%@community.willow.test'").all().forEach(row => { removeUserRecords(db, row.id); counts.community += 1; });
-        db.prepare("SELECT id FROM users WHERE is_guest = 1").all().forEach(row => { removeUserRecords(db, row.id); counts.guests += 1; });
+        db.prepare("SELECT u.id FROM users u JOIN user_preferences p ON p.user_id = u.id WHERE u.is_guest = 1 AND p.sample_data_loaded_at IS NOT NULL").all().forEach(row => { removeUserRecords(db, row.id); counts.guests += 1; });
 
         // Sample ledger entries: remove them and undo their effect on balances.
         const sample = db.prepare("SELECT id, account_id, amount, direction, reference FROM transactions WHERE reference LIKE '%-S%'").all().filter(row => SAMPLE_REFERENCE.test(row.reference));
@@ -74,12 +74,8 @@ function run() {
             AND account_id IN (SELECT a.id FROM accounts a JOIN users u ON u.id = a.user_id WHERE abs(julianday(a.created_at) - julianday(u.created_at)) * 86400 <= 5)
             AND abs(julianday(created_at) - julianday((SELECT u.created_at FROM accounts a JOIN users u ON u.id = a.user_id WHERE a.id = cards.account_id))) * 86400 <= 5`).run().changes;
 
-        // Positions bought with the old practice cash were never funded by a deposit.
-        counts.portfolios = db.prepare('SELECT COUNT(*) AS n FROM demo_portfolios').get().n;
-        db.prepare('DELETE FROM demo_crypto_transfers').run();
-        db.prepare('DELETE FROM demo_trades').run();
-        db.prepare('DELETE FROM demo_holdings').run();
-        db.prepare("UPDATE demo_portfolios SET cash_cents = 0, updated_at = datetime('now')").run();
+        // Investing and crypto have no reliable legacy provenance. Preserve them:
+        // a missing migration marker is not evidence that customer funding is fabricated.
 
         db.prepare("INSERT INTO app_meta (key, value) VALUES (?, datetime('now'))").run(KEY);
     })();

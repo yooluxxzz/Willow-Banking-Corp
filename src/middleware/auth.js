@@ -50,6 +50,8 @@ function loadUser(req, res, next) {
             }
             return res.redirect(signInUrl(req, 'session_expired'));
         }
+        // Normalize older, already validated sessions before mutation checks.
+        req.session.authVersion = user.auth_version;
         const now = Date.now();
         const idleTimeout = config.session.idleTimeoutMs;
         if (idleTimeout && req.session.lastSeenAt && now - req.session.lastSeenAt > idleTimeout) {
@@ -61,7 +63,10 @@ function loadUser(req, res, next) {
             return res.redirect(signInUrl(req, 'session_timeout'));
         }
         // Background requests (marked by the client) don't count as activity.
-        if (!req.get('X-Willow-Passive')) req.session.lastSeenAt = now;
+        if (!req.get('X-Willow-Passive')) {
+            req.session.lastSeenAt = now;
+            db.prepare("UPDATE users SET last_active_at = datetime('now') WHERE id = ? AND (last_active_at IS NULL OR last_active_at < datetime('now', '-5 minutes'))").run(user.id);
+        }
         if (user) {
             if (user.status !== 'active' && user.role !== 'admin') {
                 req.session.destroy(() => { });

@@ -101,7 +101,7 @@ router.get('/learn/:slug', renderArticle('guide'));
 
 // ── Help center ────────────────────────────────────────────────────────
 router.get('/help', (req, res) => {
-    res.set('Cache-Control', res.locals.user ? 'no-store' : 'public, max-age=300');
+    res.set('Cache-Control', 'no-store');
     res.render('help', {
         title: 'Help center',
         description: 'Answers about Willow accounts, cards, payments, investing, crypto, loans, security and business banking.',

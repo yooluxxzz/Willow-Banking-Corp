@@ -29,7 +29,7 @@ const config = {
 
   database: {
     path: process.env.DATABASE_PATH || './data/willow.db',
-    // Versioned SQL copy of the data (npm run db:save). Restored automatically when no database exists yet.
+    // Private SQL backup (npm run db:save). Restored automatically when no database exists yet.
     snapshotPath: process.env.DATABASE_SNAPSHOT_PATH || './data/willow-snapshot.sql',
     autoRestore: process.env.SNAPSHOT_AUTO_RESTORE !== 'false',
   },
@@ -83,6 +83,13 @@ const config = {
 config.paths.local = config.database.path === ':memory:'
   ? config.paths.data
   : path.dirname(path.resolve(config.paths.root, config.database.path));
+
+if (config.nodeEnv === 'production') {
+  const insecure = value => !value || value.length < 32 || /^(change-me|dev-secret-change-in-production)$/i.test(value);
+  if (insecure(process.env.SESSION_SECRET) || insecure(process.env.TWO_FACTOR_KEY) || process.env.TWO_FACTOR_KEY === process.env.SESSION_SECRET) {
+    throw new Error('Production requires independent random SESSION_SECRET and TWO_FACTOR_KEY values of at least 32 characters.');
+  }
+}
 
 // Startup validation warnings
 if (config.session.secret === 'dev-secret-change-in-production' && !config.isDev) {

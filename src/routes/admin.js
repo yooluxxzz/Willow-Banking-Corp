@@ -1,3 +1,4 @@
+const { pagination } = require('../middleware/validation');
 /**
  * Admin routes — dashboard, user management, audit logs, adjustments
  */
@@ -53,7 +54,8 @@ router.get('/stats', requireAdmin, (req, res) => {
 router.get('/users', requireAdmin, (req, res) => {
     try {
         const db = getDb();
-        const { search, status, page = 1, limit = 20 } = req.query;
+        const { search, status } = req.query;
+        const { page, limit } = pagination(req.query);
         const offset = (parseInt(page) - 1) * parseInt(limit);
         const conditions = ["role = 'customer'"];
         const params = [];
@@ -78,6 +80,7 @@ router.get('/users', requireAdmin, (req, res) => {
 
         res.json({ users, total, page: parseInt(page), totalPages: Math.ceil(total / parseInt(limit)) });
     } catch (err) {
+        if (err.status) return res.status(err.status).json({ error: err.message });
         console.error('[Admin] Users error:', err.message);
         res.status(500).json({ error: 'Failed to load users.' });
     }
@@ -153,7 +156,7 @@ router.post('/users/:id/status', requireAdmin, (req, res) => {
             message = 'User account has been reactivated.';
         }
 
-        db.prepare('UPDATE users SET status = ?, status_reason = ?, scheduled_deletion_at = ?, updated_at = datetime(?) WHERE id = ?')
+        db.prepare('UPDATE users SET status = ?, status_reason = ?, scheduled_deletion_at = ?, auth_version = auth_version + 1, updated_at = datetime(?) WHERE id = ?')
             .run(effectiveStatus, reason || null, scheduledDeletion, new Date().toISOString(), user.id);
 
         let auditAction = 'user_activated';
@@ -267,21 +270,22 @@ router.post('/balance-adjustment', requireAdmin, (req, res) => {
         INSERT INTO transactions (reference, account_id, type, amount, currency, direction, status, description)
         VALUES (?, ?, 'adjustment', ?, ?, ?, 'completed', ?)
       `).run(reference, account.id, amountCents, currency, type, `Admin adjustment: ${note}`);
+            logAudit({
+                actorId: req.session.userId,
+                actorEmail: res.locals.user?.email || 'admin',
+                action: 'balance_adjustment',
+                targetType: 'account',
+                targetId: String(account.id),
+                metadata: { amount: amountCents, currency, type, reason: note, reference, accountOwner: account.owner_name },
+            });
         });
 
         adjustment();
 
-        logAudit({
-            actorId: req.session.userId,
-            actorEmail: res.locals.user?.email || 'admin',
-            action: 'balance_adjustment',
-            targetType: 'account',
-            targetId: String(account.id),
-            metadata: { amount: amountCents, currency, type, reason: note, reference, accountOwner: account.owner_name },
-        });
-
-        createNotification(account.owner_id, 'info', 'Balance adjustment',
-            `An administrative ${type} of ${formatMoney(amountCents, currency)} was applied. Reason: ${note}`);
+        try {
+            createNotification(account.owner_id, 'info', 'Balance adjustment',
+                `An administrative ${type} of ${formatMoney(amountCents, currency)} was applied. Reason: ${note}`);
+        } catch (error) { /* a notification failure cannot undo the adjustment */ }
 
         res.json({ success: true, reference });
     } catch (err) {
@@ -295,8 +299,7 @@ router.post('/balance-adjustment', requireAdmin, (req, res) => {
 router.get('/audit-log', requireAdmin, (req, res) => {
     try {
         const result = getAuditLogs({
-            page: parseInt(req.query.page) || 1,
-            limit: parseInt(req.query.limit) || 30,
+            ...pagination(req.query, 30),
             action: req.query.action || undefined,
             actorEmail: req.query.actor || undefined,
             dateFrom: req.query.dateFrom || undefined,
@@ -304,6 +307,7 @@ router.get('/audit-log', requireAdmin, (req, res) => {
         });
         res.json(result);
     } catch (err) {
+        if (err.status) return res.status(err.status).json({ error: err.message });
         console.error('[Admin] Audit logs error:', err.message);
         res.status(500).json({ error: 'Failed to load audit logs.' });
     }

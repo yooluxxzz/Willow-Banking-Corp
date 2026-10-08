@@ -10,6 +10,7 @@ class SQLiteSessionStore extends session.Store {
     constructor(options = {}) {
         super();
         this._options = options;
+        this._closed = false;
         this._db = null;
         this._dbPath = null;
         this._ready = this._init();
@@ -17,6 +18,7 @@ class SQLiteSessionStore extends session.Store {
 
     async _init() {
         const SQL = await initSqlJs();
+        if (this._closed) return;
         this._dbPath = this._options.dir
             ? path.join(this._options.dir, this._options.db || 'sessions.db')
             : ':memory:';
@@ -65,6 +67,11 @@ class SQLiteSessionStore extends session.Store {
             fs.renameSync(tmpPath, this._dbPath);
         } catch (e) {
             console.error('[SessionStore] Save error:', e.message);
+            // Retry without requiring another request to dirty the store.
+            if (!this._closed) {
+                this._saveTimer = setTimeout(() => this._flush(), 1000);
+                this._saveTimer.unref();
+            }
         }
     }
 
@@ -84,7 +91,8 @@ class SQLiteSessionStore extends session.Store {
     }
 
     get(sid, callback) {
-        if (!this._db) return callback(null, null);
+        if (this._closed) return callback?.(new Error('Session store is closed'));
+        if (!this._db) return this._ready.then(() => this.get(sid, callback), error => callback?.(error));
         try {
             const rows = this._query('SELECT sess FROM sessions WHERE sid = ? AND expired > ?', [sid, Date.now()]);
             if (rows.length > 0) {
@@ -96,7 +104,8 @@ class SQLiteSessionStore extends session.Store {
     }
 
     set(sid, sess, callback) {
-        if (!this._db) return callback?.();
+        if (this._closed) return callback?.(new Error('Session store is closed'));
+        if (!this._db) return this._ready.then(() => this.set(sid, sess, callback), error => callback?.(error));
         try {
             const maxAge = sess.cookie?.maxAge || 86400000;
             const expired = Date.now() + maxAge;
@@ -108,7 +117,8 @@ class SQLiteSessionStore extends session.Store {
     }
 
     destroy(sid, callback) {
-        if (!this._db) return callback?.();
+        if (this._closed) return callback?.(new Error('Session store is closed'));
+        if (!this._db) return this._ready.then(() => this.destroy(sid, callback), error => callback?.(error));
         try {
             this._db.run('DELETE FROM sessions WHERE sid = ?', [sid]);
             this._save();
@@ -117,7 +127,8 @@ class SQLiteSessionStore extends session.Store {
     }
 
     touch(sid, sess, callback) {
-        if (!this._db) return callback?.();
+        if (this._closed) return callback?.(new Error('Session store is closed'));
+        if (!this._db) return this._ready.then(() => this.touch(sid, sess, callback), error => callback?.(error));
         try {
             const maxAge = sess.cookie?.maxAge || 86400000;
             const expired = Date.now() + maxAge;
@@ -128,7 +139,8 @@ class SQLiteSessionStore extends session.Store {
     }
 
     all(callback) {
-        if (!this._db) return callback?.(null, []);
+        if (this._closed) return callback?.(new Error('Session store is closed'));
+        if (!this._db) return this._ready.then(() => this.all(callback), error => callback?.(error));
         try {
             const result = [];
             const stmt = this._db.prepare('SELECT sid, sess FROM sessions WHERE expired > ?');
@@ -155,6 +167,7 @@ class SQLiteSessionStore extends session.Store {
     }
 
     close() {
+        this._closed = true;
         clearInterval(this._cleanupInterval);
         if (this._db) {
             this._flush();

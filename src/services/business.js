@@ -1,3 +1,4 @@
+const { validCalendarDate } = require('../middleware/validation');
 /**
  * Willow Business — profile, invoices, team and cash-flow summaries for a
  * single owner's business demo accounts. Team invitations never grant access.
@@ -59,7 +60,7 @@ function createInvoice(userId, input = {}) {
     if (!text(description, 160)) throw new ValidationError('Keep the description under 160 characters.');
     if (!validateAmount(amount) || toCents(amount) > 100000000) throw new ValidationError('Enter an invoice amount up to 1,000,000.');
     const today = new Date().toISOString().slice(0, 10);
-    if (typeof dueOn !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dueOn) || dueOn < today || Number.isNaN(Date.parse(dueOn))) throw new ValidationError('Choose a due date from today onwards.');
+    if (!validCalendarDate(dueOn) || dueOn < today) throw new ValidationError('Choose a due date from today onwards.');
     const db = getDb();
     const id = db.transaction(() => {
         const number = nextInvoiceNumber(db, userId);
@@ -124,7 +125,7 @@ function removeMember(userId, memberId) {
 }
 
 // ── Expenses the owner logs ─────────────────────────────────────────────
-const isDay = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value));
+const isDay = validCalendarDate;
 const localToday = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 
 function formatExpense(row) {

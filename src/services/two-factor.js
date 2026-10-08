@@ -62,8 +62,7 @@ function totp(secret, now = Date.now()) {
     return hotp(secret, currentStep(now));
 }
 
-function encryptionKey() {
-    const source = process.env.TWO_FACTOR_KEY || config.session.secret;
+function encryptionKey(source = process.env.TWO_FACTOR_KEY || config.session.secret) {
     return crypto.createHash('sha256').update(`willow-2fa:${source}`).digest();
 }
 
@@ -71,14 +70,37 @@ function encrypt(text) {
     const iv = crypto.randomBytes(12);
     const cipher = crypto.createCipheriv('aes-256-gcm', encryptionKey(), iv);
     const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
-    return [iv, cipher.getAuthTag(), encrypted].map(part => part.toString('base64')).join('.');
+    return 'v2:' + [iv, cipher.getAuthTag(), encrypted].map(part => part.toString('base64')).join('.');
 }
 
-function decrypt(payload) {
-    const [iv, tag, data] = String(payload).split('.').map(part => Buffer.from(part, 'base64'));
-    const decipher = crypto.createDecipheriv('aes-256-gcm', encryptionKey(), iv);
+function decrypt(payload, key = encryptionKey()) {
+    const [iv, tag, data] = String(payload).replace(/^v2:/, '').split('.').map(part => Buffer.from(part, 'base64'));
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
     decipher.setAuthTag(tag);
     return Buffer.concat([decipher.update(data), decipher.final()]).toString('utf8');
+}
+
+/** Explicit startup rotation: decrypt all affected rows before changing any. */
+function rotateStoredSecrets() {
+    if (!process.env.TWO_FACTOR_PREVIOUS_KEY) return { rotated: 0 };
+    const db = getDb();
+    const updates = [];
+    for (const row of db.prepare('SELECT user_id, secret_encrypted FROM two_factor').all()) {
+        try { decrypt(row.secret_encrypted); }
+        catch (error) {
+            let secret;
+            try { secret = decrypt(row.secret_encrypted, encryptionKey(process.env.TWO_FACTOR_PREVIOUS_KEY)); }
+            catch (failure) { throw new Error('Authenticator key rotation failed. Restore the correct previous key; no secrets were changed.', { cause: failure }); }
+            updates.push({ userId: row.user_id, payload: encrypt(secret) });
+        }
+    }
+    db.transaction(() => {
+        for (const update of updates) {
+            db.prepare('UPDATE two_factor SET secret_encrypted = ? WHERE user_id = ?').run(update.payload, update.userId);
+            db.prepare('UPDATE users SET auth_version = auth_version + 1 WHERE id = ?').run(update.userId);
+        }
+    })();
+    return { rotated: updates.length };
 }
 
 function getStatus(userId) {
@@ -132,11 +154,15 @@ function confirmSetup(userId, code) {
     if (!status.pending) throw new ValidationError('Start setup again to get a new key.');
     if (!verify(userId, code, { allowPending: true })) return false;
     getDb().prepare("UPDATE two_factor SET enabled_at = datetime('now') WHERE user_id = ?").run(userId);
+    getDb().prepare('UPDATE users SET auth_version = auth_version + 1 WHERE id = ?').run(userId);
     return true;
 }
 
 function disable(userId) {
-    getDb().prepare('DELETE FROM two_factor WHERE user_id = ?').run(userId);
+    getDb().transaction(() => {
+        getDb().prepare('DELETE FROM two_factor WHERE user_id = ?').run(userId);
+        getDb().prepare('UPDATE users SET auth_version = auth_version + 1 WHERE id = ?').run(userId);
+    })();
 }
 
-module.exports = { getStatus, isEnabled, beginSetup, verify, confirmSetup, disable, totp, hotp, base32Encode, base32Decode };
+module.exports = { rotateStoredSecrets, getStatus, isEnabled, beginSetup, verify, confirmSetup, disable, totp, hotp, base32Encode, base32Decode };

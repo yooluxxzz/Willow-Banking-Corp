@@ -1,3 +1,4 @@
+const { pagination } = require('../middleware/validation');
 /**
  * Notification routes
  */
@@ -10,12 +11,12 @@ const router = express.Router();
 router.get('/', requireAuth, (req, res) => {
     try {
         const result = getUserNotifications(req.session.userId, {
-            page: parseInt(req.query.page) || 1,
-            limit: parseInt(req.query.limit) || 20,
+            ...pagination(req.query),
             unreadOnly: req.query.unread === 'true',
         });
         res.json(result);
     } catch (err) {
+        if (err.status) return res.status(err.status).json({ error: err.message });
         console.error('[Notifications] Error:', err.message);
         res.status(500).json({ error: 'Failed to load notifications.' });
     }
@@ -26,6 +27,7 @@ router.post('/:id/read', requireAuth, (req, res) => {
         markAsRead(parseInt(req.params.id), req.session.userId);
         res.json({ success: true });
     } catch (err) {
+        if (err.status) return res.status(err.status).json({ error: err.message });
         console.error('[Notifications] Error:', err.message);
         res.status(500).json({ error: 'Failed to mark notification.' });
     }
@@ -36,6 +38,7 @@ router.post('/read-all', requireAuth, (req, res) => {
         markAllAsRead(req.session.userId);
         res.json({ success: true });
     } catch (err) {
+        if (err.status) return res.status(err.status).json({ error: err.message });
         console.error('[Notifications] Error:', err.message);
         res.status(500).json({ error: 'Failed to mark notifications.' });
     }

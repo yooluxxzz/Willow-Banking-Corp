@@ -90,6 +90,7 @@ router.post('/register', authLimiter, async (req, res) => {
         await regenerate(req);
         req.session.userId = result.userId;
         req.session.userRole = 'customer';
+        req.session.authVersion = getDb().prepare('SELECT auth_version FROM users WHERE id = ?').get(result.userId).auth_version;
         req.session.device = sessionMetadata(req);
 
         logAudit({
@@ -129,6 +130,7 @@ router.post('/login', authLimiter, async (req, res) => {
             await regenerate(req);
             req.session.pendingTwoFactor = {
                 userId: user.id,
+                authVersion: user.authVersion ?? user.auth_version ?? 0,
                 expires: Date.now() + 5 * 60 * 1000,
                 attempts: 0,
                 returnTo: typeof req.body.returnTo === 'string' ? req.body.returnTo : '',
@@ -156,6 +158,11 @@ router.post('/2fa', authLimiter, async (req, res) => {
         if (pending.attempts > 5) {
             delete req.session.pendingTwoFactor;
             return res.status(429).json({ error: 'Too many incorrect codes. Please sign in again.', code: 'locked' });
+        }
+        const currentUser = getDb().prepare('SELECT status, auth_version FROM users WHERE id = ?').get(pending.userId);
+        if (!currentUser || currentUser.status !== 'active' || currentUser.auth_version !== pending.authVersion) {
+            delete req.session.pendingTwoFactor;
+            return res.status(401).json({ error: 'Your sign-in changed. Please enter your details again.', code: 'authorization_changed' });
         }
         const code = typeof req.body.code === 'string' ? req.body.code.trim() : '';
         const ok = twoFactor.verify(pending.userId, code) || consumeCode(pending.userId, code);

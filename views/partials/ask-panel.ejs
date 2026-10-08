@@ -6,11 +6,15 @@
             <span class="ask-orb" aria-hidden="true"><%- icon('sparkle', 'icon-md') %></span>
             <div>
                 <h2 id="askTitle">Ask Willow</h2>
-                <p data-ask-mode="ai"<%- assistantAi ? '' : ' hidden' %>>AI running on this computer with <span data-ask-model><%= assistantModel %></span>. Answers use your Willow records.</p>
+                <p data-ask-mode="ai"<%- assistantAi ? '' : ' hidden' %>>AI connected to Willow with <span data-ask-model><%= assistantModel %></span>. Answers use your Willow records.</p>
                 <p data-ask-mode="quick"<%- assistantAi ? ' hidden' : '' %>>Quick answers, worked out directly from your Willow records.</p>
             </div>
         </div>
         <button type="button" class="btn btn-ghost btn-icon" data-ask-close aria-label="Close Ask Willow"><%- icon('x', 'icon-md') %></button>
+    </div>
+    <div class="ask-toolbar">
+        <button type="button" class="btn btn-secondary btn-sm" data-ask-history-toggle aria-controls="askHistory" aria-expanded="false"><%- icon('clock', 'icon-sm') %> History</button>
+        <button type="button" class="btn btn-primary btn-sm" data-ask-new><%- icon('plus', 'icon-sm') %> New chat</button>
     </div>
     <section class="ask-autonomy" aria-labelledby="askAutonomyTitle" data-ask-autonomy>
         <div class="ask-autonomy-head">
@@ -25,18 +29,20 @@
             <button type="button" role="radio" data-ask-autonomy-value="autonomous" aria-checked="false">Autonomous</button>
         </div>
     </section>
-    <section class="ask-history" aria-labelledby="askHistoryTitle" data-ask-history>
+    <section class="ask-history" id="askHistory" aria-labelledby="askHistoryTitle" data-ask-history hidden>
         <div class="ask-history-head">
             <p class="label" id="askHistoryTitle">Your chats</p>
-            <button type="button" class="btn btn-ghost btn-sm" data-ask-new>New chat</button>
+            <button type="button" class="btn btn-ghost btn-icon" data-ask-history-close aria-label="Close chat history"><%- icon('x', 'icon-sm') %></button>
         </div>
+        <label for="askHistorySearch" class="visually-hidden">Search saved chats</label>
+        <input id="askHistorySearch" class="ask-history-search" type="search" placeholder="Search your chats…" data-ask-history-search>
         <div class="ask-history-list" data-ask-history-list></div>
     </section>
     <details class="ask-setup" data-ask-setup<%- assistantAi ? ' hidden' : '' %>>
-        <summary><%- icon('sparkle', 'icon-sm') %> Get full AI answers on this computer</summary>
-        <p>With Ollama, Ask Willow runs a language model on this computer, so it can answer any question about your money in its own words. Your questions and records never leave the computer.</p>
+        <summary><%- icon('sparkle', 'icon-sm') %> AI connection details</summary>
+        <p>With Ollama, Ask Willow runs a language model on the configured Willow server, so it can answer any question about your money in its own words. The configured Ollama server processes your questions and records. Ask the Willow host administrator about its location.</p>
         <ol class="ask-setup-steps">
-            <li><span class="ask-setup-num" aria-hidden="true">1</span><span><strong>Install Ollama</strong> from <a class="text-link" href="https://ollama.com/download" target="_blank" rel="noopener">ollama.com/download</a> and start it.</span></li>
+            <li><span class="ask-setup-num" aria-hidden="true">1</span><span><strong>On the Willow server, install Ollama</strong> from <a class="text-link" href="https://ollama.com/download" target="_blank" rel="noopener">ollama.com/download</a> and start it.</span></li>
             <li><span class="ask-setup-num" aria-hidden="true">2</span><span><strong>Download a model.</strong> In a terminal, run <code>ollama pull llama3.2</code> (about 2 GB).</span></li>
             <li><span class="ask-setup-num" aria-hidden="true">3</span><span><strong>That’s it.</strong> Willow notices within about 30 seconds and switches to AI answers by itself.</span></li>
         </ol>
@@ -47,7 +53,7 @@
         <div class="ask-welcome" data-ask-welcome>
             <p class="ask-welcome-title">What would you like to know?</p>
             <ul class="ask-suggestions" role="list">
-                <% ['How much have I spent this month?', 'Am I on track with my budgets?', 'What is my net worth made of?', 'Which debt should I pay off first?', 'Any tips for my money?', 'Summarize my last 10 transactions.'].forEach(prompt => { %>
+                <% ['Check my bank account funds', 'Show my recent transactions', 'What transfers are scheduled?', 'How much have I spent this month?', 'Am I on track with my budgets?'].forEach(prompt => { %>
                 <li><button type="button" class="chip" data-ask-prompt="<%= prompt %>"><%= prompt %></button></li>
                 <% }) %>
             </ul>

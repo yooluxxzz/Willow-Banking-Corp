@@ -35,6 +35,29 @@ describe('Database integrity with a database file', () => {
         assert.equal(db.prepare('PRAGMA foreign_keys').get().foreign_keys, 1, 'still on after a save');
     });
 
+    it('retains dirty state after a failed export write and retries without another mutation', async () => {
+        const original = fs.writeFileSync;
+        let fail = true;
+        fs.writeFileSync = (...args) => {
+            if (fail && String(args[0]).endsWith('willow.db.tmp')) { fail = false; throw new Error('injected save failure'); }
+            return original(...args);
+        };
+        try {
+            db.prepare("INSERT INTO app_meta(key, value) VALUES ('audit-save-retry', 'retained')").run();
+            await new Promise(resolve => setImmediate(resolve));
+            assert.equal(database.persistenceStatus().ready, false);
+            assert.equal(database.persistenceStatus().pending, true);
+        } finally { fs.writeFileSync = original; }
+        // No new writes occur here. A normal periodic save must still retry.
+        await new Promise(resolve => setTimeout(resolve, 5100));
+        assert.equal(database.persistenceStatus().ready, true);
+        assert.equal(database.persistenceStatus().pending, false);
+        const SQL = await require('sql.js')();
+        const reopened = new SQL.Database(fs.readFileSync(process.env.DATABASE_PATH));
+        try { assert.equal(reopened.exec("SELECT value FROM app_meta WHERE key='audit-save-retry'")[0].values[0][0], 'retained'); }
+        finally { reopened.close(); }
+    });
+
     it('removes everything a deleted profile owned', async () => {
         const id = user('purge@example.test');
         const account = db.prepare("INSERT INTO accounts (user_id, account_number, account_type, balance, available_balance, currency, status) VALUES (?, '4200999900001', 'checking', 5000, 5000, 'USD', 'active')").run(id).lastInsertRowid;
