@@ -700,7 +700,7 @@ class HttpApiTests(HttpTestCase):
         started = time.monotonic()
         quote = self.request("/v1/quotes?symbols=AAPL")[2]["quotes"][0]
         self.assertLess(time.monotonic() - started, 1, "the request doesn't wait for the refresh")
-        self.assertEqual((quote["price"], quote["stale"]), (231.4, False))
+        self.assertEqual((quote["price"], quote["stale"]), (231.4, True))
 
         self.market.gate.set()
         deadline = time.monotonic() + 5
@@ -832,3 +832,5 @@ class ExitWithParentTest(unittest.TestCase):
             if child.poll() is None:
                 child.kill()
                 child.wait()
+            child.stdin.close()
+            child.stderr.close()

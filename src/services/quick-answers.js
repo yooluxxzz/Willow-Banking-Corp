@@ -215,6 +215,7 @@ const TOPICS = [
 /** Picks the topic a question is about (or null) — exported for tests. */
 function topicOf(question) {
     const text = String(question || '').toLowerCase();
+    if (/\b(balance|available funds|bank account funds)\b/.test(text) || (/\bfunds\b/.test(text) && /\b(bank|account|checking|savings)\b/.test(text))) return 'balances';
     const match = TOPICS.find(([, pattern]) => pattern.test(text));
     return match ? match[0] : null;
 }
@@ -223,6 +224,10 @@ function topicOf(question) {
 async function answer(userId, question, now = new Date()) {
     const text = String(question || '').toLowerCase();
     const topic = topicOf(text);
+    if (topic === 'balances') {
+        const tools = require('./assistant-actions');
+        return { topic, text: tools.renderAccounts(await tools.read(userId, 'accounts')) };
+    }
     const data = await gather(userId, now);
     if (topic) return { topic, text: answers[topic](data, text) };
     // Not a question these answers cover: give the headline figures and say what is covered.

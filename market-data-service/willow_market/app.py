@@ -7,6 +7,7 @@ import json
 import logging
 import re
 import socket
+import threading
 import time
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
@@ -160,6 +161,27 @@ class MarketDataServer(ThreadingHTTPServer):
         super().__init__(address, MarketDataHandler)
         self.api = api
         self.token = token or None
+        self._request_slots = threading.BoundedSemaphore(64)
+
+
+    def process_request(self, request: socket.socket, client_address: tuple) -> None:
+        if not self._request_slots.acquire(blocking=False):
+            try:
+                request.sendall(b'HTTP/1.1 503 Service Unavailable\r\nConnection: close\r\nContent-Length: 0\r\n\r\n')
+            finally:
+                self.shutdown_request(request)
+            return
+        try:
+            super().process_request(request, client_address)
+        except Exception:
+            self._request_slots.release()
+            raise
+
+    def process_request_thread(self, request: socket.socket, client_address: tuple) -> None:
+        try:
+            super().process_request_thread(request, client_address)
+        finally:
+            self._request_slots.release()
 
 
 class MarketDataHandler(BaseHTTPRequestHandler):

@@ -9,8 +9,9 @@ const { uniqueCustomerId, uniqueAccountNumber } = require('./ids');
 const { getDb } = require('../database');
 const config = require('../config');
 const { validateEmail, validatePassword, sanitizeString } = require('../middleware/validation');
+const { logAudit } = require('./audit');
 
-async function registerUser({ email, password, fullName, phone, country }) {
+async function registerUser({ email, password, fullName, phone, country, accountType = 'personal' }) {
     const db = getDb();
 
     email = typeof email === 'string' ? email.trim().toLowerCase() : '';
@@ -20,6 +21,7 @@ async function registerUser({ email, password, fullName, phone, country }) {
     if (!validateEmail(email)) {
         return { error: 'Please enter a valid email address.' };
     }
+    if (!['personal', 'business'].includes(accountType)) return { error: 'Choose a personal or business profile.' };
     if (!fullName || fullName.length < 2 || fullName.length > 100) {
         return { error: 'Please enter your full name (2-100 characters).' };
     }
@@ -32,7 +34,7 @@ async function registerUser({ email, password, fullName, phone, country }) {
 
     const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
     if (existing) {
-        return { error: 'An account with this email already exists.' };
+        return { error: 'This email is already registered with Willow. Sign in or use password recovery.', code: 'email_in_use' };
     }
 
     const passwordHash = await bcrypt.hash(password, config.bcryptRounds);
@@ -50,15 +52,22 @@ async function registerUser({ email, password, fullName, phone, country }) {
   `);
 
     const transaction = db.transaction(() => {
+        // A second request may have registered this email while bcrypt was hashing.
+        if (db.prepare('SELECT id FROM users WHERE email = ?').get(email)) return { error: 'This email is already registered with Willow. Sign in or use password recovery.', code: 'email_in_use' };
         const result = insertUser.run(email, fullName, phone, passwordHash, customerId, typeof country === 'string' ? country.trim() : '');
         const userId = result.lastInsertRowid;
         // The account the customer asked to open. Balances start at zero; cards, savings and
         // everything else are created only when the customer asks for them.
         insertAccount.run(userId, accountNumber);
+        if (accountType === 'business') {
+            db.prepare("INSERT INTO accounts (user_id, account_number, account_type, purpose, nickname, balance, available_balance, currency, status) VALUES (?, ?, 'checking', 'business', 'Business operating', 0, 0, 'USD', 'active')").run(userId, uniqueAccountNumber(db));
+        }
+        logAudit({ actorId: userId, actorEmail: email, action: 'register', targetType: 'user', targetId: String(userId), metadata: { customerId, accountType } });
         return { userId, customerId, accountNumber };
     });
 
     const result = transaction();
+    if (result.error) return result;
     return { success: true, userId: result.userId, customerId: result.customerId };
 }
 
@@ -240,7 +249,7 @@ async function initializeAdmin() {
     if (existing) {
         // ADMIN_PASSWORD always wins, so setting it in .env works even if the admin already exists.
         if (!(await bcrypt.compare(password, existing.password_hash))) {
-            db.prepare("UPDATE users SET password_hash = ?, updated_at = datetime('now') WHERE id = ?").run(await bcrypt.hash(password, config.bcryptRounds), existing.id);
+            db.prepare("UPDATE users SET password_hash = ?, auth_version = auth_version + 1, updated_at = datetime('now') WHERE id = ?").run(await bcrypt.hash(password, config.bcryptRounds), existing.id);
             console.log(`[Admin] Updated the password for ${email} from ADMIN_PASSWORD.`);
         }
         return;

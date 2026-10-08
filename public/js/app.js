@@ -14,9 +14,18 @@
         return meta ? meta.getAttribute('content') : '';
     }
 
+    const pendingRequestKeys = new Map();
     /** Fetch JSON with CSRF, timeouts and consistent error messages. */
     async function api(url, options = {}) {
         const { method = 'GET', body, timeout = 15000, headers = {}, passive = false } = options;
+        const financial = method === 'POST' && /^\/api\/(deposits|withdrawals|transfers|fx\/convert|wealth\/(cash|trades)|crypto\/send|debts\/\d+\/payments|networth\/assets)(\/|$)/.test(url);
+        const fingerprint = financial ? method + url + JSON.stringify(body || {}) : null;
+        let requestKey = options.idempotencyKey || body?.requestKey;
+        if (financial && !requestKey && global.crypto?.randomUUID) {
+            requestKey = pendingRequestKeys.get(fingerprint) || global.crypto.randomUUID();
+            if (pendingRequestKeys.size >= 100) pendingRequestKeys.delete(pendingRequestKeys.keys().next().value);
+            pendingRequestKeys.set(fingerprint, requestKey);
+        }
         const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
         const timer = controller ? setTimeout(() => controller.abort(), timeout) : null;
         let response;
@@ -25,6 +34,7 @@
                 method,
                 headers: {
                     Accept: 'application/json',
+                    ...(financial && requestKey ? { 'Idempotency-Key': requestKey } : {}),
                     ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
                     ...(method !== 'GET' ? { 'X-CSRF-Token': csrfToken() } : {}),
                     ...(passive ? { 'X-Willow-Passive': '1' } : {}),
@@ -44,6 +54,7 @@
             if (timer) clearTimeout(timer);
         }
         const data = await response.json().catch(() => ({}));
+        if (financial && response.status < 500 && data.code !== 'request_pending') pendingRequestKeys.delete(fingerprint);
         if (response.status === 401 && data.code === 'session_timeout' && doc.querySelector('[data-app]')) {
             redirectToSignIn('session_timeout');
         }
@@ -780,8 +791,51 @@
         const setupStatus = panel.querySelector('[data-ask-setup-status]');
         const autonomyButtons = Array.from(panel.querySelectorAll('[data-ask-autonomy-value]'));
         const autonomyNote = panel.querySelector('[data-ask-autonomy-note]');
+        const autonomySection = panel.querySelector('[data-ask-autonomy]');
+        const autonomyToggle = panel.querySelector('[data-ask-autonomy-toggle]');
+        const autonomyLabel = panel.querySelector('[data-ask-autonomy-label]');
+        const autonomyStatus = panel.querySelector('[data-ask-autonomy-status]');
         const historyList = panel.querySelector('[data-ask-history-list]');
         const newChatButton = panel.querySelector('[data-ask-new]');
+        const historySection = panel.querySelector('[data-ask-history]');
+        const historyToggle = panel.querySelector('[data-ask-history-toggle]');
+        const historySearch = panel.querySelector('[data-ask-history-search]');
+        const historyButtons = Array.from(panel.querySelectorAll('[data-ask-history-period]'));
+        let historyPeriod = 'recent';
+        let savingAutonomy = false;
+        let autonomyRevision = 0;
+        const filterHistory = () => {
+            let visible = 0;
+            historyList.querySelectorAll('.ask-history-item').forEach(row => {
+                row.hidden = row.dataset.period !== historyPeriod || !row.textContent.toLowerCase().includes(historySearch.value.toLowerCase());
+                if (!row.hidden) visible++;
+            });
+            panel.querySelector('[data-ask-history-empty]').hidden = visible > 0;
+        };
+        const showHistory = (value, period = historyPeriod) => {
+            historyPeriod = period;
+            historySection.hidden = !value;
+            if (value) {
+                autonomySection.hidden = true;
+                autonomyToggle.setAttribute('aria-expanded', 'false');
+            }
+            historyButtons.forEach(button => button.setAttribute('aria-expanded', String(value && button.dataset.askHistoryPeriod === period)));
+            panel.querySelector('#askHistoryTitle').textContent = period === 'recent' ? 'Recent chats' : 'Older chats';
+            panel.querySelector('[data-ask-history-description]').textContent = period === 'recent' ? 'Updated in the last 7 days.' : 'Last updated more than 7 days ago.';
+            filterHistory();
+            if (value) historySearch.focus();
+        };
+        historyButtons.forEach(button => button.addEventListener('click', () => showHistory(historySection.hidden || historyPeriod !== button.dataset.askHistoryPeriod, button.dataset.askHistoryPeriod)));
+        panel.querySelector('[data-ask-history-close]').addEventListener('click', () => { showHistory(false); historyToggle.focus(); });
+        historySearch.addEventListener('input', filterHistory);
+        autonomyToggle.addEventListener('click', () => {
+            autonomySection.hidden = !autonomySection.hidden;
+            autonomyToggle.setAttribute('aria-expanded', String(!autonomySection.hidden));
+            if (!autonomySection.hidden) {
+                showHistory(false);
+                autonomySection.querySelector('[aria-checked="true"]')?.focus();
+            }
+        });
         const scroll = () => { thread.scrollTop = thread.scrollHeight; };
         let autonomy = 'confirm';
         let currentConversationId = null;
@@ -799,7 +853,12 @@
         // quick answers worked out from the customer's records. It switches to AI by itself.
         const setAutonomy = value => {
             autonomy = ['read_only', 'confirm', 'autonomous'].includes(value) ? value : 'confirm';
-            autonomyButtons.forEach(button => button.setAttribute('aria-checked', String(button.dataset.askAutonomyValue === autonomy)));
+            autonomyButtons.forEach(button => {
+                const selected = button.dataset.askAutonomyValue === autonomy;
+                button.setAttribute('aria-checked', String(selected));
+                button.tabIndex = selected ? 0 : -1;
+            });
+            autonomyLabel.textContent = { read_only: 'Read only', confirm: 'Ask first', autonomous: 'Autonomous' }[autonomy];
             if (autonomyNote) {
                 autonomyNote.textContent = autonomy === 'read_only'
                     ? 'Willow can inspect your finances but never changes anything.'
@@ -809,22 +868,39 @@
             }
         };
         const saveAutonomy = async value => {
+            if (savingAutonomy || value === autonomy) return;
+            savingAutonomy = true;
+            autonomyRevision++;
+            autonomyStatus.textContent = 'Saving…';
             autonomyButtons.forEach(button => { button.disabled = true; });
             try {
                 const result = await W.api('/api/assistant/autonomy', { method: 'PATCH', body: { autonomy: value } });
                 setAutonomy(result.autonomy);
+                autonomyStatus.textContent = 'Saved.';
                 W.showToast(value === 'autonomous' ? 'Ask Willow is now autonomous.' : value === 'read_only' ? 'Ask Willow is now read only.' : 'Ask Willow will ask before actions.', 'success', 2600);
             } catch (error) {
+                autonomyStatus.textContent = error.message + ' Your previous mode is still selected.';
                 W.showToast(error.message, 'error');
             } finally {
+                autonomyRevision++;
+                savingAutonomy = false;
                 autonomyButtons.forEach(button => { button.disabled = false; });
             }
         };
         autonomyButtons.forEach(button => button.addEventListener('click', () => saveAutonomy(button.dataset.askAutonomyValue)));
+        autonomyButtons.forEach((button, index) => button.addEventListener('keydown', event => {
+            const delta = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
+            if (!delta || savingAutonomy) return;
+            event.preventDefault();
+            const next = autonomyButtons[(index + delta + autonomyButtons.length) % autonomyButtons.length];
+            next.focus();
+            saveAutonomy(next.dataset.askAutonomyValue);
+        }));
+        setAutonomy(autonomy);
 
         const setAvailable = (isAvailable, model, reason, savedAutonomy) => {
             available = Boolean(isAvailable);
-            if (savedAutonomy) setAutonomy(savedAutonomy);
+            if (savedAutonomy && !savingAutonomy) setAutonomy(savedAutonomy);
             triggers.forEach(button => { button.hidden = reason === 'disabled'; });
             if (modelLabel && model) modelLabel.textContent = model;
             panel.querySelectorAll('[data-ask-mode]').forEach(node => { node.hidden = node.dataset.askMode !== (available ? 'ai' : 'quick'); });
@@ -840,15 +916,18 @@
                 const data = await response.json();
                 historyList.replaceChildren();
                 if (!data.conversations?.length) {
-                    historyList.append(el('p', { className: 'ask-history-empty', text: 'No saved chats yet.' }));
+                    filterHistory();
                     return;
                 }
                 data.conversations.forEach(conversation => {
                     const row = el('div', { className: 'ask-history-item' });
-                    const button = el('button', { type: 'button', className: 'ask-history-chat', text: conversation.title || 'New chat' });
+                    const stamp = String(conversation.updated_at || '').replace(' ', 'T');
+                    const updated = Date.parse(stamp && /(?:Z|[+-]\d{2}:\d{2})$/.test(stamp) ? stamp : stamp + 'Z');
+                    row.dataset.period = Number.isFinite(updated) && updated < Date.now() - 7 * 86400000 ? 'older' : 'recent';
+                    const button = el('button', { type: 'button', className: 'ask-history-chat' }, el('strong', { text: conversation.title || 'New chat' }), el('span', { className: 'ask-history-preview', text: conversation.last_question || 'Saved conversation' }));
                     const remove = el('button', { type: 'button', className: 'btn btn-ghost btn-icon', 'aria-label': 'Delete chat', title: 'Delete chat' }, icon('trash', 'icon-sm'));
                     button.classList.toggle('is-active', Number(conversation.id) === Number(currentConversationId));
-                    button.addEventListener('click', () => loadConversation(conversation.id));
+                    button.addEventListener('click', () => { showHistory(false); loadConversation(conversation.id); });
                     remove.addEventListener('click', async () => {
                         try {
                             await W.api('/api/assistant/conversations/' + encodeURIComponent(conversation.id), { method: 'DELETE', body: {} });
@@ -859,12 +938,16 @@
                     row.append(button, remove);
                     historyList.append(row);
                 });
+                filterHistory();
             } catch (error) { /* history is non-critical */ }
         };
-        const checkStatus = (refresh = false) => fetch(`/api/assistant/status${refresh ? '?refresh=1' : ''}`, { headers: { Accept: 'application/json', 'X-Willow-Passive': '1' }, credentials: 'same-origin' })
+        const checkStatus = (refresh = false) => {
+            const revision = autonomyRevision;
+            return fetch(`/api/assistant/status${refresh ? '?refresh=1' : ''}`, { headers: { Accept: 'application/json', 'X-Willow-Passive': '1' }, credentials: 'same-origin' })
             .then(response => (response.ok ? response.json() : null))
-            .then(status => { if (status) setAvailable(status.available, status.model, status.reason, status.autonomy); return status; })
+            .then(status => { if (status) setAvailable(status.available, status.model, status.reason, revision === autonomyRevision ? status.autonomy : undefined); return status; })
             .catch(() => null);
+        };
         checkStatus();
 
         const renderSavedConversation = conversation => {
@@ -889,12 +972,19 @@
                 renderSavedConversation(data.conversation);
             } catch (error) { W.showToast(error.message, 'error'); }
         };
+        const welcomeTemplate = panel.querySelector('[data-ask-welcome]')?.cloneNode(true);
         const startNewChat = (refresh = true) => {
+            if (controller) return;
+            showHistory(false);
             currentConversationId = null;
             history = [];
             thread.replaceChildren();
-            const welcome = panel.querySelector('[data-ask-welcome]');
-            if (welcome) welcome.hidden = false;
+            if (welcomeTemplate) {
+                const welcome = welcomeTemplate.cloneNode(true);
+                welcome.hidden = false;
+                welcome.querySelectorAll('[data-ask-prompt]').forEach(button => button.addEventListener('click', () => ask(button.dataset.askPrompt)));
+                thread.append(welcome);
+            }
             if (refresh) loadChatHistory();
             input.focus();
         };
@@ -959,6 +1049,7 @@
             let notice = null;
             let mode = null;
             let action = null;
+            let verifiedData = null;
             try {
                 const response = await fetch('/api/assistant/chat', {
                     method: 'POST',
@@ -994,6 +1085,7 @@
                             notice = event.notice || null;
                             mode = event.mode || null;
                             action = event.action || null;
+                            if (event.tool === 'accounts') verifiedData = event.data;
                             if (event.conversationId) currentConversationId = event.conversationId;
                         }
                     }
@@ -1001,6 +1093,13 @@
                 if (frame) cancelAnimationFrame(frame);
                 if (failed && !text) throw new Error(failed);
                 answer.replaceChildren(renderRichText(text || 'I don’t have an answer for that.'));
+                if (verifiedData?.accounts) {
+                    const cards = verifiedData.accounts.map(account => el('div', { className: 'ask-balance-card' },
+                        el('strong', { text: account.name + ' ··' + account.last4 }),
+                        el('span', { className: 'ask-balance-amount', text: account.available + ' ' + account.currency }),
+                        el('span', { className: 'ask-note', text: 'Available · Balance ' + account.balance })));
+                    answer.replaceChildren(el('p', { text: 'From your Willow records' }), ...cards);
+                }
                 if (failed) answer.append(el('p', { className: 'ask-note', text: failed }));
                 if (notice) answer.append(el('p', { className: 'ask-note', text: notice }));
                 // A quick answer while the AI was expected means Ollama went away: show the right mode.
@@ -1010,32 +1109,36 @@
                 if (safe.length) answer.append(el('div', { className: 'ask-links' }, ...safe.map(link => el('a', { className: 'chip chip-sm', href: link.href, text: link.label }))));
                 if (mode === 'action_pending' && action && action.token) {
                     const controls = el('div', { className: 'ask-action-controls' });
-                    const confirm = el('button', { type: 'button', className: 'btn btn-primary btn-sm', text: 'Run action' });
+                    const confirm = el('button', { type: 'button', className: 'btn btn-primary btn-sm', text: ({ transfer: 'Confirm transfer', pay_debt: 'Confirm payment', move_investing_cash: 'Confirm cash move', trade: 'Confirm order', create_goal: 'Create goal' })[action.tool] || 'Confirm action' });
                     const cancel = el('button', { type: 'button', className: 'btn btn-secondary btn-sm', text: 'Cancel' });
                     const statusNode = el('p', { className: 'ask-note', text: 'This approval expires in about 2 minutes.' });
                     controls.append(confirm, cancel);
                     answer.append(el('div', { className: 'ask-action-card' }, el('strong', { text: action.title || 'Run this action?' }), controls, statusNode));
+                    const expires = setTimeout(() => { confirm.disabled = true; cancel.disabled = true; statusNode.textContent = 'Expired. Ask Willow to prepare a new preview.'; }, (action.expiresInSeconds || 120) * 1000);
                     confirm.addEventListener('click', async () => {
+                        clearTimeout(expires);
                         confirm.disabled = true;
                         cancel.disabled = true;
                         confirm.classList.add('is-loading');
                         statusNode.textContent = 'Running…';
                         try {
                             const result = await W.api('/api/assistant/actions/' + encodeURIComponent(action.token) + '/confirm', { method: 'POST', body: {} });
-                            statusNode.textContent = 'Done. The requested demo action was completed.';
+                            statusNode.textContent = 'Completed · Reference: ' + (result.result?.reference || result.result?.trade?.id || 'recorded');
                             confirm.remove();
                             cancel.remove();
                             W.showToast('Ask Willow completed the action.', 'success', 2600);
                             doc.dispatchEvent(new CustomEvent('willow:assistant-action', { detail: result }));
                         } catch (error) {
                             statusNode.textContent = error.message;
-                            confirm.disabled = false;
-                            cancel.disabled = false;
+                            statusNode.textContent += ' Check your activity before requesting a new preview.';
+                            confirm.remove();
+                            cancel.remove();
                         } finally {
                             confirm.classList.remove('is-loading');
                         }
                     });
                     cancel.addEventListener('click', async () => {
+                        clearTimeout(expires);
                         confirm.disabled = true;
                         cancel.disabled = true;
                         try {

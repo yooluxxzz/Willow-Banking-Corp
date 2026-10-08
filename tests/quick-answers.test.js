@@ -52,7 +52,7 @@ describe('Ask Willow quick answers (no Ollama)', () => {
         assert.match(budgets, /1 budget: 0 on track, 1 close to the limit and 0 over/);
         assert.match(budgets, /Groceries: \$180\.00 of \$200\.00 this month — \$20\.00 left/);
         const balances = (await quick.answer(userId, 'How much money do I have?')).text;
-        assert.match(balances, /\$1,820\.00 across your US dollar accounts/);
+        assert.match(balances, /balance \$1,820\.00; available \$1,820\.00/);
         const worth = (await quick.answer(userId, 'What is my net worth?')).text;
         assert.match(worth, /net worth is -\$2,780\.00: you own \$1,820\.00 and owe \$4,600\.00/);
     });

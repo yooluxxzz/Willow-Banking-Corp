@@ -2,6 +2,15 @@
 
 The application uses sql.js with its schema and startup migrations in `src/database.js`. Existing databases are loaded and migrated in place. This work does not recreate user accounts or modify their balances.
 
+## 2026-10-07: audit integrity and assistant fixes
+
+- Added `idempotent_requests`, keyed by user/operation/request key, with canonical hash, response status/JSON and creation time. Its user foreign key cascades on deletion. Retries replay stored receipts; unresolved reservations require review.
+- Added nullable `users.last_active_at` for meaningful signed-in activity, throttled to one update per five minutes. Guest retention uses it with audit activity.
+- Added `user_preferences.assistant_revision INTEGER NOT NULL DEFAULT 0`. Autonomy changes advance it and invalidate earlier AI approvals.
+- Status changes, MFA reconfiguration and authenticator key rotation advance `auth_version`. Pending MFA and AI approvals bind to the original version. Registration sessions carry it too.
+- Removed the global legacy investing/crypto deletion and portfolio reset. Ambiguous positions are preserved; explicit sample cleanup remains. Already deleted data cannot be recovered by this code.
+- SQL exports are private, ignored backups. Earlier “Snapshot in Git” guidance below is superseded. See [audit fixes](AUDIT_FIXES.md) for rotation, storage limits and checks.
+
 ## 2026-09-30: account recovery
 
 - `users.auth_version INTEGER NOT NULL DEFAULT 0` is added on startup. Existing sessions without a version are treated as version zero. Signing in records the current version. Password recovery increments it, invalidating every old session. Password changes and “sign out other sessions” increment it and retain the new version only for the initiating session.

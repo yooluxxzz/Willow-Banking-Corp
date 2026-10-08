@@ -117,8 +117,8 @@ async function refreshStatus() {
 }
 
 /** Last known status; refreshes in the background when it is old. */
-function cachedStatus() {
-    if (Date.now() - status.checkedAt > STATUS_TTL_MS) refreshStatus();
+function cachedStatus({ refresh = true } = {}) {
+    if (refresh && Date.now() - status.checkedAt > STATUS_TTL_MS) refreshStatus();
     return status;
 }
 
@@ -398,7 +398,7 @@ const ACTION_SYSTEM_PROMPT =
     'You are Willow\'s private action router. Return JSON only, with no markdown.\n' +
     'Choose exactly one mode: answer, read, or action.\n' +
     'answer = advice, explanation, conversation, or unclear request.\n' +
-    'read = a verified data lookup using one of: accounts, finances, portfolio, stock_quote, debts, loans, transactions, budgets, goals.\n' +
+    'read = a verified data lookup using one of: accounts, finances, portfolio, stock_quote, debts, loans, transactions, budgets, goals, cards, scheduled_transfers, business, crypto_wallet, education.\n' +
     'action = an explicit request to change something using one of: transfer, pay_debt, move_investing_cash, trade, create_goal.\n' +
     'Rules: use only ACTION DATA; never invent IDs, balances, emails, symbols, account names, or destinations; never turn a question into an action.\n' +
     'transfer args: fromAccountId + (toAccountId OR recipientEmail) + amount, optional description.\n' +

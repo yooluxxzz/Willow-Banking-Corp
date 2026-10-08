@@ -63,7 +63,7 @@ describe('Sample profile', () => {
     });
 
     it('is removed with all its records when unused, like any guest', () => {
-        db.prepare("UPDATE users SET created_at = datetime('now', '-10 days') WHERE id = ?").run(userId);
+        db.prepare("UPDATE users SET last_active_at = datetime('now', '-10 days'), created_at = datetime('now', '-10 days') WHERE id = ?").run(userId);
         db.prepare("UPDATE audit_logs SET created_at = datetime('now', '-9 days') WHERE actor_id = ?").run(userId);
         require('../src/services/guests').purgeStaleGuests({ days: 7 });
         assert.equal(db.prepare('SELECT COUNT(*) AS n FROM users WHERE id = ?').get(userId).n, 0);

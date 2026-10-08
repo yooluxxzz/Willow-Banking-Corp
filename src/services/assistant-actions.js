@@ -21,6 +21,11 @@ const { formatCurrency } = require('../middleware/validation');
 const { ValidationError } = require('../errors');
 
 const READ_TOOLS = new Set([
+    'cards',
+    'scheduled_transfers',
+    'business',
+    'crypto_wallet',
+    'education',
     'accounts',
     'finances',
     'portfolio',
@@ -67,16 +72,55 @@ function plannerContext(userId) {
 
 function detectReadIntent(question) {
     const text = String(question || '').trim().toLowerCase();
-    if (/\b(balance|how much money|what(?:'s| is) in (my )?(checking|savings|accounts?)|account balance)\b/.test(text)) return 'accounts';
+    // Explicit requests to change records must reach the planner, not a read shortcut.
+    if (isWriteRequest(text)) return null;
+    if (/\b(my cards?|debit cards?|card settings|card status)\b/.test(text)) return 'cards';
+    if (/\b(scheduled|upcoming transfers|standing orders)\b/.test(text)) return 'scheduled_transfers';
+    if (/\b(business|invoices?|receivables)\b/.test(text)) return 'business';
+    if (/\b(crypto wallet|wallet history|crypto transfers)\b/.test(text)) return 'crypto_wallet';
+    if (/\b(education|learn about|explain (stocks|etfs|funds|interest)|what is compound interest)\b/.test(text)) return 'education';
+    if (/\b(stock price|share price|quote)\b|\bprice\b.*\b(stock|share|ticker)\b/.test(text) || (/\bprice\b/.test(text) && quoteArgs(text))) return 'stock_quote';
+    if (/\b(balance|available funds|bank account funds|check my funds|how much money|how much do i have|what(?:'s| is) in (my )?(checking|savings|accounts?))\b/.test(text) || (/\bfunds\b/.test(text) && /\b(bank|account|checking|savings)\b/.test(text))) return 'accounts';
     if (/\b(finances?|financial picture|money overview|overall money|how am i doing financially)\b/.test(text)) return 'finances';
     if (/\b(my )?(stocks?|shares|portfolio|holdings|investments?)\b/.test(text)) return 'portfolio';
-    if (/\b(stock price|share price|quote|how is [a-z]{1,5}\b|what is [a-z]{1,5}\s*(?:stock|share)?)\b/.test(text)) return 'stock_quote';
     if (/\b(loan|mortgage|borrowing|borrowed|loan estimate)\b/.test(text)) return 'loans';
     if (/\b(debt|debts|owe|interest rate|payoff)\b/.test(text)) return 'debts';
     if (/\b(transaction|transactions|recent activity|what did i spend|latest payments)\b/.test(text)) return 'transactions';
-    if (/\bbudget|budgets|budget limit|on track\b/.test(text)) return 'budgets';
+    if (/\b(budget|budgets|budget limit|on track)\b/.test(text)) return 'budgets';
     if (/\b(goal|goals|savings goal)\b/.test(text)) return 'goals';
     return null;
+}
+
+function isWriteRequest(question) {
+    const text = String(question || '').toLowerCase();
+    if (/\b(don['’]t|do not|never|avoid)\b[^.!?]*\b(send|transfer|move|pay|buy|sell|purchase|create|execute|run)\b/.test(text)) return false;
+    if (/^\s*(how|what|why|which|should i|can i|could i)\b/.test(text)) return false;
+    if (/\b(explain|teach|describe)\b|\b(tell|show) me how\b/.test(text)) return false;
+    return /\b(send|transfer|move|pay|make a payment|buy|sell|purchase|create|set up|add a goal|put money into investing|move money out of investing)\b/.test(text);
+}
+
+function quoteArgs(question) {
+    const text = String(question || '').toUpperCase();
+    const tokens = new Set(text.match(/[A-Z0-9][A-Z0-9.^=-]*/g) || []);
+    const matches = marketData.listInstruments().filter(item => tokens.has(item.symbol.toUpperCase()));
+    return matches.length === 1 ? { symbol: matches[0].symbol } : null;
+}
+
+function renderAccounts(result) {
+    if (!result.accounts.length) return 'You don’t have any active accounts.';
+    return ['Your active Willow demo accounts:', ...result.accounts.map(a => `- ${a.name} ··${a.last4} (${a.currency}): balance ${a.balance}; available ${a.available}.`), 'From your Willow records. Balances are simulated; currencies are shown separately.'].join('\n');
+}
+
+function renderRead(tool, data) {
+    switch (tool) {
+    case 'stock_quote': return data.unavailable || !Number.isFinite(data.price) ? `A price for ${data.symbol} is unavailable right now.` : `${data.symbol} (${data.name}): ${formatCurrency(Math.round(data.price * 100), data.currency)} ${data.currency}. ${data.saved ? 'Saved price' : data.stale ? 'Cached price' : 'Latest available price'}${data.asOf ? ' as of ' + data.asOf : ''}. Simulated orders use this provider price.`;
+    case 'cards': return data.cards.length ? data.cards.map(c => `- ${c.name} ··${c.last4}: ${c.status}; daily limit ${c.dailyLimit} (${c.currency}).`).join('\n') : 'You don’t have any demo cards. Order one from Cards.';
+    case 'scheduled_transfers': return data.transfers.length ? data.transfers.slice(0, 10).map(t => `- ${formatCurrency(t.amount, t.currency)} (${t.currency}) on ${t.scheduled_for.slice(0, 10)}: ${t.status}.`).join('\n') : 'You don’t have any scheduled transfers.';
+    case 'business': return `Business USD accounts: ${usd(data.availableCents)} available. This month: ${usd(data.revenueCents)} revenue and ${usd(data.expensesCents)} expenses. ${data.invoices.length} invoices recorded.`;
+    case 'crypto_wallet': return data.holdings.length ? data.holdings.map(h => `- ${h.symbol}: ${h.quantity} simulated units.`).join('\n') : 'Your simulated crypto wallet is empty.';
+    case 'education': return ['Willow education guides:', ...data.guides.map(g => `- ${g.title}: ${g.summary}`)].join('\n');
+    default: return null;
+    }
 }
 
 function accounts(userId) {
@@ -205,6 +249,11 @@ function goalsRead(userId) {
 async function read(userId, tool, args = {}) {
     if (!READ_TOOLS.has(tool)) throw new ValidationError('That assistant read tool is not available.');
     switch (tool) {
+    case 'cards': return { cards: require('./card').getUserCards(userId).map(c => ({ id: c.id, name: c.nickname || c.form + ' debit card', last4: c.last_four, status: c.status, currency: c.currency, dailyLimit: formatCurrency(c.daily_limit, c.currency) })) };
+    case 'scheduled_transfers': return { transfers: require('./scheduled-transfers').listScheduledTransfers(userId) };
+    case 'business': return require('./business').getDashboard(userId);
+    case 'crypto_wallet': return { ...require('./crypto-wallet').getCryptoWallet(userId), history: require('./crypto-wallet').getCryptoHistory(userId) };
+    case 'education': return { guides: require('../content/articles').filter(a => a.kind === 'guide').slice(0, 10).map(a => ({ title: a.title, summary: a.dek, href: '/learn/' + a.slug })) };
     case 'accounts': return accounts(userId);
     case 'finances': return finances(userId);
     case 'portfolio': return portfolioRead(userId);
@@ -258,7 +307,7 @@ function transfer(userId, args = {}) {
         description: typeof args.description === 'string' ? compact(args.description).slice(0, 200) : '',
         userId,
     });
-    if (result.error) throw new ValidationError(result.error);
+    if (result.error) throw new ValidationError(result.error, 400, result.code);
     return { ...result, amountFormatted: formatCurrency(result.amountCents, result.currency), recipientName: destination.recipientName };
 }
 
@@ -282,6 +331,7 @@ async function trade(userId, args = {}) {
     const instrument = marketData.getInstrument(args.symbol);
     if (!instrument || !instrument.tradable) throw new ValidationError('Choose a supported demo asset.');
     const quote = await marketData.getLatestQuote(instrument.symbol);
+    require('./mutation-guard').assertUser(userId);
     const result = portfolio.executeTrade(userId, {
         symbol: instrument.symbol,
         side: args.side,
@@ -303,13 +353,14 @@ function createGoal(userId, args = {}) {
     const result = goals.createGoal(userId, {
         name: args.name,
         category: args.category,
-        target: args.target,
+        targetAmount: args.target,
         accountId: args.accountId,
     });
     return { goal: result };
 }
 
 async function execute(userId, tool, args = {}) {
+    require('./mutation-guard').assertUser(userId);
     if (!WRITE_TOOLS.has(tool)) throw new ValidationError('That assistant action is not available.');
     switch (tool) {
     case 'transfer': return transfer(userId, args);
@@ -346,7 +397,8 @@ function actionPreview(userId, tool, args = {}) {
         if (!account) return 'Unavailable account';
         return `${account.nickname || (account.purpose === 'business' ? 'Business checking' : account.account_type === 'savings' ? 'Savings' : 'Checking')} ··${String(account.account_number).slice(-4)} (${account.currency})`;
     };
-    const amount = args.amount !== undefined ? formatCurrency(Number(args.amount) * 100, 'USD') : '';
+    const currency = tool === 'transfer' ? validateAccount(userId, args.fromAccountId).currency : 'USD';
+    const amount = args.amount !== undefined ? formatCurrency(Number(args.amount) * 100, currency) : '';
     switch (tool) {
     case 'transfer':
         return args.toAccountId
@@ -373,4 +425,4 @@ function actionPreview(userId, tool, args = {}) {
 function isReadTool(tool) { return READ_TOOLS.has(tool); }
 function isWriteTool(tool) { return WRITE_TOOLS.has(tool); }
 
-module.exports = { READ_TOOLS, WRITE_TOOLS, plannerContext, detectReadIntent, read, execute, title: actionTitle, actionTitle, actionPreview, isReadTool, isWriteTool };
+module.exports = { isWriteRequest, quoteArgs, renderRead, renderAccounts, READ_TOOLS, WRITE_TOOLS, plannerContext, detectReadIntent, read, execute, title: actionTitle, actionTitle, actionPreview, isReadTool, isWriteTool };

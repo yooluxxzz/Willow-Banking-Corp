@@ -29,7 +29,7 @@ async function save() {
     fs.writeFileSync(`${snapshotPath}.tmp`, sql);
     fs.renameSync(`${snapshotPath}.tmp`, snapshotPath);
     console.log(`Saved ${rows} row(s) from ${tables} table(s) to ${rel(snapshotPath)}.`);
-    console.log('Commit it with: git add ' + rel(snapshotPath));
+    console.log('Keep this backup private and outside source control. It contains customer data and credential hashes.');
 }
 
 async function restore(force) {

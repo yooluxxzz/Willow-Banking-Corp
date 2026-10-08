@@ -74,18 +74,17 @@ router.post('/', requireAuth, (req, res) => {
         INSERT INTO transactions (reference, account_id, type, amount, currency, direction, status, description)
         VALUES (?, ?, 'deposit', ?, ?, 'credit', 'completed', ?)
       `).run(reference, account.id, amountCents, account.currency || 'USD', desc);
+            logAudit({
+                actorId: req.session.userId,
+                actorEmail: res.locals.user?.email || 'unknown',
+                action: 'deposit',
+                targetType: 'account',
+                targetId: String(account.id),
+                metadata: { amount: amountCents, reference, description: desc },
+            });
         });
 
         deposit();
-
-        logAudit({
-            actorId: req.session.userId,
-            actorEmail: res.locals.user?.email || 'unknown',
-            action: 'deposit',
-            targetType: 'account',
-            targetId: String(account.id),
-            metadata: { amount: amountCents, reference, description: desc },
-        });
 
         try {
             createNotification(req.session.userId, 'deposit', 'Demo funds added',

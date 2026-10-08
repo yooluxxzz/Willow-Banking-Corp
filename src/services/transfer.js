@@ -5,9 +5,12 @@ const ids = require('./ids');
 const { getDb } = require('../database');
 const { toCents, validateAmount, formatCurrency } = require('../middleware/validation');
 const { createNotification } = require('./notification');
+const { assertUser, assertTransferLimit } = require('./mutation-guard');
+const { logAudit } = require('./audit');
 
 function executeTransfer({ fromAccountId, toAccountNumber, amount, description, userId }) {
     const db = getDb();
+    assertUser(userId);
 
     // Validate amount
     if (!validateAmount(amount)) {
@@ -21,7 +24,7 @@ function executeTransfer({ fromAccountId, toAccountNumber, amount, description, 
 
     // Get sender account
     const fromAccount = db.prepare(`
-    SELECT a.*, u.id as owner_id, u.full_name as owner_name FROM accounts a
+    SELECT a.*, u.id as owner_id, u.full_name as owner_name, u.email as owner_email FROM accounts a
     JOIN users u ON a.user_id = u.id
     WHERE a.id = ? AND a.user_id = ?
   `).get(fromAccountId, userId);
@@ -72,6 +75,8 @@ function executeTransfer({ fromAccountId, toAccountNumber, amount, description, 
 
     // Atomic transaction
     const transfer = db.transaction(() => {
+        assertUser(userId);
+        assertTransferLimit(fromAccount, amountCents);
         // Debit sender
         const debit = db.prepare(`
       UPDATE accounts SET balance = balance - ?, available_balance = available_balance - ?
@@ -103,6 +108,8 @@ function executeTransfer({ fromAccountId, toAccountNumber, amount, description, 
       VALUES (?, ?, ?, 'transfer', ?, ?, 'credit', 'completed', ?, ?)
     `).run(creditRef, toAccount.id, fromAccount.id, amountCents, currency, counterpartyIn ? `Transfer from ${counterpartyIn}` : `Transfer from account ••••${fromAccount.account_number.slice(-4)}`, counterpartyIn);
 
+        logAudit({ actorId: userId, actorEmail: fromAccount.owner_email, action: 'transfer', targetType: 'account', targetId: String(fromAccount.id), metadata: { amountCents, currency, reference, destinationType: toAccount.owner_id === userId ? 'own-account' : 'customer' } });
+
         return { reference };
     });
 
@@ -122,6 +129,7 @@ function executeTransfer({ fromAccountId, toAccountNumber, amount, description, 
 
         return { success: true, reference: result.reference, amountCents, currency, recipientName: toAccount.owner_id === fromAccount.owner_id ? null : toAccount.owner_name, toAccountId: toAccount.id };
     } catch (err) {
+        if (err.status) return { error: err.message, code: err.code || 'rejected' };
         if (err.message === 'Insufficient funds') {
             return { error: 'Insufficient funds for this transfer.' };
         }

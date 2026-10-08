@@ -85,6 +85,14 @@ router.post('/', requireAuth, (req, res) => {
         INSERT INTO transactions (reference, account_id, type, amount, currency, direction, status, description, category)
         VALUES (?, ?, 'withdrawal', ?, ?, 'debit', 'completed', ?, ?)
       `).run(reference, account.id, amountCents, account.currency || 'USD', desc, category || null);
+            logAudit({
+                actorId: req.session.userId,
+                actorEmail: res.locals.user?.email || 'unknown',
+                action: 'withdrawal',
+                targetType: 'account',
+                targetId: String(account.id),
+                metadata: { amount: amountCents, reference },
+            });
         });
 
         try {
@@ -100,15 +108,6 @@ router.post('/', requireAuth, (req, res) => {
             createNotification(req.session.userId, 'withdrawal', 'Demo withdrawal recorded',
                 `${formatCurrency(amountCents, currency)} was withdrawn from your demo account (Ref: ${reference}). No cash was dispensed.`);
         } catch (e) { /* non-critical */ }
-
-        logAudit({
-            actorId: req.session.userId,
-            actorEmail: res.locals.user?.email || 'unknown',
-            action: 'withdrawal',
-            targetType: 'account',
-            targetId: String(account.id),
-            metadata: { amount: amountCents, reference },
-        });
 
         res.json({ success: true, simulated: true, reference, amountCents, currency });
     } catch (err) {

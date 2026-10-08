@@ -21,7 +21,7 @@ const candidates = [
 
 function findPython() {
     for (const [command, args] of candidates) {
-        const probe = spawnSync(command, [...args, '-c', 'import sys; assert sys.version_info >= (3, 9)'], { windowsHide: true, stdio: 'ignore' });
+        const probe = spawnSync(command, [...args, '-c', 'import sys; assert sys.version_info >= (3, 10)'], { windowsHide: true, stdio: 'ignore' });
         if (probe.status === 0) return [command, args];
     }
     return null;
@@ -29,7 +29,7 @@ function findPython() {
 
 const python = findPython();
 if (!python) {
-    console.error('Python 3.9 or newer was not found.');
+    console.error('Python 3.10 or newer was not found.');
     console.error('Install it from https://www.python.org/downloads/ (on Windows, tick "Add python.exe to PATH"),');
     console.error('or set the PYTHON environment variable to the full path of python.');
     process.exit(1);

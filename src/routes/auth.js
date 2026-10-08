@@ -75,37 +75,25 @@ router.post('/register', authLimiter, async (req, res) => {
         if (phone !== undefined && phone !== '' && (typeof phone !== 'string' || phone.length > 40 || !validatePhone(phone))) {
             return res.status(400).json({ error: 'Enter a valid phone number, or leave it blank.' });
         }
-        const result = await registerUser({ email, password, fullName, phone, country });
+        const result = await registerUser({ email, password, fullName, phone, country, accountType });
 
         if (result.error) {
-            return res.status(400).json({ error: result.error });
+            return res.status(400).json({ error: result.error, code: result.code });
         }
-
-        if (accountType === 'business') {
-            const { uniqueAccountNumber } = require('../services/ids');
-            const db = getDb();
-            db.prepare("INSERT INTO accounts (user_id, account_number, account_type, purpose, nickname, balance, available_balance, currency, status) VALUES (?, ?, 'checking', 'business', 'Business operating', 0, 0, 'USD', 'active')").run(result.userId, uniqueAccountNumber(db));
-        }
-
-        await regenerate(req);
-        req.session.userId = result.userId;
-        req.session.userRole = 'customer';
-        req.session.device = sessionMetadata(req);
-
-        logAudit({
-            actorId: result.userId,
-            actorEmail: email,
-            action: 'register',
-            targetType: 'user',
-            targetId: String(result.userId),
-            metadata: { customerId: result.customerId, accountType: accountType || 'personal' },
-        });
 
         try {
+            await regenerate(req);
+            req.session.userId = result.userId;
+            req.session.userRole = 'customer';
+            req.session.authVersion = getDb().prepare('SELECT auth_version FROM users WHERE id = ?').get(result.userId).auth_version;
+            req.session.device = sessionMetadata(req);
+
             await save(req);
         } catch (err) {
             console.error('[Auth] Session save error after registration:', err.message);
-            return res.status(500).json({ error: 'Account created, but sign-in failed. Please sign in.' });
+            // Do not retry an authenticated session save while sending this error response.
+            req.session = null;
+            return res.status(500).json({ error: 'Account created, but sign-in failed. Please sign in.', code: 'account_created', redirect: '/login', customerId: result.customerId });
         }
         res.json({ success: true, redirect: '/dashboard?welcome=1', customerId: result.customerId });
     } catch (err) {
@@ -129,6 +117,7 @@ router.post('/login', authLimiter, async (req, res) => {
             await regenerate(req);
             req.session.pendingTwoFactor = {
                 userId: user.id,
+                authVersion: user.authVersion ?? user.auth_version ?? 0,
                 expires: Date.now() + 5 * 60 * 1000,
                 attempts: 0,
                 returnTo: typeof req.body.returnTo === 'string' ? req.body.returnTo : '',
@@ -156,6 +145,11 @@ router.post('/2fa', authLimiter, async (req, res) => {
         if (pending.attempts > 5) {
             delete req.session.pendingTwoFactor;
             return res.status(429).json({ error: 'Too many incorrect codes. Please sign in again.', code: 'locked' });
+        }
+        const currentUser = getDb().prepare('SELECT status, auth_version FROM users WHERE id = ?').get(pending.userId);
+        if (!currentUser || currentUser.status !== 'active' || currentUser.auth_version !== pending.authVersion) {
+            delete req.session.pendingTwoFactor;
+            return res.status(401).json({ error: 'Your sign-in changed. Please enter your details again.', code: 'authorization_changed' });
         }
         const code = typeof req.body.code === 'string' ? req.body.code.trim() : '';
         const ok = twoFactor.verify(pending.userId, code) || consumeCode(pending.userId, code);

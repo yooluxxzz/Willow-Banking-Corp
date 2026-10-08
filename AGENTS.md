@@ -5,6 +5,6 @@ At the user's request, keep a Git record of every completed development work ses
 - Update WORK_LOG.md with the implemented behavior, database/schema changes, and checks run.
 - Commit the completed changes locally with a concrete message. Keep unrelated user changes out of the commit.
 - Include database schema, migrations and tests in version control.
-- At the user's request, database contents are versioned as a SQL snapshot: `npm run db:save` writes `data/willow-snapshot.sql`, which may be committed. It holds hashed passwords and recovery codes and everything users enter, so the repository must stay private.
+- `npm run db:save` writes a private local backup at `data/willow-snapshot.sql`. Do not commit raw snapshots, customer data or credential hashes. Only sanitized synthetic fixtures belong in source control.
 - Keep the live database file, session stores, backup files, plaintext passwords or recovery codes, and environment secrets ignored.
 - Do not push or publish unless the user explicitly authorizes it.

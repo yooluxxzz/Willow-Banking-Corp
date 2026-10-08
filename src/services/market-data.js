@@ -43,7 +43,7 @@ const notFound = () => new MarketDataError('This asset is unavailable.', 'not_fo
 
 const cache = new Map();
 const inflight = new Map();
-const state = { serviceDownUntil: 0, chartCooldownUntil: 0, lastSource: null };
+const state = { serviceDownUntil: 0, chartCooldownUntil: 0, lastSource: null, serviceCheckedAt: 0, serviceReachable: false };
 
 function settings() {
     return {
@@ -106,9 +106,13 @@ async function serviceRequest(endpoint, params) {
     try {
         response = await fetch(url, { headers: { Accept: 'application/json', ...(token ? { 'X-Willow-Service-Token': token } : {}) }, signal: AbortSignal.timeout(timeoutMs) });
     } catch (error) {
+        state.serviceReachable = false;
+        state.serviceCheckedAt = Date.now();
         state.serviceDownUntil = Date.now() + 30 * 1000;
         throw unavailable();
     }
+    state.serviceCheckedAt = Date.now();
+    state.serviceReachable = response.ok;
     const body = await response.json().catch(() => null);
     if (response.status === 404) throw notFound();
     if (!response.ok || !body || typeof body !== 'object') {
@@ -505,7 +509,8 @@ function getStatus() {
     const snapshot = savedData();
     return {
         mode: settings().mode,
-        serviceAvailable: Date.now() >= state.serviceDownUntil,
+        serviceAvailable: settings().mode !== 'yahoo-chart' && state.serviceReachable && Date.now() - state.serviceCheckedAt < 60000 && Date.now() >= state.serviceDownUntil,
+        serviceCheckedAt: state.serviceCheckedAt || null,
         chartCoolingDown: Date.now() < state.chartCooldownUntil,
         savedPrices: snapshot ? { savedAt: snapshot.savedAt, instruments: Object.keys(snapshot.instruments).length } : null,
     };

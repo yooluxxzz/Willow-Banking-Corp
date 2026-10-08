@@ -7,10 +7,10 @@ const ids = require('./ids');
 const { getDb } = require('../database');
 const marketData = require('./market-data');
 const { validateAmount, toCents, formatCurrency } = require('../middleware/validation');
-const { scaledLimit, isSupportedCurrency } = require('./currencies');
+const { isSupportedCurrency } = require('./currencies');
 const { logAudit } = require('./audit');
 const { createNotification } = require('./notification');
-const config = require('../config');
+const { assertUser, assertTransferLimit } = require('./mutation-guard');
 
 class FxError extends Error {
     constructor(message, status = 400, code = 'invalid') {
@@ -51,6 +51,7 @@ async function quote({ from, to, amount }) {
 
 async function convertBetweenAccounts(userId, { fromAccountId, toAccountId, amount }) {
     const db = getDb();
+    assertUser(userId);
     const fromId = Number(fromAccountId);
     const toId = Number(toAccountId);
     if (!Number.isSafeInteger(fromId) || !Number.isSafeInteger(toId) || fromId <= 0 || toId <= 0 || fromId === toId) throw new FxError('Choose two different accounts.');
@@ -62,9 +63,6 @@ async function convertBetweenAccounts(userId, { fromAccountId, toAccountId, amou
     if (source.currency === destination.currency) throw new FxError('These accounts use the same currency. Use a transfer instead.');
     const amountCents = toCents(amount);
     if (source.available_balance < amountCents) throw new FxError('Insufficient demo funds for this conversion.', 400, 'insufficient_funds');
-    const dailyLimit = scaledLimit(config.limits.dailyTransferCents, source.currency);
-    const today = db.prepare("SELECT COALESCE(SUM(amount), 0) AS total FROM transactions WHERE account_id = ? AND type = 'transfer' AND direction = 'debit' AND date(created_at) = date('now')").get(source.id).total;
-    if (today + amountCents > dailyLimit) throw new FxError(`Daily limit is ${formatCurrency(dailyLimit, source.currency)} for this account.`, 400, 'limit');
 
     let fx;
     try {
@@ -82,6 +80,10 @@ async function convertBetweenAccounts(userId, { fromAccountId, toAccountId, amou
     const rateText = `1 ${source.currency} = ${fx.rate.toFixed(fx.rate < 1 ? 6 : 4)} ${destination.currency}`;
 
     db.transaction(() => {
+        assertUser(userId);
+        const active = db.prepare("SELECT id FROM accounts WHERE id IN (?, ?) AND user_id = ? AND status = 'active'").all(source.id, destination.id, userId);
+        if (active.length !== 2) throw new FxError('Both accounts must still be active.');
+        assertTransferLimit(source, amountCents);
         const debit = db.prepare('UPDATE accounts SET balance = balance - ?, available_balance = available_balance - ? WHERE id = ? AND available_balance >= ?').run(amountCents, amountCents, source.id, amountCents);
         if (debit.changes !== 1) throw new FxError('Insufficient demo funds for this conversion.', 400, 'insufficient_funds');
         db.prepare('UPDATE accounts SET balance = balance + ?, available_balance = available_balance + ? WHERE id = ?').run(creditCents, creditCents, destination.id);

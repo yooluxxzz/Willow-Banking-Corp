@@ -10,11 +10,16 @@ const config = require('./config');
 let db = null;
 let dbPath = null;
 let saveTimer = null;
+let dirtyGeneration = 0;
+let savedGeneration = 0;
+let persistenceError = null;
 
 /**
  * Initialize the database (must be called before any queries)
  */
 async function initializeDatabase() {
+    dirtyGeneration = savedGeneration = 0;
+    persistenceError = null;
     const SQL = await initSqlJs();
     dbPath = config.database.path === ':memory:' ? null : path.resolve(config.paths.root, config.database.path);
     const dir = dbPath ? path.dirname(dbPath) : config.paths.data;
@@ -49,6 +54,17 @@ async function initializeDatabase() {
       scheduled_deletion_at TEXT DEFAULT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS idempotent_requests (
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      scope TEXT NOT NULL,
+      request_key TEXT NOT NULL,
+      request_hash TEXT NOT NULL,
+      response_status INTEGER,
+      response_json TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (user_id, scope, request_key)
     );
 
     CREATE TABLE IF NOT EXISTS recovery_codes (
@@ -465,6 +481,8 @@ async function initializeDatabase() {
         "ALTER TABLE accounts ADD COLUMN opening_key TEXT DEFAULT NULL",
         "ALTER TABLE accounts ADD COLUMN nickname TEXT NOT NULL DEFAULT ''",
         "ALTER TABLE users ADD COLUMN auth_version INTEGER NOT NULL DEFAULT 0",
+        "ALTER TABLE users ADD COLUMN last_active_at TEXT DEFAULT NULL",
+        "ALTER TABLE user_preferences ADD COLUMN assistant_revision INTEGER NOT NULL DEFAULT 0",
         "ALTER TABLE users ADD COLUMN status_reason TEXT DEFAULT NULL",
         "ALTER TABLE users ADD COLUMN scheduled_deletion_at TEXT DEFAULT NULL",
         "ALTER TABLE users ADD COLUMN country TEXT NOT NULL DEFAULT ''",
@@ -696,6 +714,7 @@ function getLastInsertRowId() {
 
 let saveScheduled = false;
 function scheduleSave() {
+    dirtyGeneration += 1;
     if (!saveScheduled) {
         saveScheduled = true;
         process.nextTick(() => {
@@ -705,9 +724,13 @@ function scheduleSave() {
     }
 }
 
-/** Rows changed since the database was last written (export() reopens the connection, resetting the count). */
+/** Independent of sql.js export(), which resets SQLite connection counters. */
 function unsavedChanges() {
-    return rows('SELECT total_changes()')[0][0];
+    return dirtyGeneration - savedGeneration;
+}
+
+function persistenceStatus() {
+    return { ready: Boolean(db) && !persistenceError, pending: unsavedChanges() > 0, durable: Boolean(dbPath), lastError: persistenceError ? 'Database save failed' : null };
 }
 
 /** Replaces `target` with `source`, retrying briefly when Windows (often antivirus) holds the file. */
@@ -727,15 +750,24 @@ function saveToDisk({ force = false } = {}) {
     if (!db || !dbPath) return;
     if (!force && unsavedChanges() === 0) return;
     try {
+        const generation = dirtyGeneration;
         const data = db.export();
         // export() reopens the database, which resets every PRAGMA to its default.
         db.run('PRAGMA foreign_keys = ON');
         const tmpPath = dbPath + '.tmp';
         fs.writeFileSync(tmpPath, Buffer.from(data));
         replaceFile(tmpPath, dbPath);
+        savedGeneration = generation;
+        persistenceError = null;
     } catch (err) {
+        persistenceError = err;
         console.error('[Database] Save error:', err.message);
     }
+}
+
+function flushDatabase() {
+    saveToDisk({ force: true });
+    return !persistenceError;
 }
 
 function closeDatabase() {
@@ -756,4 +788,4 @@ function getSqlDatabase() {
     return db;
 }
 
-module.exports = { getDb, getSqlDatabase, initializeDatabase, closeDatabase, repairForeignKeys };
+module.exports = { flushDatabase, persistenceStatus, getDb, getSqlDatabase, initializeDatabase, closeDatabase, repairForeignKeys };

@@ -516,6 +516,7 @@ html.is-private .privacy-icon-show {
 }
 
 .ask-thread {
+    min-height: 0;
     flex: 1;
     overflow-y: auto;
     padding: var(--s-5);
@@ -523,6 +524,48 @@ html.is-private .privacy-icon-show {
     flex-direction: column;
     gap: var(--s-4);
     overscroll-behavior: contain;
+}
+
+.ask-toolbar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-3);
+    padding: var(--s-3) var(--s-5) 0;
+    flex-shrink: 0;
+}
+.ask-toolbar .btn { min-height: 44px; white-space: normal; }
+.ask-autonomy[hidden] { display: none; }
+
+.ask-history {
+    margin: var(--s-3) var(--s-5) 0;
+    padding: var(--s-3);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    background: var(--surface-muted);
+    min-height: 0;
+    flex-shrink: 1;
+    overflow-y: auto;
+    max-height: 35dvh;
+}
+
+.ask-history[hidden], .ask-history-item[hidden] { display: none; }
+.ask-history-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ask-history-search { width: 100%; min-height: 40px; margin: 8px 0; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); color: var(--text); }
+.ask-history-list { display: grid; gap: 6px; }
+.ask-history-item { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.ask-history-chat { display: grid; gap: 3px; flex: 1; min-width: 0; text-align: left; padding: 10px 12px; border: 1px solid transparent; border-radius: var(--r-md); color: var(--text); background: var(--surface); cursor: pointer; }
+.ask-history-chat strong, .ask-history-preview { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ask-history-preview, .ask-history-empty { font-size: var(--fs-xs); color: var(--text-muted); }
+.ask-history-empty { padding: 12px; }
+.ask-history-chat:hover, .ask-history-chat.is-active { border-color: var(--brand); }
+.ask-history-chat:focus-visible, .ask-history-search:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.ask-balance-card { display: grid; gap: 6px; margin-top: 10px; padding: 14px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface); }
+.ask-balance-amount { font-size: var(--fs-lg); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 600px) {
+    .ask-history { max-height: 45dvh; }
+    .ask-toolbar .btn { min-height: 44px; }
+    .ask-autonomy { flex-shrink: 0; }
 }
 
 .ask-welcome-title {
@@ -558,7 +601,7 @@ html.is-private .privacy-icon-show {
 
 .ask-autonomy-options button {
     min-width: 0;
-    min-height: 38px;
+    min-height: 44px;
     padding: 7px 9px;
     white-space: normal;
     line-height: 1.2;
@@ -570,6 +613,7 @@ html.is-private .privacy-icon-show {
     color: var(--brand);
     box-shadow: 0 0 0 1px var(--brand) inset;
 }
+.ask-autonomy-options button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 
 .ask-action-card {
     display: grid;

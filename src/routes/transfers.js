@@ -3,11 +3,8 @@ const express = require('express');
 const { requireAuth } = require('../middleware/auth');
 const { executeTransfer } = require('../services/transfer');
 const { getDb } = require('../database');
-const { logAudit } = require('../services/audit');
 const { toCents, validateAmount, validateEmail, formatCurrency } = require('../middleware/validation');
-const { scaledLimit } = require('../services/currencies');
 const payees = require('../services/payees');
-const config = require('../config');
 const router = express.Router();
 
 router.post('/', requireAuth, (req, res) => {
@@ -46,14 +43,8 @@ router.post('/', requireAuth, (req, res) => {
         }
         const amountCents = toCents(amount);
         const currency = source.currency || 'USD';
-        const dailyLimit = scaledLimit(config.limits.dailyTransferCents, currency);
-        const today = db.prepare("SELECT COALESCE(SUM(amount), 0) AS total FROM transactions WHERE account_id = ? AND type = 'transfer' AND direction = 'debit' AND date(created_at) = date('now')").get(sourceId);
-        if (today.total + amountCents > dailyLimit) {
-            return res.status(400).json({ error: 'Daily transfer limit is ' + formatCurrency(dailyLimit, currency) + '. You can transfer up to ' + formatCurrency(Math.max(0, dailyLimit - today.total), currency) + ' more today.', code: 'limit' });
-        }
         const result = executeTransfer({ fromAccountId: sourceId, toAccountNumber: recipientAccount.account_number, amount, description, userId: req.session.userId });
-        if (result.error) return res.status(400).json({ error: result.error, code: /insufficient/i.test(result.error) ? 'insufficient_funds' : 'rejected' });
-        logAudit({ actorId: req.session.userId, actorEmail: res.locals.user?.email || 'unknown', action: 'transfer', targetType: 'account', targetId: String(sourceId), metadata: { amountCents, currency, reference: result.reference, destinationType: toAccountId ? 'own-account' : 'customer' } });
+        if (result.error) return res.status(400).json({ error: result.error, code: result.code || (/insufficient/i.test(result.error) ? 'insufficient_funds' : 'rejected') });
         if (recipientUser) {
             try {
                 if (savePayee === true) payees.addPayee(req.session.userId, { email: recipientEmail });

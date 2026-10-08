@@ -38,7 +38,7 @@ Follow the guide from top to bottom:
 | A modern browser — required | Chrome, Edge, Firefox or Safari. | — |
 | Internet — for some steps | Installing (first time only), stock prices and exchange rates. Everything else works offline. | — |
 | Git — optional | To download the code. You can download a ZIP instead. | [git-scm.com](https://git-scm.com/downloads) |
-| Python 3.9+ — optional | More reliable market data (Part C). | [python.org](https://www.python.org/downloads/) |
+| Python 3.10+ — optional | More reliable market data (Part C). | [python.org](https://www.python.org/downloads/) |
 | Ollama — optional | The AI assistant (Part D). About 2 GB of disk; 8 GB of memory is recommended. | [ollama.com](https://ollama.com/download) |
 
 To check Node.js, open a **new** terminal (see A2) and type `node --version`. It should print `v22…` or `v24…` (or at least `v20.19`).
@@ -310,7 +310,7 @@ Payments only go to customers that really exist in this copy of Willow, so first
 
 Without Python, Willow fetches delayed prices directly from Yahoo Finance's public chart service. With Python it uses the [yfinance](https://github.com/ranaroussi/yfinance) library through a small built-in service, which gives fuller data (company details, news, more reliable exchange rates). Willow starts and stops that service by itself.
 
-1. Install **Python 3.9 or newer** from [python.org](https://www.python.org/downloads/). On Windows, tick **"Add python.exe to PATH"** in the installer.
+1. Install **Python 3.10 or newer** from [python.org](https://www.python.org/downloads/). On Windows, tick **"Add python.exe to PATH"** in the installer.
 2. Stop Willow (**Ctrl+C**) and run:
 
    ```

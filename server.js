@@ -16,6 +16,9 @@ async function start() {
     try {
         console.log('[Server] Initializing database...');
         await initializeDatabase();
+        await sessionStore._ready;
+        const rotation = require('./src/services/two-factor').rotateStoredSecrets();
+        if (rotation.rotated && !require('./src/database').flushDatabase()) throw new Error('Could not persist rotated authenticator secrets.');
 
         console.log('[Server] Checking admin account...');
         await initializeAdmin();

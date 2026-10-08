@@ -19,7 +19,7 @@ router.get('/', (req, res) => {
         const marketData = require('../services/market-data').getStatus();
         const assistant = require('../services/assistant').cachedStatus();
         const body = {
-            status: 'healthy',
+            status: require('../database').persistenceStatus().ready ? 'healthy' : 'degraded',
             service: 'Willow Banking Corp',
             timestamp: new Date().toISOString(),
             features: { liveMarketDataService: Boolean(marketData.serviceAvailable), assistant: Boolean(assistant.available) },
@@ -43,7 +43,7 @@ router.get('/', (req, res) => {
                 assistant: { available: assistant.available, model: assistant.model, reason: assistant.reason },
             });
         }
-        res.json(body);
+        res.status(body.status === 'healthy' ? 200 : 503).json(body);
     } catch (err) {
         res.status(503).json({ status: 'unhealthy', service: 'Willow Banking Corp', error: 'Database connection failed', timestamp: new Date().toISOString() });
     }

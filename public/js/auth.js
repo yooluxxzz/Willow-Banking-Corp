@@ -311,6 +311,7 @@
         const field = name => form.elements[name];
         let current = 0;
         let created = false;
+        let registering = false;
 
         function go(index, { focus = true } = {}) {
             current = Math.max(0, Math.min(index, steps.length - 1));
@@ -437,10 +438,11 @@
 
         form.addEventListener('submit', async event => {
             event.preventDefault();
-            if (names[current] !== 'verify' || created) return;
+            if (names[current] !== 'verify' || created || registering) return;
             hideAlert(alert);
             if (!validators.personal()) return go(names.indexOf('personal'));
             if (!validators.security()) return go(names.indexOf('security'));
+            registering = true;
             setLoading(submit, true, 'Verifying…');
             back.hidden = true;
             try {
@@ -471,10 +473,19 @@
                 setLoading(submit, false);
                 root.querySelectorAll('[data-kyc-check]').forEach(check => check.classList.remove('is-running', 'is-done'));
                 const message = error.message || 'We couldn’t open your account. Please try again.';
-                if (/email/i.test(message)) {
+                if (error.data?.code === 'account_created') {
+                    created = true;
+                    showAlert(alert, message);
+                    submit.hidden = true;
+                    alert.append(global.Willow.el('a', { className: 'btn btn-primary btn-sm', href: '/login', text: 'Sign in to your account' }));
+                } else if (/email/i.test(message)) {
                     go(names.indexOf('personal'));
                     fieldError(field('email'), message);
                     field('email').focus();
+                    if (error.data?.code === 'email_in_use') {
+                        const errorNode = doc.getElementById('emailError');
+                        errorNode.append(' ', global.Willow.el('a', { href: '/login', text: 'Sign in' }), ' or ', global.Willow.el('a', { href: '/forgot-password', text: 'recover access' }));
+                    }
                 } else if (/password/i.test(message)) {
                     go(names.indexOf('security'));
                     fieldError(field('password'), message);
@@ -491,6 +502,8 @@
                     back.hidden = false;
                     showAlert(alert, message);
                 }
+            } finally {
+                registering = false;
             }
         });
 

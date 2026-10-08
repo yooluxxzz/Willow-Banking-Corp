@@ -51,6 +51,7 @@ router.post('/2fa/confirm', limiter, (req, res) => {
     try {
         const ok = twoFactor.confirmSetup(req.session.userId, String(req.body.code || ''));
         if (!ok) return res.status(400).json({ error: 'That code didn’t match. Check the time on your device and enter the newest code.' });
+        req.session.authVersion = getDb().prepare('SELECT auth_version FROM users WHERE id = ?').get(req.session.userId).auth_version;
         logAudit({ actorId: req.session.userId, actorEmail: res.locals.user.email, action: 'two_factor_enabled', targetType: 'user', targetId: String(req.session.userId) });
         try { createNotification(req.session.userId, 'security', 'Two-step verification on', 'Sign-ins now require a code from your authenticator app.'); } catch (error) { /* non-critical */ }
         res.json({ success: true, twoFactor: twoFactor.getStatus(req.session.userId), recoveryCodes: remainingCodes(req.session.userId) });
@@ -67,6 +68,7 @@ router.post('/2fa/disable', limiter, async (req, res) => {
     const code = String(req.body.code || '');
     if (!twoFactor.verify(userId, code) && !consumeCode(userId, code)) return res.status(400).json({ error: 'Enter a current authenticator code or an unused backup code.' });
     twoFactor.disable(userId);
+    req.session.authVersion = getDb().prepare('SELECT auth_version FROM users WHERE id = ?').get(userId).auth_version;
     logAudit({ actorId: userId, actorEmail: res.locals.user.email, action: 'two_factor_disabled', targetType: 'user', targetId: String(userId) });
     try { createNotification(userId, 'security', 'Two-step verification off', 'Sign-ins no longer require an authenticator code. Turn it back on in the Security center.'); } catch (error) { /* non-critical */ }
     res.json({ success: true, twoFactor: twoFactor.getStatus(userId) });
@@ -93,7 +95,19 @@ router.get('/export', (req, res) => {
         ? db.prepare(`SELECT reference, account_id, type, amount, currency, direction, status, description, category, created_at FROM transactions WHERE account_id IN (${ids.map(() => '?').join(',')}) ORDER BY created_at`).all(...ids)
         : [];
     const payload = {
+        schemaVersion: 2,
         exportedAt: new Date().toISOString(),
+        scheduledTransfers: db.prepare('SELECT * FROM scheduled_transfers WHERE user_id = ? ORDER BY id').all(userId),
+        preferences: require('../services/preferences').getPreferences(userId),
+        assistantConversations: db.prepare('SELECT * FROM assistant_conversations WHERE user_id = ? ORDER BY id').all(userId),
+        assistantMessages: db.prepare('SELECT m.* FROM assistant_messages m JOIN assistant_conversations c ON c.id = m.conversation_id WHERE c.user_id = ? ORDER BY m.id').all(userId),
+        businessProfile: db.prepare('SELECT * FROM business_profiles WHERE user_id = ?').get(userId) || null,
+        businessInvoices: db.prepare('SELECT * FROM business_invoices WHERE user_id = ? ORDER BY id').all(userId),
+        businessTeam: db.prepare('SELECT * FROM business_team_members WHERE user_id = ? ORDER BY id').all(userId),
+        cryptoTransfers: db.prepare("SELECT reference, symbol, quantity, created_at, CASE WHEN sender_user_id = ? THEN 'sent' ELSE 'received' END AS direction FROM demo_crypto_transfers WHERE sender_user_id = ? OR recipient_user_id = ? ORDER BY id").all(userId, userId, userId),
+        watchlist: db.prepare('SELECT symbol, created_at FROM demo_watchlist WHERE user_id = ? ORDER BY symbol').all(userId),
+        notifications: db.prepare('SELECT * FROM notifications WHERE user_id = ? ORDER BY id').all(userId),
+        supportRequests: db.prepare('SELECT * FROM support_requests WHERE user_id = ? ORDER BY id').all(userId),
         notice: 'Willow is a fictional demonstration platform. Balances and transactions come only from what you added in Willow; investing is simulated.',
         profile,
         accounts,

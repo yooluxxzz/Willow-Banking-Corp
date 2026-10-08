@@ -40,6 +40,7 @@ function createApp({ sessionStore, sessionSecret = config.session.secret, cookie
 
     app.use(injectCsrfToken);
     app.use(loadUser);
+    app.use(require('./services/mutation-guard').requestContext);
     app.use((req, res, next) => {
         res.locals.formatCurrency = formatCurrency;
         res.locals.fromCents = fromCents;
@@ -58,6 +59,7 @@ function createApp({ sessionStore, sessionSecret = config.session.secret, cookie
         legacyHeaders: false,
     }));
 
+    app.use(require('./middleware/idempotency').idempotency);
     app.use('/auth', require('./routes/auth'));
     app.use('/api/public', require('./routes/public-api'));
     app.use('/api/accounts', require('./routes/accounts'));

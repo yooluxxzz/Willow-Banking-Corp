@@ -8,6 +8,8 @@ const { getDb } = require('../database');
 const marketData = require('./market-data');
 const { logAudit } = require('./audit');
 const { ValidationError } = require('../errors');
+const { parseCents } = require('../middleware/validation');
+const { assertUser } = require('./mutation-guard');
 const TRADABLE = new Set(['stock', 'etf', 'fund', 'crypto']);
 const TYPE_ORDER = ['stock', 'etf', 'fund', 'crypto'];
 const TYPE_LABELS = { stock: 'Stocks', etf: 'ETFs', fund: 'Funds', crypto: 'Crypto', cash: 'Cash' };
@@ -46,7 +48,8 @@ function cashTransfers(userId, limit = 20) {
 function moveCash(userId, { accountId, direction, amount }) {
     const db = getDb();
     if (!['in', 'out'].includes(direction)) throw new ValidationError('Choose whether to add or withdraw cash.');
-    const cents = Math.round(Number(amount) * 100);
+    assertUser(userId);
+    const cents = parseCents(amount, { max: 100000000 });
     if (!Number.isSafeInteger(cents) || cents < 1 || cents > 100000000) throw new ValidationError('Enter an amount between $0.01 and $1,000,000.');
     const account = db.prepare("SELECT * FROM accounts WHERE id = ? AND user_id = ?").get(Number(accountId), userId);
     if (!account) throw Object.assign(new Error('Choose one of your accounts.'), { status: 404 });
@@ -67,8 +70,9 @@ function moveCash(userId, { accountId, direction, amount }) {
         db.prepare(`INSERT INTO transactions (reference, account_id, type, amount, currency, direction, status, description, category)
             VALUES (?, ?, 'transfer', ?, 'USD', ?, 'completed', ?, 'investing')`).run(reference, account.id, cents, direction === 'in' ? 'debit' : 'credit', direction === 'in' ? 'To investing cash' : 'From investing cash');
         db.prepare('INSERT INTO portfolio_transfers (user_id, account_id, direction, amount_cents, reference) VALUES (?, ?, ?, ?, ?)').run(userId, account.id, direction, cents, reference);
+        logAudit({ actorId: userId, action: direction === 'in' ? 'investing_cash_added' : 'investing_cash_withdrawn', targetType: 'account', targetId: String(account.id), metadata: { amount: cents, reference } });
     })();
-    logAudit({ actorId: userId, action: direction === 'in' ? 'investing_cash_added' : 'investing_cash_withdrawn', targetType: 'account', targetId: String(account.id), metadata: { amount: cents, reference } });
+
     return { reference, amountCents: cents, direction, portfolio: getPortfolio(userId) };
 }
 
@@ -79,6 +83,9 @@ function roundQuantity(value, type) {
 }
 
 function executeTrade(userId, { symbol, side, quantity, amount, price }) {
+    assertUser(userId);
+    if (quantity !== undefined && quantity !== null && quantity !== '' && (!['string', 'number'].includes(typeof quantity) || !/^\d+(\.\d{1,8})?$/.test(String(quantity)))) throw new ValidationError('Enter a valid quantity.');
+    if (amount !== undefined && parseCents(amount, { max: 100000000 }) === null) throw new ValidationError('Enter a valid money amount.');
     const instrument = marketData.getInstrument(symbol);
     const normalizedSide = typeof side === 'string' ? side.toLowerCase() : '';
     const quote = Number(price);
@@ -102,6 +109,7 @@ function executeTrade(userId, { symbol, side, quantity, amount, price }) {
     ensurePortfolio(userId);
     let tradeId;
     const runTrade = db.transaction(() => {
+        assertUser(userId);
         const portfolio = db.prepare('SELECT cash_cents FROM demo_portfolios WHERE user_id = ?').get(userId);
         const holding = db.prepare('SELECT quantity, average_price FROM demo_holdings WHERE user_id = ? AND symbol = ?').get(userId, instrument.symbol);
         if (normalizedSide === 'buy') {
@@ -134,6 +142,7 @@ function getWatchlist(userId) {
 }
 
 function changeWatchlist(userId, symbol, add) {
+    assertUser(userId);
     const instrument = marketData.getInstrument(symbol);
     if (!instrument || !TRADABLE.has(instrument.type)) throw new ValidationError('Choose a supported demo asset.');
     const db = getDb();
@@ -223,18 +232,15 @@ async function performance(userId, range = '6m') {
     const portfolio = ensurePortfolio(userId);
     const trades = db.prepare('SELECT symbol, side, quantity, price, total_cents, created_at FROM demo_trades WHERE user_id = ? ORDER BY created_at ASC, id ASC').all(userId);
     const moves = db.prepare('SELECT direction, amount_cents, created_at FROM portfolio_transfers WHERE user_id = ? ORDER BY created_at ASC, id ASC').all(userId);
+    const cryptoMoves = db.prepare('SELECT symbol, quantity, sender_user_id, created_at FROM demo_crypto_transfers WHERE sender_user_id = ? OR recipient_user_id = ? ORDER BY created_at, id').all(userId, userId);
     const contributed = contributedCents(userId) / 100;
     const now = new Date();
     const windowDays = PERFORMANCE_RANGES[range] || PERFORMANCE_RANGES['6m'];
     const created = new Date(String(portfolio.created_at).replace(' ', 'T') + 'Z');
-    const firstEvent = [trades[0], moves[0]].filter(Boolean).map(row => new Date(String(row.created_at).replace(' ', 'T') + 'Z')).sort((a, b) => a - b)[0] || now;
+    const firstEvent = [trades[0], moves[0], cryptoMoves[0]].filter(Boolean).map(row => new Date(String(row.created_at).replace(' ', 'T') + 'Z')).sort((a, b) => a - b)[0] || now;
     const origin = new Date(Math.min(created.getTime(), firstEvent.getTime()));
     const start = new Date(Math.max(origin.getTime(), now.getTime() - windowDays * 86400000));
-    if (!trades.length) {
-        const cash = portfolio.cash_cents / 100;
-        return { range, points: [{ t: start.toISOString(), v: cash }, { t: now.toISOString(), v: cash }], contributed, partial: false, simulated: true };
-    }
-    const symbols = [...new Set(trades.map(trade => trade.symbol))];
+    const symbols = [...new Set([...trades, ...cryptoMoves].map(event => event.symbol))];
     const spanDays = (now - origin) / 86400000;
     const historyRange = spanDays <= 180 ? '6m' : spanDays <= 365 ? '1y' : '5y';
     const closes = new Map();
@@ -253,6 +259,7 @@ async function performance(userId, range = '6m') {
     let cash = 0;
     let tradeIndex = 0;
     let moveIndex = 0;
+    let cryptoIndex = 0;
     const cursors = new Map(symbols.map(symbol => [symbol, 0]));
     const points = [];
     for (let day = new Date(Date.UTC(origin.getUTCFullYear(), origin.getUTCMonth(), origin.getUTCDate())); day <= now; day = new Date(day.getTime() + 86400000)) {
@@ -269,6 +276,10 @@ async function performance(userId, range = '6m') {
             if (!lastPrice.has(trade.symbol)) lastPrice.set(trade.symbol, trade.price);
             tradeIndex += 1;
         }
+        while (cryptoIndex < cryptoMoves.length && String(cryptoMoves[cryptoIndex].created_at).slice(0, 10) <= key) {
+            const event = cryptoMoves[cryptoIndex++];
+            quantities.set(event.symbol, (quantities.get(event.symbol) || 0) + (event.sender_user_id === userId ? -1 : 1) * event.quantity);
+        }
         symbols.forEach(symbol => {
             const series = closes.get(symbol);
             let cursor = cursors.get(symbol);
@@ -280,7 +291,12 @@ async function performance(userId, range = '6m') {
         });
         if (day >= new Date(start.getTime() - 86400000)) {
             let value = cash;
-            quantities.forEach((quantity, symbol) => { if (quantity > 1e-12) value += quantity * (lastPrice.get(symbol) || 0); });
+            quantities.forEach((quantity, symbol) => {
+                if (quantity > 1e-12) {
+                    if (!lastPrice.has(symbol)) partial = true;
+                    value += quantity * (lastPrice.get(symbol) || 0);
+                }
+            });
             points.push({ t: key, v: Math.round(value * 100) / 100 });
         }
     }

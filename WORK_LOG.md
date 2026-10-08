@@ -2,6 +2,53 @@
 
 Each completed work session is recorded here and committed locally. Git history is the authoritative record of code and database schema changes. Live account/session data and secrets are excluded.
 
+## Main integration and Python dependency compatibility — 2026-10-08
+
+- The user explicitly approved merging PR #4, containing the tested audit fixes and requested shared Ask Willow controls, into main. The screenshot matched main's old panel; all account categories use the same shared partial. Publication to the fix branch alone had not updated main or the running application.
+- GitHub CI run 37799699475 passed all five Node jobs (Linux Node 20/22/24, macOS Node 22 and Windows Node 22), but Python 3.9 could not install yfinance 1.7.0: its required curl_cffi >=0.15 has a Python >=3.10 minimum. The other Python job was cancelled by fail-fast.
+- Aligned the optional market service's actual supported minimum at Python 3.10 across CI, interpreter probes, fallback messages and installation/testing docs. Python jobs now run independently at 3.10 and 3.12. The pinned dependency version and banking/UI behavior are unchanged.
+- No schema or live data changes. Validation: lint clean, 227 Node tests and 46 Python tests pass locally using the existing isolated Python 3.12 runtime. Updated remote CI must pass before completing the approved merge. Browser rendering remains unverified.
+
+## Requested chat controls, stable photos and registration integrity — 2026-10-08
+
+**Behavior**
+- Added separate Recent chats and Older chats buttons (last updated within seven days / earlier), a current-mode Autonomy button, and New chat in a two-column toolbar with 44px targets. Saved history remains searchable and user-scoped. History and autonomy drawers close each other; mobile history stays in the panel flow instead of covering the toolbar.
+- Autonomy exposes Read only, Ask before actions and Autonomous modes, with selection, keyboard navigation, saving/saved/error feedback, and protection against duplicate saves and stale status responses. Failed saves retain the previous mode.
+- Removed active-only photo zoom animations on authentication and homepage scenes. They reset the outgoing photo's transform while its opacity was still fading; scenes now retain a stable crop through the crossfade.
+- Made user, primary account, business account and registration audit creation one transaction. A failed business/audit insert no longer leaves an occupied email behind. Rechecked email uniqueness after password hashing for concurrent requests, prevented duplicate wizard submissions, and offered sign-in/recovery links for genuine conflicts. Failed automatic sign-in truthfully reports that the account was created and stops retrying signup.
+- The user's specific email conflict is not confirmed: its address, flow and live database were not provided. Admin/retained user records can reserve emails; no existing records were removed.
+
+**Database / schema**
+- No schema changes or live database operations. Fault injection and registration checks used disposable synthetic test databases.
+
+**Checks and publication**
+- `npm run check`: lint clean, all 227 Node tests pass. Nine focused UI/registration checks include recent/older filtering, balance cards, autonomy success/failure and stale polling, rollback, concurrent signup and duplicate wizard submissions.
+- `git diff --check` clean. DOM interactions were tested with JSDOM; browser layout and temporal rendering remain unverified because Chromium installation previously failed. Python was unchanged; the audit baseline passed 46 Python tests.
+- Following the user's explicit publication approval, the original audit source tree was published as GitHub commit `2974fd94f78c8569839cf1fc157ee967a3bc3b2f` on `fix/audit-integrity-and-assistant`, matching the tested local audit tree exactly. This session adds a committed follow-up on that branch. Main and the running application have not been updated here.
+
+## Banking integrity and Ask Willow audit fixes — 2026-10-07
+
+Implemented the user's authorization to fix issues from the repository audit, on `fix/audit-integrity-and-assistant` from `5fc3fbdb4835374d37322616f06603c522ab682f`.
+
+**Behavior**
+- Preserved dirty database state after failed exports/writes and surfaced degraded readiness. Session operations/startup await initialization; failed session-file saves retry. Removed global investing/crypto cleanup and narrowed sample guest cleanup.
+- Bound pending MFA and AI approvals to authentication versions. Status/MFA changes and key rotation invalidate older credentials. Production requires independent signing/encryption secrets. Added atomic previous-key authenticator migration and private-backup guidance.
+- Revalidated FX/trade authorization after async work, centralized immediate-transfer limits, checked current AI autonomy at write boundaries, and made principal audit records transactional. Added keyed financial request reservations/replay and browser retry keys. Ancillary net-worth snapshot failures preserve primary-operation success.
+- Fixed bank-funds/quote/write routing, goal field mapping and transfer currencies. New AI reads cover cards, schedules, business, crypto wallets/history and education. Saved response identity/history consistently; receipts use mutation results. Educational/negated questions cannot execute planned actions.
+- Added styled searchable History/New chat controls, funds cards and descriptive action buttons with expiry and terminal failure states. New chat restores prompts. Server-processing copy now describes the configured host accurately.
+- Corrected money/calendar/pagination validation, guest activity retention, anonymous HTML cache policy, owned data exports, cash/crypto chart replay, market stale labels, capacity limits and health reporting. Python CI installs runtime requirements and checks the actual yfinance adapter API.
+
+**Database / schema**
+- Added `idempotent_requests`, `users.last_active_at` and `user_preferences.assistant_revision`; exports now use schema version 2. No deployed data was used or changed. Ambiguous legacy portfolios remain intact. See `docs/AUDIT_FIXES.md` and `docs/DATABASE_CHANGES.md` for upgrade/rotation notes and remaining architectural/product scope.
+- Raw SQL backups remain private and ignored; repository instructions no longer request committing customer data or credential hashes.
+
+**Checks**
+- `npm run check`: lint clean, 221 Node tests pass, including three DOM UI interaction tests.
+- Python 3.12 isolated environment with installed runtime requirements: 46 tests pass. yfinance 1.7.0 import/provider-adapter smoke passes.
+- Production startup with independent secrets, disk-backed sessions, readiness and graceful shutdown passes on a disposable database. Configuration rejection, save retry, MFA invalidation, one-time AI writes, permission races, competing/frozen FX, replay, secondary failure, exports, dates and portfolio regressions covered.
+- `git diff --check` clean. Chromium download failed, so browser viewport/accessibility rendering remains unverified. Real Ollama quality, live Yahoo quotes, load capacity and remote CI on this branch were not exercised.
+- Completed changes committed locally; no push or deployment authorized/performed.
+
 ## Earlier design sessions — 2026-09-30
 
 - `f399ce6`: Willow photography, authentication design and demo transfer flows.

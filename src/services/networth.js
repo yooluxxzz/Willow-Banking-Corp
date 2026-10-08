@@ -9,9 +9,8 @@ const marketData = require('./market-data');
 const portfolio = require('./demo-portfolio');
 const { logAudit } = require('./audit');
 const { createNotification } = require('./notification');
-const { formatCurrency } = require('../middleware/validation');
+const { formatCurrency, parseCents, validCalendarDate } = require('../middleware/validation');
 const { ValidationError } = require('../errors');
-const { parseCents } = require('../middleware/validation');
 
 const ASSET_KINDS = {
     cash: 'Cash outside Willow',
@@ -67,8 +66,11 @@ function createAsset(userId, input = {}) {
     const db = getDb();
     if (db.prepare('SELECT COUNT(*) AS n FROM assets WHERE user_id = ?').get(userId).n >= MAX_ITEMS) throw new ValidationError(`You can track up to ${MAX_ITEMS} assets.`);
     const { name, kind, valueCents, note } = validateAsset(input);
-    const id = db.prepare('INSERT INTO assets (user_id, name, kind, value_cents, note) VALUES (?, ?, ?, ?, ?)').run(userId, name, kind, valueCents, note).lastInsertRowid;
-    logAudit({ actorId: userId, action: 'asset_added', targetType: 'asset', targetId: String(id) });
+    const id = db.transaction(() => {
+        const insertedId = db.prepare('INSERT INTO assets (user_id, name, kind, value_cents, note) VALUES (?, ?, ?, ?, ?)').run(userId, name, kind, valueCents, note).lastInsertRowid;
+        logAudit({ actorId: userId, action: 'asset_added', targetType: 'asset', targetId: String(insertedId) });
+        return insertedId;
+    })();
     return formatAsset(db.prepare('SELECT * FROM assets WHERE id = ?').get(id));
 }
 
@@ -174,9 +176,12 @@ function createDebt(userId, input = {}) {
     const db = getDb();
     if (db.prepare('SELECT COUNT(*) AS n FROM debts WHERE user_id = ?').get(userId).n >= MAX_ITEMS) throw new ValidationError(`You can track up to ${MAX_ITEMS} debts.`);
     const v = validateDebt(input);
-    const id = db.prepare('INSERT INTO debts (user_id, name, kind, lender, balance_cents, original_cents, rate_bps, minimum_cents, due_day, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-        .run(userId, v.name, v.kind, v.lender, v.balanceCents, v.originalCents, v.rateBps, v.minimumCents, v.dueDay, v.balanceCents ? 'open' : 'paid_off').lastInsertRowid;
-    logAudit({ actorId: userId, action: 'debt_added', targetType: 'debt', targetId: String(id) });
+    const id = db.transaction(() => {
+        const insertedId = db.prepare('INSERT INTO debts (user_id, name, kind, lender, balance_cents, original_cents, rate_bps, minimum_cents, due_day, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+            .run(userId, v.name, v.kind, v.lender, v.balanceCents, v.originalCents, v.rateBps, v.minimumCents, v.dueDay, v.balanceCents ? 'open' : 'paid_off').lastInsertRowid;
+        logAudit({ actorId: userId, action: 'debt_added', targetType: 'debt', targetId: String(insertedId) });
+        return insertedId;
+    })();
     return getDebt(userId, id);
 }
 
@@ -206,13 +211,15 @@ function deleteDebt(userId, id) {
  * the ledger; otherwise it records a payment made elsewhere.
  */
 function recordPayment(userId, debtId, input = {}) {
+    require('./mutation-guard').assertUser(userId);
     const db = getDb();
     const debt = db.prepare('SELECT * FROM debts WHERE id = ? AND user_id = ?').get(debtId, userId);
     if (!debt) throw Object.assign(new Error('Debt not found.'), { status: 404 });
     if (debt.status !== 'open' || debt.balance_cents <= 0) throw new ValidationError('This debt is already paid off.');
     const amountCents = money(input.amount, { min: 1, max: 100000000000, label: 'payment amount' });
     if (amountCents > debt.balance_cents) throw new ValidationError(`The payment can’t be more than the ${formatCurrency(debt.balance_cents)} you owe.`);
-    const paidOn = typeof input.paidOn === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(input.paidOn) ? input.paidOn : localDay();
+    if (input.paidOn !== undefined && !validCalendarDate(input.paidOn)) throw new ValidationError('Choose a valid payment date.');
+    const paidOn = input.paidOn || localDay();
     if (paidOn > localDay()) throw new ValidationError('Choose today or an earlier date.');
     const note = typeof input.note === 'string' ? input.note.trim() : '';
     if (!plain(note, 120)) throw new ValidationError('Keep the note under 120 characters.');
@@ -233,8 +240,9 @@ function recordPayment(userId, debtId, input = {}) {
         db.prepare("UPDATE debts SET balance_cents = ?, status = ?, updated_at = datetime('now') WHERE id = ?").run(remaining, remaining ? 'open' : 'paid_off', debt.id);
         db.prepare('INSERT INTO debt_payments (debt_id, user_id, amount_cents, account_id, transaction_reference, paid_on, note) VALUES (?, ?, ?, ?, ?, ?, ?)')
             .run(debt.id, userId, amountCents, account ? account.id : null, reference, paidOn, note);
+        logAudit({ actorId: userId, action: 'debt_payment', targetType: 'debt', targetId: String(debt.id), metadata: { amount: amountCents, reference } });
     })();
-    logAudit({ actorId: userId, action: 'debt_payment', targetType: 'debt', targetId: String(debt.id), metadata: { amount: amountCents, reference } });
+
     if (debt.balance_cents - amountCents === 0) {
         try { createNotification(userId, 'info', 'Debt paid off', `${debt.name} is paid off. Nicely done.`); } catch (error) { /* non-critical */ }
     }

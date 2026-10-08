@@ -58,14 +58,7 @@
     transform-origin: 50% 40%;
 }
 
-.hero-scene.is-active img {
-    animation: hero-drift 12s var(--ease-out) forwards;
-}
-
-@keyframes hero-drift {
-    from { transform: scaleX(var(--flip, 1)) scale(1.08); }
-    to { transform: scaleX(var(--flip, 1)) scale(1); }
-}
+/* A stable crop prevents the outgoing photo jumping during the crossfade. */
 
 .hero-scrim {
     position: absolute;

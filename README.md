@@ -79,14 +79,14 @@ On upgrade, a one-time clean-up (`src/services/data-cleanup.js`) removes what ea
 
 ## Quick start
 
-Requirements: **Node.js 22 or 24** (any version from 20.19 works). Optional: **Python 3.9+** for fuller market data and **[Ollama](https://ollama.com)** for full AI answers in Ask Willow (it gives quick answers without it).
+Requirements: **Node.js 22 or 24** (any version from 20.19 works). Optional: **Python 3.10+** for fuller market data and **[Ollama](https://ollama.com)** for full AI answers in Ask Willow (it gives quick answers without it).
 
 ```bash
 npm install
 npm start                     # http://localhost:3000
 ```
 
-No configuration is needed. On the first start Willow creates its database in `data/`, generates an admin sign-in (printed once and saved to `data/admin-credentials.txt`) and starts the market-data service if Python is available. To change settings, copy `.env.example` to `.env`; in production set at least `SESSION_SECRET`, `ADMIN_EMAIL` and `ADMIN_PASSWORD`.
+No configuration is needed. On the first start Willow creates its database in `data/`, generates an admin sign-in (printed once and saved to `data/admin-credentials.txt`) and starts the market-data service if Python is available. To change settings, copy `.env.example` to `.env`; in production set independent random `SESSION_SECRET` and `TWO_FACTOR_KEY` values (at least 32 characters each), plus `ADMIN_EMAIL` and `ADMIN_PASSWORD`. Placeholder secrets fail startup.
 
 Optional extras, each picked up automatically on the next `npm start`:
 
@@ -138,16 +138,16 @@ Create budgets on **Budgets** (personal) or **Business → Expenses & budgets**.
 
 While Willow runs, a job at `NIGHTLY_CHECK_TIME` (default 23:55, local time) records how every budget stood that day and takes each customer’s daily net-worth snapshot. On start-up it catches up on days missed while it was off (up to 31). You get one notification per period when a budget passes 85% and one when it goes over.
 
-## Keeping the database in Git
+## Private database backups
 
-The live database file is ignored by Git, but its contents can be versioned as a readable SQL snapshot:
+The live database and its private backups are ignored by Git. To create or restore a local SQL backup:
 
 ```bash
-npm run db:save               # writes data/willow-snapshot.sql — commit it
+npm run db:save               # writes a private, git-ignored data/willow-snapshot.sql
 npm run db:restore -- --force # replaces data/willow.db with the snapshot (keeps a .bak copy)
 ```
 
-On a fresh clone with no database file, Willow restores the snapshot automatically on first start (`SNAPSHOT_AUTO_RESTORE=false` turns that off). The snapshot is deterministic, so diffs show exactly what changed. It contains everything customers entered plus hashed passwords and recovery codes — **keep the repository private** if you commit it.
+On a fresh clone with no database file, Willow restores the snapshot automatically on first start (`SNAPSHOT_AUTO_RESTORE=false` turns that off). The snapshot is deterministic, so diffs show exactly what changed. It contains everything customers entered plus hashed passwords and recovery codes — **do not commit it**. Store backups privately; use sanitized synthetic fixtures in source control.
 
 ## Configuration
 
@@ -159,7 +159,7 @@ All settings are environment variables; see [`.env.example`](.env.example) for t
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Admin account created on first start. |
 | `SESSION_IDLE_MINUTES` | Idle sign-out (default 30; `0` disables). |
 | `GUEST_RETENTION_DAYS` | Unused guest profiles are deleted after this many days (default 7; `0` keeps them). |
-| `TWO_FACTOR_KEY` | Key for encrypting authenticator secrets (defaults to the session secret). |
+| `TWO_FACTOR_KEY` | Independent key for encrypting authenticator secrets; required in production. Development defaults to the session secret. See [audit fixes](docs/AUDIT_FIXES.md) for rotation. |
 | `DATABASE_PATH`, `DATABASE_SNAPSHOT_PATH` | SQLite file and SQL snapshot locations. |
 | `SNAPSHOT_AUTO_RESTORE` | Restore the snapshot when no database exists (default `true`). |
 | `NIGHTLY_CHECK_TIME` | Local time for budget checks and net-worth snapshots (default `23:55`). |
