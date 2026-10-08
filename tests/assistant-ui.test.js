@@ -22,7 +22,7 @@ it('opens searchable history, renders verified balances, and restores New chat p
     window.HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); };
     window.fetch = async url => {
         if (url.startsWith('/api/assistant/status')) return Response.json({ available: false, autonomy: 'confirm' });
-        if (url === '/api/assistant/conversations') return Response.json({ conversations: [{ id: 1, title: 'Funds check', last_question: 'Check funds' }, { id: 2, title: 'Budget help', last_question: 'Budget' }] });
+        if (url === '/api/assistant/conversations') return Response.json({ conversations: [{ id: 1, title: 'Funds check', last_question: 'Check funds', updated_at: new Date().toISOString() }, { id: 2, title: 'Budget help', last_question: 'Budget', updated_at: '2020-01-01 12:00:00' }] });
         if (url === '/api/assistant/chat') return new Response(frames.map(x => JSON.stringify(x)).join('\n') + '\n');
         return Response.json({});
     };
@@ -34,6 +34,10 @@ it('opens searchable history, renders verified balances, and restores New chat p
         await waitFor(() => doc.querySelectorAll('.ask-history-item').length === 2);
         doc.querySelector('[data-ask-history-toggle]').click();
         assert.equal(doc.querySelector('[data-ask-history]').hidden, false);
+        assert.match(doc.querySelector('.ask-history-item:not([hidden])').textContent, /Funds check/);
+        doc.querySelector('[data-ask-history-period="older"]').click();
+        assert.match(doc.querySelector('.ask-history-item:not([hidden])').textContent, /Budget help/);
+        doc.querySelector('[data-ask-history-period="recent"]').click();
         const search = doc.querySelector('[data-ask-history-search]'); search.value = 'funds'; search.dispatchEvent(new window.Event('input'));
         assert.equal(doc.querySelectorAll('.ask-history-item:not([hidden])').length, 1);
         doc.querySelector('[data-ask-history-close]').click();
@@ -46,6 +50,41 @@ it('opens searchable history, renders verified balances, and restores New chat p
         doc.querySelector('[data-ask-prompt]').click();
         await waitFor(() => doc.querySelector('.ask-balance-card'));
     } finally { dom.window.close(); }
+});
+
+it('saves autonomy with keyboard controls and ignores stale status responses', async () => {
+    const markup = ejs.render(fs.readFileSync('views/partials/ask-panel.ejs', 'utf8'), { assistant: { available: false }, icon: () => '' });
+    const dom = new JSDOM('<!doctype html><meta name="csrf-token" content="test">' + markup, { url: 'http://localhost', runScripts: 'outside-only' });
+    const { window } = dom; let statusResponse; let rejectSave = false;
+    window.fetch = async (url, options) => {
+        if (url.startsWith('/api/assistant/status')) return new Promise(resolve => { statusResponse = resolve; });
+        if (url === '/api/assistant/autonomy') return rejectSave ? Response.json({ error: 'Save failed' }, { status: 500 }) : Response.json({ autonomy: JSON.parse(options.body).autonomy });
+        return Response.json({});
+    };
+    try {
+        await new Promise(resolve => window.addEventListener('load', resolve, { once: true }));
+        window.eval(fs.readFileSync('public/js/app.js', 'utf8'));
+        const doc = window.document;
+        doc.querySelector('[data-ask-autonomy-toggle]').click();
+        assert.equal(doc.querySelector('[data-ask-autonomy]').hidden, false);
+        doc.querySelector('[data-ask-history-period="older"]').click();
+        assert.equal(doc.querySelector('[data-ask-autonomy]').hidden, true);
+        doc.querySelector('[data-ask-autonomy-toggle]').click();
+        assert.equal(doc.querySelector('[data-ask-history]').hidden, true);
+        doc.querySelector('[data-ask-autonomy-value="read_only"]').click();
+        await waitFor(() => doc.querySelector('[data-ask-autonomy-label]').textContent === 'Read only');
+        statusResponse(Response.json({ available: false, autonomy: 'confirm' }));
+        await new Promise(resolve => setTimeout(resolve, 20));
+        assert.equal(doc.querySelector('[data-ask-autonomy-label]').textContent, 'Read only');
+        assert.equal(doc.querySelector('[data-ask-autonomy-value="read_only"]').tabIndex, 0);
+        doc.querySelector('[data-ask-autonomy-value="read_only"]').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+        await waitFor(() => doc.querySelector('[data-ask-autonomy-label]').textContent === 'Ask first');
+        rejectSave = true;
+        doc.querySelector('[data-ask-autonomy-value="autonomous"]').click();
+        await waitFor(() => doc.querySelector('[data-ask-autonomy-status]').textContent.includes('Save failed'));
+        assert.equal(doc.querySelector('[data-ask-autonomy-value="confirm"]').getAttribute('aria-checked'), 'true');
+        assert.equal(doc.querySelector('[data-ask-autonomy-value="autonomous"]').disabled, false);
+    } finally { window.close(); }
 });
 
 it('reuses the financial request key after an uncertain network outcome', async () => {

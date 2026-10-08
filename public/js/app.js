@@ -791,20 +791,50 @@
         const setupStatus = panel.querySelector('[data-ask-setup-status]');
         const autonomyButtons = Array.from(panel.querySelectorAll('[data-ask-autonomy-value]'));
         const autonomyNote = panel.querySelector('[data-ask-autonomy-note]');
+        const autonomySection = panel.querySelector('[data-ask-autonomy]');
+        const autonomyToggle = panel.querySelector('[data-ask-autonomy-toggle]');
+        const autonomyLabel = panel.querySelector('[data-ask-autonomy-label]');
+        const autonomyStatus = panel.querySelector('[data-ask-autonomy-status]');
         const historyList = panel.querySelector('[data-ask-history-list]');
         const newChatButton = panel.querySelector('[data-ask-new]');
         const historySection = panel.querySelector('[data-ask-history]');
         const historyToggle = panel.querySelector('[data-ask-history-toggle]');
         const historySearch = panel.querySelector('[data-ask-history-search]');
-        const showHistory = value => {
+        const historyButtons = Array.from(panel.querySelectorAll('[data-ask-history-period]'));
+        let historyPeriod = 'recent';
+        let savingAutonomy = false;
+        let autonomyRevision = 0;
+        const filterHistory = () => {
+            let visible = 0;
+            historyList.querySelectorAll('.ask-history-item').forEach(row => {
+                row.hidden = row.dataset.period !== historyPeriod || !row.textContent.toLowerCase().includes(historySearch.value.toLowerCase());
+                if (!row.hidden) visible++;
+            });
+            panel.querySelector('[data-ask-history-empty]').hidden = visible > 0;
+        };
+        const showHistory = (value, period = historyPeriod) => {
+            historyPeriod = period;
             historySection.hidden = !value;
-            historyToggle.setAttribute('aria-expanded', String(value));
+            if (value) {
+                autonomySection.hidden = true;
+                autonomyToggle.setAttribute('aria-expanded', 'false');
+            }
+            historyButtons.forEach(button => button.setAttribute('aria-expanded', String(value && button.dataset.askHistoryPeriod === period)));
+            panel.querySelector('#askHistoryTitle').textContent = period === 'recent' ? 'Recent chats' : 'Older chats';
+            panel.querySelector('[data-ask-history-description]').textContent = period === 'recent' ? 'Updated in the last 7 days.' : 'Last updated more than 7 days ago.';
+            filterHistory();
             if (value) historySearch.focus();
         };
-        historyToggle.addEventListener('click', () => showHistory(historySection.hidden));
+        historyButtons.forEach(button => button.addEventListener('click', () => showHistory(historySection.hidden || historyPeriod !== button.dataset.askHistoryPeriod, button.dataset.askHistoryPeriod)));
         panel.querySelector('[data-ask-history-close]').addEventListener('click', () => { showHistory(false); historyToggle.focus(); });
-        historySearch.addEventListener('input', () => {
-            historyList.querySelectorAll('.ask-history-item').forEach(row => { row.hidden = !row.textContent.toLowerCase().includes(historySearch.value.toLowerCase()); });
+        historySearch.addEventListener('input', filterHistory);
+        autonomyToggle.addEventListener('click', () => {
+            autonomySection.hidden = !autonomySection.hidden;
+            autonomyToggle.setAttribute('aria-expanded', String(!autonomySection.hidden));
+            if (!autonomySection.hidden) {
+                showHistory(false);
+                autonomySection.querySelector('[aria-checked="true"]')?.focus();
+            }
         });
         const scroll = () => { thread.scrollTop = thread.scrollHeight; };
         let autonomy = 'confirm';
@@ -823,7 +853,12 @@
         // quick answers worked out from the customer's records. It switches to AI by itself.
         const setAutonomy = value => {
             autonomy = ['read_only', 'confirm', 'autonomous'].includes(value) ? value : 'confirm';
-            autonomyButtons.forEach(button => button.setAttribute('aria-checked', String(button.dataset.askAutonomyValue === autonomy)));
+            autonomyButtons.forEach(button => {
+                const selected = button.dataset.askAutonomyValue === autonomy;
+                button.setAttribute('aria-checked', String(selected));
+                button.tabIndex = selected ? 0 : -1;
+            });
+            autonomyLabel.textContent = { read_only: 'Read only', confirm: 'Ask first', autonomous: 'Autonomous' }[autonomy];
             if (autonomyNote) {
                 autonomyNote.textContent = autonomy === 'read_only'
                     ? 'Willow can inspect your finances but never changes anything.'
@@ -833,22 +868,39 @@
             }
         };
         const saveAutonomy = async value => {
+            if (savingAutonomy || value === autonomy) return;
+            savingAutonomy = true;
+            autonomyRevision++;
+            autonomyStatus.textContent = 'Saving…';
             autonomyButtons.forEach(button => { button.disabled = true; });
             try {
                 const result = await W.api('/api/assistant/autonomy', { method: 'PATCH', body: { autonomy: value } });
                 setAutonomy(result.autonomy);
+                autonomyStatus.textContent = 'Saved.';
                 W.showToast(value === 'autonomous' ? 'Ask Willow is now autonomous.' : value === 'read_only' ? 'Ask Willow is now read only.' : 'Ask Willow will ask before actions.', 'success', 2600);
             } catch (error) {
+                autonomyStatus.textContent = error.message + ' Your previous mode is still selected.';
                 W.showToast(error.message, 'error');
             } finally {
+                autonomyRevision++;
+                savingAutonomy = false;
                 autonomyButtons.forEach(button => { button.disabled = false; });
             }
         };
         autonomyButtons.forEach(button => button.addEventListener('click', () => saveAutonomy(button.dataset.askAutonomyValue)));
+        autonomyButtons.forEach((button, index) => button.addEventListener('keydown', event => {
+            const delta = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
+            if (!delta || savingAutonomy) return;
+            event.preventDefault();
+            const next = autonomyButtons[(index + delta + autonomyButtons.length) % autonomyButtons.length];
+            next.focus();
+            saveAutonomy(next.dataset.askAutonomyValue);
+        }));
+        setAutonomy(autonomy);
 
         const setAvailable = (isAvailable, model, reason, savedAutonomy) => {
             available = Boolean(isAvailable);
-            if (savedAutonomy) setAutonomy(savedAutonomy);
+            if (savedAutonomy && !savingAutonomy) setAutonomy(savedAutonomy);
             triggers.forEach(button => { button.hidden = reason === 'disabled'; });
             if (modelLabel && model) modelLabel.textContent = model;
             panel.querySelectorAll('[data-ask-mode]').forEach(node => { node.hidden = node.dataset.askMode !== (available ? 'ai' : 'quick'); });
@@ -864,11 +916,14 @@
                 const data = await response.json();
                 historyList.replaceChildren();
                 if (!data.conversations?.length) {
-                    historyList.append(el('p', { className: 'ask-history-empty', text: 'No saved chats yet.' }));
+                    filterHistory();
                     return;
                 }
                 data.conversations.forEach(conversation => {
                     const row = el('div', { className: 'ask-history-item' });
+                    const stamp = String(conversation.updated_at || '').replace(' ', 'T');
+                    const updated = Date.parse(stamp && /(?:Z|[+-]\d{2}:\d{2})$/.test(stamp) ? stamp : stamp + 'Z');
+                    row.dataset.period = Number.isFinite(updated) && updated < Date.now() - 7 * 86400000 ? 'older' : 'recent';
                     const button = el('button', { type: 'button', className: 'ask-history-chat' }, el('strong', { text: conversation.title || 'New chat' }), el('span', { className: 'ask-history-preview', text: conversation.last_question || 'Saved conversation' }));
                     const remove = el('button', { type: 'button', className: 'btn btn-ghost btn-icon', 'aria-label': 'Delete chat', title: 'Delete chat' }, icon('trash', 'icon-sm'));
                     button.classList.toggle('is-active', Number(conversation.id) === Number(currentConversationId));
@@ -883,12 +938,16 @@
                     row.append(button, remove);
                     historyList.append(row);
                 });
+                filterHistory();
             } catch (error) { /* history is non-critical */ }
         };
-        const checkStatus = (refresh = false) => fetch(`/api/assistant/status${refresh ? '?refresh=1' : ''}`, { headers: { Accept: 'application/json', 'X-Willow-Passive': '1' }, credentials: 'same-origin' })
+        const checkStatus = (refresh = false) => {
+            const revision = autonomyRevision;
+            return fetch(`/api/assistant/status${refresh ? '?refresh=1' : ''}`, { headers: { Accept: 'application/json', 'X-Willow-Passive': '1' }, credentials: 'same-origin' })
             .then(response => (response.ok ? response.json() : null))
-            .then(status => { if (status) setAvailable(status.available, status.model, status.reason, status.autonomy); return status; })
+            .then(status => { if (status) setAvailable(status.available, status.model, status.reason, revision === autonomyRevision ? status.autonomy : undefined); return status; })
             .catch(() => null);
+        };
         checkStatus();
 
         const renderSavedConversation = conversation => {

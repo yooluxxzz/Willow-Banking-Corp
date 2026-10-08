@@ -527,12 +527,14 @@ html.is-private .privacy-icon-show {
 }
 
 .ask-toolbar {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--s-3);
     padding: var(--s-3) var(--s-5) 0;
     flex-shrink: 0;
 }
+.ask-toolbar .btn { min-height: 44px; white-space: normal; }
+.ask-autonomy[hidden] { display: none; }
 
 .ask-history {
     margin: var(--s-3) var(--s-5) 0;
@@ -561,7 +563,7 @@ html.is-private .privacy-icon-show {
 .ask-balance-amount { font-size: var(--fs-lg); font-weight: 600; font-variant-numeric: tabular-nums; }
 
 @media (max-width: 600px) {
-    .ask-history { position: absolute; z-index: 3; inset: 125px 12px 110px; margin: 0; max-height: none; background: var(--surface); box-shadow: var(--shadow-xl); }
+    .ask-history { max-height: 45dvh; }
     .ask-toolbar .btn { min-height: 44px; }
     .ask-autonomy { flex-shrink: 0; }
 }
@@ -599,7 +601,7 @@ html.is-private .privacy-icon-show {
 
 .ask-autonomy-options button {
     min-width: 0;
-    min-height: 38px;
+    min-height: 44px;
     padding: 7px 9px;
     white-space: normal;
     line-height: 1.2;
@@ -611,6 +613,7 @@ html.is-private .privacy-icon-show {
     color: var(--brand);
     box-shadow: 0 0 0 1px var(--brand) inset;
 }
+.ask-autonomy-options button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 
 .ask-action-card {
     display: grid;

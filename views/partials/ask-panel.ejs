@@ -13,10 +13,12 @@
         <button type="button" class="btn btn-ghost btn-icon" data-ask-close aria-label="Close Ask Willow"><%- icon('x', 'icon-md') %></button>
     </div>
     <div class="ask-toolbar">
-        <button type="button" class="btn btn-secondary btn-sm" data-ask-history-toggle aria-controls="askHistory" aria-expanded="false"><%- icon('clock', 'icon-sm') %> History</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-ask-history-toggle data-ask-history-period="recent" aria-controls="askHistory" aria-expanded="false"><%- icon('clock', 'icon-sm') %> Recent chats</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-ask-history-period="older" aria-controls="askHistory" aria-expanded="false"><%- icon('clock', 'icon-sm') %> Older chats</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-ask-autonomy-toggle aria-controls="askAutonomy" aria-expanded="false">Autonomy: <span data-ask-autonomy-label>Ask first</span></button>
         <button type="button" class="btn btn-primary btn-sm" data-ask-new><%- icon('plus', 'icon-sm') %> New chat</button>
     </div>
-    <section class="ask-autonomy" aria-labelledby="askAutonomyTitle" data-ask-autonomy>
+    <section class="ask-autonomy" id="askAutonomy" aria-labelledby="askAutonomyTitle" data-ask-autonomy hidden>
         <div class="ask-autonomy-head">
             <div>
                 <p class="label" id="askAutonomyTitle">How much should Willow do?</p>
@@ -28,15 +30,18 @@
             <button type="button" role="radio" data-ask-autonomy-value="confirm" aria-checked="false">Ask before actions</button>
             <button type="button" role="radio" data-ask-autonomy-value="autonomous" aria-checked="false">Autonomous</button>
         </div>
+        <p class="ask-note" data-ask-autonomy-status role="status"></p>
     </section>
     <section class="ask-history" id="askHistory" aria-labelledby="askHistoryTitle" data-ask-history hidden>
         <div class="ask-history-head">
             <p class="label" id="askHistoryTitle">Your chats</p>
             <button type="button" class="btn btn-ghost btn-icon" data-ask-history-close aria-label="Close chat history"><%- icon('x', 'icon-sm') %></button>
         </div>
+        <p class="ask-note" data-ask-history-description>Updated in the last 7 days.</p>
         <label for="askHistorySearch" class="visually-hidden">Search saved chats</label>
         <input id="askHistorySearch" class="ask-history-search" type="search" placeholder="Search your chats…" data-ask-history-search>
         <div class="ask-history-list" data-ask-history-list></div>
+        <p class="ask-history-empty" data-ask-history-empty hidden>No matching chats.</p>
     </section>
     <details class="ask-setup" data-ask-setup<%- assistantAi ? ' hidden' : '' %>>
         <summary><%- icon('sparkle', 'icon-sm') %> AI connection details</summary>

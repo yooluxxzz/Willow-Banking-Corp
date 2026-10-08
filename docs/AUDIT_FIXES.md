@@ -1,6 +1,6 @@
 # Audit fixes — 7 October 2026
 
-Implemented on `fix/audit-integrity-and-assistant`, from `5fc3fbdb4835374d37322616f06603c522ab682f`. No deployed database was modified and no changes were pushed or published.
+Implemented on `fix/audit-integrity-and-assistant`, from `5fc3fbdb4835374d37322616f06603c522ab682f`. After the user's approval, the original audit source tree was published as `2974fd94f78c8569839cf1fc157ee967a3bc3b2f`; the targeted follow-up below is on the same branch. No deployed database, main branch or running application was modified.
 
 ## Ask Willow
 
@@ -8,9 +8,17 @@ Implemented on `fix/audit-integrity-and-assistant`, from `5fc3fbdb4835374d373226
 - Explicit transfer, payment, trade and goal requests reach the planner. Quote requests precede generic portfolio reads. Supported symbol quotes work without the model; missing symbols prompt clarification. Educational and negated requests cannot execute a model-planned action.
 - New read tools cover cards, scheduled transfers, business summaries, crypto wallets/history and education guides. Existing banking, budgeting, debt, loan-estimate and investing tools remain available.
 - Goal creation maps `target` to `targetAmount`. Transfer previews use the source currency. Completed responses retain history and conversation identity; interrupted text is marked. Executed and cancelled actions append a readable status.
-- History and New chat have a dedicated toolbar. History is searchable, styled and scrollable, with a mobile overlay. New chat restores prompts. Funds checks render as balance cards.
+- Recent chats, Older chats, Autonomy and New chat have a dedicated toolbar. History is searchable, styled and scrollable, including on mobile. New chat restores prompts. Funds checks render as balance cards.
 - Action buttons name the action, expire after two minutes and become terminal after failed confirmation. Consumed approvals cannot execute again. Receipts come from mutation results rather than a subsequent model response, and a failed chat-history write cannot hide a completed action receipt.
 - Approvals bind to authentication and permission versions. Changing autonomy invalidates previous approvals even if the old mode is restored. User status and current permissions are checked at the mutation boundary, including after awaited quotes.
+
+## Targeted follow-up — 8 October 2026
+
+- Recent chats uses the last seven days of updates; Older chats shows earlier saved conversations. The existing retention limit remains 50 conversations with up to 200 messages each. The drawers no longer overlap each other or the mobile toolbar.
+- The Autonomy button displays the current mode and opens its picker. Saving feedback, failed-save recovery, keyboard radio navigation and stale-poll protection keep the displayed mode consistent with successful saves. Server permission checks from the audit still apply.
+- Authentication/homepage photography keeps a stable crop. The active-only zoom animation previously reset when a scene began fading out, producing a visible jump.
+- Registration creates the user, primary/business accounts and audit record atomically. Concurrent attempts return an accurate email conflict; duplicate browser submissions are blocked. A post-creation sign-in failure offers login instead of another signup. The specific reported email cannot be diagnosed without its address, the affected flow and the running database; retained or administrator records still reserve their emails.
+- Follow-up validation: lint clean, all **227 Node tests pass**, including nine focused DOM/registration checks. No new browser rendering verification is claimed. No schema migration or live data change.
 
 ## Finding status
 

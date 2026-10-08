@@ -2,6 +2,23 @@
 
 Each completed work session is recorded here and committed locally. Git history is the authoritative record of code and database schema changes. Live account/session data and secrets are excluded.
 
+## Requested chat controls, stable photos and registration integrity — 2026-10-08
+
+**Behavior**
+- Added separate Recent chats and Older chats buttons (last updated within seven days / earlier), a current-mode Autonomy button, and New chat in a two-column toolbar with 44px targets. Saved history remains searchable and user-scoped. History and autonomy drawers close each other; mobile history stays in the panel flow instead of covering the toolbar.
+- Autonomy exposes Read only, Ask before actions and Autonomous modes, with selection, keyboard navigation, saving/saved/error feedback, and protection against duplicate saves and stale status responses. Failed saves retain the previous mode.
+- Removed active-only photo zoom animations on authentication and homepage scenes. They reset the outgoing photo's transform while its opacity was still fading; scenes now retain a stable crop through the crossfade.
+- Made user, primary account, business account and registration audit creation one transaction. A failed business/audit insert no longer leaves an occupied email behind. Rechecked email uniqueness after password hashing for concurrent requests, prevented duplicate wizard submissions, and offered sign-in/recovery links for genuine conflicts. Failed automatic sign-in truthfully reports that the account was created and stops retrying signup.
+- The user's specific email conflict is not confirmed: its address, flow and live database were not provided. Admin/retained user records can reserve emails; no existing records were removed.
+
+**Database / schema**
+- No schema changes or live database operations. Fault injection and registration checks used disposable synthetic test databases.
+
+**Checks and publication**
+- `npm run check`: lint clean, all 227 Node tests pass. Nine focused UI/registration checks include recent/older filtering, balance cards, autonomy success/failure and stale polling, rollback, concurrent signup and duplicate wizard submissions.
+- `git diff --check` clean. DOM interactions were tested with JSDOM; browser layout and temporal rendering remain unverified because Chromium installation previously failed. Python was unchanged; the audit baseline passed 46 Python tests.
+- Following the user's explicit publication approval, the original audit source tree was published as GitHub commit `2974fd94f78c8569839cf1fc157ee967a3bc3b2f` on `fix/audit-integrity-and-assistant`, matching the tested local audit tree exactly. This session adds a committed follow-up on that branch. Main and the running application have not been updated here.
+
 ## Banking integrity and Ask Willow audit fixes — 2026-10-07
 
 Implemented the user's authorization to fix issues from the repository audit, on `fix/audit-integrity-and-assistant` from `5fc3fbdb4835374d37322616f06603c522ab682f`.
